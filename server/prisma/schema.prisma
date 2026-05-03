@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model daily_logs {
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id           String?   @db.Uuid
+  date                 DateTime  @db.Date
+  water_intake_glasses Int?      @default(0)
+  steps_count          Int?      @default(0)
+  mood                 String?   @db.VarChar(50)
+  notes                String?
+  profiles             profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([profile_id, date])
+  @@index([profile_id, date], map: "idx_daily_logs_date")
+}
+
+model meal_logs {
+  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id          String?   @db.Uuid
+  image_url           String
+  ai_analysis         Json?
+  nutritionist_review Json?
+  status              String?   @default("pending") @db.VarChar(20)
+  logged_at           DateTime? @default(now()) @db.Timestamptz(6)
+  meal_category       String?   @default("other") @db.VarChar(50)
+  compliance_status   String?   @default("pending") @db.VarChar(20)
+  compliance_score    Int?      @default(100)
+  violation_details   Json?
+  water_ml            Int?      @default(0)
+  supplements         String?
+  physical_activity   String?
+  serving_spoon_used  Boolean?  @default(false)
+  image_after_url     String?
+  cooking_method      String?   @db.VarChar(100)
+  is_parent_verified  Boolean?  @default(false)
+  hidden_ingredients  String?
+  profiles            profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id], map: "idx_meal_logs_profile")
+}
+
+model meal_plans {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id      String?   @db.Uuid
+  date            DateTime  @db.Date
+  meal_type       String    @db.VarChar(50)
+  recipe_name     String
+  calories        Int?
+  protein_g       Int?
+  carbs_g         Int?
+  fats_g          Int?
+  image_url       String?
+  is_consumed     Boolean?  @default(false)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  recipe_id       String?   @db.VarChar(255)
+  nutritionist_id String?   @db.Uuid
+  users           users?    @relation(fields: [nutritionist_id], references: [id], onUpdate: NoAction)
+  profiles        profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id, date], map: "idx_meal_plans_date")
+}
+
+model nutrition_rules {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id      String?   @db.Uuid
+  nutritionist_id String?   @db.Uuid
+  category        String    @db.VarChar(50)
+  rule_name       String    @db.VarChar(100)
+  rule_definition Json
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  rule_type       String?   @db.VarChar(20)
+  rule_value      Decimal?  @db.Decimal
+  rule_unit       String?   @db.VarChar(10)
+  is_standard     Boolean?  @default(false)
+  users           users?    @relation(fields: [nutritionist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles        profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id], map: "idx_nutrition_rules_profile")
+}
+
+model nutritionist_clients {
+  id                                                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nutritionist_id                                   String?   @db.Uuid
+  parent_id                                         String?   @db.Uuid
+  status                                            String?   @default("active") @db.VarChar(20)
+  created_at                                        DateTime? @default(now()) @db.Timestamptz(6)
+  nutritionist                                      users?    @relation("nutritionist_clients_nutritionist_idTousers", fields: [nutritionist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parent                                            users?    @relation("nutritionist_clients_parent_idTousers", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([nutritionist_id, parent_id])
+  @@index([nutritionist_id], map: "idx_nutritionist_clients_nutri")
+}
+
+model nutritionist_notes {
+  id              Int       @id @default(autoincrement())
+  nutritionist_id String?   @db.Uuid
+  client_id       String?   @db.Uuid
+  content         String
+  is_pinned       Boolean?  @default(false)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  client          profiles? @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  nutritionist    users?    @relation(fields: [nutritionist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model profiles {
+  id                  String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String?              @db.Uuid
+  child_name          String               @db.VarChar(100)
+  date_of_birth       DateTime?            @db.Date
+  gender              String?              @db.VarChar(20)
+  height_cm           Float?
+  weight_kg           Float?
+  activity_level      String?              @db.VarChar(50)
+  allergies           String[]
+  dietary_preferences String?
+  created_at          DateTime?            @default(now()) @db.Timestamptz(6)
+  calories_target     Int?
+  protein_target      Int?
+  carbs_target        Int?
+  fat_target          Int?
+  vaccinations        String?
+  medications         String?
+  weigh_in_conditions String?
+  bristol_stool_scale Int?
+  medical_history     Json?
+  daily_logs          daily_logs[]
+  meal_logs           meal_logs[]
+  meal_plans          meal_plans[]
+  nutrition_rules     nutrition_rules[]
+  notes               nutritionist_notes[]
+  adime_notes         adime_notes[]
+  growth_logs         growth_logs[]
+  users               users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model growth_logs {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id String?   @db.Uuid
+  height_cm  Float
+  weight_kg  Float
+  logged_at  DateTime? @default(now()) @db.Timestamptz(6)
+  
+  profiles   profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id], map: "idx_growth_logs_profile")
+}
+
+model adime_notes {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id      String?   @db.Uuid
+  nutritionist_id String?   @db.Uuid
+  assessment      String?
+  diagnosis       String?
+  intervention    String?
+  monitoring      String?
+  evaluation      String?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  profiles        profiles? @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  nutritionist    users?    @relation(fields: [nutritionist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id], map: "idx_adime_notes_profile")
+}
+
+model users {
+  id                                                               String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                                                            String                 @unique @db.VarChar(255)
+  password_hash                                                    String                 @db.VarChar(255)
+  full_name                                                        String?                @db.VarChar(100)
+  created_at                                                       DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at                                                       DateTime?              @default(now()) @db.Timestamptz(6)
+  role                                                             String?                @default("parent") @db.VarChar(20)
+  professional_id                                                  String?                @db.VarChar(50)
+  meal_plans                                                       meal_plans[]
+  nutrition_rules                                                  nutrition_rules[]
+  clients             nutritionist_clients[] @relation("nutritionist_clients_nutritionist_idTousers")
+  nutritionists       nutritionist_clients[] @relation("nutritionist_clients_parent_idTousers")
+  notes               nutritionist_notes[]
+  adime_notes         adime_notes[]
+  profiles                                                         profiles[]
+}

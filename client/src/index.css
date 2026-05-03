@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  /* Main Palette */
+  --color-primary: #86bf9a;
+  /* Soft Green */
+  --color-primary-hover: #6da881;
+  /* Slightly darker soft green */
+  --color-secondary: #065f46;
+  /* Deep Green for headings */
+  --color-accent: #faa95b;
+  /* Warm Orange */
+  --color-accent-hover: #e09245;
+
+  /* Text & Backgrounds */
+  --color-bg-page: #ffffff;
+  /* Clean White */
+  --color-bg-card: #ffffff;
+  --color-text-main: #1f2937;
+  /* Gray 900 */
+  --color-text-muted: #6b7280;
+  /* Gray 500 */
+  --color-divider: #e5e7eb;
+  /* Gray 200 */
+
+  /* Font Families if needed, defaulting to sans */
+}
+
+.dark {
+  /* Dark Mode Palette */
+  --color-primary: #86bf9a;
+  /* Keep soft green */
+  --color-primary-hover: #6da881;
+  --color-secondary: #ecfdf5;
+  /* Light green for headings */
+  --color-accent: #fbbf24;
+  /* Muted Amber/Orange for highlights */
+  --color-accent-hover: #f59e0b;
+
+  --color-bg-page: #18181b;
+  /* Zinc 900 (Deep Charcoal) */
+  --color-bg-card: #27272a;
+  /* Zinc 800 (Slightly lighter charcoal) */
+
+  --color-text-main: #f4f4f5;
+  /* Zinc 100 (Off-white) */
+  --color-text-muted: #a1a1aa;
+  /* Zinc 400 (Medium Gray) */
+  --color-divider: #3f3f46;
+  /* Zinc 700 */
+  /* Slate 700 */
+}
+
+/* Global Reset & Base Styles */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--color-text-main);
+  background-color: var(--color-bg-page);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+  place-items: start;
+  /* Reset Vite default centering */
+}
+
+#root {
+  width: 100%;
+}
