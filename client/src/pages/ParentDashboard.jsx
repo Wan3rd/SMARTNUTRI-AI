@@ -122,7 +122,7 @@ export default function ParentDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left: Logger & Profile Selector */}
-                <div className="lg:col-span-5 space-y-6">
+                <div className="lg:col-span-7 space-y-6">
                     <Card className="border border-[var(--color-divider)]">
                         <CardContent className="p-4">
                             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Switch Profile</label>
@@ -213,7 +213,7 @@ export default function ParentDashboard() {
                 </div>
 
                 {/* Right: Recent Feedback & Status */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="lg:col-span-5 space-y-6">
                     {allLogs.length > 0 && (
                         <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 border-green-100 dark:border-green-900/30 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-10">

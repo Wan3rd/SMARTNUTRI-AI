@@ -9,6 +9,17 @@ const getLocalISOTime = () => {
     return new Date(Date.now() - tzoffset).toISOString().slice(0, 16);
 };
 
+const getDefaultMealCategory = () => {
+    // Use PH time (UTC+8)
+    const phHour = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })).getHours();
+    if (phHour >= 5  && phHour < 9)  return 'Breakfast';
+    if (phHour >= 9  && phHour < 11) return 'AM Snack';
+    if (phHour >= 11 && phHour < 14) return 'Lunch';
+    if (phHour >= 14 && phHour < 17) return 'PM Snack';
+    if (phHour >= 17 && phHour < 21) return 'Dinner';
+    return 'Other';
+};
+
 export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
@@ -26,7 +37,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         cookingMethod: '',
         hiddenIngredients: '',
         isParentVerified: false,
-        mealCategory: 'Lunch',
+        mealCategory: getDefaultMealCategory(),
         plateWaste: 100,
         loggedAt: getLocalISOTime()
     });
@@ -62,7 +73,16 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             const res = await api.post('/logs/analyze', formData);
             setAnalysisResult(res.data);
             if (res.data.ai_analysis?.items) {
-                setVerifiedItems(res.data.ai_analysis.items);
+                // Snapshot base macros per unit so qty changes can scale them proportionally
+                const itemsWithBase = res.data.ai_analysis.items.map(item => ({
+                    ...item,
+                    _base_calories: item.calories || 0,
+                    _base_protein_g: item.protein_g || 0,
+                    _base_carbs_g: item.carbs_g || 0,
+                    _base_fat_g: item.fat_g || 0,
+                    _base_weight_g: item.serving_weight_g || 100,
+                }));
+                setVerifiedItems(itemsWithBase);
             } else {
                 setVerifiedItems([]);
             }
@@ -106,6 +126,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
 
     const handleSaveVerified = async () => {
+        if (!suppData.isParentVerified) {
+            alert('Please check the verification box to confirm the meal data is correct before saving.');
+            return;
+        }
         setLoading(true);
         setStatus('saving');
         try {
@@ -184,7 +208,15 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             ai_analysis: baseAnalysis 
         });
         
-        setVerifiedItems(baseAnalysis?.items || []);
+        const itemsWithBase = (baseAnalysis?.items || []).map(item => ({
+            ...item,
+            _base_calories: item.calories || 0,
+            _base_protein_g: item.protein_g || 0,
+            _base_carbs_g: item.carbs_g || 0,
+            _base_fat_g: item.fat_g || 0,
+            _base_weight_g: item.serving_weight_g || 100,
+        }));
+        setVerifiedItems(itemsWithBase);
         
         setSuppData({
             ...suppData,
@@ -294,12 +326,30 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                             {previewAfter ? (
                                 <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-white dark:border-white/10 shadow-lg group">
                                     <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
-                                    <button onClick={() => { setFileAfter(null); setPreviewAfter(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                    {status !== 'uploading' && (
+                                        <button onClick={() => { setFileAfter(null); setPreviewAfter(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                    )}
                                 </div>
                             ) : (
-                                <div onClick={() => fileAfterInputRef.current?.click()} className="w-full aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-[var(--color-primary)]/5 transition-all text-[var(--color-text-muted)]">
-                                    <Upload size={24} />
-                                    <span className="text-[10px] font-bold">OPTIONAL</span>
+                                <div 
+                                    onClick={() => status !== 'uploading' && fileAfterInputRef.current?.click()} 
+                                    className={`w-full aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all relative ${
+                                        status === 'uploading'
+                                            ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60'
+                                            : 'border-gray-200 dark:border-white/5 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)]'
+                                    }`}
+                                >
+                                    {status === 'uploading' ? (
+                                        <>
+                                            <Loader2 size={20} className="animate-spin text-gray-400" />
+                                            <span className="text-[9px] font-bold text-gray-400 text-center">WAIT FOR AI</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={24} />
+                                            <span className="text-[10px] font-bold">OPTIONAL</span>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -339,17 +389,39 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                                                 className="flex-1 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold"
                                             />
-                                            <input 
-                                                type="number"
-                                                value={item.measure_qty || 1}
-                                                step="0.25"
-                                                onChange={(e) => {
-                                                    const qty = parseFloat(e.target.value) || 0;
-                                                    handleItemChange(idx, 'measure_qty', qty);
-                                                    handleItemChange(idx, 'weight_g', Math.round(qty * (item.serving_weight_g || 100)));
-                                                }}
-                                                className="w-12 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs text-center font-bold"
-                                            />
+                                            <div className="flex flex-col items-center gap-0.5 min-w-[90px]">
+                                                <div className="flex items-center justify-between w-full">
+                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Qty</span>
+                                                    <span className="text-xs font-black text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-md tabular-nums">
+                                                        {item.measure_qty || 1}
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0.25"
+                                                    max="10"
+                                                    step="0.25"
+                                                    value={item.measure_qty || 1}
+                                                    onChange={(e) => {
+                                                        const qty = parseFloat(e.target.value) || 0;
+                                                        setVerifiedItems(prev => {
+                                                            const next = [...prev];
+                                                            const base = next[idx];
+                                                            next[idx] = {
+                                                                ...base,
+                                                                measure_qty: qty,
+                                                                weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
+                                                                protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
+                                                                carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
+                                                                fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
+                                                            };
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="w-full h-1.5 accent-[var(--color-primary)] cursor-pointer"
+                                                />
+                                            </div>
                                             <select
                                                 value={item.serving_unit || 'Serving'}
                                                 onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
@@ -451,14 +523,22 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Water (ml)</label>
-                                        <input 
-                                            type="number"
-                                            placeholder="e.g. 250"
+                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">💧 Glasses of Water</label>
+                                        <select
                                             value={suppData.waterMl}
                                             onChange={(e) => setSuppData({...suppData, waterMl: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-                                        />
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                        >
+                                            <option value="">None</option>
+                                            <option value="250">1 glass (250ml)</option>
+                                            <option value="500">2 glasses (500ml)</option>
+                                            <option value="750">3 glasses (750ml)</option>
+                                            <option value="1000">4 glasses (1L)</option>
+                                            <option value="1250">5 glasses (1.25L)</option>
+                                            <option value="1500">6 glasses (1.5L)</option>
+                                            <option value="1750">7 glasses (1.75L)</option>
+                                            <option value="2000">8 glasses (2L)</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Activity (min)</label>
@@ -503,9 +583,14 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     Restart
                                 </Button>
                                 <Button 
-                                    className={`w-2/3 py-4 font-bold rounded-xl shadow-lg transition-all ${loading ? '!bg-[var(--color-bg-card,#ffffff)] !text-[var(--color-text-main,#1f2937)] border border-green-500 shadow-none opacity-100' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`} 
+                                    className={`w-2/3 py-4 font-bold rounded-xl shadow-lg transition-all ${
+                                        loading ? '!bg-[var(--color-bg-card,#ffffff)] !text-[var(--color-text-main,#1f2937)] border border-green-500 shadow-none opacity-100'
+                                        : !suppData.isParentVerified ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
+                                        : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'
+                                    }`} 
                                     onClick={handleSaveVerified} 
-                                    disabled={loading}
+                                    disabled={loading || !suppData.isParentVerified}
+                                    title={!suppData.isParentVerified ? 'Please confirm the meal data first' : ''}
                                 >
                                     {loading ? (
                                         <div className="flex items-center justify-center gap-3">

@@ -219,7 +219,7 @@ router.post('/', verifyToken, async (req, res) => {
         // 4. Save to Database
         const newLog = await prisma.meal_logs.create({
             data: {
-                profile_id,
+                profiles: { connect: { id: profile_id } },
                 image_url,
                 image_after_url,
                 cooking_method,
@@ -228,7 +228,7 @@ router.post('/', verifyToken, async (req, res) => {
                 compliance_status: complianceResult.status,
                 compliance_score: complianceResult.compliance_score,
                 violation_details: complianceResult.details,
-                water_ml: water_ml || 0,
+                water_ml: water_ml ? parseInt(water_ml) : 0,
                 supplements: supplements || '',
                 physical_activity: physical_activity || '',
                 serving_spoon_used: serving_spoon_used || false,
