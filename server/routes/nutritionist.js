@@ -62,9 +62,17 @@ router.post('/invite', verifyToken, isNutritionist, async (req, res) => {
     }
 });
 
-// POST /create-client - Create a new parent and child profile and link them
+// POST /create-client - Create a new parent and child profile and link them with full clinical profiling
 router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
-    const { parent_name, parent_email, child_name, date_of_birth, gender } = req.body;
+    const { 
+        parent_name, parent_email, 
+        child_name, date_of_birth, gender,
+        medical_history, family_history, food_intolerances, symptoms, medications, lifestyle_factors,
+        height_cm, weight_kg, waist_circumference, weighing_time, is_fasting, is_post_voiding,
+        activity_level, allergies,
+        vaccinations // Array of { vaccination_type_id, date_administered, notes }
+    } = req.body;
+
     try {
         // 1. Check if parent email already exists
         const existingUser = await prisma.users.findUnique({
@@ -89,17 +97,56 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 }
             });
 
-            // 3. Create Child Profile
+            // 3. Create Child Profile with Clinical Details
             const profile = await tx.profiles.create({
                 data: {
-                    user_id: user.id,
+                    users: { connect: { id: user.id } },
                     child_name,
                     date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
-                    gender
+                    gender,
+                    height_cm: height_cm ? parseFloat(height_cm) : null,
+                    weight_kg: weight_kg ? parseFloat(weight_kg) : null,
+                    activity_level,
+                    allergies: Array.isArray(allergies) ? allergies : (allergies ? [allergies] : []),
+                    medical_history: medical_history || '',
+                    family_history: family_history || '',
+                    food_intolerances: food_intolerances || '',
+                    symptoms: symptoms || '',
+                    medications: medications || '',
+                    lifestyle_factors: lifestyle_factors || '',
+                    waist_circumference: waist_circumference ? parseFloat(waist_circumference) : null,
+                    weighing_time,
+                    is_fasting: is_fasting || false,
+                    is_post_voiding: is_post_voiding || false
                 }
             });
 
-            // 4. Link to Nutritionist
+            // 4. Create Initial Growth Log
+            if (height_cm && weight_kg) {
+                await tx.growth_logs.create({
+                    data: {
+                        profile_id: profile.id,
+                        height_cm: parseFloat(height_cm),
+                        weight_kg: parseFloat(weight_kg)
+                    }
+                });
+            }
+
+            // 5. Add Vaccinations if provided
+            if (vaccinations && Array.isArray(vaccinations) && vaccinations.length > 0) {
+                const vaccinationData = vaccinations.map(v => ({
+                    profile_id: profile.id,
+                    vaccination_type_id: v.vaccination_type_id,
+                    date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
+                    notes: v.notes || 'Recorded during initial profiling'
+                }));
+                
+                await tx.profile_vaccinations.createMany({
+                    data: vaccinationData
+                });
+            }
+            
+            // 6. Link to Nutritionist
             await tx.nutritionist_clients.create({
                 data: {
                     nutritionist_id: req.user.id,
@@ -111,7 +158,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
             return { user, profile };
         });
 
-        res.status(201).json({ message: 'Client account and profile created successfully', data: result });
+        res.status(201).json({ message: 'Patient profile created and linked successfully', data: result });
 
     } catch (err) {
         console.error(err);
@@ -219,6 +266,29 @@ router.delete('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /rules/:id - Update an existing nutrition rule
+router.patch('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { id } = req.params;
+    const { rule_name, rule_type, rule_value, rule_unit, rule_definition, category } = req.body;
+    try {
+        const updatedRule = await prisma.nutrition_rules.update({
+            where: { id: id },
+            data: {
+                rule_name,
+                rule_type,
+                rule_value: rule_value ? parseFloat(rule_value) : undefined,
+                rule_unit,
+                rule_definition,
+                category
+            }
+        });
+        res.json(updatedRule);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update rule' });
     }
 });
 
@@ -437,6 +507,26 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
             }
         });
         res.json(updatedLog);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /logs/batch-verify - Verify multiple logs at once
+router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res) => {
+    const { logIds } = req.body;
+    try {
+        if (!logIds || !Array.isArray(logIds)) {
+            return res.status(400).json({ message: 'Invalid log IDs' });
+        }
+
+        await prisma.meal_logs.updateMany({
+            where: { id: { in: logIds } },
+            data: { status: 'verified' }
+        });
+        
+        res.json({ message: 'Logs verified successfully', verifiedCount: logIds.length });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -682,6 +772,34 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
             }
         });
         res.status(201).json(newNote);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /adime-notes/:id - Update a clinical note
+router.patch('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { assessment, diagnosis, intervention, monitoring, evaluation } = req.body;
+    try {
+        const updated = await prisma.adime_notes.update({
+            where: { id: req.params.id },
+            data: { assessment, diagnosis, intervention, monitoring, evaluation }
+        });
+        res.json(updated);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /adime-notes/:id - Delete a clinical note
+router.delete('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        await prisma.adime_notes.delete({
+            where: { id: req.params.id }
+        });
+        res.json({ message: 'Clinical note deleted' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

@@ -38,6 +38,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     if (!isOpen || !log) return null;
 
     const handleApprove = async () => {
+        if (loading) return;
         setLoading(true);
         try {
             await api.patch(`/nutritionist/logs/${log.id}/review`, {
@@ -46,7 +47,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     comment: review,
                     verified_analysis: editedAnalysis
                 },
-                status: 'reviewed'
+                status: 'verified'
             });
             onReviewComplete();
             onClose();
@@ -205,8 +206,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                 onChange={(e) => setEditedAnalysis(prev => ({ ...prev, plate_waste: parseInt(e.target.value) }))}
                                                 className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer text-[var(--color-primary)]"
                                             >
-                                                <option value={100}>100% (Ubos)</option>
-                                                <option value={75}>75% (Tira)</option>
+                                                <option value={100}>100% (Finished)</option>
+                                                <option value={75}>75% (Mostly)</option>
                                                 <option value={50}>50% (Half)</option>
                                                 <option value={25}>25% (Little)</option>
                                                 <option value={0}>0% (None)</option>
@@ -262,7 +263,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                             <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">g Weight</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-md border-2 border-[var(--color-divider)] uppercase tracking-tighter">{item.weight_g || 0}g WEIGHT</span>
+                                                        item.weight_g > 0 && (
+                                                            <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-md border-2 border-[var(--color-divider)] uppercase tracking-tighter">{item.weight_g}g</span>
+                                                        )
                                                     )}
                                                     {item.cooking_method && (
                                                         <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-primary)] px-2 py-1 rounded-md border border-[var(--color-primary)]/20 uppercase tracking-tight flex items-center gap-1.5 whitespace-normal break-words">

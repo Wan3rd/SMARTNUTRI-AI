@@ -140,7 +140,12 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                         <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                             <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Caregiver Reported</p>
                             <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">
-                                {displayAnalysis?.plate_waste !== undefined ? `${displayAnalysis.plate_waste}% Eaten` : '100% Eaten'}
+                                {log.consumption_percent === 100 ? 'Finished (100%)' : 
+                                 log.consumption_percent === 75 ? 'Mostly (75%)' : 
+                                 log.consumption_percent === 50 ? 'Half (50%)' : 
+                                 log.consumption_percent === 25 ? 'A Little (25%)' : 
+                                 log.consumption_percent === 0 ? 'None (0%)' : 
+                                 'Finished (100%)'}
                             </p>
                         </div>
                     </div>
@@ -313,13 +318,37 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2">
-                                    {log.violation_details.map((violation, idx) => (
-                                        <div key={idx} className="bg-[var(--color-bg-page)] p-3 rounded-lg border border-red-200 dark:border-red-900/50">
-                                            <p className="font-bold text-red-700 dark:text-red-300 text-sm">{violation.rule_name}</p>
-                                            <p className="text-xs text-[var(--color-text-muted)] mt-1">{violation.reason}</p>
+                                <div className="space-y-4">
+                                    {/* XAI Clinical Reasoning */}
+                                    {log.violation_details.xai_feedback && (
+                                        <div className="bg-white dark:bg-white/5 p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
+                                            <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <Activity size={14} className="animate-pulse" /> Clinical AI Reasoning
+                                            </p>
+                                            <p className="text-sm text-[var(--color-text-main)] italic font-bold leading-relaxed">
+                                                "{log.violation_details.xai_feedback}"
+                                            </p>
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {/* Specific Rule Breaches */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {(log.violation_details.violations || []).map((violation, idx) => (
+                                            <div key={idx} className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-red-200 dark:border-red-900/50 flex flex-col justify-between">
+                                                <div>
+                                                    <p className="font-black text-red-700 dark:text-red-300 text-[10px] uppercase tracking-tight mb-1">{violation.rule || violation.rule_name}</p>
+                                                    <p className="text-xs font-black text-[var(--color-text-main)]">
+                                                        {violation.actual} <span className="text-[10px] opacity-50">vs</span> {violation.limit}
+                                                    </p>
+                                                </div>
+                                                {violation.meal_addition && (
+                                                    <p className="text-[9px] font-bold text-red-500/70 mt-2 uppercase">
+                                                        +{violation.meal_addition} from this meal
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

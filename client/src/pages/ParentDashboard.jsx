@@ -50,7 +50,7 @@ export default function ParentDashboard() {
 
             let filtered = res.data;
             if (filterTab === 'pending') filtered = res.data.filter(log => log.status === 'pending');
-            else if (filterTab === 'reviewed') filtered = res.data.filter(log => log.status === 'reviewed');
+            else if (filterTab === 'reviewed') filtered = res.data.filter(log => log.status === 'reviewed' || log.status === 'verified');
             else if (filterTab === 'flagged') filtered = res.data.filter(log => log.compliance_status === 'flagged');
 
             setRecentLogs(filtered.slice(0, 5));
@@ -156,27 +156,7 @@ export default function ParentDashboard() {
                     </Card>
 
                     {/* Reward Progress */}
-                    {selectedProfile && (
-                        <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 border-none shadow-xl rounded-3xl overflow-hidden relative group">
-                            <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-                                <Star size={120} fill="white" />
-                            </div>
-                            <CardContent className="p-8 flex items-center justify-between relative z-10">
-                                <div>
-                                    <p className="text-yellow-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Kid Reward Center</p>
-                                    <h3 className="text-white text-2xl font-black italic">
-                                        {todayLogs.filter(l => l.compliance_status !== 'flagged').length} STARS EARNED TODAY! 🌟
-                                    </h3>
-                                    <p className="text-yellow-100/80 text-xs mt-2 font-bold uppercase tracking-tight">Feed {selectedProfile.child_name} healthy meals to reach the goal!</p>
-                                </div>
-                                <div className="flex gap-2 bg-black/10 p-4 rounded-2xl backdrop-blur-md border border-white/10">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} size={20} className={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "text-yellow-200 drop-shadow-lg animate-pulse" : "text-white/20"} fill={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "currentColor" : "none"} />
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+
 
                     {selectedProfile && (
                         <MealLogger profileId={selectedProfile.id} onLogged={fetchLogs} recentLogs={recentLogs} />
@@ -406,7 +386,7 @@ export default function ParentDashboard() {
                                             <div className="flex">
                                                 <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
                                                     <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                                    {log.status === 'reviewed' && (
+                                                    {(log.status === 'reviewed' || log.status === 'verified') && (
                                                         <div className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded-full shadow-lg border border-white/20">
                                                             <CheckCircle2 size={10} />
                                                         </div>
@@ -415,13 +395,25 @@ export default function ParentDashboard() {
                                                 <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
                                                     <div className="flex justify-between items-start mb-1">
                                                         <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
-                                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${log.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{log.status}</span>
+                                                        <div className="flex gap-2">
+                                                            {log.compliance_status === 'flagged' && (
+                                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase bg-red-100 text-red-700 flex items-center gap-1">
+                                                                    <AlertCircle size={8} /> Flagged
+                                                                </span>
+                                                            )}
+                                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${(log.status === 'reviewed' || log.status === 'verified') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{log.status}</span>
+                                                        </div>
                                                     </div>
                                                     <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-2 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
                                                         {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Evaluating...'}
                                                     </h4>
+                                                    {log.compliance_status === 'flagged' && log.violation_details?.violations?.length > 0 && (
+                                                        <p className="text-[9px] font-black text-red-600 uppercase mb-1 flex items-center gap-1">
+                                                            Reason: {log.violation_details.violations[0].rule || log.violation_details.violations[0].rule_name}
+                                                        </p>
+                                                    )}
                                                     <p className="text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-tight font-medium">
-                                                        {log.status === 'reviewed' ? `"${log.nutritionist_review?.comment}"` : "Waiting for professional clinician review..."}
+                                                        {(log.status === 'reviewed' || log.status === 'verified') ? `"${log.nutritionist_review?.comment}"` : "Waiting for professional clinician review..."}
                                                     </p>
                                                 </div>
                                             </div>

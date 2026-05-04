@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,17 +13,17 @@ export default function MealHistory() {
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // Modal
     const [selectedLog, setSelectedLog] = useState(null);
+    const [rules, setRules] = useState([]);
+    const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
 
     // Filters
-    const [statusFilter, setStatusFilter] = useState('all'); // all, pending, reviewed
-    const [complianceFilter, setComplianceFilter] = useState('all'); // all, compliant, flagged, pending
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [complianceFilter, setComplianceFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
-    // Pagination
+    // Pagination (Legacy)
     const [currentPage, setCurrentPage] = useState(1);
     const logsPerPage = 12;
 
@@ -34,12 +34,110 @@ export default function MealHistory() {
     useEffect(() => {
         if (selectedProfile) {
             fetchLogs();
+            fetchRules();
         }
     }, [selectedProfile]);
 
     useEffect(() => {
         applyFilters();
     }, [logs, statusFilter, complianceFilter, searchQuery, dateRange]);
+
+    const fetchRules = async () => {
+        try {
+            const res = await api.get(`/rules/profile/${selectedProfile.id}`);
+            setRules(res.data);
+        } catch (err) {
+            console.error("Error fetching rules", err);
+        }
+    };
+
+    const dayStatuses = useMemo(() => {
+        if (!logs || !selectedProfile || !rules) return {};
+        const statuses = {};
+        const grouped = logs.reduce((acc, log) => {
+            const date = new Date(log.logged_at).toLocaleDateString();
+            if (!acc[date]) acc[date] = [];
+            acc[date].push(log);
+            return acc;
+        }, {});
+
+        Object.keys(grouped).forEach(date => {
+            const dayLogs = grouped[date];
+            const totals = dayLogs.reduce((acc, l) => {
+                acc.calories += (l.total_calories || 0);
+                acc.protein += (l.total_protein_g || 0);
+                acc.carbs += (l.total_carbs_g || 0);
+                acc.fat += (l.total_fat_g || 0);
+                acc.sugar += (l.total_sugar_g || 0);
+                acc.sodium += (l.total_sodium_mg || 0);
+                return acc;
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+
+            let status = 'success';
+            
+            // Check Profile Targets (if any)
+            if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
+            else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+
+            // Check Rules Engine
+            rules.forEach(rule => {
+                const limit = parseFloat(rule.rule_value);
+                if (!limit) return;
+                
+                let current = 0;
+                if (rule.category === 'Calories') current = totals.calories;
+                else if (rule.category === 'Protein') current = totals.protein;
+                else if (rule.category === 'Carbohydrates') current = totals.carbs;
+                else if (rule.category === 'Fats') current = totals.fat;
+                else if (rule.category === 'Sugar') current = totals.sugar;
+                else if (rule.category === 'Sodium') current = totals.sodium;
+
+                if (rule.rule_type === 'max' && current > limit) status = 'danger';
+            });
+
+            statuses[date] = status;
+        });
+        return statuses;
+    }, [logs, selectedProfile, rules]);
+
+    const dailyViolations = useMemo(() => {
+        if (!selectedHistoryDate || !logs || !rules) return [];
+        const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate);
+        const totals = dayLogs.reduce((acc, l) => {
+            acc.calories += (l.total_calories || 0);
+            acc.protein += (l.total_protein_g || 0);
+            acc.carbs += (l.total_carbs_g || 0);
+            acc.fat += (l.total_fat_g || 0);
+            acc.sugar += (l.total_sugar_g || 0);
+            acc.sodium += (l.total_sodium_mg || 0);
+            return acc;
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+
+        const violations = [];
+        rules.forEach(rule => {
+            const limit = parseFloat(rule.rule_value);
+            if (!limit) return;
+            
+            let current = 0;
+            if (rule.category === 'Calories') current = totals.calories;
+            else if (rule.category === 'Protein') current = totals.protein;
+            else if (rule.category === 'Carbohydrates') current = totals.carbs;
+            else if (rule.category === 'Fats') current = totals.fat;
+            else if (rule.category === 'Sugar') current = totals.sugar;
+            else if (rule.category === 'Sodium') current = totals.sodium;
+
+            if (rule.rule_type === 'max' && current > limit) {
+                violations.push({
+                    name: rule.rule_name,
+                    category: rule.category,
+                    actual: Math.round(current),
+                    limit: limit,
+                    unit: rule.rule_unit
+                });
+            }
+        });
+        return violations;
+    }, [selectedHistoryDate, logs, rules]);
 
     const fetchProfiles = async () => {
         try {
@@ -56,14 +154,16 @@ export default function MealHistory() {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            console.log('Fetching logs for profile:', selectedProfile.id);
             const res = await api.get(`/logs/profile/${selectedProfile.id}`);
-            console.log('Logs fetched successfully:', res.data.length);
-            setLogs(res.data);
+            const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+            setLogs(sortedLogs);
+            
+            if (sortedLogs.length > 0) {
+                const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
+                setSelectedHistoryDate(latestDate);
+            }
         } catch (err) {
             console.error('Error fetching logs:', err);
-            console.error('Error response:', err.response);
-            console.error('Error config:', err.config);
         } finally {
             setLoading(false);
         }
@@ -138,235 +238,192 @@ export default function MealHistory() {
                 <p className="text-[var(--color-text-muted)] mt-1">Complete tracking of all logged meals</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Left Sidebar: Controls & Filters */}
-                <div className="lg:sticky lg:top-8 lg:self-start space-y-6">
-                    {/* Profile Selection */}
-                    {profiles.length > 1 && (
-                        <Card className="border border-[var(--color-divider)]">
-                            <CardContent className="p-4">
-                                <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-3">
-                                    Child Profile
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {profiles.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => setSelectedProfile(p)}
-                                            className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${selectedProfile?.id === p.id
-                                                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md shadow-[var(--color-primary)]/20'
-                                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
-                                                }`}
-                                        >
-                                            {p.child_name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+            {/* Profile Selection */}
+            {profiles.length > 1 && (
+                <div className="flex flex-wrap gap-3 p-4 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                    {profiles.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => setSelectedProfile(p)}
+                            className={`px-6 py-2.5 rounded-2xl border-2 transition-all text-xs font-black uppercase tracking-widest ${selectedProfile?.id === p.id
+                                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/30'
+                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)] hover:translate-y-[-2px]'}`}
+                        >
+                            {p.child_name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-                    {/* Filters Card */}
+            <div className="flex flex-col md:flex-row gap-8 min-h-[600px]">
+                {/* LEFT SIDEBAR: DATE SELECTION */}
+                <div className="w-full md:w-72 flex-shrink-0 space-y-4">
                     <Card className="border border-[var(--color-divider)]">
-                        <CardContent className="p-4 space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-xs font-bold text-[var(--color-secondary)] uppercase tracking-wider flex items-center gap-2">
-                                    <Filter size={14} /> Filter Results
-                                </h3>
-                                {(statusFilter !== 'all' || complianceFilter !== 'all' || searchQuery || dateRange.start || dateRange.end) && (
-                                    <button
-                                        onClick={() => {
-                                            setStatusFilter('all');
-                                            setComplianceFilter('all');
-                                            setSearchQuery('');
-                                            setDateRange({ start: '', end: '' });
-                                        }}
-                                        className="text-[10px] font-bold text-[var(--color-primary)] hover:underline uppercase"
-                                    >
-                                        Reset
-                                    </button>
+                        <CardContent className="p-4">
+                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block mb-4">Select Date</label>
+                            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0">
+                                {Object.keys(logs.reduce((acc, log) => {
+                                    const date = new Date(log.logged_at).toLocaleDateString();
+                                    acc[date] = true;
+                                    return acc;
+                                }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
+                                    const isSelected = selectedHistoryDate === date;
+                                    const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                    return (
+                                        <button
+                                            key={date}
+                                            onClick={() => setSelectedHistoryDate(date)}
+                                            className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${
+                                                isSelected 
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10' 
+                                                : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${
+                                                    dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                    dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                    dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                    'bg-gray-300'
+                                                }`} />
+                                                <div className="text-left">
+                                                    <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{date}</div>
+                                                    <div className={`text-[9px] font-bold uppercase tracking-tighter ${isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]'}`}>
+                                                        {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {logs.length === 0 && (
+                                    <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
                                 )}
-                            </div>
-
-                            {/* Search */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest block">Search</label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                    <input
-                                        type="text"
-                                        placeholder="Food or title..."
-                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Status Filters */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Review Status</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['all', 'pending', 'reviewed'].map(status => (
-                                            <button
-                                                key={status}
-                                                onClick={() => setStatusFilter(status)}
-                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${statusFilter === status
-                                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
-                                                    }`}
-                                            >
-                                                {status === 'all' ? 'All' : status === 'reviewed' ? 'Reviewed' : 'Pending'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Compliance</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['all', 'compliant', 'flagged', 'pending'].map(status => (
-                                            <button
-                                                key={status}
-                                                onClick={() => setComplianceFilter(status)}
-                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${complianceFilter === status
-                                                    ? 'bg-[var(--color-secondary)] text-white border-[var(--color-secondary)]'
-                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-secondary)]'
-                                                    }`}
-                                            >
-                                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Date Range */}
-                            <div className="space-y-3 pt-2">
-                                <label className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest block">Date Range</label>
-                                <div className="space-y-2">
-                                    <input
-                                        type="date"
-                                        className="w-full px-3 py-2 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs text-[var(--color-text-main)]"
-                                        value={dateRange.start}
-                                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                    />
-                                    <input
-                                        type="date"
-                                        className="w-full px-3 py-2 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs text-[var(--color-text-main)]"
-                                        value={dateRange.end}
-                                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                    />
-                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Right Area: Content Grid */}
-                <div className="lg:col-span-3 space-y-4">
-                    <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-tight">
-                            Found {filteredLogs.length} results
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {currentLogs.map(log => {
-                            const complianceBadge = getComplianceBadge(log.compliance_status);
-                            const statusBadge = getStatusBadge(log.status);
-                            const ComplianceIcon = complianceBadge.icon;
-
-                            return (
-                                <Card
-                                    key={log.id}
-                                    onClick={() => setSelectedLog(log)}
-                                    className="border border-[var(--color-divider)] hover:border-[var(--color-primary)]/40 hover:shadow-lg transition-all overflow-hidden cursor-pointer group"
-                                >
-                                    <CardContent className="p-0">
-                                        <div className="relative h-40 bg-gray-100 overflow-hidden">
-                                            <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 duration-500" />
-                                            <div className="absolute top-2 right-2 flex gap-2">
-                                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${complianceBadge.color} flex items-center gap-1 shadow-sm`}>
-                                                    <ComplianceIcon size={12} />
-                                                    {complianceBadge.label}
-                                                </span>
-                                            </div>
+                {/* RIGHT AREA: DAILY LOGS */}
+                <div className="flex-grow space-y-8">
+                    {selectedHistoryDate && (
+                        <>
+                            {/* DAILY SUMMARY CARD */}
+                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                    <div>
+                                        <h3 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest">Daily Clinical Summary</h3>
+                                        <p className="text-[11px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter mt-1">
+                                            {new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Clinical Tracking Active</span>
                                         </div>
+                                    </div>
+                                </div>
 
-                                        <div className="p-4 space-y-3">
-                                            <div className="flex justify-between items-start">
-                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-                                                    {new Date(log.logged_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-                                                </p>
-                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${statusBadge.color}`}>
-                                                    {statusBadge.label}
-                                                </span>
-                                            </div>
-
-                                            <h3 className="font-bold text-[var(--color-secondary)] line-clamp-2 min-h-[3rem]">
-                                                {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Analyzing...'}
-                                            </h3>
-
-                                            <div className="pt-2 border-t border-[var(--color-divider)]">
-                                                {log.status === 'reviewed' && log.nutritionist_review?.comment ? (
-                                                    <p className="text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-relaxed">
-                                                        "{log.nutritionist_review.comment}"
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-[11px] text-orange-500 font-medium italic">
-                                                        Waiting for expert review...
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {log.compliance_status === 'flagged' && log.violation_details && (
-                                                <div className="text-[10px] text-red-600 dark:text-red-400 font-bold flex items-center gap-1 mt-1">
-                                                    <AlertCircle size={12} /> {log.violation_details.length} rules violated
+                                {/* VIOLATIONS ALERT PANEL */}
+                                {dailyViolations.length > 0 && (
+                                    <div className="mb-6 p-4 bg-rose-50/50 dark:bg-rose-500/5 border-2 border-rose-100 dark:border-rose-500/20 rounded-2xl animate-in fade-in duration-500">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                                            <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Clinical Limit Alerts</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-3">
+                                            {dailyViolations.map((v, i) => (
+                                                <div key={i} className="text-[11px] font-black flex items-center bg-[var(--color-bg-page)] px-4 py-2 rounded-2xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                    <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                    <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
+                                                    <span className="mx-3 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                    <span className="text-[10px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
                                                 </div>
-                                            )}
+                                            ))}
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
+                                    </div>
+                                )}
 
-                    {/* Empty State */}
-                    {currentLogs.length === 0 && (
-                        <div className="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border border-dashed border-[var(--color-divider)]">
-                            <Calendar size={48} className="mx-auto mb-4 opacity-10" />
-                            <p className="text-[var(--color-text-muted)] font-bold uppercase tracking-widest text-sm">No meals found</p>
-                            <p className="text-xs mt-2 font-medium">Try adjusting your filters on the left.</p>
-                        </div>
-                    )}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {[
+                                        { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                        { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                        { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                        { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                    ].map((stat, idx) => (
+                                        <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
+                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">{stat.label}</div>
+                                            <div className={`text-2xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-xs opacity-70">{stat.unit}</span></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex justify-center items-center gap-4 pt-10 pb-6">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className="rounded-xl"
-                            >
-                                <ChevronLeft size={16} />
-                            </Button>
-                            <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-                                Page {currentPage} of {totalPages}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className="rounded-xl"
-                            >
-                                <ChevronRight size={16} />
-                            </Button>
-                        </div>
+                            {/* MEAL SEQUENCE */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 px-2">
+                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Meal Sequence</h4>
+                                    <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest bg-[var(--color-primary)]/10 px-3 py-1 rounded-full">
+                                        {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate)
+                                        .sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))
+                                        .map(log => (
+                                        <div 
+                                            key={log.id} 
+                                            onClick={() => setSelectedLog(log)}
+                                            className="group relative bg-[var(--color-bg-card)] rounded-[2.5rem] border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-auto md:h-44 cursor-pointer"
+                                        >
+                                            <div className="w-full md:w-56 h-44 md:h-auto relative overflow-hidden flex-shrink-0">
+                                                <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-xl text-[10px] font-black text-white uppercase tracking-widest">
+                                                    {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className={`absolute bottom-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg ${
+                                                    log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
+                                                }`}>
+                                                    {log.compliance_status === 'flagged' ? 'Flagged' : 'Compliant'}
+                                                </div>
+                                            </div>
+                                            <div className="p-6 flex-grow flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
+                                                        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                            {(log.status === 'verified' || log.status === 'reviewed') ? 'Clinically Verified' : 'Awaiting Review'}
+                                                        </div>
+                                                    </div>
+                                                    <h3 className="text-lg font-black text-[var(--color-text-main)] line-clamp-1 uppercase">
+                                                        {log.nutritionist_review?.title || log.ai_analysis?.meal_summary || "Meal Log Entry"}
+                                                    </h3>
+                                                    <div className="flex gap-6 mt-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calories</span>
+                                                            <span className="text-sm font-black text-[var(--color-text-main)]">{log.total_calories || 0} <span className="text-[10px] opacity-60">kcal</span></span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Protein</span>
+                                                            <span className="text-sm font-black text-blue-600">{log.total_protein_g || 0} <span className="text-[10px] opacity-60">g</span></span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Consumption</span>
+                                                            <span className="text-sm font-black text-orange-600">
+                                                                {log.consumption_percent || 100}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>

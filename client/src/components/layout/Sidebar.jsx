@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,12 +20,17 @@ export function Sidebar({ isOpen, onClose }) {
     const nutritionistNavItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: Utensils, label: 'Meal Library', path: '/meals' },
-        // Dashboard acts as Client List for now, but we can add specific ones if needed
         { icon: User, label: 'My Profile', path: '/profile' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 
-    const navItems = user?.role === 'nutritionist' ? nutritionistNavItems : parentNavItems;
+    const adminNavItems = [
+        { icon: ShieldCheck, label: 'Oversight', path: '/' },
+        { icon: Users, label: 'All Users', path: '/admin/users' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+    ];
+
+    const navItems = user?.role === 'admin' ? adminNavItems : user?.role === 'nutritionist' ? nutritionistNavItems : parentNavItems;
 
     return (
         <>

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
+import { upload, cloudinary } from '../lib/cloudinary.js';
 
 const router = express.Router();
 
@@ -37,12 +38,13 @@ router.post('/register', async (req, res) => {
                 id: true,
                 email: true,
                 full_name: true,
-                role: true
+                role: true,
+                status: true
             }
         });
 
         // Create Token
-        const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET || 'default_dev_secret', {
+        const token = jwt.sign({ id: newUser.id, role: newUser.role, status: newUser.status }, process.env.JWT_SECRET || 'default_dev_secret', {
             expiresIn: '1d',
         });
 
@@ -78,7 +80,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Create Token
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'default_dev_secret', {
+        const token = jwt.sign({ id: user.id, role: user.role, status: user.status }, process.env.JWT_SECRET || 'default_dev_secret', {
             expiresIn: '1d',
         });
 
@@ -88,7 +90,8 @@ router.post('/login', async (req, res) => {
                 id: user.id,
                 email: user.email,
                 full_name: user.full_name,
-                role: user.role
+                role: user.role,
+                status: user.status
             },
             token,
         });
@@ -167,6 +170,55 @@ router.get('/my-nutritionist', verifyToken, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// UPLOAD PHOTO (For Accounts)
+router.post('/photo', verifyToken, (req, res, next) => {
+    upload.single('photo')(req, res, (err) => {
+        if (err) {
+            console.error('Multer Error:', err);
+            return res.status(500).json({ message: 'File processing failed', error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Upload to Cloudinary from memory buffer
+        const uploadFromBuffer = () => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'smartnutri/accounts',
+                        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+                    },
+                    (error, result) => {
+                        if (result) resolve(result);
+                        else reject(error);
+                    }
+                );
+                stream.end(req.file.buffer);
+            });
+        };
+
+        const result = await uploadFromBuffer();
+
+        const updatedUser = await prisma.users.update({
+            where: { id: req.user.id },
+            data: {
+                profile_image_url: result.secure_url
+            }
+        });
+
+        const { password_hash, ...safeUser } = updatedUser;
+        res.json(safeUser);
+    } catch (err) {
+        console.error('Cloudinary/Database Error:', err);
+        res.status(500).json({ message: 'Upload failed', error: err.message });
     }
 });
 

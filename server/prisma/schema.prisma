@@ -137,6 +137,14 @@ model profiles {
   weigh_in_conditions String?
   bristol_stool_scale Int?
   medical_history     Json?
+  family_history      String?
+  food_intolerances   String?
+  symptoms            String?
+  lifestyle_factors   String?
+  waist_circumference Float?
+  weighing_time       String?   @db.VarChar(50)
+  is_fasting          Boolean?  @default(false)
+  is_post_voiding     Boolean?  @default(false)
   profile_image_url   String?
   daily_logs          daily_logs[]
   meal_logs           meal_logs[]
@@ -199,6 +207,7 @@ model users {
   nutritionists       nutritionist_clients[] @relation("nutritionist_clients_parent_idTousers")
   notes               nutritionist_notes[]
   adime_notes         adime_notes[]
+  status                                                           String?                @default("pending") @db.VarChar(20)
   profiles                                                         profiles[]
 }
 

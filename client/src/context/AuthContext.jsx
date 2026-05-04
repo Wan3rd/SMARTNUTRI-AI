@@ -8,13 +8,26 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const checkUserLoggedIn = () => {
-            // Check localStorage first (persistent), then sessionStorage (temporary)
+        const checkUserLoggedIn = async () => {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-
-            if (token && savedUser) {
-                setUser(JSON.parse(savedUser));
+            if (token) {
+                try {
+                    // Always fetch latest user data from server on load to sync status (Approved/Pending)
+                    const res = await api.get('/auth/me');
+                    setUser(res.data);
+                    
+                    // Sync storage
+                    if (localStorage.getItem('token')) {
+                        localStorage.setItem('user', JSON.stringify(res.data));
+                    } else {
+                        sessionStorage.setItem('user', JSON.stringify(res.data));
+                    }
+                } catch (err) {
+                    console.error("Session sync failed", err);
+                    // If token is invalid or server error, check saved user as fallback or logout
+                    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+                    if (savedUser) setUser(JSON.parse(savedUser));
+                }
             }
             setLoading(false);
         };

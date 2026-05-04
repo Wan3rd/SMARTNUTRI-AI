@@ -61,6 +61,24 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// PATCH /api/notes/:id
+// Update a note's content
+router.patch('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { content } = req.body;
+
+        const updatedNote = await prisma.nutritionist_notes.update({
+            where: { id: parseInt(id) },
+            data: { content }
+        });
+        res.json(updatedNote);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // PATCH /api/notes/:id/pin
 // Pin or unpin a note
 router.patch('/:id/pin', async (req, res) => {

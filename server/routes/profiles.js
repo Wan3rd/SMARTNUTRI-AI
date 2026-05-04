@@ -20,12 +20,20 @@ router.get('/', verifyToken, async (req, res) => {
 
 // Create a new child profile
 router.post('/', verifyToken, async (req, res) => {
-    const { child_name, date_of_birth, gender, height_cm, weight_kg, activity_level, allergies, dietary_preferences, vaccinations, medications, weigh_in_conditions, bristol_stool_scale, medical_history } = req.body;
+    const { 
+        child_name, date_of_birth, gender, 
+        height_cm, weight_kg, waist_circumference, weighing_time,
+        is_fasting, is_post_voiding,
+        activity_level, allergies, dietary_preferences, 
+        vaccinations, medications, weigh_in_conditions, 
+        bristol_stool_scale, medical_history,
+        family_history, food_intolerances, symptoms, lifestyle_factors
+    } = req.body;
 
     try {
         const newProfile = await prisma.profiles.create({
             data: {
-                user_id: req.user.id,
+                users: { connect: { id: req.user.id } },
                 child_name,
                 date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
                 gender,
@@ -38,7 +46,15 @@ router.post('/', verifyToken, async (req, res) => {
                 medications,
                 weigh_in_conditions,
                 bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : null,
-                medical_history
+                medical_history: medical_history || '',
+                family_history: family_history || '',
+                food_intolerances: food_intolerances || '',
+                symptoms: symptoms || '',
+                lifestyle_factors: lifestyle_factors || '',
+                waist_circumference: waist_circumference ? parseFloat(waist_circumference) : null,
+                weighing_time,
+                is_fasting: is_fasting || false,
+                is_post_voiding: is_post_voiding || false
             }
         });
 
@@ -52,7 +68,16 @@ router.post('/', verifyToken, async (req, res) => {
 // Update a child profile
 router.put('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
-    const { child_name, date_of_birth, gender, height_cm, weight_kg, activity_level, allergies, dietary_preferences, calories_target, protein_target, carbs_target, fat_target, vaccinations, medications, weigh_in_conditions, bristol_stool_scale, medical_history } = req.body;
+    const { 
+        child_name, date_of_birth, gender, 
+        height_cm, weight_kg, waist_circumference, weighing_time,
+        is_fasting, is_post_voiding,
+        activity_level, allergies, dietary_preferences, 
+        calories_target, protein_target, carbs_target, fat_target, 
+        vaccinations, medications, weigh_in_conditions, 
+        bristol_stool_scale, medical_history,
+        family_history, food_intolerances, symptoms, lifestyle_factors
+    } = req.body;
 
     try {
         const updatedProfile = await prisma.profiles.updateMany({
@@ -77,7 +102,15 @@ router.put('/:id', verifyToken, async (req, res) => {
                 medications,
                 weigh_in_conditions,
                 bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : undefined,
-                medical_history
+                medical_history,
+                family_history,
+                food_intolerances,
+                symptoms,
+                lifestyle_factors,
+                waist_circumference: waist_circumference ? parseFloat(waist_circumference) : undefined,
+                weighing_time,
+                is_fasting: is_fasting !== undefined ? is_fasting : undefined,
+                is_post_voiding: is_post_voiding !== undefined ? is_post_voiding : undefined
             }
         });
 

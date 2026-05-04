@@ -22,6 +22,8 @@ import { useAuth } from './context/AuthContext';
 import ClientDetails from './pages/ClientDetails';
 import MealHistory from './pages/MealHistory';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsersList from './pages/AdminUsersList';
 
 function AppContent() {
   const { user } = useAuth();
@@ -39,7 +41,9 @@ function AppContent() {
           <Layout>
             <Routes>
               <Route path="/" element={
-                user?.role === 'nutritionist' ? <NutritionistDashboard /> : <ParentDashboard />
+                user?.role === 'admin' ? <AdminDashboard /> : 
+                user?.role === 'nutritionist' ? <NutritionistDashboard /> : 
+                <ParentDashboard />
               } />
               <Route path="/parent-dashboard" element={<ParentDashboard />} />
               <Route path="/nutritionist-dashboard" element={<NutritionistDashboard />} />
@@ -55,6 +59,17 @@ function AppContent() {
               <Route path="/nutritionist/client/:clientId" element={
                 <ProtectedRoute requiredRole="nutritionist">
                   <ClientDetails />
+                </ProtectedRoute>
+              } />
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminUsersList />
                 </ProtectedRoute>
               } />
 

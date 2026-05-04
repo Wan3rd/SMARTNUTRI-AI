@@ -81,6 +81,14 @@ const InfoField = ({ label, name, icon: Icon, placeholder, type = 'text', value,
 export default function Profile() {
     const { user, logout, updateUser } = useAuth();
     const navigate = useNavigate();
+    
+    // Redirect admins away from profile page
+    useEffect(() => {
+        if (user?.role === 'admin') {
+            navigate('/', { replace: true });
+        }
+    }, [user, navigate]);
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -100,6 +108,17 @@ export default function Profile() {
     const [nutriSaving, setNutriSaving] = useState(false);
     const [nutriMsg, setNutriMsg] = useState({ type: '', text: '' });
     const [clientCount, setClientCount] = useState(null);
+
+    // Parent Account State
+    const [parentData, setParentData] = useState({
+        fullName: user?.full_name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        profileImageUrl: user?.profile_image_url || ''
+    });
+    const [parentEditing, setParentEditing] = useState(false);
+    const [parentSaving, setParentSaving] = useState(false);
+    const [parentMsg, setParentMsg] = useState({ type: '', text: '' });
 
     // Using string 'null' or empty string for uninitialized prevents uncontrolled/controlled warnings
     const [profileData, setProfileData] = useState({
@@ -131,14 +150,24 @@ export default function Profile() {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    const [cropTarget, setCropTarget] = useState('child'); // 'parent' or 'child' or 'nutritionist'
 
     useEffect(() => {
         if (user?.role !== 'nutritionist') {
             fetchProfile();
             fetchVaccinationData();
+            // Fetch parent account data
+            api.get('/auth/me').then(res => {
+                setParentData({
+                    fullName: res.data.full_name || '',
+                    email: res.data.email || '',
+                    phone: res.data.phone || '',
+                    profileImageUrl: res.data.profile_image_url || ''
+                });
+            }).catch(err => console.error("Error fetching parent account", err));
         } else {
-            // Fetch client count for nutritionist stats
-            api.get('/profiles').then(res => setClientCount(res.data?.length ?? 0)).catch(() => setClientCount(0));
+            // Fetch linked client count for nutritionist stats
+            api.get('/nutritionist/clients').then(res => setClientCount(res.data?.length ?? 0)).catch(() => setClientCount(0));
             // Fetch nutritionist profile from backend
             api.get('/auth/me').then(res => {
                 const data = res.data;
@@ -186,6 +215,33 @@ export default function Profile() {
             setNutriMsg({ type: 'error', text: 'Failed to save to server.' });
         } finally {
             setNutriSaving(false);
+        }
+    };
+
+    const handleParentSave = async () => {
+        setParentSaving(true);
+        setParentMsg({ type: '', text: '' });
+        try {
+            await api.put('/auth/profile', {
+                full_name: parentData.fullName,
+                phone: parentData.phone,
+                profile_image_url: parentData.profileImageUrl
+            });
+            setParentMsg({ type: 'success', text: 'Account updated successfully!' });
+            
+            if (updateUser) {
+                updateUser({
+                    ...user,
+                    full_name: parentData.fullName,
+                    profile_image_url: parentData.profileImageUrl
+                });
+            }
+            setParentEditing(false);
+        } catch (err) {
+            console.error(err);
+            setParentMsg({ type: 'error', text: 'Failed to update account.' });
+        } finally {
+            setParentSaving(false);
         }
     };
 
@@ -310,10 +366,11 @@ export default function Profile() {
         setCroppedAreaPixels(croppedAreaPixels);
     };
 
-    const handleFileSelect = (e) => {
+    const handleFileSelect = (e, target = 'child') => {
         const file = e.target.files[0];
         if (!file) return;
 
+        setCropTarget(target);
         const reader = new FileReader();
         reader.addEventListener('load', () => {
             setImageToCrop(reader.result);
@@ -364,21 +421,26 @@ export default function Profile() {
         try {
             const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
             
-            if (user?.role === 'nutritionist') {
-                // For nutritionists, we upload and update the user record
-                const reader = new FileReader();
-                reader.readAsDataURL(croppedBlob);
-                reader.onloadend = async () => {
-                    const base64data = reader.result;
-                    try {
-                        await api.put('/auth/profile', {
-                            profile_image_url: base64data
-                        });
-                        setNutri(prev => ({ ...prev, profileImageUrl: base64data }));
-                    } catch (err) {
-                        console.error("Error uploading nutritionist photo", err);
-                    }
-                };
+            if (cropTarget === 'nutritionist' || cropTarget === 'parent') {
+                // For account photos, we use FormData to avoid payload size issues
+                const formData = new FormData();
+                formData.append('photo', croppedBlob, 'account.jpg');
+
+                const res = await api.post('/auth/photo', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                
+                const newUrl = res.data.profile_image_url;
+                
+                if (cropTarget === 'nutritionist') {
+                    setNutri(prev => ({ ...prev, profileImageUrl: newUrl }));
+                } else {
+                    setParentData(prev => ({ ...prev, profileImageUrl: newUrl }));
+                }
+                
+                if (updateUser) {
+                    updateUser({ ...user, profile_image_url: newUrl });
+                }
             } else {
                 const formData = new FormData();
                 formData.append('photo', croppedBlob, 'profile.jpg');
@@ -471,7 +533,7 @@ export default function Profile() {
                             {!isUploadingPhoto && (
                                 <>
                                     <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] z-10">
-                                        <input type="file" className="hidden" onChange={handleFileSelect} accept="image/*" />
+                                        <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'nutritionist')} accept="image/*" />
                                         <Camera size={28} className="animate-bounce" />
                                         <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
                                     </label>
@@ -726,9 +788,91 @@ export default function Profile() {
     }
 
     // --- PARENT / CHILD VIEW ---
+    const handleParentFieldChange = (name, val) => setParentData(p => ({ ...p, [name]: val }));
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-10">
-            {/* Header Section */}
+            {/* ── PARENT ACCOUNT SECTION ── */}
+            <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
+                <div className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+                    {/* Parent Avatar */}
+                    <div className="relative flex-shrink-0 group">
+                        <div className="h-20 w-20 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-4 border-white shadow-lg flex items-center justify-center text-slate-400 text-2xl font-black">
+                            {parentData.profileImageUrl ? (
+                                <img src={parentData.profileImageUrl} alt="Parent" className="h-full w-full object-cover" />
+                            ) : (
+                                <User size={32} />
+                            )}
+                        </div>
+                        <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                            <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'parent')} accept="image/*" />
+                            <Camera size={20} />
+                        </label>
+                    </div>
+                    
+                    <div className="flex-1 text-center sm:text-left space-y-2">
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                            <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">{parentData.fullName || 'Parent Account'}</h2>
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-md border border-slate-200 dark:border-slate-700">Account Holder</span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4">
+                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1.5">
+                                <Link2 size={10} className="text-slate-400" /> {parentData.email}
+                            </p>
+                            {parentData.phone && (
+                                <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1.5">
+                                    <Phone size={10} className="text-slate-400" /> {parentData.phone}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                        {!parentEditing ? (
+                            <button
+                                onClick={() => setParentEditing(true)}
+                                className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-200 dark:border-white/10"
+                            >Edit Account</button>
+                        ) : (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setParentEditing(false)}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-[var(--color-text-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                >Cancel</button>
+                                <button
+                                    onClick={handleParentSave}
+                                    disabled={parentSaving}
+                                    className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-60"
+                                >
+                                    {parentSaving ? <Loader2 size={12} className="animate-spin" /> : 'Save'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {parentEditing && (
+                    <div className="px-8 pb-8 grid md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                        <InfoField label="Account Full Name" name="fullName" value={parentData.fullName} onChange={(n, v) => setParentData(p => ({ ...p, fullName: v }))} isEditing={true} />
+                        <InfoField label="Contact Phone" name="phone" value={parentData.phone} onChange={(n, v) => setParentData(p => ({ ...p, phone: v }))} isEditing={true} />
+                    </div>
+                )}
+                
+                {parentMsg.text && (
+                    <div className={`mx-8 mb-6 p-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${parentMsg.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {parentMsg.text}
+                    </div>
+                )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 px-4">
+                <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent" />
+                <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.3em] whitespace-nowrap">Clinical Child Profile</span>
+                <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent" />
+            </div>
+
+            {/* Header Section (Child-Focused) */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                 <div className="flex items-center gap-6">
                     <div className="relative group">
@@ -750,7 +894,7 @@ export default function Profile() {
                         {isEditing && !isUploadingPhoto && (
                             <>
                                 <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
-                                    <input type="file" className="hidden" onChange={handleFileSelect} accept="image/*" />
+                                    <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'child')} accept="image/*" />
                                     <Camera size={28} className="animate-bounce" />
                                     <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
                                 </label>

@@ -437,11 +437,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
                                             className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-white text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
-                                            <option value={100}>UBOS (100%)</option>
-                                            <option value={75}>TIRA (75%)</option>
-                                            <option value={50}>HALF (50%)</option>
-                                            <option value={25}>LITTL (25%)</option>
-                                            <option value={0}>NONE (0%)</option>
+                                            <option value={100}>Finished (100%)</option>
+                                            <option value={75}>Mostly (75%)</option>
+                                            <option value={50}>Half (50%)</option>
+                                            <option value={25}>A Little (25%)</option>
+                                            <option value={0}>None (0%)</option>
                                         </select>
                                     </div>
                                 </div>

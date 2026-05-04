@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, Droplets, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check } from 'lucide-react';
+import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, Droplets, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -89,9 +89,7 @@ export default function ClientDetails() {
     const [loading, setLoading] = useState(true);
 
     // --- Modal & Notif States ---
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [ruleToDelete, setRuleToDelete] = useState(null);
-    const [notif, setNotif] = useState({ show: false, type: 'success', message: '' });
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
     // --- History State ---
     const [logs, setLogs] = useState([]);
@@ -103,6 +101,28 @@ export default function ClientDetails() {
     // --- Notes State ---
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
+
+    const [editingRuleId, setEditingRuleId] = useState(null);
+    const [editRuleForm, setEditRuleForm] = useState({
+        category: 'Calories',
+        rule_name: '',
+        rule_definition: '',
+        rule_type: 'max',
+        rule_value: '',
+        rule_unit: 'kcal'
+    });
+
+    const [editingAdimeId, setEditingAdimeId] = useState(null);
+    const [editAdimeForm, setEditAdimeForm] = useState({
+        assessment: '',
+        diagnosis: '',
+        intervention: '',
+        monitoring: '',
+        evaluation: ''
+    });
+
+    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [editNoteForm, setEditNoteForm] = useState('');
 
     // --- Confirmation Modal State ---
     const [confirmModal, setConfirmModal] = useState({
@@ -150,6 +170,48 @@ export default function ClientDetails() {
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
     const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
 
+    const bmiData = useMemo(() => {
+        if (!selectedProfile?.weight_kg || !selectedProfile?.height_cm) return null;
+        const heightM = selectedProfile.height_cm / 100;
+        const bmi = (selectedProfile.weight_kg / (heightM * heightM)).toFixed(1);
+        
+        let status = 'Healthy Weight';
+        let color = 'text-emerald-700 dark:text-emerald-300';
+        let bgColor = 'bg-emerald-50 dark:bg-emerald-500/10';
+        let borderColor = 'border-emerald-200 dark:border-emerald-500/20';
+        
+        if (bmi < 18.5) {
+            status = 'Underweight';
+            color = 'text-amber-700 dark:text-amber-300';
+            bgColor = 'bg-amber-50 dark:bg-amber-500/10';
+            borderColor = 'border-amber-200 dark:border-amber-500/20';
+        } else if (bmi >= 25 && bmi < 30) {
+            status = 'Overweight';
+            color = 'text-orange-700 dark:text-orange-300';
+            bgColor = 'bg-orange-50 dark:bg-orange-500/10';
+            borderColor = 'border-orange-200 dark:border-orange-500/20';
+        } else if (bmi >= 30) {
+            status = 'Obese';
+            color = 'text-red-700 dark:text-red-300';
+            bgColor = 'bg-red-50 dark:bg-red-500/10';
+            borderColor = 'border-red-200 dark:border-red-500/20';
+        }
+        
+        return { bmi, status, color, bgColor, borderColor };
+    }, [selectedProfile]);
+
+    const growthDeltas = useMemo(() => {
+        if (!growthLogs || growthLogs.length < 2) return { weight: 0, height: 0 };
+        // Sort by date descending
+        const sorted = [...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+        const current = sorted[0];
+        const previous = sorted[1];
+        return {
+            weight: (current.weight_kg - previous.weight_kg).toFixed(1),
+            height: (current.height_cm - previous.height_cm).toFixed(1)
+        };
+    }, [growthLogs]);
+
     // --- Consultation Mode State ---
     const [isConsultationMode, setIsConsultationMode] = useState(false);
     const [isClinicalEditing, setIsClinicalEditing] = useState(false);
@@ -166,13 +228,124 @@ export default function ClientDetails() {
                 weight_kg: selectedProfile.weight_kg,
                 allergies: selectedProfile.allergies || [],
                 dietary_preferences: selectedProfile.dietary_preferences || '',
-                medical_history: selectedProfile.medical_history || '',
+                medical_history: typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : '',
                 medications: selectedProfile.medications || '',
                 weigh_in_conditions: selectedProfile.weigh_in_conditions || '',
-                bristol_stool_scale: selectedProfile.bristol_stool_scale || 4
+                bristol_stool_scale: selectedProfile.bristol_stool_scale || 4,
+                family_history: selectedProfile.family_history || '',
+                food_intolerances: selectedProfile.food_intolerances || '',
+                symptoms: selectedProfile.symptoms || '',
+                lifestyle_factors: selectedProfile.lifestyle_factors || '',
+                waist_circumference: selectedProfile.waist_circumference || ''
             });
         }
     }, [selectedProfile]);
+
+    const dayStatuses = useMemo(() => {
+        if (!logs || !selectedProfile || !rules) return {};
+        const statuses = {};
+        const grouped = logs.reduce((acc, log) => {
+            const date = new Date(log.logged_at).toLocaleDateString();
+            if (!acc[date]) acc[date] = [];
+            acc[date].push(log);
+            return acc;
+        }, {});
+
+        Object.keys(grouped).forEach(date => {
+            const dayLogs = grouped[date];
+            const totals = dayLogs.reduce((acc, l) => {
+                acc.calories += (l.total_calories || 0);
+                acc.protein += (l.total_protein_g || 0);
+                acc.carbs += (l.total_carbs_g || 0);
+                acc.fat += (l.total_fat_g || 0);
+                acc.sugar += (l.total_sugar_g || 0);
+                acc.sodium += (l.total_sodium_mg || 0);
+                return acc;
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+
+            let status = 'success';
+            
+            // Check Profile Targets
+            if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
+            else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+
+            // Check Rules Engine
+            rules.forEach(rule => {
+                const limit = parseFloat(rule.rule_value);
+                if (!limit) return;
+                
+                let current = 0;
+                if (rule.category === 'Calories') current = totals.calories;
+                else if (rule.category === 'Protein') current = totals.protein;
+                else if (rule.category === 'Carbohydrates') current = totals.carbs;
+                else if (rule.category === 'Fats') current = totals.fat;
+                else if (rule.category === 'Sugar') current = totals.sugar;
+                else if (rule.category === 'Sodium') current = totals.sodium;
+
+                if (rule.rule_type === 'max' && current > limit) status = 'danger';
+            });
+
+            statuses[date] = status;
+        });
+        return statuses;
+    }, [logs, selectedProfile, rules]);
+
+    const dailyViolations = useMemo(() => {
+        if (!selectedHistoryDate || !logs || !rules) return [];
+        const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate);
+        const totals = dayLogs.reduce((acc, l) => {
+            acc.calories += (l.total_calories || 0);
+            acc.protein += (l.total_protein_g || 0);
+            acc.carbs += (l.total_carbs_g || 0);
+            acc.fat += (l.total_fat_g || 0);
+            acc.sugar += (l.total_sugar_g || 0);
+            acc.sodium += (l.total_sodium_mg || 0);
+            return acc;
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+
+        const violations = [];
+        rules.forEach(rule => {
+            const limit = parseFloat(rule.rule_value);
+            if (!limit) return;
+            
+            let current = 0;
+            if (rule.category === 'Calories') current = totals.calories;
+            else if (rule.category === 'Protein') current = totals.protein;
+            else if (rule.category === 'Carbohydrates') current = totals.carbs;
+            else if (rule.category === 'Fats') current = totals.fat;
+            else if (rule.category === 'Sugar') current = totals.sugar;
+            else if (rule.category === 'Sodium') current = totals.sodium;
+
+            if (rule.rule_type === 'max' && current > limit) {
+                violations.push({
+                    name: rule.rule_name,
+                    category: rule.category,
+                    actual: Math.round(current),
+                    limit: limit,
+                    unit: rule.rule_unit
+                });
+            }
+        });
+        return violations;
+    }, [selectedHistoryDate, logs, rules]);
+
+    const handleVerifyAllForDay = async (date) => {
+        const pendingIds = logs
+            .filter(l => new Date(l.logged_at).toLocaleDateString() === date && l.status === 'pending')
+            .map(l => l.id);
+        
+        if (pendingIds.length === 0) return;
+
+        try {
+            await api.patch('/nutritionist/logs/batch-verify', { logIds: pendingIds });
+            // Update local state
+            setLogs(prev => prev.map(l => pendingIds.includes(l.id) ? { ...l, status: 'verified' } : l));
+            showNotif(`Verified ${pendingIds.length} logs for ${date}`);
+        } catch (err) {
+            console.error("Batch verify failed", err);
+            showNotif("Failed to batch verify logs", "error");
+        }
+    };
 
     const handleClinicalSave = async () => {
         try {
@@ -252,15 +425,23 @@ export default function ClientDetails() {
         }
     };
 
-    const handleDeleteVaccine = async (id) => {
-        try {
-            await api.delete(`/profiles/vaccinations/${id}`);
-            setChildVaccinations(childVaccinations.filter(v => v.id !== id));
-            showNotif("Vaccination record removed");
-        } catch (err) {
-            console.error("Error deleting vaccine", err);
-            showNotif("Failed to delete vaccine", "error");
-        }
+    const handleDeleteVaccine = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Vaccination Record',
+            message: 'Are you sure you want to permanently delete this immunization record? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/profiles/vaccinations/${id}`);
+                    setChildVaccinations(childVaccinations.filter(v => v.id !== id));
+                    showNotif("Vaccination record removed");
+                } catch (err) {
+                    console.error("Error deleting vaccine", err);
+                    showNotif("Failed to delete vaccine", "error");
+                }
+            },
+            type: 'danger'
+        });
     };
 
     const handleAddGrowthLog = async (e) => {
@@ -276,6 +457,38 @@ export default function ClientDetails() {
             console.error("Failed to add growth log", err);
             showNotif("Failed to save data", "error");
         }
+    };
+
+    const handleUpdateAdime = async (e) => {
+        e.preventDefault();
+        try {
+            await api.patch(`/nutritionist/adime-notes/${editingAdimeId}`, editAdimeForm);
+            setEditingAdimeId(null);
+            fetchAdimeNotes(selectedProfile.id);
+            showNotif("ADIME clinical record updated");
+        } catch (err) {
+            console.error("Error updating ADIME", err);
+            showNotif("Failed to update ADIME record", "error");
+        }
+    };
+
+    const handleDeleteAdimeNote = async (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete ADIME Record',
+            message: 'Are you sure you want to permanently delete this structured clinical record? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/nutritionist/adime-notes/${id}`);
+                    setAdimeNotes(adimeNotes.filter(n => n.id !== id));
+                    showNotif("ADIME record deleted");
+                } catch (err) {
+                    console.error("Error deleting ADIME", err);
+                    showNotif("Failed to delete ADIME record", "error");
+                }
+            },
+            type: 'danger'
+        });
     };
 
     const fetchAdimeNotes = async (profileId) => {
@@ -418,13 +631,37 @@ export default function ClientDetails() {
         }
     };
 
-    const handleDeleteNote = async (noteId) => {
+    const handleUpdateNote = async (e) => {
+        e.preventDefault();
+        if (!editNoteForm.trim()) return;
         try {
-            await api.delete(`/notes/${noteId}`);
-            setNotes(notes.filter(n => n.id !== noteId));
+            await api.patch(`/notes/${editingNoteId}`, { content: editNoteForm });
+            setEditingNoteId(null);
+            fetchNotes(selectedProfile.id);
+            showNotif("Observation note updated");
         } catch (err) {
-            console.error("Error deleting note", err);
+            console.error("Error updating note", err);
+            showNotif("Failed to update note", "error");
         }
+    };
+
+    const handleDeleteNote = async (noteId) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Observation Note',
+            message: 'Are you sure you want to permanently delete this clinical observation? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/notes/${noteId}`);
+                    setNotes(notes.filter(n => n.id !== noteId));
+                    showNotif("Observation note deleted");
+                } catch (err) {
+                    console.error("Error deleting note", err);
+                    showNotif("Failed to delete note", "error");
+                }
+            },
+            type: 'danger'
+        });
     };
 
     const fetchReportData = async (profileId) => {
@@ -506,11 +743,11 @@ export default function ClientDetails() {
         setGeneratingPlan(true);
         try {
             await api.post('/nutritionist/plan/generate', { profileId: selectedProfile.id });
-            alert("New 7-day plan generated successfully!");
+            showNotif("New 7-day plan generated successfully!");
             fetchMealPlan(selectedProfile.id);
         } catch (err) {
             console.error("Failed to generate plan", err);
-            alert("Failed to generate plan. Please try again.");
+            showNotif("Failed to generate plan. Please try again.", "error");
         } finally {
             setGeneratingPlan(false);
         }
@@ -596,23 +833,43 @@ export default function ClientDetails() {
     };
 
     const confirmDeleteRule = (rule) => {
-        setRuleToDelete(rule);
-        setIsDeleteModalOpen(true);
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Clinical Rule',
+            message: `Are you sure you want to remove the rule "${rule.rule_name}"? This will affect clinical compliance calculations for this patient.`,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/nutritionist/rules/${rule.id}`);
+                    setRules(rules.filter(r => r.id !== rule.id));
+                    showNotif("Rule deleted successfully!");
+                } catch (err) {
+                    console.error("Failed to delete rule", err);
+                    showNotif("Failed to delete rule", "error");
+                }
+            },
+            type: 'danger'
+        });
     };
 
-    const handleDeleteRule = async () => {
-        if (!ruleToDelete) return;
+    const handleUpdateRule = async (e) => {
+        e.preventDefault();
         try {
-            await api.delete(`/nutritionist/rules/${ruleToDelete.id}`);
-            setRules(rules.filter(r => r.id !== ruleToDelete.id));
-            showNotif("Rule deleted successfully!");
-            setIsDeleteModalOpen(false);
-            setRuleToDelete(null);
+            const definition = editRuleForm.rule_definition || `${editRuleForm.rule_type === 'max' ? 'Max' : 'Min'} ${editRuleForm.rule_value}${editRuleForm.rule_unit}`;
+            
+            await api.patch(`/nutritionist/rules/${editingRuleId}`, {
+                ...editRuleForm,
+                rule_definition: definition
+            });
+            
+            fetchRules(selectedProfile.id);
+            setEditingRuleId(null);
+            showNotif("Rule updated successfully!");
         } catch (err) {
-            console.error("Failed to delete rule", err);
-            showNotif("Failed to delete rule", "error");
+            console.error("Failed to update rule", err);
+            showNotif("Failed to update rule", "error");
         }
     };
+
 
     const applyTemplate = (template) => {
         setNewRule({
@@ -783,14 +1040,18 @@ export default function ClientDetails() {
                                             <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="h-16 w-16 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)]">
-                                                            <User size={32} strokeWidth={2.5} />
+                                                        <div className="h-20 w-20 rounded-2xl overflow-hidden bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] border-4 border-white dark:border-zinc-800 shadow-lg flex-shrink-0">
+                                                            {selectedProfile.profile_image_url ? (
+                                                                <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <User size={40} strokeWidth={2.5} className="text-[var(--color-primary)]" />
+                                                            )}
                                                         </div>
                                                         <div>
-                                                            <h2 className="text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight">{selectedProfile.child_name}</h2>
-                                                            <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-1">
-                                                                <span className="px-2 py-0.5 bg-[var(--color-divider)] rounded-md">{selectedProfile.gender}</span>
-                                                                <span className="px-2 py-0.5 bg-[var(--color-divider)] rounded-md">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                            <h2 className="text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none">{selectedProfile.child_name}</h2>
+                                                            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-2">
+                                                                <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{selectedProfile.gender}</span>
+                                                                <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -800,22 +1061,64 @@ export default function ClientDetails() {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Current Weight</div>
-                                                        <div className="text-xl font-black text-[var(--color-primary)]">{selectedProfile.weight_kg} <span className="text-xs">kg</span></div>
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Weight</div>
+                                                            {parseFloat(growthDeltas.weight) !== 0 && (
+                                                                <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                    {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                    {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xl font-black text-[var(--color-primary)]">{selectedProfile.weight_kg} <span className="text-xs font-bold opacity-60">kg</span></div>
                                                     </div>
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Current Height</div>
-                                                        <div className="text-xl font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} <span className="text-xs">cm</span></div>
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Height</div>
+                                                            {parseFloat(growthDeltas.height) !== 0 && (
+                                                                <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                    {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                    {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <div className="text-xl font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} <span className="text-xs font-bold opacity-60">cm</span></div>
+                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5">
+                                                                {Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imperial
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex flex-col justify-between">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Indicator</div>
+                                                        {bmiData ? (
+                                                            <div className="space-y-1.5">
+                                                                <div className="text-xl font-black text-[var(--color-text-main)]">{bmiData.bmi}</div>
+                                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-lg border ${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color} text-[10px] font-black uppercase tracking-tight`}>
+                                                                    {bmiData.status}
+                                                                </div>
+                                                            </div>
+                                                        ) : <div className="text-sm font-black text-[var(--color-text-muted)] italic">No data</div>}
                                                     </div>
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
-                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize">{selectedProfile.activity_level?.replace('_', ' ') || 'N/A'}</div>
+                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">{selectedProfile.activity_level?.replace('_', ' ') || 'N/A'}</div>
                                                     </div>
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Allergies</div>
-                                                        <div className="text-sm font-black text-red-500 truncate">{selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.join(', ') : 'None'}</div>
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {selectedProfile.allergies?.length > 0 ? (
+                                                                selectedProfile.allergies.map(allergy => (
+                                                                    <span key={allergy} className="px-2 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-md text-[9px] font-black uppercase whitespace-nowrap">
+                                                                        {allergy}
+                                                                    </span>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-sm font-black text-emerald-500 italic">None</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -894,7 +1197,7 @@ export default function ClientDetails() {
                                                                 />
                                                             ) : (
                                                                 <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed whitespace-pre-wrap">
-                                                                    {selectedProfile.medical_history || "No medical history recorded."}
+                                                                    {typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : "No medical history recorded."}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -916,40 +1219,109 @@ export default function ClientDetails() {
                                                                 </div>
                                                             )}
                                                         </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} /> Family Medical History
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-emerald-500 outline-none min-h-[100px]"
+                                                                    value={clinicalForm.family_history}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, family_history: e.target.value})}
+                                                                    placeholder="History of diabetes, hypertension, allergies in the family..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
+                                                                    {selectedProfile.family_history || "No family history recorded."}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="space-y-6">
                                                         <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
                                                             <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                                                                <AlertTriangle size={14} /> Allergies & Intolerances
+                                                                <AlertTriangle size={14} /> Allergies & Food Intolerances
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
-                                                                        <button
-                                                                            key={allergy}
-                                                                            onClick={() => {
-                                                                                const current = clinicalForm.allergies || [];
-                                                                                const updated = current.includes(allergy) 
-                                                                                    ? current.filter(a => a !== allergy)
-                                                                                    : [...current, allergy];
-                                                                                setClinicalForm({...clinicalForm, allergies: updated});
-                                                                            }}
-                                                                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${
-                                                                                (clinicalForm.allergies || []).includes(allergy)
-                                                                                    ? 'bg-red-500 text-white border-red-500'
-                                                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
-                                                                            }`}
-                                                                        >
-                                                                            {allergy}
-                                                                        </button>
-                                                                    ))}
+                                                                <div className="space-y-4">
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
+                                                                            <button
+                                                                                key={allergy}
+                                                                                onClick={() => {
+                                                                                    const current = clinicalForm.allergies || [];
+                                                                                    const updated = current.includes(allergy) 
+                                                                                        ? current.filter(a => a !== allergy)
+                                                                                        : [...current, allergy];
+                                                                                    setClinicalForm({...clinicalForm, allergies: updated});
+                                                                                }}
+                                                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${
+                                                                                    (clinicalForm.allergies || []).includes(allergy)
+                                                                                        ? 'bg-red-500 text-white border-red-500'
+                                                                                        : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
+                                                                                }`}
+                                                                            >
+                                                                                {allergy}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                    <textarea 
+                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-red-500 outline-none min-h-[80px]"
+                                                                        value={clinicalForm.food_intolerances}
+                                                                        onChange={(e) => setClinicalForm({...clinicalForm, food_intolerances: e.target.value})}
+                                                                        placeholder="Specific food intolerances or digestive triggers..."
+                                                                    />
                                                                 </div>
                                                             ) : (
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
-                                                                        <span key={a} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase border border-red-100">{a}</span>
-                                                                    )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
+                                                                <div className="space-y-3">
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
+                                                                            <span key={a} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase border border-red-100">{a}</span>
+                                                                        )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
+                                                                    </div>
+                                                                    {selectedProfile.food_intolerances && (
+                                                                        <p className="text-sm text-[var(--color-text-main)] font-medium italic border-l-4 border-red-200 pl-3">
+                                                                            {selectedProfile.food_intolerances}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} /> Clinical Symptoms & Observations
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-orange-500 outline-none min-h-[80px]"
+                                                                    value={clinicalForm.symptoms}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, symptoms: e.target.value})}
+                                                                    placeholder="Current symptoms: bloating, fatigue, skin issues..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                    {selectedProfile.symptoms || "No active symptoms reported."}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-purple-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} /> Lifestyle & Environmental Factors
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-purple-500 outline-none min-h-[80px]"
+                                                                    value={clinicalForm.lifestyle_factors}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, lifestyle_factors: e.target.value})}
+                                                                    placeholder="Sleep quality, screen time, physical activity environment..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                    {selectedProfile.lifestyle_factors || "Standard lifestyle patterns."}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1078,31 +1450,31 @@ export default function ClientDetails() {
                                                     ) : (
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {childVaccinations.map(v => (
-                                                                <div key={v.id} className="group relative flex items-center gap-4 p-5 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300">
-                                                                    <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                                                                        <Check size={24} strokeWidth={3} />
+                                                                <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
+                                                                    <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                                                        <Check size={16} strokeWidth={3} />
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
-                                                                        <h4 className="text-sm font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
+                                                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
                                                                             {v.vaccination_types?.name}
                                                                         </h4>
-                                                                        <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)] font-black uppercase mt-1">
-                                                                            <Calendar size={12} />
+                                                                        <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
+                                                                            <Calendar size={10} />
                                                                             {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                                                                         </div>
                                                                         {v.notes && (
-                                                                            <div className="mt-2 py-1 px-2 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/5">
-                                                                                <p className="text-[9px] text-[var(--color-text-muted)] truncate italic font-bold uppercase tracking-tight">{v.notes}</p>
-                                                                            </div>
+                                                                            <p className="mt-1 text-[9px] text-[var(--color-text-muted)] italic font-bold uppercase tracking-tight leading-tight opacity-70">
+                                                                                {v.notes}
+                                                                            </p>
                                                                         )}
                                                                     </div>
                                                                     {isClinicalEditing && (
                                                                         <button 
                                                                             onClick={() => handleDeleteVaccine(v.id)}
-                                                                            className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                                            className="p-1 text-red-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
                                                                             title="Delete Record"
                                                                         >
-                                                                            <Trash2 size={16} />
+                                                                            <Trash2 size={12} />
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -1129,41 +1501,6 @@ export default function ClientDetails() {
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
-                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
-                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
-                                                                <Activity size={14} className="text-[var(--color-primary)]" /> Weight Tracking (kg)
-                                                            </CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent className="h-[250px] p-6">
-                                                            {growthLogs.length > 0 ? (
-                                                                <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={growthLogs}>
-                                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                        <XAxis 
-                                                                            dataKey="logged_at" 
-                                                                            tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                            fontSize={10}
-                                                                            tick={{fill: 'var(--color-text-muted)'}}
-                                                                        />
-                                                                        <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                        <Tooltip 
-                                                                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                            contentStyle={{
-                                                                                backgroundColor: 'var(--color-bg-card)',
-                                                                                borderColor: 'var(--color-divider)',
-                                                                                borderRadius: '12px',
-                                                                                color: 'var(--color-text-main)'
-                                                                            }}
-                                                                        />
-                                                                        <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-primary)'}} activeDot={{r: 6}} />
-                                                                    </LineChart>
-                                                                </ResponsiveContainer>
-                                                            ) : (
-                                                                <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
 
                                                     <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
                                                         <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
@@ -1171,33 +1508,63 @@ export default function ClientDetails() {
                                                                 <TrendingUp size={14} className="text-[var(--color-secondary)]" /> Height Tracking (cm)
                                                             </CardTitle>
                                                         </CardHeader>
-                                                        <CardContent className="h-[250px] p-6">
-                                                            {growthLogs.length > 0 ? (
-                                                                <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={growthLogs}>
-                                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                        <XAxis 
-                                                                            dataKey="logged_at" 
-                                                                            tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                            fontSize={10}
-                                                                            tick={{fill: 'var(--color-text-muted)'}}
-                                                                        />
-                                                                        <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                        <Tooltip 
-                                                                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                            contentStyle={{
-                                                                                backgroundColor: 'var(--color-bg-card)',
-                                                                                borderColor: 'var(--color-divider)',
-                                                                                borderRadius: '12px',
-                                                                                color: 'var(--color-text-main)'
-                                                                            }}
-                                                                        />
-                                                                        <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-secondary)'}} activeDot={{r: 6}} />
-                                                                    </LineChart>
-                                                                </ResponsiveContainer>
-                                                            ) : (
-                                                                <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
-                                                            )}
+                                                        <CardContent className="p-6">
+                                                            <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
+                                                                {growthLogs.length > 0 ? (
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <LineChart data={growthLogs}>
+                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                            <XAxis 
+                                                                                dataKey="logged_at" 
+                                                                                tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                                fontSize={10}
+                                                                                tick={{fill: 'var(--color-text-muted)'}}
+                                                                            />
+                                                                            <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
+                                                                            <Tooltip 
+                                                                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                                contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
+                                                                            />
+                                                                            <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-secondary)'}} activeDot={{r: 6}} />
+                                                                        </LineChart>
+                                                                    </ResponsiveContainer>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
+                                                                )}
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+
+                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
+                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
+                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                <TrendingUp size={14} className="text-[var(--color-primary)]" /> Weight Tracking (kg)
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent className="p-6">
+                                                            <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
+                                                                {growthLogs.length > 0 ? (
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <LineChart data={growthLogs}>
+                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                            <XAxis 
+                                                                                dataKey="logged_at" 
+                                                                                tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                                fontSize={10}
+                                                                                tick={{fill: 'var(--color-text-muted)'}}
+                                                                            />
+                                                                            <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
+                                                                            <Tooltip 
+                                                                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                                contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
+                                                                            />
+                                                                            <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-primary)'}} activeDot={{r: 6}} />
+                                                                        </LineChart>
+                                                                    </ResponsiveContainer>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
+                                                                )}
+                                                            </div>
                                                         </CardContent>
                                                     </Card>
                                                 </div>
@@ -1218,7 +1585,7 @@ export default function ClientDetails() {
                                             {/* LEFT SIDEBAR: DATE SELECTION */}
                                             <div className="w-full md:w-72 flex-shrink-0 space-y-4">
                                                 <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-2 mb-4">Log Timeline</h3>
-                                                <div className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+                                                <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0">
                                                     {Object.keys(logs.reduce((acc, log) => {
                                                         const date = new Date(log.logged_at).toLocaleDateString();
                                                         acc[date] = true;
@@ -1230,22 +1597,25 @@ export default function ClientDetails() {
                                                             <button
                                                                 key={date}
                                                                 onClick={() => setSelectedHistoryDate(date)}
-                                                                className={`flex-shrink-0 flex md:flex-row flex-col items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
+                                                                className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${
                                                                     isSelected 
                                                                         ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10' 
                                                                         : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
                                                                 }`}
                                                             >
-                                                                <div>
-                                                                    <div className={`text-xs font-black uppercase tracking-tight ${isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
-                                                                        {new Date(date).toLocaleDateString(undefined, { weekday: 'short' })}
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${
+                                                                        dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                        dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                        dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                        'bg-gray-300'
+                                                                    }`} />
+                                                                    <div className="text-left">
+                                                                        <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{date}</div>
+                                                                        <div className={`text-[9px] font-bold uppercase tracking-tighter ${isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]'}`}>
+                                                                            {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="text-sm font-black mt-1">
-                                                                        {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                                    </div>
-                                                                </div>
-                                                                <div className={`md:block hidden px-2 py-1 rounded-lg text-[10px] font-black ${isSelected ? 'bg-white/20' : 'bg-[var(--color-bg-page)]'}`}>
-                                                                    {dayLogs.length} {dayLogs.length === 1 ? 'LOG' : 'LOGS'}
                                                                 </div>
                                                             </button>
                                                         );
@@ -1261,27 +1631,57 @@ export default function ClientDetails() {
                                                 {selectedHistoryDate && (
                                                     <>
                                                         {/* DAILY SUMMARY CARD */}
-                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                                                            <div className="flex items-center justify-between mb-6">
+                                                        <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                                                 <div>
-                                                                    <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Daily Nutritional Summary</h3>
-                                                                    <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                                                    <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
+                                                                    <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
                                                                 </div>
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
-                                                                        <Activity size={16} />
-                                                                        <span className="text-xs font-black uppercase tracking-widest">Calculated Stats</span>
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                                                        <Activity size={12} />
+                                                                        <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
                                                                     </div>
+                                                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
+                                                                            className="h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest"
+                                                                        >
+                                                                            <Check size={12} className="mr-1" />
+                                                                            Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                        </Button>
+                                                                    )}
                                                                     <Button 
                                                                         variant="ghost" 
                                                                         onClick={() => handleClearLogsForDay(selectedHistoryDate)}
-                                                                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-2xl border border-red-100 hover:bg-red-600 hover:text-white transition-all group"
+                                                                        className="h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest"
                                                                     >
-                                                                        <Trash2 size={16} className="group-hover:animate-bounce" />
-                                                                        <span className="text-xs font-black uppercase tracking-widest">Clear Day</span>
+                                                                        <Trash2 size={12} className="mr-1 group-hover:scale-110" />
+                                                                        Clear Day
                                                                     </Button>
                                                                 </div>
                                                             </div>
+
+                                                            {/* VIOLATIONS ALERT PANEL */}
+                                                            {dailyViolations.length > 0 && (
+                                                                <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
+                                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                                        <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
+                                                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-2 px-1">
+                                                                        {dailyViolations.map((v, i) => (
+                                                                            <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                                <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                                                <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
+                                                                                <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                                                <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                                 {[
@@ -1292,7 +1692,7 @@ export default function ClientDetails() {
                                                                 ].map((stat, idx) => (
                                                                     <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
-                                                                        <div className={`text-xl font-black ${stat.color}`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                        <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -1322,9 +1722,9 @@ export default function ClientDetails() {
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
                                                                                     <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                                                                        log.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                                                        (log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                                                                                     }`}>
-                                                                                        {log.status === 'verified' ? 'Clinically Verified' : 'Awaiting Review'}
+                                                                                        {(log.status === 'verified' || log.status === 'reviewed') ? 'Clinically Verified' : 'Awaiting Review'}
                                                                                     </div>
                                                                                 </div>
                                                                                 <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
@@ -1337,7 +1737,14 @@ export default function ClientDetails() {
                                                                                     </div>
                                                                                     <div className="flex flex-col">
                                                                                         <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</span>
-                                                                                        <span className="text-xs font-black text-blue-600">{log.consumption_status || '100%'}</span>
+                                                                                        <span className="text-xs font-black text-blue-600">
+                                                                                            {log.consumption_percent === 100 ? 'Finished' : 
+                                                                                             log.consumption_percent === 75 ? 'Mostly' : 
+                                                                                             log.consumption_percent === 50 ? 'Half' : 
+                                                                                             log.consumption_percent === 25 ? 'A Little' : 
+                                                                                             log.consumption_percent === 0 ? 'None' : 
+                                                                                             'Finished'}
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -1465,27 +1872,80 @@ export default function ClientDetails() {
                                                     <p className="text-center py-8 text-gray-500 italic">No historical ADIME records found.</p>
                                                 ) : (
                                                     adimeNotes.map(note => (
-                                                        <div key={note.id} className="p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3">
+                                                        <div key={note.id} className="p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group">
                                                             <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 mb-2">
                                                                 <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
-                                                                <span className="text-xs text-gray-400">{new Date(note.created_at).toLocaleString()}</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                {[
-                                                                    { key: 'assessment', label: 'Assessment' },
-                                                                    { key: 'diagnosis', label: 'Diagnosis' },
-                                                                    { key: 'intervention', label: 'Intervention' },
-                                                                    { key: 'monitoring', label: 'Monitoring/Eval' }
-                                                                ].map((field, idx) => (
-                                                                    <div key={idx} className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                        <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-2 tracking-widest">{field.label}</p>
-                                                                        <div 
-                                                                            className="text-sm prose prose-sm dark:prose-invert max-w-none"
-                                                                            dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-gray-400">No data recorded.</em>' }}
-                                                                        />
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-gray-400">{new Date(note.created_at).toLocaleString()}</span>
+                                                                    <div className="flex gap-1">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            onClick={() => {
+                                                                                setEditingAdimeId(note.id);
+                                                                                setEditAdimeForm(note);
+                                                                            }}
+                                                                            className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                                                                            title="Edit Record"
+                                                                        >
+                                                                            <Edit2 size={14} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            onClick={() => handleDeleteAdimeNote(note.id)}
+                                                                            className="h-7 w-7 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                            title="Delete Record"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
                                                                     </div>
-                                                                ))}
+                                                                </div>
                                                             </div>
+
+                                                            {editingAdimeId === note.id ? (
+                                                                <form onSubmit={handleUpdateAdime} className="space-y-4">
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        {[
+                                                                            { key: 'assessment', label: 'Assessment' },
+                                                                            { key: 'diagnosis', label: 'Diagnosis' },
+                                                                            { key: 'intervention', label: 'Intervention' },
+                                                                            { key: 'monitoring', label: 'Monitoring/Eval' }
+                                                                        ].map((field, idx) => (
+                                                                            <div key={idx} className="space-y-1">
+                                                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{field.label}</label>
+                                                                                <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
+                                                                                    <ReactQuill 
+                                                                                        theme="snow"
+                                                                                        value={editAdimeForm[field.key]}
+                                                                                        onChange={(val) => setEditAdimeForm({ ...editAdimeForm, [field.key]: val })}
+                                                                                        modules={{ toolbar: false }}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    <div className="flex justify-end gap-2 pt-2">
+                                                                        <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                        <Button type="submit" className="bg-blue-600 text-white text-xs font-black uppercase px-6">Update Record</Button>
+                                                                    </div>
+                                                                </form>
+                                                            ) : (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    {[
+                                                                        { key: 'assessment', label: 'Assessment' },
+                                                                        { key: 'diagnosis', label: 'Diagnosis' },
+                                                                        { key: 'intervention', label: 'Intervention' },
+                                                                        { key: 'monitoring', label: 'Monitoring/Eval' }
+                                                                    ].map((field, idx) => (
+                                                                        <div key={idx} className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                            <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-2 tracking-widest">{field.label}</p>
+                                                                            <div 
+                                                                                className="text-sm prose prose-sm dark:prose-invert max-w-none"
+                                                                                dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-gray-400">No data recorded.</em>' }}
+                                                                            />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))
                                                 )}
@@ -1531,32 +1991,62 @@ export default function ClientDetails() {
                                                         <div key={note.id} className={`p-5 border rounded-xl relative group hover:shadow-md transition-all ${note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]'}`}>
                                                             {note.is_pinned && <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>}
                                                             
-                                                            <div 
-                                                                className="prose prose-sm dark:prose-invert max-w-none mb-4"
-                                                                dangerouslySetInnerHTML={{ __html: note.content }}
-                                                            />
+                                                            {editingNoteId === note.id ? (
+                                                                <form onSubmit={handleUpdateNote} className="space-y-3">
+                                                                    <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-primary)]">
+                                                                        <ReactQuill 
+                                                                            theme="snow"
+                                                                            value={editNoteForm}
+                                                                            onChange={setEditNoteForm}
+                                                                            modules={{ toolbar: false }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <Button variant="ghost" type="button" onClick={() => setEditingNoteId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                        <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
+                                                                    </div>
+                                                                </form>
+                                                            ) : (
+                                                                <>
+                                                                    <div 
+                                                                        className="prose prose-sm dark:prose-invert max-w-none mb-4"
+                                                                        dangerouslySetInnerHTML={{ __html: note.content }}
+                                                                    />
 
-                                                            <div className="flex justify-between items-center pt-3 border-t border-[var(--color-divider)]">
-                                                                <span className="text-xs font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleString()}</span>
-                                                                <div className="flex gap-1">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        onClick={() => api.patch(`/notes/${note.id}/pin`, { is_pinned: !note.is_pinned }).then(() => fetchNotes(selectedProfile.id))}
-                                                                        className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
-                                                                        title={note.is_pinned ? "Unpin" : "Pin Note"}
-                                                                    >
-                                                                        <Plus size={16} className={note.is_pinned ? "rotate-45" : ""} />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        onClick={() => handleDeleteNote(note.id)}
-                                                                        className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all"
-                                                                        title="Delete Note"
-                                                                    >
-                                                                        <Trash2 size={16} />
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
+                                                                    <div className="flex justify-between items-center pt-3 border-t border-[var(--color-divider)]">
+                                                                        <span className="text-xs font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleString()}</span>
+                                                                        <div className="flex gap-1">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                onClick={() => {
+                                                                                    setEditingNoteId(note.id);
+                                                                                    setEditNoteForm(note.content);
+                                                                                }}
+                                                                                className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                                                                                title="Edit Note"
+                                                                            >
+                                                                                <Edit2 size={16} />
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                onClick={() => api.patch(`/notes/${note.id}/pin`, { is_pinned: !note.is_pinned }).then(() => fetchNotes(selectedProfile.id))}
+                                                                                className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
+                                                                                title={note.is_pinned ? "Unpin" : "Pin Note"}
+                                                                            >
+                                                                                <Plus size={16} className={note.is_pinned ? "rotate-45" : ""} />
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                                title="Delete Note"
+                                                                            >
+                                                                                <Trash2 size={16} />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     ))
                                                 )}
@@ -1586,7 +2076,7 @@ export default function ClientDetails() {
 
                                             <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm">
                                                 <h3 className="font-bold mb-6">Health Score & Compliance Trend</h3>
-                                                <div className="h-[300px] w-full">
+                                                <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: 0 }}>
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <LineChart
                                                             data={logs.slice().reverse()}
@@ -1621,28 +2111,105 @@ export default function ClientDetails() {
                                                     </p>
                                                 ) : (
                                                     rules.map(rule => (
-                                                        <div key={rule.id} className="flex justify-between items-start p-4 border border-[var(--color-divider)] rounded-xl bg-[var(--color-bg-card)] shadow-sm hover:shadow-md transition-shadow">
-                                                            <div>
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${rule.category === 'Sugar' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
-                                                                        rule.category === 'Protein' ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
-                                                                            'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/10 dark:text-gray-400 dark:border-white/10'
-                                                                        }`}>
-                                                                        {rule.category}
-                                                                    </span>
-                                                                    <span className="font-bold text-base text-[var(--color-text-main)]">{rule.rule_name}</span>
+                                                        <div key={rule.id} className="p-4 border border-[var(--color-divider)] rounded-xl bg-[var(--color-bg-card)] shadow-sm hover:shadow-md transition-shadow">
+                                                            {editingRuleId === rule.id ? (
+                                                                <form onSubmit={handleUpdateRule} className="space-y-6">
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Category</label>
+                                                                            <select 
+                                                                                value={editRuleForm.category}
+                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, category: e.target.value})}
+                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                            >
+                                                                                {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
+                                                                            </select>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Rule Name</label>
+                                                                            <input 
+                                                                                type="text"
+                                                                                value={editRuleForm.rule_name}
+                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, rule_name: e.target.value})}
+                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
+                                                                                placeholder="e.g. Daily Limit"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Logic</label>
+                                                                            <select 
+                                                                                value={editRuleForm.rule_type}
+                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, rule_type: e.target.value})}
+                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                            >
+                                                                                <option value="max">Maximum (Limit)</option>
+                                                                                <option value="min">Minimum (Goal)</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Value & Unit</label>
+                                                                            <div className="flex gap-2">
+                                                                                <input 
+                                                                                    type="number"
+                                                                                    value={editRuleForm.rule_value}
+                                                                                    onChange={(e) => setEditRuleForm({...editRuleForm, rule_value: e.target.value})}
+                                                                                    className="flex-grow p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
+                                                                                    placeholder="Value"
+                                                                                />
+                                                                                <input 
+                                                                                    type="text"
+                                                                                    value={editRuleForm.rule_unit}
+                                                                                    onChange={(e) => setEditRuleForm({...editRuleForm, rule_unit: e.target.value})}
+                                                                                    className="w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center"
+                                                                                    placeholder="Unit"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <Button variant="ghost" type="button" onClick={() => setEditingRuleId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                        <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Save Changes</Button>
+                                                                    </div>
+                                                                </form>
+                                                            ) : (
+                                                                <div className="flex justify-between items-start">
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${rule.category === 'Sugar' || rule.category === 'Added Sugars' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                                                                                rule.category === 'Protein' ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
+                                                                                    'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/10 dark:text-gray-400 dark:border-white/10'
+                                                                                }`}>
+                                                                                {rule.category}
+                                                                            </span>
+                                                                            <span className="font-bold text-base text-[var(--color-text-main)]">{rule.rule_name}</span>
+                                                                        </div>
+                                                                        <p className="text-sm text-[var(--color-text-muted)] pl-1 font-medium">
+                                                                            {rule.rule_type ? `${rule.rule_type === 'max' ? 'Maximum' : 'Minimum'} ${rule.rule_value} ${rule.rule_unit}` : rule.rule_definition}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="flex gap-1">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            onClick={() => {
+                                                                                setEditingRuleId(rule.id);
+                                                                                setEditRuleForm(rule);
+                                                                            }}
+                                                                            className="h-8 w-8 p-0 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
+                                                                            title="Edit Rule"
+                                                                        >
+                                                                            <Edit2 size={14} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            onClick={() => confirmDeleteRule(rule)}
+                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
+                                                                            title="Delete Rule"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
-                                                                <p className="text-sm text-[var(--color-text-muted)] pl-1">
-                                                                    {rule.rule_type ? `${rule.rule_type === 'max' ? 'Maximum' : 'Minimum'} ${rule.rule_value} ${rule.rule_unit}` : rule.rule_definition}
-                                                                </p>
-                                                            </div>
-                                                            <Button
-                                                                variant="ghost"
-                                                                onClick={() => confirmDeleteRule(rule)}
-                                                                className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </Button>
+                                                            )}
                                                         </div>
                                                     ))
                                                 )}
@@ -1980,37 +2547,7 @@ export default function ClientDetails() {
                 onClose={() => setNotif({ ...notif, show: false })}
             />
 
-            <Modal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                title="Confirm Deletion"
-                maxWidth="sm"
-            >
-                <div className="text-center space-y-4">
-                    <div className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center">
-                        <AlertTriangle size={24} />
-                    </div>
-                    <div>
-                        <p className="font-bold text-[var(--color-secondary)]">Delete "{ruleToDelete?.rule_name}"?</p>
-                        <p className="text-sm text-[var(--color-text-muted)]">This action cannot be undone. This rule will no longer be applied to future meal logs.</p>
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => setIsDeleteModalOpen(false)}
-                        >
-                            Keep Rule
-                        </Button>
-                        <Button
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                            onClick={handleDeleteRule}
-                        >
-                            Delete
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
+
             <Modal
                 isOpen={isGrowthModalOpen}
                 onClose={() => setIsGrowthModalOpen(false)}

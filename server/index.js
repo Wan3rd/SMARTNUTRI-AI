@@ -14,6 +14,7 @@ import logRoutes from './routes/logs.js';
 import reportRoutes from './routes/reports.js';
 import noteRoutes from './routes/notes.js';
 import rulesRoutes from './routes/rules.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/rules', rulesRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
     res.send('SmartNutri-AI API is running...');
