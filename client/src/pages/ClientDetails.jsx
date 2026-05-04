@@ -11,6 +11,7 @@ import Notification from '../components/common/Notification';
 import { AlertTriangle, Bold, Italic, List, ListOrdered } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import ReviewLogModal from '../components/ReviewLogModal';
 
 // Global CSS Overrides for Quill Toolbar Visibility
 const quillStyles = `
@@ -141,6 +142,8 @@ export default function ClientDetails() {
     const [growthLogs, setGrowthLogs] = useState([]);
     const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
     const [newGrowth, setNewGrowth] = useState({ height_cm: '', weight_kg: '' });
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [selectedLogForReview, setSelectedLogForReview] = useState(null);
 
     // --- Consultation Mode State ---
     const [isConsultationMode, setIsConsultationMode] = useState(false);
@@ -163,6 +166,9 @@ export default function ClientDetails() {
         }
         if (selectedProfile && activeTab === 'overview') {
             fetchGrowthLogs(selectedProfile.id);
+        }
+        if (selectedProfile && activeTab === 'review') {
+            fetchLogs(selectedProfile.id);
         }
     }, [selectedProfile, activeTab]);
 
@@ -538,6 +544,7 @@ export default function ClientDetails() {
                                     <div className="flex gap-6 border-b border-[var(--color-divider)] mb-6 overflow-x-auto">
                                         {[
                                             { id: 'overview', label: 'Overview' },
+                                            { id: 'review', label: 'Pending Review' },
                                             { id: 'insights', label: 'Insights' },
                                             { id: 'adime', label: 'Clinical (ADIME)' },
                                             { id: 'notes', label: 'Notes' },
@@ -742,6 +749,55 @@ export default function ClientDetails() {
                                                 <p className="text-sm text-green-700 dark:text-green-400">
                                                     This child has <strong>{rules.length} active rules</strong>.
                                                 </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TAB: REVIEW */}
+                                    {activeTab === 'review' && (
+                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-bold text-lg text-[var(--color-secondary)]">Pending Clinical Reviews</h3>
+                                                <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                                                    {logs.filter(l => l.status === 'pending').length} Actions Required
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {logs.filter(l => l.status === 'pending').map(log => (
+                                                    <Card 
+                                                        key={log.id} 
+                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                        className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] overflow-hidden group"
+                                                    >
+                                                        <CardContent className="p-0">
+                                                            <div className="h-40 relative overflow-hidden">
+                                                                <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                                                <div className="absolute bottom-3 left-3">
+                                                                    <p className="text-white text-[10px] font-black uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()}</p>
+                                                                    <p className="text-white font-black uppercase text-xs">{log.meal_category}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-4">
+                                                                <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1 mb-1">
+                                                                    {log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Pending detection...'}
+                                                                </p>
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-[10px] text-[var(--color-text-muted)] font-bold">{log.ai_analysis?.total_calories_est || 0} kcal</span>
+                                                                    <span className="text-[10px] text-[var(--color-primary)] font-black uppercase tracking-widest">Review Meal →</span>
+                                                                </div>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                                {logs.filter(l => l.status === 'pending').length === 0 && (
+                                                    <div className="col-span-full py-20 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                                        <ClipboardCheck size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
+                                                        <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">Profile is Up to Date</p>
+                                                        <p className="text-xs mt-1">No pending meal reviews for {selectedProfile.child_name}.</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -1180,42 +1236,46 @@ export default function ClientDetails() {
                                             ) : (
                                                 <div className="space-y-4">
                                                     {logs.map(log => (
-                                                        <div key={log.id} className="flex items-start gap-4 p-4 border rounded-xl bg-white dark:bg-white/5 hover:bg-gray-50 transition-colors">
+                                                        <div 
+                                                            key={log.id} 
+                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                            className="flex items-start gap-4 p-4 border-2 border-[var(--color-divider)] rounded-2xl bg-white dark:bg-white/5 hover:border-[var(--color-primary)] hover:bg-gray-50/50 transition-all cursor-pointer group shadow-sm hover:shadow-md"
+                                                        >
                                                             <div className="flex gap-1 flex-shrink-0">
-                                                                <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                                                    <img src={log.image_url} className="w-full h-full object-cover" alt="before" />
+                                                                <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm border border-black/5">
+                                                                    <img src={log.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="before" />
                                                                 </div>
                                                                 {log.image_after_url && (
-                                                                    <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                                                        <img src={log.image_after_url} className="w-full h-full object-cover" alt="after" />
+                                                                    <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm border border-black/5">
+                                                                        <img src={log.image_after_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="after" />
                                                                     </div>
                                                                 )}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex justify-between items-start mb-1">
                                                                     <div>
-                                                                        <p className="text-sm text-[var(--color-text-muted)]">{new Date(log.logged_at).toLocaleString()}</p>
+                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{new Date(log.logged_at).toLocaleString()}</p>
                                                                         {log.ai_analysis && (
-                                                                            <div className="font-bold text-base mt-1">
+                                                                            <div className="font-black text-sm uppercase text-[var(--color-text-main)] mt-1 group-hover:text-[var(--color-primary)] transition-colors">
                                                                                 {log.ai_analysis.items?.map(i => i.name).join(', ') || 'Unknown Food'}
                                                                             </div>
                                                                         )}
                                                                     </div>
                                                                     {/* Compliance Badge */}
                                                                     <div className="flex flex-col items-end gap-1">
-                                                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${log.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border-2 ${log.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
                                                                             'bg-green-50 text-green-700 border-green-200'
                                                                             }`}>
                                                                             {log.status}
                                                                         </span>
 
                                                                         {log.compliance_status === 'compliant' && (
-                                                                            <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                                                                            <span className="text-[10px] font-black text-green-600 flex items-center gap-1 uppercase tracking-widest">
                                                                                 ✓ Compliant
                                                                             </span>
                                                                         )}
                                                                         {log.compliance_status === 'flagged' && (
-                                                                            <span className="text-[10px] font-bold text-red-600 flex items-center gap-1">
+                                                                            <span className="text-[10px] font-black text-red-600 flex items-center gap-1 uppercase tracking-widest">
                                                                                 ⚠ Flagged
                                                                             </span>
                                                                         )}
@@ -1223,13 +1283,13 @@ export default function ClientDetails() {
                                                                 </div>
 
                                                                 {log.violation_details?.violations && (
-                                                                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 text-xs text-red-700">
+                                                                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded-xl border-2 border-red-100 text-[10px] font-black uppercase text-red-700">
                                                                         <strong>Violations:</strong> {log.violation_details.violations.map(v => `${v.rule} (${v.actual})`).join(', ')}
                                                                     </div>
                                                                 )}
 
                                                                 {log.nutritionist_review && (
-                                                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+                                                                    <div className="mt-2 text-xs font-medium text-gray-500 italic border-l-4 border-[var(--color-primary)]/30 pl-3">
                                                                         "{log.nutritionist_review.comment || log.nutritionist_review.title || 'Reviewed by nutritionist'}"
                                                                     </div>
                                                                 )}
@@ -1558,6 +1618,23 @@ export default function ClientDetails() {
                     </div>
                 </div>
             </Modal>
+            
+            <ReviewLogModal
+                isOpen={isReviewOpen}
+                onClose={() => setIsReviewOpen(false)}
+                log={selectedLogForReview}
+                onReviewComplete={() => {
+                    setIsReviewOpen(false);
+                    if (selectedProfile) fetchLogs(selectedProfile.id);
+                }}
+            />
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
+            />
         </div>
     );
 }

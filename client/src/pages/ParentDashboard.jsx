@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
 import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2 } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 
 export default function ParentDashboard() {
@@ -15,6 +16,7 @@ export default function ParentDashboard() {
     const [loading, setLoading] = useState(true);
     const [selectedLog, setSelectedLog] = useState(null);
     const [filterTab, setFilterTab] = useState('all');
+    const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
 
     useEffect(() => {
         fetchProfiles();
@@ -66,7 +68,7 @@ export default function ParentDashboard() {
 
     // Calculate Today's Intake vs Goals
     const todayLogs = allLogs.filter(log => new Date(log.logged_at).toDateString() === new Date().toDateString());
-    
+
     let todayIntake = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 };
     todayLogs.forEach(log => {
         const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
@@ -92,7 +94,7 @@ export default function ParentDashboard() {
         if (!goal) return null;
         const percentage = Math.min((current / goal) * 100, 100);
         const isOver = current > goal;
-        
+
         return (
             <div className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
@@ -102,7 +104,7 @@ export default function ParentDashboard() {
                     </span>
                 </div>
                 <div className="h-2 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div 
+                    <div
                         className={`h-full transition-all duration-1000 ${isOver ? 'bg-red-500' : 'bg-green-500'}`}
                         style={{ width: `${percentage}%` }}
                     />
@@ -116,24 +118,24 @@ export default function ParentDashboard() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <header>
-                <h1 className="text-3xl font-bold text-[var(--color-secondary)]">Child's Nutrition Dashboard</h1>
-                <p className="text-[var(--color-text-muted)]">Track meals, view daily compliance, and receive Expert AI advice.</p>
+                <h1 className="text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Child Dashboard</h1>
+                <p className="text-[var(--color-text-muted)] font-medium">Track growth, view daily compliance, and expert evaluations.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left: Logger & Profile Selector */}
                 <div className="lg:col-span-7 space-y-6">
-                    <Card className="border border-[var(--color-divider)]">
-                        <CardContent className="p-4">
-                            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Switch Profile</label>
-                            <div className="flex flex-wrap gap-2">
+                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
+                        <CardContent className="p-6">
+                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] block mb-4">Switch Active Profile</label>
+                            <div className="flex flex-wrap gap-3">
                                 {profiles.map(p => (
                                     <button
                                         key={p.id}
                                         onClick={() => setSelectedProfile(p)}
-                                        className={`px-4 py-2 rounded-xl border transition-all text-sm font-bold ${selectedProfile?.id === p.id
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md shadow-[var(--color-primary)]/20'
-                                            : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'}`}
+                                        className={`px-6 py-2.5 rounded-2xl border-2 transition-all text-xs font-black uppercase tracking-widest ${selectedProfile?.id === p.id
+                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/30'
+                                            : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)] hover:translate-y-[-2px]'}`}
                                     >
                                         {p.child_name}
                                     </button>
@@ -142,23 +144,23 @@ export default function ParentDashboard() {
                         </CardContent>
                     </Card>
 
-                    {/* Gamification Banner */}
+                    {/* Reward Progress */}
                     {selectedProfile && (
-                        <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 border-none shadow-lg transform hover:scale-[1.01] transition-transform overflow-hidden relative">
-                            <div className="absolute -right-4 -top-4 opacity-20">
-                                <Star size={100} fill="white" />
+                        <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 border-none shadow-xl rounded-3xl overflow-hidden relative group">
+                            <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                                <Star size={120} fill="white" />
                             </div>
-                            <CardContent className="p-4 flex items-center justify-between relative z-10">
+                            <CardContent className="p-8 flex items-center justify-between relative z-10">
                                 <div>
-                                    <p className="text-yellow-100 text-[10px] font-black uppercase tracking-widest mb-1">Kid's Reward Center</p>
-                                    <h3 className="text-white text-xl font-black">
-                                        {todayLogs.filter(l => l.compliance_status !== 'flagged').length} Smart Stars Today! 🌟
+                                    <p className="text-yellow-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Kid Reward Center</p>
+                                    <h3 className="text-white text-2xl font-black italic">
+                                        {todayLogs.filter(l => l.compliance_status !== 'flagged').length} STARS EARNED TODAY! 🌟
                                     </h3>
-                                    <p className="text-yellow-100 text-xs mt-1 font-medium">Keep eating healthy meals to earn more stars!</p>
+                                    <p className="text-yellow-100/80 text-xs mt-2 font-bold uppercase tracking-tight">Feed {selectedProfile.child_name} healthy meals to reach the goal!</p>
                                 </div>
-                                <div className="flex gap-1">
-                                    {[...Array(Math.max(3, todayLogs.filter(l => l.compliance_status !== 'flagged').length))].map((_, i) => (
-                                        <Star key={i} size={24} className={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "text-white drop-shadow-md" : "text-white/30"} fill={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "currentColor" : "none"} />
+                                <div className="flex gap-2 bg-black/10 p-4 rounded-2xl backdrop-blur-md border border-white/10">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} size={20} className={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "text-yellow-200 drop-shadow-lg animate-pulse" : "text-white/20"} fill={i < todayLogs.filter(l => l.compliance_status !== 'flagged').length ? "currentColor" : "none"} />
                                     ))}
                                 </div>
                             </CardContent>
@@ -169,206 +171,192 @@ export default function ParentDashboard() {
                         <MealLogger profileId={selectedProfile.id} onLogged={fetchLogs} recentLogs={recentLogs} />
                     )}
 
-                    {/* Today's Intake Progress Bars */}
-                    <Card className="border border-[var(--color-divider)]">
-                        <CardContent className="p-6">
-                            <h3 className="text-lg font-bold text-[var(--color-secondary)] mb-4 flex items-center gap-2">
+                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
+                        <CardContent className="p-8">
+                            <h3 className="text-sm font-black text-[var(--color-secondary)] mb-6 flex items-center gap-3 uppercase tracking-widest">
                                 <Activity size={18} className="text-[var(--color-primary)]" />
-                                Today's Target Intake
+                                Daily Nutritional Goal
                             </h3>
                             {rules.length > 0 ? (
-                                <div>
+                                <div className="space-y-4">
                                     {renderProgressBar('Calories', todayIntake.calories, getGoalForCategory('calories'), 'kcal')}
                                     {renderProgressBar('Protein', todayIntake.protein, getGoalForCategory('protein'), 'g')}
                                     {renderProgressBar('Sodium', todayIntake.sodium, getGoalForCategory('sodium'), 'mg')}
                                     {renderProgressBar('Sugar', todayIntake.sugar, getGoalForCategory('sugar'), 'g')}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[var(--color-text-muted)] italic">No daily targets set by nutritionist yet.</p>
+                                <div className="p-6 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
+                                    <p className="text-xs text-[var(--color-text-muted)] font-black uppercase">No clinical targets set</p>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* System Feedback & Adaptive Suggestions */}
-                    {suggestions.length > 0 && (
-                        <Card className="border-2 border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 overflow-hidden">
-                            <CardContent className="p-5 space-y-4">
-                                <h3 className="text-sm font-bold text-[var(--color-secondary)] flex items-center gap-2 uppercase tracking-wider">
-                                    <Activity size={16} className="text-[var(--color-primary)]" />
-                                    Smart Next Meal Tips
-                                </h3>
-                                <div className="space-y-2">
-                                    {suggestions.map((s, i) => (
-                                        <div key={i} className="flex gap-3 bg-white dark:bg-black/20 p-3 rounded-xl border border-[var(--color-primary)]/10 shadow-sm">
-                                            <div className="bg-[var(--color-primary)]/10 p-1.5 rounded-lg h-fit">
-                                                <CheckCircle2 size={14} className="text-[var(--color-primary)]" />
-                                            </div>
-                                            <p className="text-xs text-[var(--color-secondary)] font-medium leading-relaxed">{s}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
 
-                {/* Right: Recent Feedback & Status */}
+                {/* Right: Insights & Expert Feedback */}
                 <div className="lg:col-span-5 space-y-6">
-                    {allLogs.length > 0 && (
-                        <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 border-green-100 dark:border-green-900/30 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Activity size={100} />
-                            </div>
-                            <CardContent className="p-4 relative z-10">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase">Daily Compliance Score</p>
-                                            <span className="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm border border-yellow-200">
-                                                ⭐ Expert Evaluated
-                                            </span>
-                                        </div>
-                                        <div className="flex items-end gap-3">
-                                            <p className={`text-4xl font-black ${latestMeal?.compliance_score >= 80 ? 'text-green-600' : 'text-orange-600'}`}>
-                                                {latestMeal?.compliance_score || 100}
-                                            </p>
-                                            <div className="mb-1">
-                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Health Status</p>
-                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                                    {latestMeal?.compliance_score >= 80 ? 'Excellent Balance!' : 'Adjustment Needed'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-[var(--color-text-muted)] font-medium">
-                                            {allLogs.filter(l => l.compliance_status === 'compliant').length} / {allLogs.length} meals compliant
-                                        </p>
-                                        <Link to="/meal-history" className="text-xs text-[var(--color-primary)] hover:underline flex items-center gap-1 justify-end mt-1 font-bold">
-                                            View Full History <ExternalLink size={12} />
-                                        </Link>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                    {/* Tab Switcher */}
+                    <div className="flex p-1 bg-gray-100 dark:bg-zinc-900 rounded-2xl border-2 border-[var(--color-divider)]">
+                        {[
+                            { id: 'status', label: 'Daily Status', icon: <Activity size={14} /> },
+                            { id: 'reviews', label: 'Expert Reviews', icon: <MessageSquare size={14} /> }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
+                                    ? 'bg-white dark:bg-zinc-800 text-[var(--color-primary)] shadow-md border-b-2 border-[var(--color-primary)]'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            >
+                                {tab.icon} {tab.label}
+                            </button>
+                        ))}
+                    </div>
 
-                    <section className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
-                                <Clock size={20} className="text-[var(--color-primary)]" />
-                                Recent Meal Feedback
-                            </h2>
-                            <Link to="/meal-history" className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
-                                View All <ExternalLink size={14} />
-                            </Link>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                            {[
-                                { key: 'all', label: 'All', count: allLogs.length },
-                                { key: 'pending', label: 'Pending', count: allLogs.filter(l => l.status === 'pending').length },
-                                { key: 'reviewed', label: 'Reviewed', count: allLogs.filter(l => l.status === 'reviewed').length },
-                                { key: 'flagged', label: 'Flagged', count: allLogs.filter(l => l.compliance_status === 'flagged').length }
-                            ].map(tab => (
-                                <button
-                                    key={tab.key}
-                                    onClick={() => setFilterTab(tab.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterTab === tab.key
-                                        ? 'bg-[var(--color-primary)] text-white'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                        }`}
-                                >
-                                    {tab.label} ({tab.count})
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="space-y-4">
-                            {recentLogs.map(log => (
-                                <Card key={log.id} onClick={() => setSelectedLog(log)} className="border border-[var(--color-divider)] hover:border-[var(--color-primary)]/40 transition-all overflow-hidden cursor-pointer">
-                                    <CardContent className="p-0 flex flex-col md:flex-row min-h-32">
-                                        <div className="w-full md:w-32 h-40 md:h-auto bg-gray-100 flex-shrink-0 relative">
-                                            <img src={log.image_url} alt="Meal" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="p-4 flex-1 flex flex-col justify-between">
-                                            <div className="flex justify-between items-start">
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'status' ? (
+                            <motion.div
+                                key="status"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                {allLogs.length > 0 && (
+                                    <Card className="bg-gradient-to-br from-[var(--color-primary)]/10 to-blue-500/5 border-2 border-[var(--color-primary)]/20 relative overflow-hidden rounded-3xl shadow-lg">
+                                        <CardContent className="p-8 relative z-10">
+                                            <div className="flex justify-between items-center mb-6">
                                                 <div>
-                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mb-1 uppercase tracking-tight">
-                                                        {new Date(log.logged_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
-                                                    </p>
-                                                    <h3 className="font-bold text-[var(--color-secondary)] line-clamp-1">
-                                                        {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Pending detection...'}
-                                                    </h3>
-                                                </div>
-                                                <div className={`flex flex-col items-end gap-1`}>
-                                                    <div className="flex items-center gap-2">
-                                                        <button 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if(window.confirm("Are you sure you want to delete this meal log?")) {
-                                                                    api.delete(`/logs/${log.id}`).then(() => {
-                                                                        setAllLogs(prev => prev.filter(l => l.id !== log.id));
-                                                                        setRecentLogs(prev => prev.filter(l => l.id !== log.id));
-                                                                    });
-                                                                }
-                                                            }}
-                                                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                                            title="Delete meal"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${log.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                            <CheckCircle2 size={12} /> {log.status}
+                                                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Compliance Score</p>
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-6xl font-black text-[var(--color-secondary)]">{latestMeal?.compliance_score || 100}</span>
+                                                        <div>
+                                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase">{latestMeal?.compliance_score >= 80 ? 'Optimal!' : 'Review Required'}</p>
+                                                            <p className="text-[10px] text-[var(--color-text-muted)] font-bold">Latest clinical rating</p>
                                                         </div>
                                                     </div>
-                                                    {log.compliance_status === 'flagged' && (
-                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700">
-                                                            <AlertCircle size={12} /> Exceeds Limit
+                                                </div>
+                                                <div className="bg-white/50 dark:bg-black/20 p-5 rounded-2xl border-2 border-white/50 shadow-inner">
+                                                    <Star size={32} className="text-yellow-500 animate-bounce" fill="currentColor" />
+                                                </div>
+                                            </div>
+                                            <div className="h-3 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden border border-black/5 shadow-inner">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${latestMeal?.compliance_score || 100}%` }}
+                                                    className="h-full bg-gradient-to-r from-green-400 to-[var(--color-primary)] shadow-sm"
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {suggestions.length > 0 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.3em] px-2 flex items-center gap-2">
+                                            <Activity size={12} className="text-[var(--color-primary)]" />
+                                            Clinical Insights
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {suggestions.map((s, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: i * 0.1 }}
+                                                    className="bg-white dark:bg-white/5 p-5 rounded-3xl border-2 border-[var(--color-divider)] flex items-start gap-4 hover:border-[var(--color-primary)]/50 transition-all shadow-sm hover:translate-x-1"
+                                                >
+                                                    <div className="bg-[var(--color-primary)]/10 p-2.5 rounded-xl">
+                                                        <CheckCircle2 size={16} className="text-[var(--color-primary)]" />
+                                                    </div>
+                                                    <p className="text-sm font-bold text-[var(--color-text-main)] leading-relaxed">{s}</p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="reviews"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-4"
+                            >
+                                <div className="flex justify-between items-center px-2">
+                                    <div className="flex gap-2">
+                                        {['all', 'reviewed', 'pending'].map(tab => (
+                                            <button
+                                                key={tab}
+                                                onClick={() => setFilterTab(tab)}
+                                                className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-2 transition-all ${filterTab === tab
+                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg'
+                                                    : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <Link to="/meal-history" className="text-[10px] font-black text-[var(--color-primary)] uppercase hover:underline flex items-center gap-1">
+                                        History <ExternalLink size={10} />
+                                    </Link>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {recentLogs.map(log => (
+                                        <motion.div
+                                            key={log.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            onClick={() => setSelectedLog(log)}
+                                            className="group cursor-pointer bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden hover:border-[var(--color-primary)] transition-all shadow-sm hover:shadow-xl hover:translate-y-[-2px]"
+                                        >
+                                            <div className="flex">
+                                                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
+                                                    <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                    {log.status === 'reviewed' && (
+                                                        <div className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded-full shadow-lg border border-white/20">
+                                                            <CheckCircle2 size={10} />
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
-
-                                            {/* XAI Feedback Section */}
-                                            {log.compliance_status === 'flagged' && typeof log.violation_details === 'object' && log.violation_details?.xai_feedback && (
-                                                <div className="mt-3 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/30 flex items-start gap-2">
-                                                    <Info size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
-                                                    <p className="text-[11px] text-red-800 dark:text-red-400 font-medium leading-relaxed">
-                                                        {log.violation_details.xai_feedback}
+                                                <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
+                                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${log.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{log.status}</span>
+                                                    </div>
+                                                    <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-2 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
+                                                        {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Evaluating...'}
+                                                    </h4>
+                                                    <p className="text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-tight font-medium">
+                                                        {log.status === 'reviewed' ? `"${log.nutritionist_review?.comment}"` : "Waiting for professional clinician review..."}
                                                     </p>
                                                 </div>
-                                            )}
-
-                                            <div className="flex justify-between items-end mt-3">
-                                                <p className="text-xs text-[var(--color-text-muted)] italic line-clamp-1 flex-1 pr-4">
-                                                    {log.status === 'reviewed' ? `Nutritionist: "${log.nutritionist_review?.comment}"` : "Waiting for nutritionist's advice..."}
-                                                </p>
                                             </div>
+                                        </motion.div>
+                                    ))}
+
+                                    {recentLogs.length === 0 && (
+                                        <div className="py-20 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                            <p className="text-[var(--color-text-muted)] font-black uppercase text-[10px] tracking-widest">No expert reviews yet</p>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                            {recentLogs.length === 0 && (
-                                <div className="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border border-dashed border-[var(--color-divider)]">
-                                    <p className="text-[var(--color-text-muted)] font-medium">No meals logged yet today.</p>
-                                    <p className="text-xs mt-1">Upload a photo to get professional feedback.</p>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    </section>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
             {selectedLog && (
-                <MealDetailModal 
-                    log={selectedLog} 
-                    onClose={() => setSelectedLog(null)} 
+                <MealDetailModal
+                    log={selectedLog}
+                    onClose={() => setSelectedLog(null)}
                     onDelete={(deletedId) => {
                         setSelectedLog(null);
                         setAllLogs(prev => prev.filter(l => l.id !== deletedId));
                         setRecentLogs(prev => prev.filter(l => l.id !== deletedId));
-                        // Re-fetch progress bars by updating state
                     }}
                 />
             )}

@@ -134,4 +134,66 @@ router.post('/:id/growth', verifyToken, async (req, res) => {
     }
 });
 
+// Vaccination Routes
+// GET /vaccination-types - Get all available vaccination types
+router.get('/vaccination-types', verifyToken, async (req, res) => {
+    try {
+        const types = await prisma.vaccination_types.findMany({
+            orderBy: { name: 'asc' }
+        });
+        res.json(types);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /:id/vaccinations - Get vaccinations for a profile
+router.get('/:id/vaccinations', verifyToken, async (req, res) => {
+    try {
+        const vaccinations = await prisma.profile_vaccinations.findMany({
+            where: { profile_id: req.params.id },
+            include: { vaccination_types: true },
+            orderBy: { date_administered: 'desc' }
+        });
+        res.json(vaccinations);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /:id/vaccinations - Add vaccination to profile
+router.post('/:id/vaccinations', verifyToken, async (req, res) => {
+    const { vaccination_type_id, date_administered, notes } = req.body;
+    try {
+        const newRecord = await prisma.profile_vaccinations.create({
+            data: {
+                profile_id: req.params.id,
+                vaccination_type_id,
+                date_administered: date_administered ? new Date(date_administered) : null,
+                notes
+            },
+            include: { vaccination_types: true }
+        });
+        res.status(201).json(newRecord);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /vaccinations/:id - Remove vaccination
+router.delete('/vaccinations/:id', verifyToken, async (req, res) => {
+    try {
+        await prisma.profile_vaccinations.delete({
+            where: { id: req.params.id }
+        });
+        res.json({ message: 'Vaccination removed' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 export default router;

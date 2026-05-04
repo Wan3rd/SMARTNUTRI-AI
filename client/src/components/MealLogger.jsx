@@ -3,6 +3,13 @@ import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from './common/ConfirmDialog';
+
+const COOKING_METHODS = [
+    "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", 
+    "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", 
+    "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", "Unknown"
+];
 
 const getLocalISOTime = () => {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
@@ -41,6 +48,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         plateWaste: 100,
         loggedAt: getLocalISOTime()
     });
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+    const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
     const fileInputRef = useRef(null);
     const fileAfterInputRef = useRef(null);
 
@@ -108,7 +117,16 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     };
 
     const handleDeleteItem = (index) => {
-        setVerifiedItems(prev => prev.filter((_, i) => i !== index));
+        setItemIdxToDelete(index);
+        setIsConfirmDeleteOpen(true);
+    };
+
+    const confirmDeleteItem = () => {
+        if (itemIdxToDelete !== null) {
+            setVerifiedItems(prev => prev.filter((_, i) => i !== itemIdxToDelete));
+        }
+        setIsConfirmDeleteOpen(false);
+        setItemIdxToDelete(null);
     };
 
     const handleAddMissingItem = () => {
@@ -387,8 +405,22 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             <input 
                                                 value={item.name} 
                                                 onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                className="flex-1 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold"
+                                                placeholder="Food name"
+                                                className="flex-1 min-w-0 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-black uppercase tracking-tight"
                                             />
+                                            <select 
+                                                value={item.cooking_method || ''} 
+                                                onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
+                                                className="w-32 sm:w-40 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-[10px] font-black uppercase tracking-tight"
+                                            >
+                                                <option value="">Method...</option>
+                                                {COOKING_METHODS.map(method => (
+                                                    <option key={method} value={method}>{method}</option>
+                                                ))}
+                                                {item.cooking_method && !COOKING_METHODS.includes(item.cooking_method) && (
+                                                    <option value={item.cooking_method}>{item.cooking_method} (AI)</option>
+                                                )}
+                                            </select>
                                             <div className="flex flex-col items-center gap-0.5 min-w-[90px]">
                                                 <div className="flex items-center justify-between w-full">
                                                     <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Qty</span>
@@ -463,36 +495,15 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
                             {/* New Detailed Logs */}
                             <div className="space-y-3 pt-2 border-t border-[var(--color-divider)]">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Cooking Method</label>
-                                        <div className="relative">
-                                            <ChefHat className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-primary)]" size={14} />
-                                            <select 
-                                                value={suppData.cookingMethod}
-                                                onChange={(e) => setSuppData({...suppData, cookingMethod: e.target.value})}
-                                                className="w-full p-2 pl-8 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none"
-                                            >
-                                                <option value="">Select Method...</option>
-                                                <option value="Steamed">Steamed</option>
-                                                <option value="Fried">Fried</option>
-                                                <option value="Grilled">Grilled</option>
-                                                <option value="Boiled">Boiled</option>
-                                                <option value="Sauteed">Sauteed</option>
-                                                <option value="Fresh">Fresh / Raw</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Hidden Add-ons</label>
-                                        <input 
-                                            type="text"
-                                            placeholder="Oil, sugar, butter..."
-                                            value={suppData.hiddenIngredients}
-                                            onChange={(e) => setSuppData({...suppData, hiddenIngredients: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-                                        />
-                                    </div>
+                                <div className="w-full">
+                                    <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Hidden Add-ons</label>
+                                    <input 
+                                        type="text"
+                                        placeholder="Oil, sugar, butter..."
+                                        value={suppData.hiddenIngredients}
+                                        onChange={(e) => setSuppData({...suppData, hiddenIngredients: e.target.value})}
+                                        className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
@@ -604,6 +615,16 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                     )}
                 </div>
             </CardContent>
+
+            <ConfirmDialog 
+                isOpen={isConfirmDeleteOpen}
+                onClose={() => setIsConfirmDeleteOpen(false)}
+                onConfirm={confirmDeleteItem}
+                title="Remove Food Item"
+                message={`Are you sure you want to remove "${verifiedItems[itemIdxToDelete]?.name || 'this item'}" from the meal log?`}
+                confirmText="Remove Item"
+                isDestructive={true}
+            />
         </Card>
     );
 }

@@ -25,9 +25,9 @@ async function analyzeImage(imageBase64) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const prompt = `Analyze this meal photo. 
     1. Identify the dish/food items.
-    2. Determine the cooking method (e.g., Steamed, Fried, Grilled, Boiled, Sauteed, Fresh).
-    3. For each edible item, provide a flat JSON object with:
+    2. For each edible item, provide a flat JSON object with:
        - 'name': Dish or item name.
+       - 'cooking_method': Determine the cooking method specifically for this item. Must be one of: "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", or "Unknown".
        - 'measure_qty': Number indicating quantity (e.g. if there are 2 hotdogs, output 2. If it's a bowl of soup, output 1).
        - 'serving_unit': Common measure (must be exactly one of: 'Cup', 'Spoon', 'Sandok', 'Bowl', 'Slice', 'Piece', 'Plate', or 'Serving'). If the item is Rice, it MUST be 'Cup'.
        - 'serving_weight_g': Estimated weight in grams.
@@ -35,7 +35,7 @@ async function analyzeImage(imageBase64) {
        - 'protein_g': Estimated protein in grams as an integer.
        - 'carbs_g': Estimated carbs in grams as an integer.
        - 'fat_g': Estimated fat in grams as an integer.
-    4. Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method' string, and a top-level 'nutrition' object summarizing total 'calories', 'protein', 'carbs', and 'fat'. 
+    3. Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method' string (for the primary dish), and a top-level 'nutrition' object summarizing total 'calories', 'protein', 'carbs', and 'fat'. 
     Strictly ignore utensils and plates. Output ONLY valid JSON without markdown formatting.`;
 
     try {

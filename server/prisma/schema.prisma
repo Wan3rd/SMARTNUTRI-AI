@@ -137,6 +137,7 @@ model profiles {
   notes               nutritionist_notes[]
   adime_notes         adime_notes[]
   growth_logs         growth_logs[]
+  profile_vaccinations profile_vaccinations[]
   users               users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
@@ -186,4 +187,23 @@ model users {
   notes               nutritionist_notes[]
   adime_notes         adime_notes[]
   profiles                                                         profiles[]
+}
+
+model vaccination_types {
+  id                  String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String               @unique @db.VarChar(100)
+  description         String?
+  profile_vaccinations profile_vaccinations[]
+}
+
+model profile_vaccinations {
+  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id          String?           @db.Uuid
+  vaccination_type_id String?           @db.Uuid
+  date_administered   DateTime?         @db.Date
+  notes               String?
+  profiles            profiles?         @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vaccination_types   vaccination_types? @relation(fields: [vaccination_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([profile_id], map: "idx_profile_vaccinations_profile")
 }
