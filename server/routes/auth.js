@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -91,6 +92,78 @@ router.post('/login', async (req, res) => {
             },
             token,
         });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET CURRENT USER
+router.get('/me', verifyToken, async (req, res) => {
+    try {
+        const user = await prisma.users.findUnique({
+            where: { id: req.user.id }
+        });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // Remove sensitive data
+        const { password_hash, ...safeUser } = user;
+        res.json(safeUser);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// UPDATE PROFILE
+router.put('/profile', verifyToken, async (req, res) => {
+    const { full_name, phone, specialization, license_no, clinic, profile_image_url } = req.body;
+    try {
+        const updatedUser = await prisma.users.update({
+            where: { id: req.user.id },
+            data: {
+                full_name,
+                phone,
+                specialization,
+                license_no,
+                clinic,
+                profile_image_url
+            }
+        });
+        const { password_hash, ...safeUser } = updatedUser;
+        res.json(safeUser);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET ASSIGNED NUTRITIONIST (For Caregivers)
+router.get('/my-nutritionist', verifyToken, async (req, res) => {
+    try {
+        const assignment = await prisma.nutritionist_clients.findFirst({
+            where: { parent_id: req.user.id },
+            include: {
+                nutritionist: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        phone: true,
+                        specialization: true,
+                        clinic: true,
+                        profile_image_url: true,
+                        license_no: true
+                    }
+                }
+            }
+        });
+
+        if (!assignment || !assignment.nutritionist) {
+            return res.status(404).json({ message: 'No assigned nutritionist found' });
+        }
+
+        res.json(assignment.nutritionist);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

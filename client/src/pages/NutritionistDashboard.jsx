@@ -68,6 +68,8 @@ export default function NutritionistDashboard() {
                 </Card>
             </div>
 
+
+
             <section className="space-y-4">
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-[var(--color-secondary)]">My Clients</h2>
@@ -81,66 +83,46 @@ export default function NutritionistDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {clients.map(client => (
-                        <Card
-                            key={client.id}
-                            onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
-                            className="hover:shadow-lg transition-shadow cursor-pointer border border-[var(--color-divider)]"
-                        >
-                            <CardContent className="p-5 flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)]">
-                                    <Users size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-[var(--color-secondary)]">{client.full_name}</h3>
-                                    <p className="text-xs text-[var(--color-text-muted)]">{client.email}</p>
-                                </div>
-                                <div className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                    {client.status}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {clients.map(client => {
+                        const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
+                        return (
+                            <Card
+                                key={client.id}
+                                onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
+                                className="hover:shadow-lg transition-all cursor-pointer border border-[var(--color-divider)] relative group"
+                            >
+                                <CardContent className="p-5 flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] relative">
+                                        <Users size={24} />
+                                        {clientPendingCount > 0 && (
+                                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
+                                                    {clientPendingCount}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-[var(--color-secondary)] truncate">{client.full_name}</h3>
+                                        <p className="text-xs text-[var(--color-text-muted)] truncate">{client.email}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            {client.status}
+                                        </div>
+                                        {clientPendingCount > 0 && (
+                                            <span className="text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest animate-pulse">Needs Review</span>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                     {clients.length === 0 && (
                         <p className="col-span-full text-center py-12 text-[var(--color-text-muted)] bg-gray-50 dark:bg-white/5 rounded-2xl border border-dashed border-[var(--color-divider)]">
                             No clients linked yet. Start by adding a parent portal account.
                         </p>
-                    )}
-                </div>
-            </section>
-
-            <section className="space-y-4">
-                <h2 className="text-xl font-bold text-[var(--color-secondary)]">Pending Reviews</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {pendingLogs.map(log => (
-                        <Card
-                            key={log.id}
-                            onClick={() => { setSelectedLog(log); setIsReviewOpen(true); }}
-                            className="hover:shadow-lg transition-shadow cursor-pointer border border-[var(--color-divider)] group overflow-hidden"
-                        >
-                            <CardContent className="p-0">
-                                <div className="h-48 relative overflow-hidden">
-                                    <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
-                                        <p className="text-white font-bold">{log.child_name}</p>
-                                        <p className="text-white/80 text-xs">{new Date(log.logged_at).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                                        Pending
-                                    </div>
-                                </div>
-                                <div className="p-4">
-                                    <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">
-                                        {log.ai_analysis?.items?.map(i => i.name).join(', ') || 'No analysis available'}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                    {pendingLogs.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-[var(--color-text-muted)] bg-gray-50 dark:bg-white/5 rounded-2xl border border-dashed border-[var(--color-divider)]">
-                            <p>All caught up! No pending meal reviews.</p>
-                        </div>
                     )}
                 </div>
             </section>

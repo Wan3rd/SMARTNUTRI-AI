@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
 import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 
@@ -17,9 +17,11 @@ export default function ParentDashboard() {
     const [selectedLog, setSelectedLog] = useState(null);
     const [filterTab, setFilterTab] = useState('all');
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
+    const [assignedNutritionist, setAssignedNutritionist] = useState(null);
 
     useEffect(() => {
         fetchProfiles();
+        fetchAssignedNutritionist();
     }, []);
 
     useEffect(() => {
@@ -63,6 +65,15 @@ export default function ParentDashboard() {
             setRules(res.data);
         } catch (err) {
             console.error("No rules found or error", err);
+        }
+    };
+
+    const fetchAssignedNutritionist = async () => {
+        try {
+            const res = await api.get('/auth/my-nutritionist');
+            setAssignedNutritionist(res.data);
+        } catch (err) {
+            console.error("Error fetching nutritionist", err);
         }
     };
 
@@ -195,8 +206,85 @@ export default function ParentDashboard() {
 
                 {/* Right: Insights & Expert Feedback */}
                 <div className="lg:col-span-5 space-y-6">
+                    {/* Assigned Nutritionist Card */}
+                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm group hover:shadow-xl transition-all duration-500">
+                        <CardContent className="p-0">
+                            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-[var(--color-primary)] dark:to-[var(--color-primary-hover)] p-4 flex items-center justify-between">
+                                <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Your Health Partner</h3>
+                                <div className="h-6 w-6 bg-white/20 rounded-lg flex items-center justify-center">
+                                    <BadgeCheck size={14} className="text-white" />
+                                </div>
+                            </div>
+                            <div className="p-6 flex items-center gap-5">
+                                <div className="relative flex-shrink-0">
+                                    <div className="h-20 w-20 rounded-2xl border-4 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
+                                        {assignedNutritionist?.profile_image_url ? (
+                                            <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
+                                        ) : (
+                                            <User size={32} className="text-gray-300" />
+                                        )}
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-emerald-500 rounded-xl border-4 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
+                                        <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
+                                    </div>
+                                    <div className="absolute inset-0 bg-[var(--color-primary)]/10 rounded-2xl scale-110 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1.5">Assigned Clinician</p>
+                                    <h4 className="text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none">
+                                        {assignedNutritionist?.full_name || 'Dr. Expert'}
+                                    </h4>
+                                    <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1">
+                                        {assignedNutritionist?.specialization || 'Clinical Nutritionist'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="px-6 pb-6 space-y-3">
+                                {/* Professional Credentials */}
+                                <div className="grid grid-cols-1 gap-2.5">
+                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                        <div className="h-9 w-9 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <BadgeCheck size={16} className="text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">PRC License No.</p>
+                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                                {assignedNutritionist?.license_no || 'Pending Verification'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                        <div className="h-9 w-9 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Phone size={16} className="text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">Contact Hotline</p>
+                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                                {assignedNutritionist?.phone || 'No contact set'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                        <div className="h-9 w-9 bg-violet-50 dark:bg-violet-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Building2 size={16} className="text-violet-600 dark:text-violet-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">Affiliated Clinic</p>
+                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                                {assignedNutritionist?.clinic || 'SmartNutri Network'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Tab Switcher */}
-                    <div className="flex p-1 bg-gray-100 dark:bg-zinc-900 rounded-2xl border-2 border-[var(--color-divider)]">
+                    <div className="flex p-1.5 bg-[var(--color-divider)] dark:bg-white/5 rounded-[22px] border border-[var(--color-divider)] shadow-inner">
                         {[
                             { id: 'status', label: 'Daily Status', icon: <Activity size={14} /> },
                             { id: 'reviews', label: 'Expert Reviews', icon: <MessageSquare size={14} /> }
@@ -204,11 +292,14 @@ export default function ParentDashboard() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                    ? 'bg-white dark:bg-zinc-800 text-[var(--color-primary)] shadow-md border-b-2 border-[var(--color-primary)]'
-                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-[18px] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${activeTab === tab.id
+                                    ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-lg shadow-emerald-500/10 border-b-2 border-[var(--color-primary)]'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-card)]/50'}`}
                             >
-                                {tab.icon} {tab.label}
+                                <span className={activeTab === tab.id ? 'text-[var(--color-primary)]' : 'opacity-60'}>
+                                    {tab.icon}
+                                </span>
+                                {tab.label}
                             </button>
                         ))}
                     </div>

@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, Info } from 'lucide-react';
+import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, Droplets, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import Modal from '../components/common/Modal';
 import Notification from '../components/common/Notification';
-import { AlertTriangle, Bold, Italic, List, ListOrdered } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
@@ -96,6 +95,7 @@ export default function ClientDetails() {
 
     // --- History State ---
     const [logs, setLogs] = useState([]);
+    const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
 
     // --- Insights State ---
     const [reportData, setReportData] = useState(null);
@@ -144,9 +144,48 @@ export default function ClientDetails() {
     const [newGrowth, setNewGrowth] = useState({ height_cm: '', weight_kg: '' });
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLogForReview, setSelectedLogForReview] = useState(null);
+    const [allClientPendingLogs, setAllClientPendingLogs] = useState([]);
+    const [childVaccinations, setChildVaccinations] = useState([]);
+    const [vaccinationTypes, setVaccinationTypes] = useState([]);
+    const [isAddingVaccine, setIsAddingVaccine] = useState(false);
+    const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
 
     // --- Consultation Mode State ---
     const [isConsultationMode, setIsConsultationMode] = useState(false);
+    const [isClinicalEditing, setIsClinicalEditing] = useState(false);
+    const [clinicalForm, setClinicalForm] = useState({});
+
+    useEffect(() => {
+        if (selectedProfile) {
+            setClinicalForm({
+                child_name: selectedProfile.child_name,
+                gender: selectedProfile.gender,
+                date_of_birth: selectedProfile.date_of_birth?.split('T')[0],
+                activity_level: selectedProfile.activity_level,
+                height_cm: selectedProfile.height_cm,
+                weight_kg: selectedProfile.weight_kg,
+                allergies: selectedProfile.allergies || [],
+                dietary_preferences: selectedProfile.dietary_preferences || '',
+                medical_history: selectedProfile.medical_history || '',
+                medications: selectedProfile.medications || '',
+                weigh_in_conditions: selectedProfile.weigh_in_conditions || '',
+                bristol_stool_scale: selectedProfile.bristol_stool_scale || 4
+            });
+        }
+    }, [selectedProfile]);
+
+    const handleClinicalSave = async () => {
+        try {
+            const res = await api.patch(`/nutritionist/clients/profile/${selectedProfile.id}`, clinicalForm);
+            setSelectedProfile(res.data);
+            setProfiles(prev => prev.map(p => p.id === res.data.id ? res.data : p));
+            setIsClinicalEditing(false);
+            showNotif("Clinical profile updated successfully!");
+        } catch (err) {
+            console.error("Failed to update clinical profile", err);
+            showNotif("Failed to update profile", "error");
+        }
+    };
 
     useEffect(() => {
         if (selectedProfile && activeTab === 'plan') {
@@ -166,6 +205,7 @@ export default function ClientDetails() {
         }
         if (selectedProfile && activeTab === 'overview') {
             fetchGrowthLogs(selectedProfile.id);
+            fetchVaccinationData(selectedProfile.id);
         }
         if (selectedProfile && activeTab === 'review') {
             fetchLogs(selectedProfile.id);
@@ -178,6 +218,48 @@ export default function ClientDetails() {
             setGrowthLogs(res.data);
         } catch (err) {
             console.error("Error fetching growth logs", err);
+        }
+    };
+
+    const fetchVaccinationData = async (profileId) => {
+        try {
+            const [typesRes, listRes] = await Promise.all([
+                api.get('/profiles/vaccination-types'),
+                api.get(`/profiles/${profileId}/vaccinations`)
+            ]);
+            setVaccinationTypes(typesRes.data);
+            setChildVaccinations(listRes.data);
+        } catch (err) {
+            console.error("Error fetching vaccination data", err);
+        }
+    };
+
+    const handleAddVaccine = async () => {
+        if (!newVaccine.typeId) return;
+        try {
+            const res = await api.post(`/profiles/${selectedProfile.id}/vaccinations`, {
+                vaccination_type_id: newVaccine.typeId,
+                date_administered: newVaccine.date,
+                notes: newVaccine.notes
+            });
+            setChildVaccinations([res.data, ...childVaccinations]);
+            setIsAddingVaccine(false);
+            setNewVaccine({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+            showNotif("Vaccination record added!");
+        } catch (err) {
+            console.error("Error adding vaccine", err);
+            showNotif("Failed to add vaccine", "error");
+        }
+    };
+
+    const handleDeleteVaccine = async (id) => {
+        try {
+            await api.delete(`/profiles/vaccinations/${id}`);
+            setChildVaccinations(childVaccinations.filter(v => v.id !== id));
+            showNotif("Vaccination record removed");
+        } catch (err) {
+            console.error("Error deleting vaccine", err);
+            showNotif("Failed to delete vaccine", "error");
         }
     };
 
@@ -229,11 +311,35 @@ export default function ClientDetails() {
 
 
 
+    const fetchAllClientPending = async () => {
+        try {
+            const res = await api.get('/nutritionist/logs/pending');
+            // Filter only for profiles belonging to this parent/client
+            const clientProfileIds = profiles.map(p => p.id);
+            const filtered = res.data.filter(log => clientProfileIds.includes(log.profile_id));
+            setAllClientPendingLogs(filtered);
+        } catch (err) {
+            console.error("Error fetching all client pending", err);
+        }
+    };
+
+    useEffect(() => {
+        if (profiles.length > 0) {
+            fetchAllClientPending();
+        }
+    }, [profiles]);
+
     const fetchLogs = async (profileId) => {
         try {
             // Fetch logs for the selected profile
             const res = await api.get(`/logs/profile/${profileId}`);
-            setLogs(res.data);
+            const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+            setLogs(sortedLogs);
+            
+            if (sortedLogs.length > 0) {
+                const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
+                setSelectedHistoryDate(latestDate);
+            }
         } catch (err) {
             console.error("Error fetching logs", err);
         }
@@ -246,6 +352,53 @@ export default function ClientDetails() {
         } catch (err) {
             console.error("Error fetching notes", err);
         }
+    };
+    
+    const handleDeleteLog = async (logId) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Meal Log',
+            message: 'Are you sure you want to permanently delete this meal log? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/logs/${logId}`);
+                    setLogs(prev => prev.filter(l => l.id !== logId));
+                    showNotif("Meal log deleted");
+                } catch (err) {
+                    console.error("Failed to delete log", err);
+                    showNotif("Failed to delete log", "error");
+                }
+            },
+            type: 'danger'
+        });
+    };
+
+    const handleClearLogsForDay = async (date) => {
+        // Use a consistent date format for the API (ISO)
+        const isoDate = new Date(date).toISOString().split('T')[0];
+        
+        setConfirmModal({
+            isOpen: true,
+            title: `Clear All Logs: ${date}`,
+            message: `This will permanently delete ALL meal logs recorded on ${date}. Are you sure you want to proceed?`,
+            onConfirm: async () => {
+                try {
+                    const res = await api.delete(`/logs/bulk/day/${selectedProfile.id}/${isoDate}`);
+                    if (res.data.count > 0) {
+                        // Re-fetch to ensure sync with DB
+                        fetchLogs(selectedProfile.id);
+                        setSelectedHistoryDate(null);
+                        showNotif(`Cleared ${res.data.count} logs for ${date}`);
+                    } else {
+                        showNotif("No logs found on server for this date", "info");
+                    }
+                } catch (err) {
+                    console.error("Failed to clear logs for day", err);
+                    showNotif("Failed to clear logs", "error");
+                }
+            },
+            type: 'danger'
+        });
     };
 
     const handleAddNote = async (e) => {
@@ -508,29 +661,49 @@ export default function ClientDetails() {
                     {/* Left Sidebar: Profiles */}
                     <div className="space-y-4">
                         <h3 className="font-bold text-[var(--color-secondary)] px-2">Family Profiles</h3>
-                        {profiles.map(profile => (
-                            <div
-                                key={profile.id}
-                                onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
-                                className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedProfile?.id === profile.id
-                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md'
-                                    : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-full ${selectedProfile?.id === profile.id ? 'bg-white/30' : 'bg-[var(--color-divider)]'}`}>
-                                        <User size={20} className={selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className={`font-black truncate ${selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{profile.child_name}</div>
-                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${selectedProfile?.id === profile.id ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
-                                            {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()} yrs • {profile.gender}
+                        {profiles.map(profile => {
+                            const pendingCount = allClientPendingLogs.filter(l => l.profile_id === profile.id).length;
+                            return (
+                                <div
+                                    key={profile.id}
+                                    onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
+                                    className={`p-4 rounded-xl cursor-pointer transition-all border relative ${selectedProfile?.id === profile.id
+                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md'
+                                        : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
+                                        }`}
+                                >
+                                    {pendingCount > 0 && (
+                                        <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 z-10">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
+                                                {pendingCount}
+                                            </span>
                                         </div>
-                                    </div>
-                                </div>
+                                    )}
+                                            <div className="flex items-center gap-3">
+                                                <div className={`h-10 w-10 rounded-full overflow-hidden flex-shrink-0 border-2 ${selectedProfile?.id === profile.id ? 'border-white/50' : 'border-[var(--color-divider)]'} bg-white/10 flex items-center justify-center`}>
+                                                    {profile.profile_image_url ? (
+                                                        <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <User size={20} className={selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'} />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className={`font-black truncate ${selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{profile.child_name}</div>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${selectedProfile?.id === profile.id ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                            {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}y • {profile.gender}
+                                                        </div>
+                                                        <div className={`text-[10px] font-black ${selectedProfile?.id === profile.id ? 'text-white/90' : 'text-[var(--color-primary)]'}`}>
+                                                            {profile.weight_kg || '--'}kg / {profile.height_cm || '--'}cm
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ))}
-                    </div>
 
                     {/* Main Content */}
                     <div className="lg:col-span-3 space-y-6">
@@ -544,70 +717,39 @@ export default function ClientDetails() {
                                     <div className="flex gap-6 border-b border-[var(--color-divider)] mb-6 overflow-x-auto">
                                         {[
                                             { id: 'overview', label: 'Overview' },
-                                            { id: 'review', label: 'Pending Review' },
+                                            { id: 'history', label: 'Log History' },
                                             { id: 'insights', label: 'Insights' },
                                             { id: 'adime', label: 'Clinical (ADIME)' },
                                             { id: 'notes', label: 'Notes' },
                                             { id: 'rules', label: 'Rules Engine' },
-                                            { id: 'plan', label: 'Meal Planner' },
-                                            { id: 'history', label: 'Log History' }
-                                        ].map(tab => (
-                                            <button
-                                                key={tab.id}
-                                                className={`pb-3 px-1 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
-                                                    ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
-                                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-                                                    }`}
-                                                onClick={() => setActiveTab(tab.id)}
-                                            >
-                                                {tab.label}
-                                            </button>
-                                        ))}
+                                            { id: 'plan', label: 'Meal Planner' }
+                                        ].map(tab => {
+                                            const isHistoryPending = tab.id === 'history' && allClientPendingLogs.filter(l => l.profile_id === selectedProfile?.id).length > 0;
+                                            return (
+                                                <button
+                                                    key={tab.id}
+                                                    className={`pb-3 px-1 font-bold text-sm whitespace-nowrap transition-colors relative ${activeTab === tab.id
+                                                        ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
+                                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                                                        }`}
+                                                    onClick={() => setActiveTab(tab.id)}
+                                                >
+                                                    {tab.label}
+                                                    {isHistoryPending && (
+                                                        <span className="absolute top-0 -right-2 flex h-2 w-2">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
 
-                                    {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME & Notes) */}
+                                    {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
                                     {(activeTab === 'adime' || activeTab === 'notes') && (
                                         <div className="space-y-6 mb-8 animate-in slide-in-from-top-4 duration-500">
-                                            {/* TOP QUICK REFERENCE BAR - High Contrast */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border-l-4 border-amber-500 shadow-sm flex flex-col justify-center transition-colors">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <AlertTriangle size={14} className="text-amber-600" />
-                                                        <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Allergies</span>
-                                                    </div>
-                                                    <p className="text-sm font-black text-[var(--color-text-main,#1f2937)] truncate">{selectedProfile.allergies?.join(', ') || 'None'}</p>
-                                                </div>
-
-                                                <div className="p-4 bg-[var(--color-bg-card,#ffffff)] rounded-xl border-l-4 border-red-500 shadow-sm flex flex-col justify-center transition-colors">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Info size={14} className="text-red-600" />
-                                                        <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Medical History</span>
-                                                    </div>
-                                                    <p className="text-sm font-black text-[var(--color-text-main,#1f2937)] truncate" title={selectedProfile.medical_history || 'No history'}>
-                                                        {selectedProfile.medical_history || 'None recorded'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border-l-4 border-blue-500 shadow-sm flex flex-col justify-center transition-colors">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <TrendingUp size={14} className="text-blue-600" />
-                                                        <span className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">Growth Metrics</span>
-                                                    </div>
-                                                    <p className="text-sm font-black text-blue-600 dark:text-blue-400">
-                                                        {selectedProfile.weight_kg}kg / {selectedProfile.height_cm}cm
-                                                    </p>
-                                                </div>
-
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-center transition-colors">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Activity size={14} className="text-emerald-600" />
-                                                        <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Compliance</span>
-                                                    </div>
-                                                    <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">85% Correct</p>
-                                                </div>
-                                            </div>
-
-                                            {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR */}
+                                            {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR (Only for ADIME & Notes) */}
                                             <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex items-center justify-center p-1.5 gap-1">
                                                 <div className="flex items-center gap-2 px-3 border-r border-[var(--color-divider)]">
                                                     <div className={`w-2 h-2 rounded-full ${focusedField ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
@@ -636,119 +778,594 @@ export default function ClientDetails() {
 
                                     {/* TAB 1: OVERVIEW */}
                                     {activeTab === 'overview' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* Growth Charts */}
-                                                <Card className="border border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)]">
-                                                    <CardHeader className="pb-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight Tracking (kg)</CardTitle>
-                                                            <Button 
-                                                                size="sm" 
-                                                                variant="outline" 
-                                                                className="h-7 text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
-                                                                onClick={() => setIsGrowthModalOpen(true)}
-                                                            >
-                                                                <Plus size={12} className="mr-1" /> Log Growth
+                                        <div className="space-y-8 animate-in fade-in duration-500">
+                                            {/* 1. BIOGRAPHICAL SUMMARY (Nutritionist's Quick Look) */}
+                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-16 w-16 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)]">
+                                                            <User size={32} strokeWidth={2.5} />
+                                                        </div>
+                                                        <div>
+                                                            <h2 className="text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight">{selectedProfile.child_name}</h2>
+                                                            <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-1">
+                                                                <span className="px-2 py-0.5 bg-[var(--color-divider)] rounded-md">{selectedProfile.gender}</span>
+                                                                <span className="px-2 py-0.5 bg-[var(--color-divider)] rounded-md">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Date of Birth</div>
+                                                        <div className="text-sm font-black text-[var(--color-secondary)]">{new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Current Weight</div>
+                                                        <div className="text-xl font-black text-[var(--color-primary)]">{selectedProfile.weight_kg} <span className="text-xs">kg</span></div>
+                                                    </div>
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Current Height</div>
+                                                        <div className="text-xl font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} <span className="text-xs">cm</span></div>
+                                                    </div>
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
+                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize">{selectedProfile.activity_level?.replace('_', ' ') || 'N/A'}</div>
+                                                    </div>
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Allergies</div>
+                                                        <div className="text-sm font-black text-red-500 truncate">{selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.join(', ') : 'None'}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 2. CLINICAL & MEDICAL RECORDS */}
+                                            <div className="space-y-6">
+                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                    <div>
+                                                        <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Clinical & Medical Records</h3>
+                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive medical history and current status</p>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {isClinicalEditing && (
+                                                            <Button variant="ghost" onClick={() => setIsClinicalEditing(false)} className="text-xs font-black uppercase">
+                                                                Cancel
                                                             </Button>
-                                                        </div>
-                                                    </CardHeader>
-                                                    <CardContent className="h-[200px]">
-                                                        {growthLogs.length > 0 ? (
-                                                            <ResponsiveContainer width="100%" height="100%">
-                                                                <LineChart data={growthLogs}>
-                                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                    <XAxis 
-                                                                        dataKey="logged_at" 
-                                                                        tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                        fontSize={10}
-                                                                        tick={{fill: 'var(--color-text-muted)'}}
-                                                                    />
-                                                                    <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                    <Tooltip 
-                                                                        labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                        contentStyle={{
-                                                                            backgroundColor: 'var(--color-bg-card)',
-                                                                            borderColor: 'var(--color-divider)',
-                                                                            borderRadius: '12px',
-                                                                            color: 'var(--color-text-main)'
-                                                                        }}
-                                                                    />
-                                                                    <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={3} dot={{r: 4, fill: 'var(--color-primary)'}} activeDot={{r: 6}} />
-                                                                </LineChart>
-                                                            </ResponsiveContainer>
-                                                        ) : (
-                                                            <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
                                                         )}
-                                                    </CardContent>
-                                                </Card>
-
-                                                <Card className="border border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)]">
-                                                    <CardHeader className="pb-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height Tracking (cm)</CardTitle>
-                                                        </div>
-                                                    </CardHeader>
-                                                    <CardContent className="h-[200px]">
-                                                        {growthLogs.length > 0 ? (
-                                                            <ResponsiveContainer width="100%" height="100%">
-                                                                <LineChart data={growthLogs}>
-                                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                    <XAxis 
-                                                                        dataKey="logged_at" 
-                                                                        tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                        fontSize={10}
-                                                                        tick={{fill: 'var(--color-text-muted)'}}
-                                                                    />
-                                                                    <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                    <Tooltip 
-                                                                        labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                        contentStyle={{
-                                                                            backgroundColor: 'var(--color-bg-card)',
-                                                                            borderColor: 'var(--color-divider)',
-                                                                            borderRadius: '12px',
-                                                                            color: 'var(--color-text-main)'
-                                                                        }}
-                                                                    />
-                                                                    <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={3} dot={{r: 4, fill: 'var(--color-secondary)'}} activeDot={{r: 6}} />
-                                                                </LineChart>
-                                                            </ResponsiveContainer>
-                                                        ) : (
-                                                            <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
-                                                        )}
-                                                    </CardContent>
-                                                </Card>
-                                            </div>
-
-                                            <h3 className="font-bold text-lg text-[var(--color-secondary)]">Health & Profile Snapshot</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                    <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Allergies</div>
-                                                    <div className="font-bold text-red-500 break-words">
-                                                        {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.join(', ') : 'None'}
+                                                        <Button 
+                                                            variant={isClinicalEditing ? "primary" : "outline"}
+                                                            onClick={() => isClinicalEditing ? handleClinicalSave() : setIsClinicalEditing(true)}
+                                                            className="flex gap-2"
+                                                        >
+                                                            {isClinicalEditing ? <Save size={16} /> : <Edit2 size={16} />}
+                                                            {isClinicalEditing ? "Save Records" : "Edit Records"}
+                                                        </Button>
                                                     </div>
                                                 </div>
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                    <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Dietary Prefs</div>
-                                                    <div className="font-bold text-[var(--color-text-main)] break-words">
-                                                        {selectedProfile.dietary_preferences || 'None'}
+
+                                                {/* Edit Form for Bio Info if in edit mode */}
+                                                {isClinicalEditing && (
+                                                    <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-3xl border-2 border-blue-200 dark:border-blue-800/30 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={clinicalForm.child_name}
+                                                                onChange={(e) => setClinicalForm({...clinicalForm, child_name: e.target.value})}
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Gender</label>
+                                                            <select 
+                                                                value={clinicalForm.gender}
+                                                                onChange={(e) => setClinicalForm({...clinicalForm, gender: e.target.value})}
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                            >
+                                                                <option value="Male">Male</option>
+                                                                <option value="Female">Female</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Date of Birth</label>
+                                                            <input 
+                                                                type="date"
+                                                                value={clinicalForm.date_of_birth}
+                                                                onChange={(e) => setClinicalForm({...clinicalForm, date_of_birth: e.target.value})}
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                    <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
-                                                    <div className="font-bold text-[var(--color-text-main)] capitalize">{selectedProfile.activity_level.replace('_', ' ')}</div>
-                                                </div>
-                                                <div className="p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                    <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Measurements</div>
-                                                    <div className="font-bold text-[var(--color-text-main)]">{selectedProfile.weight_kg}kg <span className="opacity-30">/</span> {selectedProfile.height_cm}cm</div>
+                                                )}
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-6">
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-2">
+                                                                <Stethoscope size={14} /> Medical & Surgical History
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-[var(--color-primary)] outline-none min-h-[150px]"
+                                                                    value={clinicalForm.medical_history}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, medical_history: e.target.value})}
+                                                                    placeholder="Enter detailed medical and surgical history..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed whitespace-pre-wrap">
+                                                                    {selectedProfile.medical_history || "No medical history recorded."}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <Link2 size={14} /> Current Medications
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-blue-500 outline-none min-h-[100px]"
+                                                                    value={clinicalForm.medications}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, medications: e.target.value})}
+                                                                    placeholder="List current medications and dosages..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
+                                                                    {selectedProfile.medications || "No active medications."}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-6">
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <AlertTriangle size={14} /> Allergies & Intolerances
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
+                                                                        <button
+                                                                            key={allergy}
+                                                                            onClick={() => {
+                                                                                const current = clinicalForm.allergies || [];
+                                                                                const updated = current.includes(allergy) 
+                                                                                    ? current.filter(a => a !== allergy)
+                                                                                    : [...current, allergy];
+                                                                                setClinicalForm({...clinicalForm, allergies: updated});
+                                                                            }}
+                                                                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${
+                                                                                (clinicalForm.allergies || []).includes(allergy)
+                                                                                    ? 'bg-red-500 text-white border-red-500'
+                                                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
+                                                                            }`}
+                                                                        >
+                                                                            {allergy}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
+                                                                        <span key={a} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase border border-red-100">{a}</span>
+                                                                    )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} /> Bristol Stool History
+                                                            </h4>
+                                                            <div className="grid grid-cols-7 gap-2">
+                                                                {[1,2,3,4,5,6,7].map(type => (
+                                                                    <button
+                                                                        key={type}
+                                                                        disabled={!isClinicalEditing}
+                                                                        onClick={() => setClinicalForm({...clinicalForm, bristol_stool_scale: type})}
+                                                                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all border-2 ${
+                                                                            (isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) === type
+                                                                                ? 'bg-amber-500 text-white border-amber-500'
+                                                                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-amber-500 disabled:opacity-50'
+                                                                        }`}
+                                                                    >
+                                                                        <span className="text-xs font-black">{type}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium text-center">
+                                                                Currently set to Type {(isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) || 4} 
+                                                                {(isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) === 4 ? " (Ideal)" : ""}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                            <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} /> Weigh-in Conditions
+                                                            </h4>
+                                                            {isClinicalEditing ? (
+                                                                <textarea 
+                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-indigo-500 outline-none min-h-[80px]"
+                                                                    value={clinicalForm.weigh_in_conditions}
+                                                                    onChange={(e) => setClinicalForm({...clinicalForm, weigh_in_conditions: e.target.value})}
+                                                                    placeholder="e.g. Early morning, before breakfast, same clothes..."
+                                                                />
+                                                            ) : (
+                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                    {selectedProfile.weigh_in_conditions || "Standard conditions."}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-800/30">
-                                                <h4 className="font-bold text-green-800 dark:text-green-300 mb-2">Quick Summary</h4>
-                                                <p className="text-sm text-green-700 dark:text-green-400">
-                                                    This child has <strong>{rules.length} active rules</strong>.
+                                            {/* 3. VACCINATION HISTORY & MANAGEMENT */}
+                                                <div className="mt-8 space-y-6">
+                                                    <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                        <div>
+                                                            <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Structured Vaccination History</h3>
+                                                            <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive immunization record and tracking</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {isClinicalEditing && !isAddingVaccine && (
+                                                                <Button 
+                                                                    variant="primary"
+                                                                    onClick={() => setIsAddingVaccine(true)}
+                                                                    className="flex gap-2 text-xs font-black uppercase"
+                                                                >
+                                                                    <Plus size={16} />
+                                                                    Add Vaccine Record
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {isAddingVaccine && (
+                                                        <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
+                                                                    <select 
+                                                                        value={newVaccine.typeId}
+                                                                        onChange={(e) => setNewVaccine({...newVaccine, typeId: e.target.value})}
+                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    >
+                                                                        <option value="">Select vaccine...</option>
+                                                                        {vaccinationTypes.map(t => (
+                                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
+                                                                    <input 
+                                                                        type="date"
+                                                                        value={newVaccine.date}
+                                                                        onChange={(e) => setNewVaccine({...newVaccine, date: e.target.value})}
+                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Batch # / Notes</label>
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={newVaccine.notes}
+                                                                        onChange={(e) => setNewVaccine({...newVaccine, notes: e.target.value})}
+                                                                        placeholder="e.g. Batch #7721-A"
+                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex justify-end gap-3">
+                                                                <Button variant="ghost" onClick={() => setIsAddingVaccine(false)} className="text-xs font-black uppercase">
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button onClick={handleAddVaccine} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6">
+                                                                    Save Record
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {childVaccinations.length === 0 ? (
+                                                        <div className="p-12 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                                            <Stethoscope size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
+                                                            <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">No Immunization Records</p>
+                                                            <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {childVaccinations.map(v => (
+                                                                <div key={v.id} className="group relative flex items-center gap-4 p-5 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300">
+                                                                    <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                                                        <Check size={24} strokeWidth={3} />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="text-sm font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
+                                                                            {v.vaccination_types?.name}
+                                                                        </h4>
+                                                                        <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)] font-black uppercase mt-1">
+                                                                            <Calendar size={12} />
+                                                                            {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                        </div>
+                                                                        {v.notes && (
+                                                                            <div className="mt-2 py-1 px-2 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/5">
+                                                                                <p className="text-[9px] text-[var(--color-text-muted)] truncate italic font-bold uppercase tracking-tight">{v.notes}</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {isClinicalEditing && (
+                                                                        <button 
+                                                                            onClick={() => handleDeleteVaccine(v.id)}
+                                                                            className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                                            title="Delete Record"
+                                                                        >
+                                                                            <Trash2 size={16} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 4. GROWTH TRACKING (Moved to bottom) */}
+                                            <div className="space-y-6 pt-4">
+                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                    <div>
+                                                        <h3 className="font-black text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
+                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
+                                                    </div>
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline" 
+                                                        className="h-8 text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest"
+                                                        onClick={() => setIsGrowthModalOpen(true)}
+                                                    >
+                                                        <Plus size={14} className="mr-2" /> Log New Growth Data
+                                                    </Button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
+                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
+                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                <Activity size={14} className="text-[var(--color-primary)]" /> Weight Tracking (kg)
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent className="h-[250px] p-6">
+                                                            {growthLogs.length > 0 ? (
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <LineChart data={growthLogs}>
+                                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                        <XAxis 
+                                                                            dataKey="logged_at" 
+                                                                            tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                            fontSize={10}
+                                                                            tick={{fill: 'var(--color-text-muted)'}}
+                                                                        />
+                                                                        <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
+                                                                        <Tooltip 
+                                                                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                            contentStyle={{
+                                                                                backgroundColor: 'var(--color-bg-card)',
+                                                                                borderColor: 'var(--color-divider)',
+                                                                                borderRadius: '12px',
+                                                                                color: 'var(--color-text-main)'
+                                                                            }}
+                                                                        />
+                                                                        <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-primary)'}} activeDot={{r: 6}} />
+                                                                    </LineChart>
+                                                                </ResponsiveContainer>
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+
+                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
+                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
+                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                <TrendingUp size={14} className="text-[var(--color-secondary)]" /> Height Tracking (cm)
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent className="h-[250px] p-6">
+                                                            {growthLogs.length > 0 ? (
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <LineChart data={growthLogs}>
+                                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                        <XAxis 
+                                                                            dataKey="logged_at" 
+                                                                            tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                            fontSize={10}
+                                                                            tick={{fill: 'var(--color-text-muted)'}}
+                                                                        />
+                                                                        <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
+                                                                        <Tooltip 
+                                                                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                            contentStyle={{
+                                                                                backgroundColor: 'var(--color-bg-card)',
+                                                                                borderColor: 'var(--color-divider)',
+                                                                                borderRadius: '12px',
+                                                                                color: 'var(--color-text-main)'
+                                                                            }}
+                                                                        />
+                                                                        <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-secondary)'}} activeDot={{r: 6}} />
+                                                                    </LineChart>
+                                                                </ResponsiveContainer>
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-6 bg-green-50 dark:bg-green-900/10 rounded-3xl border-2 border-green-100 dark:border-green-800/30">
+                                                <h4 className="font-black text-green-800 dark:text-green-300 uppercase tracking-widest text-xs mb-2">Clinical Insights Summary</h4>
+                                                <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">
+                                                    Currently tracking <strong>{rules.length} active nutrition rules</strong> for this profile. All clinical parameters and growth metrics are up to date as of {new Date().toLocaleDateString()}.
                                                 </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TAB: LOG HISTORY (Date-Grouped) */}
+                                    {activeTab === 'history' && (
+                                        <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
+                                            {/* LEFT SIDEBAR: DATE SELECTION */}
+                                            <div className="w-full md:w-72 flex-shrink-0 space-y-4">
+                                                <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-2 mb-4">Log Timeline</h3>
+                                                <div className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+                                                    {Object.keys(logs.reduce((acc, log) => {
+                                                        const date = new Date(log.logged_at).toLocaleDateString();
+                                                        acc[date] = true;
+                                                        return acc;
+                                                    }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
+                                                        const isSelected = selectedHistoryDate === date;
+                                                        const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                                        return (
+                                                            <button
+                                                                key={date}
+                                                                onClick={() => setSelectedHistoryDate(date)}
+                                                                className={`flex-shrink-0 flex md:flex-row flex-col items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
+                                                                    isSelected 
+                                                                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10' 
+                                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
+                                                                }`}
+                                                            >
+                                                                <div>
+                                                                    <div className={`text-xs font-black uppercase tracking-tight ${isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                                        {new Date(date).toLocaleDateString(undefined, { weekday: 'short' })}
+                                                                    </div>
+                                                                    <div className="text-sm font-black mt-1">
+                                                                        {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                    </div>
+                                                                </div>
+                                                                <div className={`md:block hidden px-2 py-1 rounded-lg text-[10px] font-black ${isSelected ? 'bg-white/20' : 'bg-[var(--color-bg-page)]'}`}>
+                                                                    {dayLogs.length} {dayLogs.length === 1 ? 'LOG' : 'LOGS'}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {logs.length === 0 && (
+                                                        <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* RIGHT CONTENT: DAILY LOGS */}
+                                            <div className="flex-grow space-y-8">
+                                                {selectedHistoryDate && (
+                                                    <>
+                                                        {/* DAILY SUMMARY CARD */}
+                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                            <div className="flex items-center justify-between mb-6">
+                                                                <div>
+                                                                    <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Daily Nutritional Summary</h3>
+                                                                    <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
+                                                                        <Activity size={16} />
+                                                                        <span className="text-xs font-black uppercase tracking-widest">Calculated Stats</span>
+                                                                    </div>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        onClick={() => handleClearLogsForDay(selectedHistoryDate)}
+                                                                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-2xl border border-red-100 hover:bg-red-600 hover:text-white transition-all group"
+                                                                    >
+                                                                        <Trash2 size={16} className="group-hover:animate-bounce" />
+                                                                        <span className="text-xs font-black uppercase tracking-widest">Clear Day</span>
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                {[
+                                                                    { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                                                    { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                                                    { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                                                    { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                                                ].map((stat, idx) => (
+                                                                    <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
+                                                                        <div className={`text-xl font-black ${stat.color}`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* MEAL LIST */}
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                                <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Sequence</h4>
+                                                                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">{logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured</span>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 gap-4">
+                                                                {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
+                                                                    <div 
+                                                                        key={log.id} 
+                                                                        className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-full md:h-40"
+                                                                    >
+                                                                        <div className="w-full md:w-48 h-40 md:h-auto relative overflow-hidden flex-shrink-0">
+                                                                            <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[8px] font-black text-white uppercase tracking-widest">
+                                                                                {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="p-6 flex-grow flex flex-col justify-between">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                    <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
+                                                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                                                                                        log.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                                                    }`}>
+                                                                                        {log.status === 'verified' ? 'Clinically Verified' : 'Awaiting Review'}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
+                                                                                    {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || "Meal Log Entry"}
+                                                                                </p>
+                                                                                <div className="flex gap-4 mt-3">
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Calories</span>
+                                                                                        <span className="text-xs font-black text-[var(--color-text-main)]">{log.total_calories || 0} <span className="text-[8px]">kcal</span></span>
+                                                                                    </div>
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</span>
+                                                                                        <span className="text-xs font-black text-blue-600">{log.consumption_status || '100%'}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex justify-end items-center gap-2 pt-2">
+                                                                                <Button 
+                                                                                    variant="ghost"
+                                                                                    onClick={() => handleDeleteLog(log.id)}
+                                                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                                    title="Delete Entry"
+                                                                                >
+                                                                                    <Trash2 size={16} />
+                                                                                </Button>
+                                                                                <Button 
+                                                                                    variant="ghost" 
+                                                                                    size="sm" 
+                                                                                    onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                                    className="h-8 text-[10px] font-black uppercase tracking-widest text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
+                                                                                >
+                                                                                    View Details →
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -1226,80 +1843,7 @@ export default function ClientDetails() {
                                         </div>
                                     )}
 
-                                    {/* TAB 4: HISTORY */}
-                                    {activeTab === 'history' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
-                                            <h3 className="font-bold text-lg text-[var(--color-secondary)]">Meal Log History</h3>
-
-                                            {logs.length === 0 ? (
-                                                <p className="text-center py-8 text-[var(--color-text-muted)]">No meal logs found for this profile.</p>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {logs.map(log => (
-                                                        <div 
-                                                            key={log.id} 
-                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                            className="flex items-start gap-4 p-4 border-2 border-[var(--color-divider)] rounded-2xl bg-white dark:bg-white/5 hover:border-[var(--color-primary)] hover:bg-gray-50/50 transition-all cursor-pointer group shadow-sm hover:shadow-md"
-                                                        >
-                                                            <div className="flex gap-1 flex-shrink-0">
-                                                                <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm border border-black/5">
-                                                                    <img src={log.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="before" />
-                                                                </div>
-                                                                {log.image_after_url && (
-                                                                    <div className="w-16 h-20 bg-gray-200 rounded-lg overflow-hidden shadow-sm border border-black/5">
-                                                                        <img src={log.image_after_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="after" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex justify-between items-start mb-1">
-                                                                    <div>
-                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{new Date(log.logged_at).toLocaleString()}</p>
-                                                                        {log.ai_analysis && (
-                                                                            <div className="font-black text-sm uppercase text-[var(--color-text-main)] mt-1 group-hover:text-[var(--color-primary)] transition-colors">
-                                                                                {log.ai_analysis.items?.map(i => i.name).join(', ') || 'Unknown Food'}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Compliance Badge */}
-                                                                    <div className="flex flex-col items-end gap-1">
-                                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border-2 ${log.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                                                            'bg-green-50 text-green-700 border-green-200'
-                                                                            }`}>
-                                                                            {log.status}
-                                                                        </span>
-
-                                                                        {log.compliance_status === 'compliant' && (
-                                                                            <span className="text-[10px] font-black text-green-600 flex items-center gap-1 uppercase tracking-widest">
-                                                                                ✓ Compliant
-                                                                            </span>
-                                                                        )}
-                                                                        {log.compliance_status === 'flagged' && (
-                                                                            <span className="text-[10px] font-black text-red-600 flex items-center gap-1 uppercase tracking-widest">
-                                                                                ⚠ Flagged
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {log.violation_details?.violations && (
-                                                                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded-xl border-2 border-red-100 text-[10px] font-black uppercase text-red-700">
-                                                                        <strong>Violations:</strong> {log.violation_details.violations.map(v => `${v.rule} (${v.actual})`).join(', ')}
-                                                                    </div>
-                                                                )}
-
-                                                                {log.nutritionist_review && (
-                                                                    <div className="mt-2 text-xs font-medium text-gray-500 italic border-l-4 border-[var(--color-primary)]/30 pl-3">
-                                                                        "{log.nutritionist_review.comment || log.nutritionist_review.title || 'Reviewed by nutritionist'}"
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    {/* Final Closing of Tab Content Container */}
 
                                 </CardContent>
                             </Card>
@@ -1626,6 +2170,7 @@ export default function ClientDetails() {
                 onReviewComplete={() => {
                     setIsReviewOpen(false);
                     if (selectedProfile) fetchLogs(selectedProfile.id);
+                    fetchAllClientPending(); // Update sidebar badges
                 }}
             />
 

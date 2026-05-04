@@ -14,6 +14,21 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [zoomScale, setZoomScale] = useState(1);
 
     useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                if (previewImage) {
+                    setPreviewImage(null);
+                    setZoomScale(1);
+                } else {
+                    onClose();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose, previewImage]);
+
+    useEffect(() => {
         if (log) {
             setReview(log.nutritionist_review?.comment || '');
             setEditedAnalysis(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
@@ -27,7 +42,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         try {
             await api.patch(`/nutritionist/logs/${log.id}/review`, {
                 nutritionist_review: {
-                    title: "Nutritionist Verified", 
+                    title: "Nutritionist Verified",
                     comment: review,
                     verified_analysis: editedAnalysis
                 },
@@ -46,7 +61,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const handleItemChange = (idx, field, value) => {
         const newItems = [...editedAnalysis.items];
         newItems[idx] = { ...newItems[idx], [field]: parseFloat(value) || 0 };
-        
+
         // Recalculate totals
         const total_calories_est = newItems.reduce((sum, item) => sum + (parseFloat(item.calories) || 0), 0);
         const macros_est = {
@@ -68,12 +83,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     // Animation Variants
     const containerVariants = {
         hidden: { opacity: 0, scale: 0.95, y: 20 },
-        visible: { 
-            opacity: 1, 
-            scale: 1, 
+        visible: {
+            opacity: 1,
+            scale: 1,
             y: 0,
-            transition: { 
-                type: "spring", 
+            transition: {
+                type: "spring",
                 duration: 0.5,
                 staggerChildren: 0.1
             }
@@ -99,8 +114,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     {/* Left Side: Images & Profile (Dark Theme) */}
                     <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide">
                         <div className="flex flex-col gap-4 mb-6">
-                            <motion.div 
-                                variants={itemVariants} 
+                            <motion.div
+                                variants={itemVariants}
                                 onClick={() => setPreviewImage(log.image_url)}
                                 className="relative group rounded-2xl overflow-hidden border-2 border-white/10 shadow-lg bg-zinc-900 aspect-video cursor-zoom-in"
                             >
@@ -113,8 +128,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 </div>
                             </motion.div>
                             {log.image_after_url && (
-                                <motion.div 
-                                    variants={itemVariants} 
+                                <motion.div
+                                    variants={itemVariants}
                                     onClick={() => setPreviewImage(log.image_after_url)}
                                     className="relative group rounded-2xl overflow-hidden border-2 border-white/10 shadow-lg bg-zinc-900 aspect-video cursor-zoom-in"
                                 >
@@ -129,9 +144,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                         <motion.div variants={itemVariants} className="mt-auto space-y-4 bg-white/5 p-5 rounded-2xl border-2 border-white/10 backdrop-blur-sm">
                             <div className="flex justify-between items-center">
-                                <h4 className="text-white font-black text-base">Child Profile: {log.child_name}</h4>
-                                <span className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{log.profile?.gender}, {new Date().getFullYear() - new Date(log.profile?.date_of_birth).getFullYear()}y</span>
+                                <h4 className="text-white font-black text-sm uppercase tracking-tight">Patient Profile</h4>
+                                <span className="text-[10px] bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
+                                    {log.profile?.gender || 'N/A'} • {log.profile?.date_of_birth ? `${new Date().getFullYear() - new Date(log.profile.date_of_birth).getFullYear()}Y` : 'N/A'}
+                                </span>
                             </div>
+                            <p className="text-2xl font-black text-white leading-none -mt-1">{log.child_name || 'Anonymous Patient'}</p>
                             {log.profile?.medical_history && (
                                 <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
                                     <p className="text-[10px] text-blue-400 font-black uppercase flex items-center gap-1 mb-1"><Info size={12} /> Medical History</p>
@@ -177,17 +195,34 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             {/* Metrics Grid */}
                             <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {[
-                                    { icon: <PieChart size={16} />, label: "Consumption", value: editedAnalysis?.plate_waste !== undefined ? `${editedAnalysis.plate_waste}%` : 'Unspecified', color: "var(--color-primary)" },
-                                    { icon: <EyeOff size={16} />, label: "Hidden", value: log.hidden_ingredients || 'None', color: "#a855f7" },
+                                    { icon: <ChefHat size={16} />, label: "Method", value: log.cooking_method || 'Standard', color: "#0d9488" },
+                                    { 
+                                        icon: <PieChart size={16} />, 
+                                        label: "Consumption", 
+                                        value: isEditing ? (
+                                            <select 
+                                                value={editedAnalysis?.plate_waste ?? 100}
+                                                onChange={(e) => setEditedAnalysis(prev => ({ ...prev, plate_waste: parseInt(e.target.value) }))}
+                                                className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer text-[var(--color-primary)]"
+                                            >
+                                                <option value={100}>100% (Ubos)</option>
+                                                <option value={75}>75% (Tira)</option>
+                                                <option value={50}>50% (Half)</option>
+                                                <option value={25}>25% (Little)</option>
+                                                <option value={0}>0% (None)</option>
+                                            </select>
+                                        ) : `${editedAnalysis?.plate_waste ?? 100}%`, 
+                                        color: "var(--color-primary)" 
+                                    },
                                     { icon: <Droplets size={16} />, label: "Water", value: log.water_ml ? `${log.water_ml}ml` : 'None', color: "#3b82f6" },
-                                    { icon: <Pill size={16} />, label: "Supplements", value: log.supplements || 'None', color: "#10b981" },
+                                    { icon: <Info size={16} />, label: "Tools", value: log.serving_spoon_used ? 'Standard Spoon' : 'Estimated', color: "#6366f1" },
                                     { icon: <Activity size={16} />, label: "Exercise", value: log.physical_activity || 'None', color: "#f59e0b" }
                                 ].map((stat, i) => (
-                                    <div key={i} className="bg-[var(--color-bg-page)] p-4 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] transition-all shadow-sm">
+                                    <div key={i} className={`bg-[var(--color-bg-page)] p-4 rounded-2xl border-2 transition-all shadow-sm ${isEditing && stat.label === "Consumption" ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-divider)] group hover:border-[var(--color-primary)]'}`}>
                                         <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
                                             {stat.icon} {stat.label}
                                         </p>
-                                        <p className="text-sm font-black text-[var(--color-text-main)] uppercase">{stat.value}</p>
+                                        <div className="text-sm font-black text-[var(--color-text-main)] uppercase">{stat.value}</div>
                                     </div>
                                 ))}
                             </motion.div>
@@ -206,8 +241,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                                 <div className="space-y-3 mb-8">
                                     {editedAnalysis?.items?.map((item, idx) => (
-                                        <motion.div 
-                                            key={idx} 
+                                        <motion.div
+                                            key={idx}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.2 + (idx * 0.05) }}
@@ -218,9 +253,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                 <div className="flex gap-2 mt-1">
                                                     {isEditing ? (
                                                         <div className="flex items-center gap-1 bg-[var(--color-bg-page)] rounded-md border border-orange-200 px-1.5 py-0.5">
-                                                            <input 
-                                                                type="number" 
-                                                                value={item.weight_g} 
+                                                            <input
+                                                                type="number"
+                                                                value={item.weight_g}
                                                                 onChange={(e) => handleItemChange(idx, 'weight_g', e.target.value)}
                                                                 className="w-12 bg-transparent text-[10px] font-black focus:outline-none"
                                                             />
@@ -245,9 +280,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                 ].map((macro, mi) => (
                                                     <div key={mi} className="flex flex-col items-center">
                                                         {isEditing ? (
-                                                            <input 
-                                                                type="number" 
-                                                                value={item[macro.key]} 
+                                                            <input
+                                                                type="number"
+                                                                value={item[macro.key]}
                                                                 onChange={(e) => handleItemChange(idx, macro.key, e.target.value)}
                                                                 className="w-10 bg-transparent text-xs font-black text-center focus:outline-none"
                                                                 style={{ color: macro.col }}
@@ -295,7 +330,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             {/* Professional Feedback */}
                             <motion.div variants={itemVariants} className="flex flex-col space-y-3">
                                 <label className="text-sm font-black uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
-                                    <Edit2 size={16} className="text-[var(--color-primary)]" /> 
+                                    <Edit2 size={16} className="text-[var(--color-primary)]" />
                                     Professional Evaluation
                                 </label>
                                 <textarea
@@ -311,9 +346,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-bg-page)] transition-all" onClick={onClose}>
                                     Dismiss
                                 </Button>
-                                <Button 
-                                    onClick={handleApprove} 
-                                    className="flex-[2] py-4 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-xl shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none" 
+                                <Button
+                                    onClick={handleApprove}
+                                    className="flex-[2] py-4 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-xl shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none"
                                     disabled={loading}
                                 >
                                     {loading ? 'Processing...' : 'Approve & Finalize Review'}
@@ -327,7 +362,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             {/* Image Preview Overlay */}
             <AnimatePresence>
                 {previewImage && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -348,14 +383,14 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </button>
                         </div>
 
-                        <motion.div 
+                        <motion.div
                             drag
                             dragConstraints={{ left: -500, right: 500, top: -500, bottom: 500 }}
                             style={{ scale: zoomScale }}
                             className="relative cursor-grab active:cursor-grabbing"
                         >
-                            <img 
-                                src={previewImage} 
+                            <img
+                                src={previewImage}
                                 alt="Preview"
                                 className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none"
                             />

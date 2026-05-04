@@ -60,7 +60,24 @@ export const mapToFCT = (item, aiMacrosEsimtation = null) => {
         };
     }
 
-    // Fallback if not found in FCT. Use AI's generic estimation scaled by qty.
+    // Fallback: If the item already has verified macros (from frontend or manual edit), keep them!
+    const hasValues = (item.calories > 0 || item.protein_g > 0 || item.carbs_g > 0);
+    
+    if (hasValues) {
+        return {
+            ...item,
+            fct_matched: false,
+            // Ensure values are numbers and rounded
+            calories: Math.round(item.calories || 0),
+            protein_g: Math.round((item.protein_g || 0) * 10) / 10,
+            carbs_g: Math.round((item.carbs_g || 0) * 10) / 10,
+            fat_g: Math.round((item.fat_g || 0) * 10) / 10,
+            sugar_g: Math.round((item.sugar_g || 0) * 10) / 10,
+            sodium_mg: Math.round(item.sodium_mg || 0)
+        };
+    }
+
+    // Fallback if not found in FCT but has AI generic estimation data
     if (item.macros_per_serving) {
         const qty = item.measure_qty || 1;
         return {
@@ -75,7 +92,7 @@ export const mapToFCT = (item, aiMacrosEsimtation = null) => {
         };
     }
 
-    // Ultimate fallback if even AI data is missing
+    // Ultimate fallback if even AI data and verified data are missing
     return {
         ...item,
         fct_matched: false,
@@ -93,7 +110,9 @@ export const mapToFCT = (item, aiMacrosEsimtation = null) => {
  * @param {Array} verifiedItems - [{name: 'Rice', weight_g: 100}, ...]
  * @returns {Object} - The recalculated ai_analysis totals
  */
-export const recalculateMealTotals = (verifiedItems) => {
+export const recalculateMealTotals = (verifiedItems, plate_waste = 100) => {
+    const pwValue = parseInt(plate_waste);
+    const wasteFactor = (isNaN(pwValue) ? 100 : pwValue) / 100;
     let total_calories = 0, total_protein = 0, total_carbs = 0, total_fat = 0, total_sugar = 0, total_sodium = 0;
     
     const mappedItems = verifiedItems.map(item => {
@@ -107,15 +126,26 @@ export const recalculateMealTotals = (verifiedItems) => {
         return mapped;
     });
 
+    const total_calories_est = Math.round(total_calories * wasteFactor);
+    const macros_est = {
+        protein_g: Math.round(total_protein * wasteFactor * 10) / 10,
+        carbs_g: Math.round(total_carbs * wasteFactor * 10) / 10,
+        fat_g: Math.round(total_fat * wasteFactor * 10) / 10,
+        sugar_g: Math.round(total_sugar * wasteFactor * 10) / 10,
+        sodium_mg: Math.round(total_sodium * wasteFactor)
+    };
+
     return {
         items: mappedItems,
-        total_calories_est: total_calories,
-        macros_est: {
-            protein_g: Math.round(total_protein * 10) / 10,
-            carbs_g: Math.round(total_carbs * 10) / 10,
-            fat_g: Math.round(total_fat * 10) / 10,
-            sugar_g: Math.round(total_sugar * 10) / 10,
-            sodium_mg: total_sodium
+        total_calories_est,
+        macros_est,
+        plate_waste,
+        // For Parent UI consistency
+        nutrition: {
+            calories: total_calories_est,
+            protein: macros_est.protein_g,
+            carbs: macros_est.carbs_g,
+            fat: macros_est.fat_g
         }
     };
 };

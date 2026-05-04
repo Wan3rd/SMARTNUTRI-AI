@@ -186,33 +186,44 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             setStatus('done');
             if (onLogged) onLogged();
             
+            // Explicitly clear file inputs
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
+
+            // Auto-reset after 2 seconds, but user can also click 'New Log'
             setTimeout(() => {
-                setFile(null);
-                setPreview(null);
-                setFileAfter(null);
-                setPreviewAfter(null);
-                setAnalysisResult(null);
-                setVerifiedItems([]);
-                setSuppData({ 
-                    waterMl: '', 
-                    supplements: '', 
-                    physicalActivity: '', 
-                    servingSpoonUsed: false,
-                    cookingMethod: '',
-                    hiddenIngredients: '',
-                    isParentVerified: false,
-                    mealCategory: 'Lunch',
-                    plateWaste: 100,
-                    loggedAt: getLocalISOTime()
-                });
-                setStatus('idle');
-            }, 3000);
+                resetForm();
+            }, 2500);
         } catch (err) {
             console.error(err);
             setStatus('error');
         } finally {
             setLoading(false);
         }
+    };
+
+    const resetForm = () => {
+        setFile(null);
+        setPreview(null);
+        setFileAfter(null);
+        setPreviewAfter(null);
+        setAnalysisResult(null);
+        setVerifiedItems([]);
+        setSuppData({ 
+            waterMl: '', 
+            supplements: '', 
+            physicalActivity: '', 
+            servingSpoonUsed: false,
+            cookingMethod: '',
+            hiddenIngredients: '',
+            isParentVerified: false,
+            mealCategory: getDefaultMealCategory(),
+            plateWaste: 100,
+            loggedAt: getLocalISOTime()
+        });
+        setStatus('idle');
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
     };
 
     const handleQuickLog = (log) => {
@@ -398,6 +409,44 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 <p className="text-[10px] text-yellow-800 dark:text-yellow-500 font-bold leading-tight">CARE-GIVER VERIFICATION: AI detects items and cooking methods. Please confirm or correct them below.</p>
                             </div>
 
+                            <div className="bg-[var(--color-primary)]/5 p-4 rounded-xl border border-[var(--color-primary)]/20 shadow-sm flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-[var(--color-primary)]" />
+                                    <span className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-tight">Step 2: Caregiver Log Report</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Category</label>
+                                        <select 
+                                            value={suppData.mealCategory}
+                                            onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-white text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                        >
+                                            <option value="Breakfast">Breakfast</option>
+                                            <option value="AM Snack">AM Snack</option>
+                                            <option value="Lunch">Lunch</option>
+                                            <option value="PM Snack">PM Snack</option>
+                                            <option value="Dinner">Dinner</option>
+                                            <option value="Other">Other / Dietary</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</label>
+                                        <select 
+                                            value={suppData.plateWaste}
+                                            onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-white text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                        >
+                                            <option value={100}>UBOS (100%)</option>
+                                            <option value={75}>TIRA (75%)</option>
+                                            <option value={50}>HALF (50%)</option>
+                                            <option value={25}>LITTL (25%)</option>
+                                            <option value={0}>NONE (0%)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="space-y-3">
                                 {verifiedItems.map((item, idx) => (
                                     <div key={idx} className="flex flex-col gap-2 p-2.5 bg-white dark:bg-white/5 border border-[var(--color-divider)] rounded-lg shadow-sm">
@@ -508,17 +557,13 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Consumption / Plate Waste</label>
-                                        <select 
-                                            value={suppData.plateWaste}
-                                            onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-                                        >
-                                            <option value={100}>Ubos (100%)</option>
-                                            <option value={50}>Kalahati (50%)</option>
-                                            <option value={25}>Tira-tira (25%)</option>
-                                            <option value={0}>Hindi Ginalaw (0%)</option>
-                                        </select>
+                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Meal Time</label>
+                                        <input 
+                                            type="datetime-local"
+                                            value={suppData.loggedAt}
+                                            onChange={(e) => setSuppData({...suppData, loggedAt: e.target.value})}
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Vitamins/Supplements</label>
@@ -611,6 +656,24 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     ) : "Save Log"}
                                 </Button>
                             </div>
+                        </div>
+                    )}
+                    {status === 'done' && (
+                        <div className="w-full py-12 flex flex-col items-center justify-center space-y-6 animate-in zoom-in-95 duration-500">
+                            <div className="h-24 w-24 bg-green-500/10 rounded-full flex items-center justify-center border-4 border-green-500/20 shadow-xl shadow-green-500/10">
+                                <CheckCircle size={48} className="text-green-500 animate-in fade-in slide-in-from-bottom-2" />
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h4 className="text-2xl font-black text-[var(--color-secondary)] uppercase italic">Log Saved Successfully!</h4>
+                                <p className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">The nutritionist has been notified of the new meal.</p>
+                            </div>
+                            <Button 
+                                onClick={resetForm}
+                                className="px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 group"
+                            >
+                                <Upload size={18} className="group-hover:-translate-y-0.5 transition-transform" />
+                                LOG ANOTHER MEAL
+                            </Button>
                         </div>
                     )}
                 </div>

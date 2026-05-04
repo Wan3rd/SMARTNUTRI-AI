@@ -360,32 +360,80 @@ router.get('/logs/pending', verifyToken, isNutritionist, async (req, res) => {
 router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) => {
     const { nutritionist_review, status } = req.body;
     try {
-        // 1. Get current log to find profile_id
+        // 1. Get current log to find profile_id and logged_at
         const log = await prisma.meal_logs.findUnique({
             where: { id: req.params.id },
-            select: { profile_id: true }
+            select: { profile_id: true, logged_at: true }
         });
         if (!log) return res.status(404).json({ message: 'Log not found' });
 
-        const { profile_id } = log;
+        const { profile_id, logged_at } = log;
 
-        // 2. Fetch Rules
+        // 2. Fetch today's existing meal logs (excluding this one) to calculate cumulative dailyTotals
+        const logDate = new Date(logged_at);
+        const startOfDay = new Date(logDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(logDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const otherLogs = await prisma.meal_logs.findMany({
+            where: {
+                profile_id: profile_id,
+                id: { not: req.params.id }, // Exclude current log
+                logged_at: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            },
+            select: {
+                total_calories: true,
+                total_protein_g: true,
+                total_carbs_g: true,
+                total_fat_g: true,
+                total_sugar_g: true,
+                total_sodium_mg: true
+            }
+        });
+
+        const dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 };
+        otherLogs.forEach(ol => {
+            dailyTotals.calories += (ol.total_calories || 0);
+            dailyTotals.protein += (ol.total_protein_g || 0);
+            dailyTotals.carbs += (ol.total_carbs_g || 0);
+            dailyTotals.fat += (ol.total_fat_g || 0);
+            dailyTotals.sugar += (ol.total_sugar_g || 0);
+            dailyTotals.sodium += (ol.total_sodium_mg || 0);
+        });
+
+        // 3. Fetch Rules
         const rules = await prisma.nutrition_rules.findMany({
             where: { profile_id: profile_id }
         });
 
-        // 3. Check Compliance (Dynamic Import)
+        // 4. Check Compliance (Dynamic Import)
         const { checkCompliance } = await import('../utils/compliance.js');
-        const complianceResult = checkCompliance({ nutritionist_review }, rules);
+        const complianceResult = checkCompliance({ nutritionist_review }, rules, dailyTotals);
 
-        // 4. Update Log
+        // 5. Update Log with first-class nutritional columns
+        const verified = nutritionist_review?.verified_analysis || {};
+        const macros = verified.macros_est || {};
+
         const updatedLog = await prisma.meal_logs.update({
             where: { id: req.params.id },
             data: {
                 nutritionist_review,
                 status: status || 'reviewed',
                 compliance_status: complianceResult.status,
-                violation_details: complianceResult.details
+                compliance_score: complianceResult.compliance_score,
+                violation_details: complianceResult.details,
+                // Sync dedicated columns
+                consumption_percent: verified.plate_waste || 100,
+                total_calories: verified.total_calories_est || 0,
+                total_protein_g: macros.protein_g || 0,
+                total_carbs_g: macros.carbs_g || 0,
+                total_fat_g: macros.fat_g || 0,
+                total_sugar_g: macros.sugar_g || 0,
+                total_sodium_mg: macros.sodium_mg || 0
             }
         });
         res.json(updatedLog);
@@ -634,6 +682,69 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
             }
         });
         res.status(201).json(newNote);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /clients/profile/:id - Nutritionist updates a child's clinical profile
+router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { id } = req.params;
+    const { 
+        medical_history, 
+        medications, 
+        vaccinations, 
+        bristol_stool_scale, 
+        allergies, 
+        dietary_preferences,
+        height_cm,
+        weight_kg,
+        activity_level,
+        child_name,
+        date_of_birth,
+        gender
+    } = req.body;
+
+    try {
+        // 1. Verify this profile belongs to a client linked to this nutritionist
+        const profile = await prisma.profiles.findUnique({
+            where: { id: id },
+            include: {
+                users: {
+                    include: {
+                        nutritionists: {
+                            where: { nutritionist_id: req.user.id }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!profile || profile.users.nutritionists.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized: This child is not your client' });
+        }
+
+        // 2. Update Profile
+        const updated = await prisma.profiles.update({
+            where: { id: id },
+            data: {
+                medical_history,
+                medications,
+                vaccinations,
+                bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : undefined,
+                allergies,
+                dietary_preferences,
+                height_cm: height_cm ? parseFloat(height_cm) : undefined,
+                weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
+                activity_level,
+                child_name,
+                date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+                gender
+            }
+        });
+
+        res.json(updated);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

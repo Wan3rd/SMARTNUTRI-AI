@@ -167,18 +167,17 @@ router.post('/', verifyToken, async (req, res) => {
         // 1. Parse Hidden Ingredients if any
         const { parseTextToNutrients } = await import('../services/gemini.js');
         const hiddenItems = await parseTextToNutrients(hidden_ingredients);
-        
+
         const allItems = [...(ai_analysis.items || []), ...hiddenItems];
 
         // 2. Recalculate using DOST-FNRI Local FCT mappings
         const { recalculateMealTotals } = await import('../utils/fct.js');
-        const finalizedAnalysis = recalculateMealTotals(allItems);
+        const finalizedAnalysis = recalculateMealTotals(allItems, ai_analysis.plate_waste);
 
         // 2. Fetch today's existing meal logs to calculate `dailyTotals`
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
+        const logDateStr = (logged_at ? new Date(logged_at) : new Date()).toISOString().split('T')[0];
+        const startOfDay = new Date(`${logDateStr}T00:00:00.000Z`);
+        const endOfDay = new Date(`${logDateStr}T23:59:59.999Z`);
 
         const todayLogs = await prisma.meal_logs.findMany({
             where: {
@@ -189,22 +188,24 @@ router.post('/', verifyToken, async (req, res) => {
                 }
             },
             select: {
-                ai_analysis: true
+                total_calories: true,
+                total_protein_g: true,
+                total_carbs_g: true,
+                total_fat_g: true,
+                total_sugar_g: true,
+                total_sodium_mg: true
             }
         });
 
         let dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 };
 
         todayLogs.forEach(log => {
-            const analysis = log.ai_analysis;
-            if (analysis && analysis.macros_est) {
-                dailyTotals.calories += (analysis.total_calories_est || 0);
-                dailyTotals.protein += (analysis.macros_est.protein_g || 0);
-                dailyTotals.carbs += (analysis.macros_est.carbs_g || 0);
-                dailyTotals.fat += (analysis.macros_est.fat_g || 0);
-                dailyTotals.sugar += (analysis.macros_est.sugar_g || 0);
-                dailyTotals.sodium += (analysis.macros_est.sodium_mg || 0);
-            }
+            dailyTotals.calories += (log.total_calories || 0);
+            dailyTotals.protein += (log.total_protein_g || 0);
+            dailyTotals.carbs += (log.total_carbs_g || 0);
+            dailyTotals.fat += (log.total_fat_g || 0);
+            dailyTotals.sugar += (log.total_sugar_g || 0);
+            dailyTotals.sodium += (log.total_sodium_mg || 0);
         });
 
         // 3. Check Rules & Compliance against localized values and cumulative daily totals
@@ -234,6 +235,13 @@ router.post('/', verifyToken, async (req, res) => {
                 serving_spoon_used: serving_spoon_used || false,
                 is_parent_verified: is_parent_verified || false,
                 hidden_ingredients: hidden_ingredients || '',
+                consumption_percent: finalizedAnalysis.plate_waste || 100,
+                total_calories: finalizedAnalysis.total_calories_est || 0,
+                total_protein_g: finalizedAnalysis.macros_est?.protein_g || 0,
+                total_carbs_g: finalizedAnalysis.macros_est?.carbs_g || 0,
+                total_fat_g: finalizedAnalysis.macros_est?.fat_g || 0,
+                total_sugar_g: finalizedAnalysis.macros_est?.sugar_g || 0,
+                total_sodium_mg: finalizedAnalysis.macros_est?.sodium_mg || 0,
                 meal_category: meal_category || 'other',
                 logged_at: logged_at ? new Date(logged_at) : new Date()
             }
@@ -255,12 +263,49 @@ router.get('/profile/:id', verifyToken, async (req, res) => {
     try {
         const logs = await prisma.meal_logs.findMany({
             where: { profile_id: req.params.id },
+            include: {
+                profiles: true
+            },
             orderBy: { logged_at: 'desc' }
         });
-        res.json(logs);
+
+        // Format to match nutritionist view requirements
+        const formattedLogs = logs.map(log => ({
+            ...log,
+            child_name: log.profiles?.child_name,
+            profile: log.profiles
+        }));
+
+        res.json(formattedLogs);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /bulk/day/:profileId/:date - Clear all logs for a specific day
+router.delete('/bulk/day/:profileId/:date', verifyToken, async (req, res) => {
+    const { profileId, date } = req.params;
+    try {
+        // Create range for the entire day in UTC to be safe, 
+        // or parse the date string carefully.
+        const startOfDay = new Date(`${date}T00:00:00.000Z`);
+        const endOfDay = new Date(`${date}T23:59:59.999Z`);
+
+        const result = await prisma.meal_logs.deleteMany({
+            where: {
+                profile_id: profileId,
+                logged_at: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            }
+        });
+
+        res.json({ message: `Successfully cleared ${result.count} logs for ${date}`, count: result.count });
+    } catch (err) {
+        console.error("Bulk delete logs error:", err);
+        res.status(500).json({ message: 'Server error clearing daily logs' });
     }
 });
 

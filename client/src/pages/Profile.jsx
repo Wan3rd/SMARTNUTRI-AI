@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check } from 'lucide-react';
+import { User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
+import Cropper from 'react-easy-crop';
 
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)",
@@ -55,13 +56,50 @@ const getBMIStatus = (bmi) => {
     return { label: 'Obese', color: 'text-red-600 bg-red-50 border-red-200' };
 };
 
+// Must be defined outside Profile to keep a stable reference across renders
+const InfoField = ({ label, name, icon: Icon, placeholder, type = 'text', value, onChange, isEditing }) => (
+    <div className="space-y-1.5">
+        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 flex items-center gap-1.5">
+            {Icon && <Icon size={10} />}{label}
+        </label>
+        {isEditing ? (
+            <input
+                type={type}
+                value={value}
+                onChange={e => onChange(name, e.target.value)}
+                placeholder={placeholder}
+                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+            />
+        ) : (
+            <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)] text-sm min-h-[54px] flex items-center">
+                {value || <span className="text-[var(--color-text-muted)] italic font-medium text-xs">{placeholder || 'Not set'}</span>}
+            </div>
+        )}
+    </div>
+);
+
 export default function Profile() {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isEditing, setIsEditing] = useState(false);
+
+    // Nutritionist-specific state
+    const [nutri, setNutri] = useState({
+        fullName: user?.full_name || '',
+        email: user?.email || '',
+        phone: '',
+        specialization: 'Pediatric Nutrition',
+        licenseNo: '',
+        clinic: '',
+        profileImageUrl: ''
+    });
+    const [nutriEditing, setNutriEditing] = useState(false);
+    const [nutriSaving, setNutriSaving] = useState(false);
+    const [nutriMsg, setNutriMsg] = useState({ type: '', text: '' });
+    const [clientCount, setClientCount] = useState(null);
 
     // Using string 'null' or empty string for uninitialized prevents uncontrolled/controlled warnings
     const [profileData, setProfileData] = useState({
@@ -78,23 +116,78 @@ export default function Profile() {
         medications: '',
         weighInConditions: '',
         bristolStoolScale: '4',
-        medicalHistory: ''
+        medicalHistory: '',
+        profileImageUrl: ''
     });
 
-    const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [childVaccinations, setChildVaccinations] = useState([]);
+    const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
     const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
 
+    // Photo Crop & Upload States
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
     useEffect(() => {
-        // Only fetch child profiles if user is NOT a nutritionist
         if (user?.role !== 'nutritionist') {
             fetchProfile();
             fetchVaccinationData();
         } else {
-            setLoading(false);
+            // Fetch client count for nutritionist stats
+            api.get('/profiles').then(res => setClientCount(res.data?.length ?? 0)).catch(() => setClientCount(0));
+            // Fetch nutritionist profile from backend
+            api.get('/auth/me').then(res => {
+                const data = res.data;
+                setNutri(prev => ({
+                    ...prev,
+                    fullName: data.full_name || user?.full_name || '',
+                    email: data.email || user?.email || '',
+                    phone: data.phone || '',
+                    specialization: data.specialization || 'Pediatric Nutrition',
+                    licenseNo: data.license_no || '',
+                    clinic: data.clinic || '',
+                    profileImageUrl: data.profile_image_url || ''
+                }));
+            }).catch(err => console.error("Error fetching nutritionist profile", err))
+            .finally(() => setLoading(false));
         }
     }, [user]);
+
+    const handleNutriSave = async () => {
+        setNutriSaving(true);
+        setNutriMsg({ type: '', text: '' });
+        try {
+            const res = await api.put('/auth/profile', {
+                full_name: nutri.fullName,
+                phone: nutri.phone,
+                specialization: nutri.specialization,
+                license_no: nutri.licenseNo,
+                clinic: nutri.clinic,
+                profile_image_url: nutri.profileImageUrl
+            });
+            setNutriMsg({ type: 'success', text: 'Professional info saved to cloud!' });
+            
+            // Sync with global auth state
+            if (updateUser) {
+                updateUser({
+                    ...user,
+                    full_name: nutri.fullName,
+                    profile_image_url: nutri.profileImageUrl
+                });
+            }
+            
+            setNutriEditing(false);
+        } catch (err) {
+            console.error(err);
+            setNutriMsg({ type: 'error', text: 'Failed to save to server.' });
+        } finally {
+            setNutriSaving(false);
+        }
+    };
 
     const fetchVaccinationData = async () => {
         try {
@@ -147,7 +240,8 @@ export default function Profile() {
                     medications: profile.medications || '',
                     weighInConditions: profile.weigh_in_conditions || '',
                     bristolStoolScale: profile.bristol_stool_scale?.toString() || '4',
-                    medicalHistory: profile.medical_history || ''
+                    medicalHistory: profile.medical_history || '',
+                    profileImageUrl: profile.profile_image_url || ''
                 });
             }
         } catch (err) {
@@ -212,6 +306,96 @@ export default function Profile() {
         }
     };
 
+    const onCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            setImageToCrop(reader.result);
+        });
+        reader.readAsDataURL(file);
+    };
+
+    const createImage = (url) =>
+        new Promise((resolve, reject) => {
+            const image = new Image();
+            image.addEventListener('load', () => resolve(image));
+            image.addEventListener('error', (error) => reject(error));
+            image.setAttribute('crossOrigin', 'anonymous');
+            image.src = url;
+        });
+
+    const getCroppedImg = async (imageSrc, pixelCrop) => {
+        const image = await createImage(imageSrc);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        ctx.drawImage(
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            pixelCrop.width,
+            pixelCrop.height
+        );
+
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/jpeg');
+        });
+    };
+
+    const handlePhotoUpload = async () => {
+        if (!imageToCrop || !croppedAreaPixels) return;
+
+        setIsUploadingPhoto(true);
+        try {
+            const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+            
+            if (user?.role === 'nutritionist') {
+                // For nutritionists, we upload and update the user record
+                const reader = new FileReader();
+                reader.readAsDataURL(croppedBlob);
+                reader.onloadend = async () => {
+                    const base64data = reader.result;
+                    try {
+                        await api.put('/auth/profile', {
+                            profile_image_url: base64data
+                        });
+                        setNutri(prev => ({ ...prev, profileImageUrl: base64data }));
+                    } catch (err) {
+                        console.error("Error uploading nutritionist photo", err);
+                    }
+                };
+            } else {
+                const formData = new FormData();
+                formData.append('photo', croppedBlob, 'profile.jpg');
+
+                const res = await api.post(`/profiles/${profileData.id}/photo`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                setProfileData(prev => ({ ...prev, profileImageUrl: res.data.profile_image_url }));
+            }
+            setImageToCrop(null);
+        } catch (err) {
+            console.error("Error uploading photo", err);
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         setMessage({ type: '', text: '' });
@@ -251,60 +435,292 @@ export default function Profile() {
 
     // --- NUTRITIONIST VIEW ---
     if (user?.role === 'nutritionist') {
+        const initials = nutri.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'N';
+        const memberSince = user.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
+        const handleNutriFieldChange = (name, val) => setNutri(p => ({ ...p, [name]: val }));
+
         return (
-            <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-10">
-            <div className="flex items-center gap-6 mb-10 p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                <div className="h-24 w-24 bg-gradient-to-br from-[var(--color-info)] to-blue-600 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-blue-500/20">
-                    {user.full_name?.charAt(0).toUpperCase() || 'N'}
-                </div>
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <h1 className="text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight">{user.full_name}</h1>
-                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-200 dark:border-blue-800">Nutritionist</span>
+            <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+
+                {/* ── HERO BANNER ── */}
+                <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl">
+                    {/* Gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent" />
+
+                    <div className="relative p-8 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+                        {/* Avatar with pulse ring */}
+                        <div className="relative flex-shrink-0 group">
+                            <div className="absolute inset-0 rounded-3xl bg-white/30 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
+                            <div className="relative h-24 w-24 overflow-hidden bg-white/20 backdrop-blur-sm rounded-3xl border-2 border-white/40 flex items-center justify-center text-white text-3xl font-black shadow-2xl select-none">
+                                {isUploadingPhoto ? (
+                                    <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
+                                        <Loader2 size={32} className="animate-spin text-white" />
+                                    </div>
+                                ) : nutri.profileImageUrl ? (
+                                    <img 
+                                        src={nutri.profileImageUrl} 
+                                        alt={nutri.fullName} 
+                                        className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
+                                    />
+                                ) : (
+                                    initials
+                                )}
+                            </div>
+                            {!isUploadingPhoto && (
+                                <>
+                                    <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] z-10">
+                                        <input type="file" className="hidden" onChange={handleFileSelect} accept="image/*" />
+                                        <Camera size={28} className="animate-bounce" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
+                                    </label>
+                                    <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-400 rounded-xl border-2 border-white flex items-center justify-center z-20">
+                                        <BadgeCheck size={14} className="text-white" />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Name & role */}
+                        <div className="flex-1 text-center sm:text-left">
+                            <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mb-1">
+                                <h1 className="text-3xl font-black text-white tracking-tight drop-shadow-md">{nutri.fullName}</h1>
+                                <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm">
+                                    Nutritionist
+                                </span>
+                            </div>
+                            <p className="text-blue-100 font-medium text-sm">{nutri.specialization} &bull; {nutri.clinic || 'SmartNutri Clinical'}</p>
+                        </div>
+
+                        {/* Member since pill */}
+                        <div className="flex-shrink-0 text-center">
+                            <div className="px-5 py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/25">
+                                <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest mb-0.5">Member Since</p>
+                                <p className="text-2xl font-black text-white">{memberSince}</p>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-[var(--color-text-muted)] font-medium">Expert Clinical Reviewer Account</p>
                 </div>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-                <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                    <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
-                        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest"><User size={18} className="text-blue-500" /> Account Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Full Name</label>
-                            <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)]">
-                                {user.full_name}
+                {/* ── STATS ROW ── */}
+                <div className="grid grid-cols-3 gap-4">
+                    {[
+                        { label: 'Active Clients', value: clientCount ?? '—', icon: Users, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
+                        { label: 'Role', value: 'Clinical', icon: Stethoscope, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
+                        { label: 'Status', value: 'Verified', icon: Shield, color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20' },
+                    ].map(stat => (
+                        <div key={stat.label} className="p-5 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm flex flex-col items-center gap-2 hover:shadow-md transition-all">
+                            <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${stat.color}`}>
+                                <stat.icon size={20} />
                             </div>
+                            <p className="text-2xl font-black text-[var(--color-text-main)]">{stat.value}</p>
+                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">{stat.label}</p>
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Email Address</label>
-                            <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)]">
-                                {user.email}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                    ))}
+                </div>
 
-                <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                    <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
-                        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest">🔐 Security & System</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8 flex flex-col justify-between h-full min-h-[200px]">
-                        <p className="text-xs font-medium text-[var(--color-text-muted)] leading-relaxed italic">
-                            Your account is protected with enterprise-grade encryption. Password management is currently handled by the clinical administrator.
-                        </p>
-                        <Button 
-                            variant="outline" 
-                            onClick={handleLogout} 
-                            className="w-full h-14 rounded-2xl text-red-500 border-2 border-red-100 hover:bg-red-50 hover:border-red-200 transition-all font-black uppercase tracking-widest gap-3"
-                        >
-                            <LogOut size={20} /> Sign Out
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+                {nutriMsg.text && (
+                    <div className={`p-4 rounded-2xl border-2 font-black uppercase tracking-widest text-center text-xs animate-in slide-in-from-top-4 duration-300 ${
+                        nutriMsg.type === 'error' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                        {nutriMsg.text}
+                    </div>
+                )}
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* ── PROFESSIONAL IDENTITY ── */}
+                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                    <Stethoscope size={18} className="text-blue-500" /> Professional Info
+                                </CardTitle>
+                                {!nutriEditing ? (
+                                    <button
+                                        onClick={() => setNutriEditing(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                        <Edit2 size={12} /> Edit
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { setNutriEditing(false); setNutriMsg({ type: '', text: '' }); }}
+                                            className="px-3 py-1.5 bg-gray-100 dark:bg-white/10 text-[var(--color-text-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-gray-200"
+                                        >Cancel</button>
+                                        <button
+                                            onClick={handleNutriSave}
+                                            disabled={nutriSaving}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-60"
+                                        >
+                                            {nutriSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                            Save
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <InfoField label="Full Name" name="fullName" icon={User} placeholder="Your full name" value={nutri.fullName} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                            <InfoField label="Specialization" name="specialization" icon={Stethoscope} placeholder="e.g. Pediatric Nutrition" value={nutri.specialization} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                            <InfoField label="License / PRC ID No." name="licenseNo" icon={BadgeCheck} placeholder="e.g. PRC-0012345" value={nutri.licenseNo} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                            <InfoField label="Clinic / Institution" name="clinic" icon={Building2} placeholder="e.g. SmartNutri Health Center" value={nutri.clinic} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                            <InfoField label="Contact Number" name="phone" icon={Phone} placeholder="e.g. +63 912 345 6789" type="tel" value={nutri.phone} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                        </CardContent>
+                    </Card>
+
+                    {/* ── RIGHT COLUMN ── */}
+                    <div className="flex flex-col gap-6">
+                        {/* Account Details */}
+                        <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                                <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                    <User size={18} className="text-blue-500" /> Account Details
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Email Address</label>
+                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)] text-sm flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Link2 size={14} className="text-blue-500" />
+                                        </div>
+                                        {user.email}
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Account Type</label>
+                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-violet-50 dark:bg-violet-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Shield size={14} className="text-violet-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight">Nutritionist</p>
+                                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Clinical Reviewer Access</p>
+                                        </div>
+                                        <span className="ml-auto px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-200 dark:border-emerald-800">Active</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Quick Links */}
+                        <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                                <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                    <BarChart3 size={18} className="text-blue-500" /> Quick Navigation
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 grid grid-cols-2 gap-3">
+                                {[
+                                    { label: 'My Clients', icon: Users, path: '/clients', color: 'from-emerald-500 to-teal-500' },
+                                    { label: 'Dashboard', icon: BarChart3, path: '/', color: 'from-blue-500 to-indigo-500' },
+                                ].map(link => (
+                                    <button
+                                        key={link.label}
+                                        onClick={() => navigate(link.path)}
+                                        className="group flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-[var(--color-divider)] hover:border-transparent hover:shadow-lg transition-all duration-300 bg-[var(--color-bg-page)] hover:bg-gradient-to-br hover:text-white overflow-hidden relative"
+                                        style={{ '--tw-gradient-from': link.color.split(' ')[0].replace('from-', ''), '--tw-gradient-to': link.color.split(' ')[1].replace('to-', '') }}
+                                    >
+                                        <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${link.color} flex items-center justify-center shadow-md`}>
+                                            <link.icon size={18} className="text-white" />
+                                        </div>
+                                        <span className="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-main)] group-hover:text-[var(--color-text-main)] transition-colors">{link.label}</span>
+                                    </button>
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        {/* Security & Sign Out */}
+                        <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                                <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                    <Lock size={18} className="text-red-400" /> Security
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-800">
+                                    <Shield size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-[11px] font-medium text-amber-700 dark:text-amber-400 leading-relaxed">
+                                        Your account is secured with enterprise-grade encryption. Contact your clinical administrator to change your password.
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleLogout}
+                                    className="w-full h-12 rounded-2xl text-red-500 border-2 border-red-100 hover:bg-red-50 hover:border-red-300 transition-all font-black uppercase tracking-widest gap-2 text-xs"
+                                >
+                                    <LogOut size={16} /> Sign Out
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Image Cropper Modal */}
+                {imageToCrop && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                        <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-6">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest">Adjust Professional Photo</CardTitle>
+                                <button onClick={() => setImageToCrop(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="relative h-80 w-full bg-gray-100">
+                                    <Cropper
+                                        image={imageToCrop}
+                                        crop={crop}
+                                        zoom={zoom}
+                                        aspect={1}
+                                        onCropChange={setCrop}
+                                        onCropComplete={onCropComplete}
+                                        onZoomChange={setZoom}
+                                        cropShape="rect"
+                                        showGrid={true}
+                                    />
+                                </div>
+                                <div className="p-8 space-y-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Zoom Level</label>
+                                        <input
+                                            type="range"
+                                            value={zoom}
+                                            min={1}
+                                            max={3}
+                                            step={0.1}
+                                            onChange={(e) => setZoom(e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+                                        />
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={() => setImageToCrop(null)}
+                                            className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button 
+                                            onClick={handlePhotoUpload}
+                                            disabled={isUploadingPhoto}
+                                            className="flex-1 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2"
+                                        >
+                                            {isUploadingPhoto ? (
+                                                <>
+                                                    <Loader2 size={16} className="animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : 'Save Photo'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </div>
         );
     }
@@ -315,9 +731,99 @@ export default function Profile() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                 <div className="flex items-center gap-6">
-                    <div className="h-20 w-20 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-[var(--color-primary)]/20">
-                        {profileData.childName.charAt(0).toUpperCase() || 'C'}
+                    <div className="relative group">
+                        <div className="h-24 w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-4 border-white">
+                            {isUploadingPhoto ? (
+                                <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
+                                    <Loader2 size={32} className="animate-spin text-white" />
+                                </div>
+                            ) : profileData.profileImageUrl ? (
+                                <img 
+                                    src={profileData.profileImageUrl} 
+                                    alt={profileData.childName} 
+                                    className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
+                                />
+                            ) : (
+                                profileData.childName.charAt(0).toUpperCase() || 'C'
+                            )}
+                        </div>
+                        {isEditing && !isUploadingPhoto && (
+                            <>
+                                <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                                    <input type="file" className="hidden" onChange={handleFileSelect} accept="image/*" />
+                                    <Camera size={28} className="animate-bounce" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
+                                </label>
+                                <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-[var(--color-primary)] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
+                                    <Camera size={14} />
+                                </div>
+                            </>
+                        )}
                     </div>
+
+                    {/* Image Cropper Modal */}
+                    {imageToCrop && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                            <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-6">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest">Adjust Profile Photo</CardTitle>
+                                    <button onClick={() => setImageToCrop(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                                        <X size={20} />
+                                    </button>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="relative h-80 w-full bg-gray-100">
+                                        <Cropper
+                                            image={imageToCrop}
+                                            crop={crop}
+                                            zoom={zoom}
+                                            aspect={1}
+                                            onCropChange={setCrop}
+                                            onCropComplete={onCropComplete}
+                                            onZoomChange={setZoom}
+                                            cropShape="rect"
+                                            showGrid={true}
+                                        />
+                                    </div>
+                                    <div className="p-8 space-y-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Zoom Level</label>
+                                            <input
+                                                type="range"
+                                                value={zoom}
+                                                min={1}
+                                                max={3}
+                                                step={0.1}
+                                                onChange={(e) => setZoom(e.target.value)}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+                                            />
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => setImageToCrop(null)}
+                                                className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button 
+                                                onClick={handlePhotoUpload}
+                                                disabled={isUploadingPhoto}
+                                                className="flex-1 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2"
+                                            >
+                                                {isUploadingPhoto ? (
+                                                    <>
+                                                        <Loader2 size={16} className="animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : 'Save Photo'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                     <div>
                         <h1 className="text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight">{profileData.childName || 'Child Profile'}</h1>
                         <p className="text-[var(--color-text-muted)] font-medium italic">Parent: {user?.full_name}</p>

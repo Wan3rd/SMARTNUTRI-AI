@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
+import { upload, cloudinary } from '../lib/cloudinary.js';
 
 const router = express.Router();
 
@@ -193,6 +194,54 @@ router.delete('/vaccinations/:id', verifyToken, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /:id/photo - Upload profile photo
+router.post('/:id/photo', verifyToken, (req, res, next) => {
+    upload.single('photo')(req, res, (err) => {
+        if (err) {
+            console.error('Multer Error:', err);
+            return res.status(500).json({ message: 'File processing failed', error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Upload to Cloudinary from memory buffer
+        const uploadFromBuffer = () => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'smartnutri/profiles',
+                        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+                    },
+                    (error, result) => {
+                        if (result) resolve(result);
+                        else reject(error);
+                    }
+                );
+                stream.end(req.file.buffer);
+            });
+        };
+
+        const result = await uploadFromBuffer();
+
+        const updatedProfile = await prisma.profiles.update({
+            where: { id: req.params.id },
+            data: {
+                profile_image_url: result.secure_url
+            }
+        });
+
+        res.json({ profile_image_url: updatedProfile.profile_image_url });
+    } catch (err) {
+        console.error('Cloudinary/Database Error:', err);
+        res.status(500).json({ message: 'Upload failed', error: err.message });
     }
 });
 
