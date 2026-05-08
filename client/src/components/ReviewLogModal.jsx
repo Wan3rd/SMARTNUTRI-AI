@@ -55,7 +55,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 },
                 status: 'verified'
             });
-            onReviewComplete();
+            onReviewComplete?.();
             onClose();
         } catch (err) {
             console.error("Failed to submit review", err);
@@ -110,7 +110,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-hidden">
+            <div key="modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-hidden">
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -398,6 +398,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             </AnimatePresence>
 
             <Notification
+                key="modal-notif"
                 show={notif.show}
                 type={notif.type}
                 message={notif.message}

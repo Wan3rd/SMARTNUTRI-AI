@@ -2298,8 +2298,8 @@ export default function ClientDetails() {
 
                                             <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm">
                                                 <h3 className="font-bold mb-6">Health Score & Compliance Trend</h3>
-                                                <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: 0 }}>
-                                                    <ResponsiveContainer width="100%" height="100%">
+                                                <div className="h-[300px] w-full min-h-[300px] flex flex-col" style={{ minWidth: 0 }}>
+                                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                                         <LineChart
                                                             data={logs.slice().reverse()}
                                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -3233,7 +3233,7 @@ export default function ClientDetails() {
                 isOpen={isReviewOpen}
                 onClose={() => setIsReviewOpen(false)}
                 log={selectedLogForReview}
-                onVerified={() => {
+                onReviewComplete={() => {
                     fetchLogs(selectedProfile.id);
                     fetchAdimeNotes(selectedProfile.id);
                     setIsReviewOpen(false);
@@ -3248,8 +3248,8 @@ export default function ClientDetails() {
                 maxWidth="max-w-6xl"
             >
                 <div className="space-y-6">
-                    <div className="h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)]">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)] flex flex-col" style={{ minWidth: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <LineChart data={[...growthLogs].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at))}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
                                 <XAxis 

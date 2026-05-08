@@ -549,13 +549,13 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         onBlur={(e) => handleRowBlur(e, idx)}
                                         className={`flex flex-col gap-2 p-2.5 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-lg shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.99]' : ''}`}
                                     >
-                                        <div className="flex gap-2 items-center">
-                                            <div className="flex-1 relative">
+                                        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                                            <div className="flex-1 min-w-[140px] relative">
                                                 <input 
                                                     value={item.name} 
                                                     onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                                                     placeholder="Food name"
-                                                    className="w-full p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-black uppercase tracking-tight"
+                                                    className="w-full p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-black uppercase tracking-tight"
                                                 />
                                                 {item.isUpdating && (
                                                     <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -563,73 +563,77 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                     </div>
                                                 )}
                                             </div>
-                                            <select 
-                                                value={item.cooking_method || ''} 
-                                                onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
-                                                className="w-32 sm:w-40 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-black uppercase tracking-tight"
-                                            >
-                                                <option value="">Method...</option>
-                                                {COOKING_METHODS.map(method => (
-                                                    <option key={method} value={method}>{method}</option>
-                                                ))}
-                                                {item.cooking_method && !COOKING_METHODS.includes(item.cooking_method) && (
-                                                    <option value={item.cooking_method}>{item.cooking_method} (AI)</option>
-                                                )}
-                                            </select>
-                                            <div className="flex flex-col items-center gap-0.5 min-w-[90px]">
-                                                <div className="flex items-center justify-between w-full">
-                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Qty</span>
-                                                    <span className="text-xs font-black text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-md tabular-nums">
-                                                        {item.measure_qty || 1}
-                                                    </span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="0.25"
-                                                    max="10"
-                                                    step="0.25"
-                                                    value={item.measure_qty || 1}
-                                                    onChange={(e) => {
-                                                        const qty = parseFloat(e.target.value) || 0;
-                                                        setVerifiedItems(prev => {
-                                                            const next = [...prev];
-                                                            const base = next[idx];
-                                                            next[idx] = {
-                                                                ...base,
-                                                                measure_qty: qty,
-                                                                weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
-                                                                protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
-                                                                carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
-                                                                fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
-                                                            };
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className="w-full h-1.5 accent-[var(--color-primary)] cursor-pointer"
-                                                />
+                                            <div className="flex flex-1 gap-2 min-w-[200px]">
+                                                <select 
+                                                    value={item.cooking_method || ''} 
+                                                    onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
+                                                    className="flex-1 p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-black uppercase tracking-tight"
+                                                >
+                                                    <option value="">Method...</option>
+                                                    {COOKING_METHODS.map(method => (
+                                                        <option key={method} value={method}>{method}</option>
+                                                    ))}
+                                                    {item.cooking_method && !COOKING_METHODS.includes(item.cooking_method) && (
+                                                        <option value={item.cooking_method}>{item.cooking_method} (AI)</option>
+                                                    )}
+                                                </select>
+                                                <select
+                                                    value={item.serving_unit || 'Serving'}
+                                                    onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
+                                                    className="w-24 p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-bold"
+                                                >
+                                                    <option value="Serving">Serving</option>
+                                                    <option value="Cup">Cup</option>
+                                                    <option value="Spoon">Spoon</option>
+                                                    <option value="Sandok">Sandok</option>
+                                                    <option value="Bowl">Bowl</option>
+                                                    <option value="Slice">Slice</option>
+                                                    <option value="Piece">Piece</option>
+                                                    <option value="Plate">Plate</option>
+                                                </select>
                                             </div>
-                                            <select
-                                                value={item.serving_unit || 'Serving'}
-                                                onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
-                                                className="w-20 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-bold"
-                                            >
-                                                <option value="Serving">Serving</option>
-                                                <option value="Cup">Cup</option>
-                                                <option value="Spoon">Spoon</option>
-                                                <option value="Sandok">Sandok</option>
-                                                <option value="Bowl">Bowl</option>
-                                                <option value="Slice">Slice</option>
-                                                <option value="Piece">Piece</option>
-                                                <option value="Plate">Plate</option>
-                                            </select>
-                                            <button 
-                                                onClick={() => handleDeleteItem(idx)}
-                                                className="p-2 ml-1 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-transparent hover:border-red-200 dark:hover:border-red-900/40 transition-colors"
-                                                title="Delete this item"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-50 dark:bg-white/5 p-2 rounded-lg border border-[var(--color-divider)] sm:border-transparent">
+                                                <div className="flex flex-col items-center gap-0.5 min-w-[100px] flex-1 sm:flex-none">
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Qty</span>
+                                                        <span className="text-xs font-black text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-md tabular-nums">
+                                                            {item.measure_qty || 1}
+                                                        </span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="0.25"
+                                                        max="10"
+                                                        step="0.25"
+                                                        value={item.measure_qty || 1}
+                                                        onChange={(e) => {
+                                                            const qty = parseFloat(e.target.value) || 0;
+                                                            setVerifiedItems(prev => {
+                                                                const next = [...prev];
+                                                                const base = next[idx];
+                                                                next[idx] = {
+                                                                    ...base,
+                                                                    measure_qty: qty,
+                                                                    weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
+                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
+                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
+                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
+                                                                };
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="w-full h-1.5 accent-[var(--color-primary)] cursor-pointer"
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleDeleteItem(idx)}
+                                                    className="p-2.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-colors"
+                                                    title="Delete this item"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className={`flex items-center gap-3 text-[9px] mt-0.5 font-bold px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
                                             <div className="flex gap-3">

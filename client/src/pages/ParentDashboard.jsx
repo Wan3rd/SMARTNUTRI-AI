@@ -126,11 +126,11 @@ export default function ParentDashboard() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <AnnouncementBanner />
-            <header>
-                <h1 className={cn("text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight", user?.privacy_mode && "privacy-blur")}>
+            <header className="text-center sm:text-left">
+                <h1 className={cn("text-2xl sm:text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight", user?.privacy_mode && "privacy-blur")}>
                     {selectedProfile?.child_name || 'Child Dashboard'}
                 </h1>
-                <p className="text-[var(--color-text-muted)] font-medium">Track growth, view daily compliance, and expert evaluations.</p>
+                <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-bold uppercase tracking-wider mt-1">Clinical development tracking & expert logs</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -147,8 +147,8 @@ export default function ParentDashboard() {
                     )}
 
                     <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
-                        <CardContent className="p-8">
-                            <h3 className="text-sm font-black text-[var(--color-secondary)] mb-6 flex items-center gap-3 uppercase tracking-widest">
+                        <CardContent className="p-6 sm:p-8">
+                            <h3 className="text-xs sm:text-sm font-black text-[var(--color-secondary)] mb-6 flex items-center gap-3 uppercase tracking-widest">
                                 <Activity size={18} className="text-[var(--color-primary)]" />
                                 Daily Nutritional Goal
                             </h3>
@@ -179,9 +179,9 @@ export default function ParentDashboard() {
                                     <BadgeCheck size={14} className="text-white" />
                                 </div>
                             </div>
-                            <div className="p-6 flex items-center gap-5">
+                            <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
                                 <div className="relative flex-shrink-0">
-                                    <div className="h-20 w-20 rounded-2xl border-4 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
+                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-4 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
                                         {assignedNutritionist?.profile_image_url ? (
                                             <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
                                         ) : (
@@ -194,11 +194,11 @@ export default function ParentDashboard() {
                                     <div className="absolute inset-0 bg-[var(--color-primary)]/10 rounded-2xl scale-110 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1.5">Assigned Clinician</p>
-                                    <h4 className={cn("text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1.5">Assigned Clinician</p>
+                                    <h4 className={cn("text-lg sm:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
                                         {assignedNutritionist?.full_name || 'Dr. Expert'}
                                     </h4>
-                                    <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1">
+                                    <p className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1">
                                         {assignedNutritionist?.specialization || 'Clinical Nutritionist'}
                                     </p>
                                 </div>
@@ -256,14 +256,14 @@ export default function ParentDashboard() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-[18px] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${activeTab === tab.id
+                                className={`flex-1 flex items-center justify-center gap-2.5 py-4 rounded-[18px] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${activeTab === tab.id
                                     ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-lg shadow-emerald-500/10 border-b-2 border-[var(--color-primary)]'
                                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-card)]/50'}`}
                             >
-                                <span className={activeTab === tab.id ? 'text-[var(--color-primary)]' : 'opacity-60'}>
+                                <span className={cn(activeTab === tab.id ? 'text-[var(--color-primary)]' : 'opacity-60', "shrink-0")}>
                                     {tab.icon}
                                 </span>
-                                {tab.label}
+                                <span className="truncate">{tab.label}</span>
                             </button>
                         ))}
                     </div>
@@ -279,20 +279,20 @@ export default function ParentDashboard() {
                             >
                                 {allLogs.length > 0 && (
                                     <Card className="bg-gradient-to-br from-[var(--color-primary)]/10 to-blue-500/5 border-2 border-[var(--color-primary)]/20 relative overflow-hidden rounded-3xl shadow-lg">
-                                        <CardContent className="p-8 relative z-10">
-                                            <div className="flex justify-between items-center mb-6">
+                                        <CardContent className="p-6 sm:p-8 relative z-10">
+                                            <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 mb-6 text-center sm:text-left">
                                                 <div>
                                                     <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Compliance Score</p>
-                                                    <div className="flex items-center gap-4">
-                                                        <span className="text-6xl font-black text-[var(--color-secondary)]">{latestMeal?.compliance_score || 100}</span>
+                                                    <div className="flex items-center gap-4 justify-center sm:justify-start">
+                                                        <span className="text-5xl sm:text-6xl font-black text-[var(--color-secondary)]">{latestMeal?.compliance_score || 100}</span>
                                                         <div>
-                                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase">{latestMeal?.compliance_score >= 80 ? 'Optimal!' : 'Review Required'}</p>
+                                                            <p className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase">{latestMeal?.compliance_score >= 80 ? 'Optimal!' : 'Review Required'}</p>
                                                             <p className="text-[10px] text-[var(--color-text-muted)] font-bold">Latest clinical rating</p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="bg-white/50 dark:bg-black/20 p-5 rounded-2xl border-2 border-white/50 shadow-inner">
-                                                    <Star size={32} className="text-yellow-500 animate-bounce" fill="currentColor" />
+                                                <div className="bg-white/50 dark:bg-black/20 p-4 sm:p-5 rounded-2xl border-2 border-white/50 shadow-inner">
+                                                    <Star size={24} className="text-yellow-500 sm:w-8 sm:h-8 animate-bounce" fill="currentColor" />
                                                 </div>
                                             </div>
                                             <div className="h-3 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden border border-black/5 shadow-inner">
@@ -367,17 +367,17 @@ export default function ParentDashboard() {
                                             onClick={() => setSelectedLog(log)}
                                             className="group cursor-pointer bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden hover:border-[var(--color-primary)] transition-all shadow-sm hover:shadow-xl hover:translate-y-[-2px]"
                                         >
-                                            <div className="flex">
-                                                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
+                                            <div className="flex flex-col sm:flex-row">
+                                                <div className="w-full sm:w-32 h-48 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
                                                     <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                                     {(log.status === 'reviewed' || log.status === 'verified') && (
-                                                        <div className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded-full shadow-lg border border-white/20">
-                                                            <CheckCircle2 size={10} />
+                                                        <div className="absolute top-3 left-3 bg-green-500 text-white p-1.5 rounded-full shadow-lg border border-white/20">
+                                                            <CheckCircle2 size={12} />
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
-                                                    <div className="flex justify-between items-start mb-1">
+                                                    <div className="flex justify-between items-start mb-1.5">
                                                         <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
                                                         <div className="flex gap-2">
                                                             {log.compliance_status === 'flagged' && (
@@ -388,11 +388,11 @@ export default function ParentDashboard() {
                                                             <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${(log.status === 'reviewed' || log.status === 'verified') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{log.status}</span>
                                                         </div>
                                                     </div>
-                                                    <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-2 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
+                                                    <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-1 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
                                                         {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Evaluating...'}
                                                     </h4>
                                                     {log.compliance_status === 'flagged' && log.violation_details?.violations?.length > 0 && (
-                                                        <p className="text-[9px] font-black text-red-600 uppercase mb-1 flex items-center gap-1">
+                                                        <p className="text-[9px] font-black text-red-600 uppercase mb-1.5 flex items-center gap-1">
                                                             Reason: {log.violation_details.violations[0].rule || log.violation_details.violations[0].rule_name}
                                                         </p>
                                                     )}
