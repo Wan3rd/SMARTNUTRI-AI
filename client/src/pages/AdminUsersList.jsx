@@ -27,15 +27,6 @@ export default function AdminUsersList() {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    useEffect(() => {
-        const handleEsc = (event) => {
-            if (event.key === 'Escape') {
-                setSelectedUserDetails(null);
-            }
-        };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, []);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [createForm, setCreateForm] = useState({
         full_name: '',
@@ -45,6 +36,27 @@ export default function AdminUsersList() {
         professional_id: '',
         clinic: ''
     });
+
+    useEffect(() => {
+        if (selectedUserDetails || isCreateModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [selectedUserDetails, isCreateModalOpen]);
+
+    useEffect(() => {
+        const handleEsc = (event) => {
+            if (event.key === 'Escape') {
+                setSelectedUserDetails(null);
+            }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
 
     useEffect(() => {
         fetchUsers();
@@ -657,7 +669,7 @@ export default function AdminUsersList() {
                                                 onClick={() => setCreateForm(prev => ({ ...prev, role: r }))}
                                                 className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${createForm.role === r ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm border border-[var(--color-divider)]' : 'text-[var(--color-text-muted)]'}`}
                                             >
-                                                {r === 'parent' ? 'Parent' : r === 'nutritionist' ? 'Practi' : 'Admin'}
+                                                {r === 'parent' ? 'Parent' : r === 'nutritionist' ? 'Nutritionist' : 'Admin'}
                                             </button>
                                         ))}
                                     </div>

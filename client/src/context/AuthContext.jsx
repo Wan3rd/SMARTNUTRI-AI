@@ -24,9 +24,14 @@ export const AuthProvider = ({ children }) => {
                     }
                 } catch (err) {
                     console.error("Session sync failed", err);
-                    // If token is invalid or server error, check saved user as fallback or logout
-                    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-                    if (savedUser) setUser(JSON.parse(savedUser));
+                    // If account is suspended (403) or token is dead (401), force logout
+                    if (err.response?.status === 401 || err.response?.status === 403) {
+                        logout();
+                    } else {
+                        // For generic network errors, try falling back to local data to keep UI stable
+                        const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+                        if (savedUser) setUser(JSON.parse(savedUser));
+                    }
                 }
             }
             setLoading(false);

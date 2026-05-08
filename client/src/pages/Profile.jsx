@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, ShieldAlert, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock, Eye, FileUp, CheckCircle2, ShieldCheck } from 'lucide-react';
@@ -83,6 +84,23 @@ const InfoField = ({ label, name, icon: Icon, placeholder, type = 'text', value,
 );
 
 export default function Profile() {
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.5,
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
+
     const { user, logout, updateUser } = useAuth();
     const navigate = useNavigate();
 
@@ -594,10 +612,15 @@ export default function Profile() {
         const handleNutriFieldChange = (name, val) => setNutri(p => ({ ...p, [name]: val }));
 
         return (
-            <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+            <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6 max-w-4xl mx-auto pb-12"
+            >
 
                 {/* ── HERO BANNER ── */}
-                <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl">
+                <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl">
                     {/* Gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
@@ -657,10 +680,10 @@ export default function Profile() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* ── STATS ROW ── */}
-                <div className="grid grid-cols-3 gap-4">
+                <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4">
                     {[
                         { label: 'Active Clients', value: clientCount ?? '—', icon: Users, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
                         { label: 'Role', value: 'Clinical', icon: Stethoscope, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
@@ -673,15 +696,19 @@ export default function Profile() {
                                 : 'text-amber-600 bg-amber-50 dark:bg-amber-900/20'
                         },
                     ].map(stat => (
-                        <div key={stat.label} className="p-5 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm flex flex-col items-center gap-2 hover:shadow-md transition-all">
+                        <motion.div 
+                            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                            key={stat.label} 
+                            className="p-5 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm flex flex-col items-center gap-2 hover:shadow-md transition-all"
+                        >
                             <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${stat.color}`}>
                                 <stat.icon size={20} />
                             </div>
                             <p className="text-2xl font-black text-[var(--color-text-main)]">{stat.value}</p>
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">{stat.label}</p>
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
 
                 <Notification
                     show={!!nutriMsg.text}
@@ -699,12 +726,12 @@ export default function Profile() {
                                     <Stethoscope size={18} className="text-blue-500" /> Professional Info
                                 </CardTitle>
                                 {!nutriEditing ? (
-                                    <button
-                                        onClick={() => setNutriEditing(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
-                                    >
-                                        <Edit2 size={12} /> Edit
-                                    </button>
+                                <button
+                                    onClick={() => setNutriEditing(true)}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)] text-[var(--color-primary)] hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border border-[var(--color-primary)]/20 shadow-sm hover:shadow-md"
+                                >
+                                    <Edit2 size={12} /> Edit Profile
+                                </button>
                                 ) : (
                                     <div className="flex gap-2">
                                         <button
@@ -936,7 +963,7 @@ export default function Profile() {
                         </Card>
                     </div>
                 )}
-            </div>
+            </motion.div>
         );
     }
 
@@ -944,9 +971,14 @@ export default function Profile() {
     const handleParentFieldChange = (name, val) => setParentData(p => ({ ...p, [name]: val }));
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-10">
+        <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8 max-w-4xl mx-auto pb-10"
+        >
             {/* ── PARENT ACCOUNT SECTION ── */}
-            <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
+            <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
                 <div className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
                     {/* Parent Avatar */}
                     <div className="relative flex-shrink-0 group">
@@ -984,7 +1016,7 @@ export default function Profile() {
                         {!parentEditing ? (
                             <button
                                 onClick={() => setParentEditing(true)}
-                                className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-200 dark:border-white/10 cursor-pointer"
+                                className="px-4 py-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)] text-[var(--color-primary)] hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--color-primary)]/20 cursor-pointer shadow-sm hover:shadow-md"
                             >Edit Account</button>
                         ) : (
                             <div className="flex gap-2">
@@ -1017,10 +1049,10 @@ export default function Profile() {
                     message={parentMsg.text}
                     onClose={() => setParentMsg({ type: '', text: '' })}
                 />
-            </div>
+            </motion.div>
 
             {/* Divider */}
-            <div className="flex items-center justify-between px-4">
+            <motion.div variants={itemVariants} className="flex items-center justify-between px-4">
                 <div className="flex items-center gap-4 flex-1">
                     <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent" />
                     <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.3em] whitespace-nowrap">Clinical Child Profiles</span>
@@ -1032,11 +1064,11 @@ export default function Profile() {
                 >
                     <Plus size={16} /> Add Child
                 </Button>
-            </div>
+            </motion.div>
 
             {/* Profile Switcher */}
             {allProfiles.length > 1 && (
-                <div className="flex flex-wrap gap-2 px-4 animate-in fade-in duration-500">
+                <motion.div variants={itemVariants} className="flex flex-wrap gap-2 px-4">
                     {allProfiles.map(p => (
                         <button
                             key={p.id}
@@ -1051,11 +1083,11 @@ export default function Profile() {
                             {p.child_name}
                         </button>
                     ))}
-                </div>
+                </motion.div>
             )}
 
             {/* Header Section (Child-Focused) */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+            <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                 <div className="flex items-center gap-6">
                     <div className="relative group">
                         <div className="h-24 w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl flex items-center justify-center text-white text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-4 border-white">
@@ -1159,9 +1191,9 @@ export default function Profile() {
                     {!isEditing ? (
                         <Button
                             onClick={() => setIsEditing(true)}
-                            className="h-12 px-8 rounded-2xl bg-[var(--color-secondary)] text-white hover:bg-[var(--color-secondary-hover)] transition-all font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-[var(--color-secondary)]/10"
+                            className="h-10 px-6 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[10px] gap-2 shadow-md shadow-[var(--color-primary)]/20 flex items-center justify-center border-b-2 border-black/10 active:border-b-0 active:translate-y-[1px] pt-[1px]"
                         >
-                            <Edit2 size={18} /> Edit Profile
+                            <Edit2 size={14} /> Edit Profile
                         </Button>
                     ) : (
                         <>
@@ -1182,7 +1214,7 @@ export default function Profile() {
                         </>
                     )}
                 </div>
-            </div>
+            </motion.div>
 
             <Notification
                 show={!!message.text}
@@ -1191,9 +1223,10 @@ export default function Profile() {
                 onClose={() => setMessage({ type: '', text: '' })}
             />
 
-            {/* Profile Form */}
+            {/* Profile Form Grid */}
             <div className="grid md:grid-cols-2 gap-8">
-                <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                <motion.div variants={itemVariants}>
+                    <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
                     <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
                         <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]"><User size={20} /> Basic Information</CardTitle>
                     </CardHeader>
@@ -1331,7 +1364,9 @@ export default function Profile() {
                         </div>
                     </CardContent>
                 </Card>
+            </motion.div>
 
+            <motion.div variants={itemVariants}>
                 <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
                     <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
                         <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🍽️ Dietary & Allergies</CardTitle>
@@ -1376,14 +1411,18 @@ export default function Profile() {
                         </div>
                     </CardContent>
                 </Card>
+            </motion.div>
 
-                {/* Clinical Data section */}
-                <Card className="h-full md:col-span-2 border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+            {/* Clinical Data section spanning 2 columns */}
+            <motion.div variants={itemVariants} className="md:col-span-2">
+                <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
                     <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
-                        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🩺 Advanced Clinical Profile</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                            <Stethoscope size={18} className="text-blue-500" /> Advanced Clinical Profile
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="p-8 space-y-8">
-                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between mb-4">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
@@ -1478,28 +1517,38 @@ export default function Profile() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>
-                                <textarea
-                                    name="medications"
-                                    rows="3"
-                                    disabled={!isEditing}
-                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm disabled:font-medium disabled:leading-relaxed resize-none"
-                                    placeholder="e.g. Daily multivitamins, Vitamin C, Iron drops..."
-                                    value={profileData.medications}
-                                    onChange={handleChange}
-                                />
+                                {isEditing ? (
+                                    <textarea
+                                        name="medications"
+                                        rows="4"
+                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                        placeholder="e.g. Daily multivitamins, Vitamin C, Iron drops..."
+                                        value={profileData.medications}
+                                        onChange={handleChange}
+                                    />
+                                ) : (
+                                    <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
+                                        {profileData.medications || <span className="text-[var(--color-text-muted)] italic opacity-50">No medications listed</span>}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History / Surgical History</label>
-                            <textarea
-                                name="medicalHistory"
-                                rows="3"
-                                disabled={!isEditing}
-                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm disabled:font-medium disabled:leading-relaxed resize-none"
-                                placeholder="e.g. History of mild asthma, no previous surgeries..."
-                                value={profileData.medicalHistory}
-                                onChange={handleChange}
-                            />
+                            {isEditing ? (
+                                <textarea
+                                    name="medicalHistory"
+                                    rows="4"
+                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                    placeholder="e.g. History of mild asthma, no previous surgeries..."
+                                    value={profileData.medicalHistory}
+                                    onChange={handleChange}
+                                />
+                            ) : (
+                                <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
+                                    {profileData.medicalHistory || <span className="text-[var(--color-text-muted)] italic opacity-50">No medical history provided</span>}
+                                </div>
+                            )}
                         </div>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
@@ -1551,9 +1600,10 @@ export default function Profile() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+            </motion.div>
+        </div>
 
-            <div className="mt-6 pt-6 border-t border-red-500/10">
+            <motion.div variants={itemVariants} className="mt-6 pt-6 border-t border-red-500/10">
                 <div className="flex flex-col md:flex-row items-center justify-between p-5 bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-2xl gap-4">
                     <div>
                         <h3 className="text-sm font-black text-red-600 uppercase tracking-widest">Danger Zone</h3>
@@ -1566,9 +1616,9 @@ export default function Profile() {
                         <Trash2 size={14} /> Delete Profile
                     </Button>
                 </div>
-            </div>
+            </motion.div>
 
-            <div className="flex justify-center pt-10 border-t-2 border-[var(--color-divider)]">
+            <motion.div variants={itemVariants} className="flex justify-center pt-10 border-t-2 border-[var(--color-divider)]">
                 <Button
                     variant="outline"
                     onClick={handleLogout}
@@ -1576,7 +1626,7 @@ export default function Profile() {
                 >
                     <LogOut size={20} /> Sign Out
                 </Button>
-            </div>
+            </motion.div>
             <ConfirmDialog
                 isOpen={confirmDialog.isOpen}
                 onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
@@ -1652,6 +1702,6 @@ export default function Profile() {
                 message={notif.message}
                 onClose={() => setNotif({ ...notif, show: false })}
             />
-        </div>
+        </motion.div>
     );
 }

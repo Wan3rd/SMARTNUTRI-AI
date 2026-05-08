@@ -14,6 +14,17 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
@@ -131,8 +142,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                             <div className="flex gap-3 pt-2">
                                 <Button
                                     type="button"
+                                    variant="secondary"
                                     onClick={onClose}
-                                    className="flex-1 h-12 rounded-xl border-2 border-[var(--color-divider)] text-[var(--color-text-main)] bg-transparent font-black uppercase tracking-widest text-[10px]"
+                                    className="flex-1 h-12 rounded-xl"
                                 >
                                     Cancel
                                 </Button>

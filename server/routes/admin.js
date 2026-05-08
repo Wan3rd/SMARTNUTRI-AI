@@ -401,10 +401,29 @@ router.get('/users/:id/audit', verifyAdmin, async (req, res) => {
 });
 
 // POST /admin/broadcast - Create a system-wide announcement
+router.get('/announcements', verifyAdmin, async (req, res) => {
+    try {
+        const announcements = await prisma.announcements.findMany({
+            orderBy: { created_at: 'desc' },
+            include: { admin: { select: { full_name: true } } }
+        });
+        res.json(announcements);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to fetch announcements' });
+    }
+});
+
 router.post('/broadcast', verifyAdmin, async (req, res) => {
     const { title, content, target_role, priority, expires_at } = req.body;
 
     try {
+        // ENFORCE MAX 1: Deactivate all existing active announcements
+        await prisma.announcements.updateMany({
+            where: { is_active: true },
+            data: { is_active: false }
+        });
+
         const announcement = await prisma.announcements.create({
             data: {
                 title,
@@ -412,7 +431,8 @@ router.post('/broadcast', verifyAdmin, async (req, res) => {
                 target_role: target_role || 'all',
                 priority: priority || 'normal',
                 admin_id: req.user.id,
-                expires_at: expires_at ? new Date(expires_at) : null
+                expires_at: expires_at ? new Date(expires_at) : null,
+                is_active: true
             }
         });
 
@@ -486,7 +506,19 @@ router.get('/announcements', verifyAdmin, async (req, res) => {
 router.delete('/announcements/:id', verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
+        const oldAnn = await prisma.announcements.findUnique({ where: { id }, select: { title: true } });
+        
         await prisma.announcements.delete({ where: { id } });
+
+        await logAuditAction({
+            adminId: req.user.id,
+            action: 'DELETE_BROADCAST',
+            entityType: 'ANNOUNCEMENT',
+            entityId: id,
+            details: { title: oldAnn?.title },
+            ipAddress: req.ip
+        });
+
         res.json({ message: 'Announcement removed' });
     } catch (err) {
         console.error(err);

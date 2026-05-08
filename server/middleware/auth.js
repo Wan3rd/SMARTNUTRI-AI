@@ -29,7 +29,7 @@ export const verifyToken = async (req, res, next) => {
         }
 
         if (user.is_suspended) {
-            return res.status(403).json({ message: 'Account Access Suspended: Please contact administration.' });
+            return res.status(403).json({ message: 'Account Access Suspended: Please contact snutri244@gmail.com to know more.' });
         }
 
         // Only block if not on the change-password or logout path

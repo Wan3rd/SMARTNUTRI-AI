@@ -5,6 +5,7 @@ import { Users, BadgeCheck, ShieldAlert, Clock, Search, ExternalLink, Check, X, 
 import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import Notification from '../components/common/Notification';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, profiles: 0, pendingApprovals: 0, totalMealsLogged: 0 });
@@ -16,12 +17,24 @@ export default function AdminDashboard() {
     const [processingId, setProcessingId] = useState(null);
     const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
     const [message, setMessage] = useState({ type: 'success', text: '' });
-    
+
     // Broadcast State
     const [broadcast, setBroadcast] = useState({ title: '', content: '', target_role: 'all', priority: 'normal' });
     const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [announcements, setAnnouncements] = useState([]);
     const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+    const [confirmDeleteAnn, setConfirmDeleteAnn] = useState({ isOpen: false, id: null });
+
+    useEffect(() => {
+        if (previewLicenseImage) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [previewLicenseImage]);
 
     useEffect(() => {
         fetchData();
@@ -96,8 +109,15 @@ export default function AdminDashboard() {
     };
 
     const handleSendBroadcast = async () => {
-        if (!broadcast.title || !broadcast.content) {
-            setMessage({ type: 'error', text: 'Broadcast requires title and content' });
+        const titleTrimmed = broadcast.title.trim();
+        const contentTrimmed = broadcast.content.trim();
+
+        if (titleTrimmed.length < 5) {
+            setMessage({ type: 'error', text: 'Broadcast title must be at least 5 characters.' });
+            return;
+        }
+        if (contentTrimmed.length < 15) {
+            setMessage({ type: 'error', text: 'Broadcast message must be at least 15 characters to ensure clarity.' });
             return;
         }
         setIsBroadcasting(true);
@@ -120,14 +140,18 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleDeleteAnnouncement = async (id) => {
-        if (!window.confirm("Permanent delete this broadcast?")) return;
+    const handleDeleteAnnouncement = async () => {
+        const id = confirmDeleteAnn.id;
+        if (!id) return;
+
         try {
             await api.delete(`/admin/announcements/${id}`);
-            setMessage({ type: 'success', text: 'Broadcast removed' });
+            setMessage({ type: 'success', text: 'Platform broadcast successfully terminated and removed.' });
+            setConfirmDeleteAnn({ isOpen: false, id: null });
             fetchAnnouncements();
         } catch (err) {
             console.error(err);
+            setMessage({ type: 'error', text: 'System failed to remove the broadcast. Please try again.' });
         }
     };
 
@@ -152,19 +176,18 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
-            {message.text && (
-                <Notification 
-                    type={message.type} 
-                    message={message.text} 
-                    onClose={() => setMessage({ ...message, text: '' })} 
-                />
-            )}
+            <Notification
+                show={!!message.text}
+                type={message.type}
+                message={message.text}
+                onClose={() => setMessage({ ...message, text: '' })}
+            />
 
-            <AnnouncementBanner />
+
             {/* ── ADMIN HERO ── */}
             <div className="relative overflow-hidden rounded-[2.5rem] border-2 border-[var(--color-divider)] shadow-2xl bg-[var(--color-bg-card)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-[var(--color-secondary)]/5 opacity-50" />
-                
+
                 <div className="relative p-6 md:p-10 flex flex-col xl:flex-row items-center justify-between gap-8 font-outfit">
                     <div className="text-center xl:text-left">
                         <div className="flex items-center justify-center xl:justify-start gap-3 mb-4">
@@ -218,11 +241,10 @@ export default function AdminDashboard() {
                                 <button
                                     key={status}
                                     onClick={() => setFilterStatus(status)}
-                                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        filterStatus === status 
-                                        ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm' 
-                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-                                    }`}
+                                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === status
+                                            ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
+                                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                                        }`}
                                 >
                                     {status}
                                 </button>
@@ -275,16 +297,15 @@ export default function AdminDashboard() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                                        nutri.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                                                        nutri.status === 'rejected' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
-                                                        'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse'
-                                                    }`}>
+                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${nutri.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                                            nutri.status === 'rejected' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                                                                'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse'
+                                                        }`}>
                                                         {nutri.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button 
+                                                    <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedNutri(nutri); }}
                                                         className="p-2 hover:bg-[var(--color-bg-page)] rounded-xl transition-all text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                                                     >
@@ -308,11 +329,10 @@ export default function AdminDashboard() {
                                             <div className="min-w-0">
                                                 <div className="text-sm font-black text-[var(--color-text-main)] truncate">{nutri.full_name}</div>
                                                 <div className="text-[10px] text-zinc-400 font-medium truncate mb-1">{nutri.email}</div>
-                                                <span className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                                    nutri.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                                                    nutri.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
-                                                    'bg-amber-50 text-amber-600 animate-pulse'
-                                                }`}>
+                                                <span className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${nutri.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                                                        nutri.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                                                            'bg-amber-50 text-amber-600 animate-pulse'
+                                                    }`}>
                                                     {nutri.status}
                                                 </span>
                                             </div>
@@ -374,7 +394,7 @@ export default function AdminDashboard() {
                                             {selectedNutri.license_image_url && <BadgeCheck size={12} className="text-emerald-500" />}
                                         </label>
                                         {selectedNutri.license_image_url ? (
-                                            <div 
+                                            <div
                                                 className="relative group aspect-[1.6/1] rounded-xl overflow-hidden border-2 border-[var(--color-divider)] cursor-zoom-in bg-zinc-900"
                                                 onClick={() => setPreviewLicenseImage(selectedNutri.license_image_url)}
                                             >
@@ -396,14 +416,14 @@ export default function AdminDashboard() {
 
                                 <div className="space-y-3 pt-6 border-t border-[var(--color-divider)]">
                                     <div className="flex gap-3">
-                                        <Button 
+                                        <Button
                                             onClick={() => handleVerify(selectedNutri.id, 'rejected')}
                                             disabled={processingId === selectedNutri.id}
                                             className="flex-1 h-12 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-rose-500/20"
                                         >
                                             <X size={14} /> Reject
                                         </Button>
-                                        <Button 
+                                        <Button
                                             onClick={() => handleVerify(selectedNutri.id, 'approved')}
                                             disabled={processingId === selectedNutri.id}
                                             className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-emerald-500/20"
@@ -411,15 +431,14 @@ export default function AdminDashboard() {
                                             <Check size={14} /> Approve
                                         </Button>
                                     </div>
-                                    
-                                    <Button 
+
+                                    <Button
                                         onClick={() => handleSuspend(selectedNutri.id, !selectedNutri.is_suspended)}
                                         disabled={processingId === selectedNutri.id}
-                                        className={`w-full h-11 rounded-2xl font-black uppercase tracking-widest text-[9px] gap-2 transition-all border-none shadow-sm ${
-                                            selectedNutri.is_suspended 
-                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-500 hover:text-white' 
-                                            : 'bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 hover:bg-amber-500 hover:text-white'
-                                        }`}
+                                        className={`w-full h-11 rounded-2xl font-black uppercase tracking-widest text-[9px] gap-2 transition-all border-none shadow-sm ${selectedNutri.is_suspended
+                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-500 hover:text-white'
+                                                : 'bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 hover:bg-amber-500 hover:text-white'
+                                            }`}
                                     >
                                         {selectedNutri.is_suspended ? <ShieldCheck size={14} /> : <Lock size={14} />}
                                         {selectedNutri.is_suspended ? 'Reactivate Account' : 'Suspend Account Access'}
@@ -447,51 +466,51 @@ export default function AdminDashboard() {
                             <div className="p-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-2xl">
                                 <Megaphone size={24} />
                             </div>
-                            <h3 className="text-xl font-black text-[var(--color-text-main)] tracking-tight">System Broadcast</h3>
+                            <h3 className="text-lg font-black text-[var(--color-text-main)] tracking-tight">System Broadcast</h3>
                         </div>
-                        <p className="text-xs font-medium text-[var(--color-text-muted)] leading-relaxed mb-6">
+                        <p className="text-[11px] font-medium text-[var(--color-text-muted)] leading-relaxed mb-6">
                             Transmit high-priority notifications to specific clinical roles or the entire user base. Announcements appear in real-time on target dashboards.
                         </p>
-                        
+
                         <div className="space-y-4">
-                            <div className="flex items-start gap-3 p-3 bg-white dark:bg-zinc-800 rounded-xl border border-[var(--color-divider)] shadow-sm">
+                            <div className="flex items-start gap-3 p-3 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)] shadow-sm">
                                 <Info size={16} className="text-blue-500 mt-1" />
                                 <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight">Use broadcasts for maintenance updates, clinical alerts, or platform news.</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div className="flex-1 p-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
+
+                    <div className="flex-1 p-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Announcement Title</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     placeholder="e.g. System Maintenance Update"
                                     value={broadcast.title}
                                     onChange={(e) => setBroadcast({ ...broadcast, title: e.target.value })}
-                                    className="w-full px-5 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all font-bold text-sm text-[var(--color-text-main)]"
+                                    className="w-full px-4 py-2.5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all font-bold text-sm text-[var(--color-text-main)]"
                                 />
                             </div>
-                            <div className="flex gap-6">
-                                <div className="flex-1 space-y-2">
+                            <div className="flex gap-4">
+                                <div className="flex-1 space-y-1">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Target Audience</label>
-                                    <select 
+                                    <select
                                         value={broadcast.target_role}
                                         onChange={(e) => setBroadcast({ ...broadcast, target_role: e.target.value })}
-                                        className="w-full px-5 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl outline-none font-bold text-sm text-[var(--color-text-main)] cursor-pointer"
+                                        className="w-full pl-4 pr-10 py-2.5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl outline-none font-bold text-sm text-[var(--color-text-main)] cursor-pointer"
                                     >
                                         <option value="all">All Users</option>
                                         <option value="nutritionist">Nutritionists Only</option>
                                         <option value="parent">Parents Only</option>
                                     </select>
                                 </div>
-                                <div className="flex-1 space-y-2">
+                                <div className="flex-1 space-y-1">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Priority Level</label>
-                                    <select 
+                                    <select
                                         value={broadcast.priority}
                                         onChange={(e) => setBroadcast({ ...broadcast, priority: e.target.value })}
-                                        className="w-full px-5 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl outline-none font-bold text-sm text-[var(--color-text-main)] cursor-pointer"
+                                        className="w-full pl-4 pr-10 py-2.5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl outline-none font-bold text-sm text-[var(--color-text-main)] cursor-pointer"
                                     >
                                         <option value="normal">Normal</option>
                                         <option value="high">High Alert</option>
@@ -501,34 +520,34 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Broadcast Content</label>
-                            <textarea 
+                            <textarea
                                 placeholder="Describe the update or alert in detail..."
                                 value={broadcast.content}
                                 onChange={(e) => setBroadcast({ ...broadcast, content: e.target.value })}
-                                className="w-full px-5 py-4 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all font-bold text-sm text-[var(--color-text-main)] min-h-[120px] resize-none"
+                                className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all font-bold text-sm text-[var(--color-text-main)] min-h-[100px] resize-none"
                             />
                         </div>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-3 pt-4">
                             {editingAnnouncement && (
-                                <Button 
+                                <Button
                                     onClick={() => {
                                         setEditingAnnouncement(null);
                                         setBroadcast({ title: '', content: '', target_role: 'all', priority: 'normal' });
                                     }}
-                                    className="h-14 px-10 bg-zinc-100 dark:bg-white/5 text-[var(--color-text-main)] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs border border-[var(--color-divider)]"
+                                    className="h-11 px-8 bg-zinc-100 dark:bg-white/5 text-[var(--color-text-main)] rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] border border-[var(--color-divider)]"
                                 >
                                     Cancel
                                 </Button>
                             )}
-                            <Button 
+                            <Button
                                 onClick={handleSendBroadcast}
                                 disabled={isBroadcasting}
-                                className="h-14 px-10 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs gap-3 shadow-xl shadow-[var(--color-primary)]/20"
+                                className="h-11 px-8 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20"
                             >
-                                <Send size={18} className={isBroadcasting ? 'animate-pulse' : ''} />
+                                <Send size={14} className={isBroadcasting ? 'animate-pulse' : ''} />
                                 {isBroadcasting ? 'Transmitting...' : editingAnnouncement ? 'Update Broadcast' : 'Initiate Broadcast'}
                             </Button>
                         </div>
@@ -543,29 +562,28 @@ export default function AdminDashboard() {
                             {announcements.map(ann => (
                                 <div key={ann.id} className="flex items-center justify-between p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
                                     <div className="flex items-center gap-4">
-                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                                            ann.priority === 'critical' ? 'bg-rose-500/10 text-rose-500' : 
-                                            ann.priority === 'high' ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                        }`}>
+                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${ann.priority === 'critical' ? 'bg-rose-500/10 text-rose-500' :
+                                                ann.priority === 'high' ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                                            }`}>
                                             <Megaphone size={14} />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-[var(--color-text-main)]">{ann.title}</span>
-                                                <span className="text-[9px] font-bold px-2 py-0.5 bg-zinc-100 dark:bg-white/5 rounded-full text-[var(--color-text-muted)] uppercase tracking-tighter">To: {ann.target_role}</span>
+                                                <span className="text-[11px] font-black text-[var(--color-text-main)]">{ann.title}</span>
+                                                <span className="text-[8px] font-bold px-2 py-0.5 bg-zinc-100 dark:bg-white/5 rounded-full text-[var(--color-text-muted)] uppercase tracking-tighter">To: {ann.target_role}</span>
                                             </div>
                                             <p className="text-[10px] text-[var(--color-text-muted)] font-medium mt-0.5">{new Date(ann.created_at).toLocaleDateString()} • {ann.admin?.full_name}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button 
+                                        <button
                                             onClick={() => startEditAnnouncement(ann)}
                                             className="p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all text-[var(--color-text-muted)] hover:text-blue-500"
                                         >
                                             <Settings size={16} />
                                         </button>
-                                        <button 
-                                            onClick={() => handleDeleteAnnouncement(ann.id)}
+                                        <button
+                                            onClick={() => setConfirmDeleteAnn({ isOpen: true, id: ann.id })}
                                             className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-xl transition-all text-[var(--color-text-muted)] hover:text-rose-500"
                                         >
                                             <Trash2 size={16} />
@@ -580,17 +598,17 @@ export default function AdminDashboard() {
 
             {/* Document Preview Lightbox */}
             {previewLicenseImage && (
-                <div 
+                <div
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 md:p-12 animate-in fade-in duration-300"
                     onClick={() => setPreviewLicenseImage(null)}
                 >
-                    <button 
+                    <button
                         onClick={() => setPreviewLicenseImage(null)}
                         className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors p-4 bg-white/5 rounded-full border border-white/10 z-[210]"
                     >
                         <X size={32} />
                     </button>
-                    <div 
+                    <div
                         className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-8"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -599,9 +617,9 @@ export default function AdminDashboard() {
                             <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Official Professional Regulation Commission Document</p>
                         </div>
                         <div className="flex-1 w-full relative group">
-                            <img 
-                                src={previewLicenseImage} 
-                                alt="Credential Preview" 
+                            <img
+                                src={previewLicenseImage}
+                                alt="Credential Preview"
                                 className="w-full h-full object-contain rounded-3xl shadow-2xl shadow-black/50 border border-white/10"
                             />
                         </div>
@@ -609,6 +627,16 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={confirmDeleteAnn.isOpen}
+                onClose={() => setConfirmDeleteAnn({ isOpen: false, id: null })}
+                onConfirm={handleDeleteAnnouncement}
+                title="Terminate Platform Broadcast?"
+                message="Are you sure you want to kill this broadcast? It will be immediately removed from all active nutritionist and parent dashboards. This action cannot be undone."
+                confirmText="Terminate Broadcast"
+                isDestructive={true}
+            />
         </div>
     );
 }

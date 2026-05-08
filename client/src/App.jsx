@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/common/ScrollToTop';
 import { Layout } from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import AIKitchen from './pages/AIKitchen';
@@ -33,6 +34,7 @@ function AppContent() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes - No Layout */}
         <Route path="/login" element={<Login />} />

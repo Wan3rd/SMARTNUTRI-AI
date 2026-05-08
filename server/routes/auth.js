@@ -121,6 +121,11 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid Email or Password' });
         }
 
+        // Check if account is suspended
+        if (user.is_suspended) {
+            return res.status(403).json({ message: 'Account Access Denied: This account has been suspended by an administrator. Please contact snutri244@gmail.com to know more.' });
+        }
+
         // Check password
         const validPass = await bcrypt.compare(password, user.password_hash);
         if (!validPass) {

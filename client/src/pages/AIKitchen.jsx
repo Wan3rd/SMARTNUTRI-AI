@@ -4,7 +4,7 @@ import { Button } from '../components/common/Button';
 import api from '../lib/api';
 import ReactMarkdown from 'react-markdown';
 import { useProfile } from '../context/ProfileContext';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChefHat, ThumbsDown, Sparkles, Utensils } from 'lucide-react';
 
 export default function AIKitchen() {
     const { selectedProfile } = useProfile();
@@ -27,7 +27,7 @@ export default function AIKitchen() {
         try {
             const age = calculateAge(selectedProfile?.date_of_birth);
             const autoAvoid = selectedProfile?.allergies || selectedProfile?.dislikes || 'None';
-            
+
             const prompt = `I need a creative recipe idea for a child (aged ${age}). 
             Child Context: Weighs ${selectedProfile?.weight || 'average'}kg. 
             Cravings/Ingredients: ${cravings}. 
@@ -84,10 +84,10 @@ export default function AIKitchen() {
 
                         {selectedProfile && (
                             <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20 flex items-start gap-3">
-                                <AlertCircle size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                                <AlertCircle size={16} className="text-[var(--color-primary)] dark:text-emerald-400 mt-0.5" />
                                 <div>
-                                    <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">Profile Safety Checks Active</p>
-                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Automatically avoiding: {selectedProfile.allergies || 'No allergies'} & {selectedProfile.dislikes || 'No dislikes'}</p>
+                                    <p className="text-[10px] font-black text-[var(--color-secondary)] dark:text-emerald-300 uppercase tracking-widest">Profile Safety Checks Active</p>
+                                    <p className="text-[10px] text-[var(--color-secondary)] dark:text-emerald-400 font-medium">Automatically avoiding: {selectedProfile.allergies || 'No allergies'} & {selectedProfile.dislikes || 'No dislikes'}</p>
                                 </div>
                             </div>
                         )}

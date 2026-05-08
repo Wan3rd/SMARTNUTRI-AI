@@ -26,7 +26,7 @@ export function Layout({ children }) {
 
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-            <main className="flex-1 overflow-auto p-4 pt-20 md:p-8 md:pt-8 bg-[var(--color-bg-page)] transition-colors duration-300">
+            <main className="flex-1 p-4 pt-20 md:p-8 md:pt-8 bg-[var(--color-bg-page)] transition-colors duration-300">
                 <div className="mx-auto max-w-7xl"> {/* Increased width for better use of space */}
                     {children}
                 </div>

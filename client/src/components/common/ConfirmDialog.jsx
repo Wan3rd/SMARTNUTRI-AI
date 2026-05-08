@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { Button } from './Button';
+import { cn } from '../../lib/utils';
 
 export default function ConfirmDialog({ 
     isOpen, 
@@ -13,6 +14,15 @@ export default function ConfirmDialog({
     isDestructive = false,
     loading = false 
 }) {
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
@@ -21,8 +31,8 @@ export default function ConfirmDialog({
                 <div className="p-6">
                     <div className="flex justify-center mb-4">
                         {isDestructive ? (
-                            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
+                            <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/10 flex items-center justify-center">
+                                <AlertTriangle className="text-rose-600 dark:text-rose-400" size={24} />
                             </div>
                         ) : (
                             <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -41,19 +51,20 @@ export default function ConfirmDialog({
                     
                     <div className="flex gap-3 w-full">
                         <Button
-                            variant="outline"
-                            className="flex-1 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 border-[var(--color-divider)]"
+                            variant="secondary"
+                            className="flex-1"
                             onClick={onClose}
                             disabled={loading}
                         >
                             {cancelText}
                         </Button>
                         <Button
-                            className={`flex-1 text-white ${
+                            className={cn(
+                                "flex-1 shadow-lg",
                                 isDestructive 
-                                ? 'bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20' 
-                                : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] shadow-md shadow-[var(--color-primary)]/20'
-                            }`}
+                                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20" 
+                                : "bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-[var(--color-primary)]/20"
+                            )}
                             onClick={onConfirm}
                             disabled={loading}
                         >
