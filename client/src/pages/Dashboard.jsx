@@ -4,6 +4,7 @@ import { ProgressBar } from '../components/common/ProgressBar';
 import { Button } from '../components/common/Button';
 import { Droplets, Flame, Utensils, AlertCircle, Edit2, Sparkles, X, BrainCircuit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import api from '../lib/api';
 import { Link } from 'react-router-dom';
 import { getNutriMetrics } from '../utils/nutrition';
@@ -11,11 +12,11 @@ import ReactMarkdown from 'react-markdown';
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const { selectedProfile: profile, loading: profileLoading, refreshProfiles } = useProfile();
     const [todayMeals, setTodayMeals] = useState([]);
     const [consumed, setConsumed] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
     const [progress, setProgress] = useState({ water_intake_glasses: 0 });
     const [metrics, setMetrics] = useState(null);
-    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Edit Goals State
@@ -33,54 +34,55 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchProfileAndData = async () => {
+            if (!profile) {
+                if (!profileLoading) setLoading(false);
+                return;
+            }
+
             try {
-                // Fetch Profile
-                const resProfile = await api.get('/profiles');
-                if (resProfile.data && resProfile.data.length > 0) {
-                    const p = resProfile.data[0];
-                    setProfile(p);
+                setLoading(true);
+                const p = profile;
+                
+                // Calculate Metrics (Merge with custom targets)
+                const calculated = getNutriMetrics(p);
+                const mergedMetrics = {
+                    calories: p.calories_target || calculated.calories,
+                    protein: p.protein_target || calculated.protein,
+                    carbs: p.carbs_target || calculated.carbs,
+                    fat: p.fat_target || calculated.fat,
+                    water: calculated.water
+                };
+                setMetrics(mergedMetrics);
 
-                    // Calculate Metrics (Merge with custom targets)
-                    const calculated = getNutriMetrics(p);
-                    const mergedMetrics = {
-                        calories: p.calories_target || calculated.calories,
-                        protein: p.protein_target || calculated.protein,
-                        carbs: p.carbs_target || calculated.carbs,
-                        fat: p.fat_target || calculated.fat,
-                        water: calculated.water
-                    };
-                    setMetrics(mergedMetrics);
+                // Fetch Today's Progress
+                const resProgress = await api.get(`/progress/today?profileId=${p.id}`);
+                setProgress(resProgress.data);
 
-                    // Fetch Today's Progress
-                    const resProgress = await api.get('/progress/today');
-                    setProgress(resProgress.data);
+                // Fetch Meals for Today
+                const resPlans = await api.get(`/meals/plans?profileId=${p.id}`);
+                if (resPlans.data) {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    const todayStr = `${year}-${month}-${day}`;
 
-                    // Fetch Meals for Today
-                    const resPlans = await api.get('/meals/plans');
-                    if (resPlans.data) {
-                        const today = new Date();
-                        const year = today.getFullYear();
-                        const month = String(today.getMonth() + 1).padStart(2, '0');
-                        const day = String(today.getDate()).padStart(2, '0');
-                        const todayStr = `${year}-${month}-${day}`;
+                    const todays = resPlans.data.filter(meal => {
+                        // Ensure we compare YYYY-MM-DD parts only
+                        return meal.date.startsWith(todayStr);
+                    });
+                    setTodayMeals(todays);
 
-                        const todays = resPlans.data.filter(meal => {
-                            // Ensure we compare YYYY-MM-DD parts only
-                            return meal.date.startsWith(todayStr);
-                        });
-                        setTodayMeals(todays);
-
-                        // Calculate Consumed Nutrition
-                        const total = todays.reduce((acc, meal) => {
-                            return {
-                                calories: acc.calories + (meal.calories || 0),
-                                protein: acc.protein + (meal.protein_g || 0),
-                                carbs: acc.carbs + (meal.carbs_g || 0),
-                                fat: acc.fat + (meal.fats_g || 0)
-                            };
-                        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-                        setConsumed(total);
-                    }
+                    // Calculate Consumed Nutrition
+                    const total = todays.reduce((acc, meal) => {
+                        return {
+                            calories: acc.calories + (meal.calories || 0),
+                            protein: acc.protein + (meal.protein_g || 0),
+                            carbs: acc.carbs + (meal.carbs_g || 0),
+                            fat: acc.fat + (meal.fats_g || 0)
+                        };
+                    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+                    setConsumed(total);
                 }
             } catch (err) {
                 console.error("Failed to fetch dashboard data", err);
@@ -89,7 +91,7 @@ export default function Dashboard() {
             }
         };
         fetchProfileAndData();
-    }, []);
+    }, [profile?.id, profileLoading]);
 
     const updateWater = async (action) => {
         try {
@@ -98,7 +100,7 @@ export default function Dashboard() {
             const newVal = action === 'increment' ? oldVal + 1 : Math.max(0, oldVal - 1);
             setProgress(prev => ({ ...prev, water_intake_glasses: newVal }));
 
-            const res = await api.post('/progress/water', { action });
+            const res = await api.post('/progress/water', { action, profileId: profile.id });
             // Sync with server result just in case
             setProgress(res.data);
         } catch (err) {
@@ -128,10 +130,10 @@ export default function Dashboard() {
 
             // Optimistic Update
             setMetrics({ ...metrics, ...editForm });
-            setProfile(updated);
             setIsEditing(false);
 
             await api.put(`/profiles/${profile.id}`, updated);
+            await refreshProfiles();
         } catch (err) {
             console.error("Failed to update goals", err);
         }
@@ -230,7 +232,11 @@ export default function Dashboard() {
                         <div className="text-2xl font-bold">
                             {consumed.protein}g <span className="text-sm font-normal text-gray-400">/ {metrics?.protein}g</span>
                         </div>
-                        <ProgressBar value={0} className="mt-3" />
+                        <ProgressBar 
+                            value={(consumed.protein / (metrics?.protein || 1)) * 100} 
+                            className="mt-3" 
+                            indicatorColor="bg-blue-500" 
+                        />
                     </CardContent>
                 </Card>
 
@@ -242,7 +248,11 @@ export default function Dashboard() {
                         <div className="text-2xl font-bold">
                             {consumed.carbs}g <span className="text-sm font-normal text-gray-400">/ {metrics?.carbs}g</span>
                         </div>
-                        <ProgressBar value={0} className="mt-3" />
+                        <ProgressBar 
+                            value={(consumed.carbs / (metrics?.carbs || 1)) * 100} 
+                            className="mt-3" 
+                            indicatorColor="bg-green-500" 
+                        />
                     </CardContent>
                 </Card>
 
@@ -254,7 +264,11 @@ export default function Dashboard() {
                         <div className="text-2xl font-bold">
                             {consumed.fat}g <span className="text-sm font-normal text-gray-400">/ {metrics?.fat}g</span>
                         </div>
-                        <ProgressBar value={0} className="mt-3" />
+                        <ProgressBar 
+                            value={(consumed.fat / (metrics?.fat || 1)) * 100} 
+                            className="mt-3" 
+                            indicatorColor="bg-yellow-500" 
+                        />
                     </CardContent>
                 </Card>
             </div>

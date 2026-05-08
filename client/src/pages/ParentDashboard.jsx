@@ -5,11 +5,15 @@ import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
 import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
+import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
+import AnnouncementBanner from '../components/AnnouncementBanner';
 
 export default function ParentDashboard() {
-    const [profiles, setProfiles] = useState([]);
-    const [selectedProfile, setSelectedProfile] = useState(null);
+    const { user } = useAuth();
+    const { selectedProfile, loading: profileLoading } = useProfile();
     const [allLogs, setAllLogs] = useState([]);
     const [recentLogs, setRecentLogs] = useState([]);
     const [rules, setRules] = useState([]);
@@ -20,28 +24,21 @@ export default function ParentDashboard() {
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
 
     useEffect(() => {
-        fetchProfiles();
         fetchAssignedNutritionist();
     }, []);
 
     useEffect(() => {
-        if (selectedProfile) {
-            fetchLogs();
-            fetchRules();
-        }
-    }, [selectedProfile, filterTab]);
-
-    const fetchProfiles = async () => {
-        try {
-            const res = await api.get('/profiles');
-            setProfiles(res.data);
-            if (res.data.length > 0) setSelectedProfile(res.data[0]);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        const loadDashboardData = async () => {
+            if (selectedProfile) {
+                setLoading(true);
+                await Promise.all([fetchLogs(), fetchRules()]);
+                setLoading(false);
+            } else if (!profileLoading) {
+                setLoading(false);
+            }
+        };
+        loadDashboardData();
+    }, [selectedProfile?.id, filterTab, profileLoading]);
 
     const fetchLogs = async () => {
         try {
@@ -110,8 +107,8 @@ export default function ParentDashboard() {
             <div className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                     <span className="font-bold text-[var(--color-secondary)]">{label}</span>
-                    <span className={`font-bold ${isOver ? 'text-red-500' : 'text-[var(--color-primary)]'}`}>
-                        {Math.round(current)} / {goal} {unit}
+                    <span className={cn("font-bold", isOver ? 'text-red-500' : 'text-[var(--color-primary)]')}>
+                        {formatValue(current, user?.nutrient_precision)} / {formatValue(goal, user?.nutrient_precision)} {unit}
                     </span>
                 </div>
                 <div className="h-2 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
@@ -128,38 +125,25 @@ export default function ParentDashboard() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+            <AnnouncementBanner />
             <header>
-                <h1 className="text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Child Dashboard</h1>
+                <h1 className={cn("text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight", user?.privacy_mode && "privacy-blur")}>
+                    {selectedProfile?.child_name || 'Child Dashboard'}
+                </h1>
                 <p className="text-[var(--color-text-muted)] font-medium">Track growth, view daily compliance, and expert evaluations.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left: Logger & Profile Selector */}
+                {/* Left: Logger & Clinical Target */}
                 <div className="lg:col-span-7 space-y-6">
-                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
-                        <CardContent className="p-6">
-                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] block mb-4">Switch Active Profile</label>
-                            <div className="flex flex-wrap gap-3">
-                                {profiles.map(p => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => setSelectedProfile(p)}
-                                        className={`px-6 py-2.5 rounded-2xl border-2 transition-all text-xs font-black uppercase tracking-widest ${selectedProfile?.id === p.id
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/30'
-                                            : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)] hover:translate-y-[-2px]'}`}
-                                    >
-                                        {p.child_name}
-                                    </button>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Reward Progress */}
-
 
                     {selectedProfile && (
-                        <MealLogger profileId={selectedProfile.id} onLogged={fetchLogs} recentLogs={recentLogs} />
+                        <MealLogger 
+                            key={selectedProfile.id} 
+                            profileId={selectedProfile.id} 
+                            onLogged={fetchLogs} 
+                            recentLogs={recentLogs} 
+                        />
                     )}
 
                     <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
@@ -211,7 +195,7 @@ export default function ParentDashboard() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1.5">Assigned Clinician</p>
-                                    <h4 className="text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none">
+                                    <h4 className={cn("text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
                                         {assignedNutritionist?.full_name || 'Dr. Expert'}
                                     </h4>
                                     <p className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1">

@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, Droplets, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check } from 'lucide-react';
+import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, Scatter } from 'recharts';
 import Modal from '../components/common/Modal';
 import Notification from '../components/common/Notification';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
@@ -48,6 +51,23 @@ const quillStyles = `
     border: none !important;
     background-color: var(--color-bg-card) !important;
   }
+  .ql-editor.ql-blank::before {
+    color: var(--color-text-muted) !important;
+    font-style: italic !important;
+    opacity: 0.5 !important;
+  }
+  .consultation-quill .ql-editor {
+    min-height: 80px !important;
+    padding: 12px !important;
+  }
+  .quill-dark .ql-editor {
+    color: white !important;
+    min-height: 80px !important;
+    padding: 0 !important;
+  }
+  .quill-dark .ql-editor.ql-blank::before {
+    color: rgba(255,255,255,0.4) !important;
+  }
 `;
 
 export default function ClientDetails() {
@@ -87,6 +107,13 @@ export default function ClientDetails() {
     });
     const [standards, setStandards] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showLastAdimeReference, setShowLastAdimeReference] = useState(true);
+
+    const stripHtml = (html) => {
+        const tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    };
 
     // --- Modal & Notif States ---
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
@@ -125,12 +152,12 @@ export default function ClientDetails() {
     const [editNoteForm, setEditNoteForm] = useState('');
 
     // --- Confirmation Modal State ---
-    const [confirmModal, setConfirmModal] = useState({
+    const [confirmDialog, setConfirmDialog] = useState({
         isOpen: false,
         title: '',
         message: '',
         onConfirm: () => {},
-        type: 'danger'
+        isDestructive: true
     });
 
     // --- Meal Planner State ---
@@ -202,7 +229,6 @@ export default function ClientDetails() {
 
     const growthDeltas = useMemo(() => {
         if (!growthLogs || growthLogs.length < 2) return { weight: 0, height: 0 };
-        // Sort by date descending
         const sorted = [...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
         const current = sorted[0];
         const previous = sorted[1];
@@ -211,10 +237,98 @@ export default function ClientDetails() {
             height: (current.height_cm - previous.height_cm).toFixed(1)
         };
     }, [growthLogs]);
+    
+    const clinicalPatterns = useMemo(() => {
+        if (!logs || logs.length === 0) return [];
+        const alerts = [];
+        const last7Days = new Date();
+        last7Days.setDate(last7Days.getDate() - 7);
+
+        const dailyMealCount = {};
+        logs.forEach(log => {
+            const dateStr = new Date(log.logged_at).toDateString();
+            if (new Date(log.logged_at) >= last7Days && ['Breakfast', 'Lunch', 'Dinner'].includes(log.meal_category)) {
+                dailyMealCount[dateStr] = (dailyMealCount[dateStr] || 0) + 1;
+            }
+        });
+
+        const skippingDays = Object.entries(dailyMealCount).filter(([_, count]) => count < 2);
+        if (skippingDays.length > 0) {
+            alerts.push({ title: 'Meal Skipping Pattern', desc: `Patient missed core meals on ${skippingDays.length} days in the last week.`, severity: 'high' });
+        }
+
+        const highSodium = logs.filter(l => (l.total_sodium_mg || 0) > 800).length;
+        if (highSodium > 0) {
+            alerts.push({ title: 'Sodium Threshold Alert', desc: `${highSodium} meal entries exceeded 800mg sodium limit.`, severity: 'med' });
+        }
+
+        const lowConsumption = logs.filter(l => (l.consumption_percent || 100) < 50).length;
+        if (lowConsumption >= 3) {
+            alerts.push({ title: 'Low Intake Alert', desc: `Consistent low plate consumption (<50%) detected in ${lowConsumption} recent meals.`, severity: 'high' });
+        }
+
+        return alerts.length > 0 ? alerts : [{ title: 'Baseline Stable', desc: 'No significant clinical risks detected in recent logs.', severity: 'low' }];
+    }, [logs]);
+
+    const velocityStats = useMemo(() => {
+        if (!growthLogs || growthLogs.length < 2) return [];
+        const sorted = [...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+        
+        const velocityData = [];
+        for (let i = 0; i < Math.min(sorted.length - 1, 5); i++) {
+            const current = sorted[i];
+            const prev = sorted[i+1];
+            
+            const diffDays = (new Date(current.logged_at) - new Date(prev.logged_at)) / (1000 * 60 * 60 * 24);
+            const months = diffDays / 30.44;
+            
+            velocityData.push({
+                date: current.logged_at,
+                weight: current.weight_kg,
+                height: current.height_cm,
+                weightVel: months > 0 ? ((current.weight_kg - prev.weight_kg) / months).toFixed(2) : 0,
+                heightVel: months > 0 ? ((current.height_cm - prev.height_cm) / months).toFixed(2) : 0
+            });
+        }
+        return velocityData;
+    }, [growthLogs]);
 
     // --- Consultation Mode State ---
     const [isConsultationMode, setIsConsultationMode] = useState(false);
     const [isClinicalEditing, setIsClinicalEditing] = useState(false);
+    const [isAdimeEditing, setIsAdimeEditing] = useState(false);
+    const [isFinalizing, setIsFinalizing] = useState(false);
+    const [consultationJournal, setConsultationJournal] = useState('');
+    const [consultationAdime, setConsultationAdime] = useState({
+        assessment: '',
+        diagnosis: '',
+        intervention: '',
+        monitoring: '',
+        evaluation: ''
+    });
+
+    useEffect(() => {
+        if (isConsultationMode && adimeNotes.length > 0) {
+            // Prime the consultation draft with the most recent record for continuity
+            const latest = adimeNotes[0];
+            setConsultationAdime({
+                assessment: latest.assessment || '',
+                diagnosis: latest.diagnosis || '',
+                intervention: latest.intervention || '',
+                monitoring: latest.monitoring || '',
+                evaluation: latest.evaluation || ''
+            });
+            setConsultationJournal(`Consultation Session: ${new Date().toLocaleDateString()}`);
+        } else if (isConsultationMode) {
+            // Fresh session if no history
+            setConsultationAdime({ assessment: '', diagnosis: '', intervention: '', monitoring: '', evaluation: '' });
+            setConsultationJournal(`New Consultation Session: ${new Date().toLocaleDateString()}`);
+        }
+    }, [isConsultationMode, adimeNotes.length]);
+
+    const [isGrowthChartOpen, setIsGrowthChartOpen] = useState(false);
+    const [isVelocityModalOpen, setIsVelocityModalOpen] = useState(false);
+
     const [clinicalForm, setClinicalForm] = useState({});
 
     useEffect(() => {
@@ -370,20 +484,20 @@ export default function ClientDetails() {
         if (selectedProfile && activeTab === 'notes') {
             fetchNotes(selectedProfile.id);
         }
-        if (selectedProfile && activeTab === 'history') {
+        if (selectedProfile && (activeTab === 'history' || activeTab === 'review' || isConsultationMode)) {
             fetchLogs(selectedProfile.id);
         }
-        if (selectedProfile && activeTab === 'adime') {
+        if (selectedProfile && (activeTab === 'adime' || isConsultationMode)) {
             fetchAdimeNotes(selectedProfile.id);
         }
-        if (selectedProfile && activeTab === 'overview') {
+        if (selectedProfile && (activeTab === 'overview' || isConsultationMode)) {
             fetchGrowthLogs(selectedProfile.id);
             fetchVaccinationData(selectedProfile.id);
         }
-        if (selectedProfile && activeTab === 'review') {
-            fetchLogs(selectedProfile.id);
+        if (selectedProfile && isConsultationMode) {
+            fetchRules(selectedProfile.id);
         }
-    }, [selectedProfile, activeTab]);
+    }, [selectedProfile, activeTab, isConsultationMode]);
 
     const fetchGrowthLogs = async (profileId) => {
         try {
@@ -426,7 +540,7 @@ export default function ClientDetails() {
     };
 
     const handleDeleteVaccine = (id) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete Vaccination Record',
             message: 'Are you sure you want to permanently delete this immunization record? This action cannot be undone.',
@@ -440,7 +554,7 @@ export default function ClientDetails() {
                     showNotif("Failed to delete vaccine", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -473,7 +587,7 @@ export default function ClientDetails() {
     };
 
     const handleDeleteAdimeNote = async (id) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete ADIME Record',
             message: 'Are you sure you want to permanently delete this structured clinical record? This action cannot be undone.',
@@ -482,12 +596,13 @@ export default function ClientDetails() {
                     await api.delete(`/nutritionist/adime-notes/${id}`);
                     setAdimeNotes(adimeNotes.filter(n => n.id !== id));
                     showNotif("ADIME record deleted");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Error deleting ADIME", err);
                     showNotif("Failed to delete ADIME record", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -542,6 +657,95 @@ export default function ClientDetails() {
         }
     }, [profiles]);
 
+    const handleFinalizeSession = async () => {
+        setIsFinalizing(true);
+        try {
+            // 1. Save Consultation Journal as a Note
+            if (consultationJournal.trim() && !consultationJournal.includes('New Consultation Session')) {
+                await api.post('/notes', {
+                    nutritionist_id: user.id,
+                    client_id: selectedProfile.id,
+                    content: consultationJournal
+                });
+            }
+
+            // 2. Save/Update ADIME Note
+            await api.post('/nutritionist/adime-notes', {
+                profile_id: selectedProfile.id,
+                ...consultationAdime
+            });
+
+            // 3. Refresh data
+            await Promise.all([
+                fetchNotes(selectedProfile.id),
+                fetchAdimeNotes(selectedProfile.id)
+            ]);
+
+            showNotif("Clinical session finalized and archived.");
+            setIsAdimeEditing(false);
+        } catch (err) {
+            console.error("Failed to finalize session", err);
+            showNotif("Failed to save session data", "error");
+        } finally {
+            setIsFinalizing(false);
+        }
+    };
+
+    const handleGenerateParentGuide = () => {
+        const printWindow = window.open('', '_blank');
+        const content = `
+            <html>
+                <head>
+                    <title>SmartNutri-AI Clinical Report - ${selectedProfile.child_name}</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+                        .header { border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 40px; }
+                        .title { font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+                        .meta { margin-top: 10px; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+                        .section { margin-bottom: 30px; }
+                        .section-title { font-size: 14px; font-weight: 900; color: #4f46e5; text-transform: uppercase; margin-bottom: 15px; border-left: 4px solid #4f46e5; padding-left: 10px; }
+                        .card { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+                        .advice { font-size: 14px; line-height: 1.6; color: #334155; }
+                        .footer { margin-top: 50px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="title">Clinical Nutrition Report</div>
+                        <div class="meta">Patient: ${selectedProfile.child_name} | Date: ${new Date().toLocaleDateString()} | Provider ID: ${user.id}</div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">Clinical Observations</div>
+                        <div class="card advice">${consultationJournal || 'No current session notes recorded.'}</div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Current Intervention Plan</div>
+                        <div class="card advice">
+                            <strong>Diagnosis:</strong> ${consultationAdime.diagnosis || adimeNotes[0]?.diagnosis || 'Stable'} <br><br>
+                            <strong>Plan:</strong> ${consultationAdime.intervention || adimeNotes[0]?.intervention || 'Maintain current diet.'}
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Risk Pattern Summary</div>
+                        <div class="card advice">
+                            ${clinicalPatterns.map(p => `• ${p.title}: ${p.desc}`).join('<br>')}
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        Generated by SmartNutri-AI Command Center v2.0. This is a clinical guide intended for caregiver reference.
+                    </div>
+                    <script>window.print();</script>
+                </body>
+            </html>
+        `;
+        printWindow.document.write(content);
+        printWindow.document.close();
+    };
+
     const fetchLogs = async (profileId) => {
         try {
             // Fetch logs for the selected profile
@@ -568,7 +772,7 @@ export default function ClientDetails() {
     };
     
     const handleDeleteLog = async (logId) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete Meal Log',
             message: 'Are you sure you want to permanently delete this meal log? This action cannot be undone.',
@@ -582,7 +786,7 @@ export default function ClientDetails() {
                     showNotif("Failed to delete log", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -590,7 +794,7 @@ export default function ClientDetails() {
         // Use a consistent date format for the API (ISO)
         const isoDate = new Date(date).toISOString().split('T')[0];
         
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: `Clear All Logs: ${date}`,
             message: `This will permanently delete ALL meal logs recorded on ${date}. Are you sure you want to proceed?`,
@@ -610,7 +814,7 @@ export default function ClientDetails() {
                     showNotif("Failed to clear logs", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -646,7 +850,7 @@ export default function ClientDetails() {
     };
 
     const handleDeleteNote = async (noteId) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete Observation Note',
             message: 'Are you sure you want to permanently delete this clinical observation? This action cannot be undone.',
@@ -660,7 +864,7 @@ export default function ClientDetails() {
                     showNotif("Failed to delete note", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -701,7 +905,7 @@ export default function ClientDetails() {
     };
 
     const handleDeleteMeal = async (mealId) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete Meal',
             message: 'Are you sure you want to remove this meal from the plan?',
@@ -710,17 +914,18 @@ export default function ClientDetails() {
                     await api.delete(`/nutritionist/plan/meal/${mealId}`);
                     setMealPlan(prev => prev.filter(m => m.id !== mealId));
                     showNotif("Meal removed");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to delete meal", err);
                     showNotif("Failed to delete meal", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
     const handleClearPlan = async () => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Clear 7-Day Plan',
             message: 'This will permanently delete all meals in the current 7-day schedule. This action cannot be undone.',
@@ -729,12 +934,13 @@ export default function ClientDetails() {
                     await api.delete(`/nutritionist/plan/all/${selectedProfile.id}`);
                     setMealPlan([]);
                     showNotif("Meal plan cleared");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to clear plan", err);
                     showNotif("Failed to clear plan", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -833,7 +1039,7 @@ export default function ClientDetails() {
     };
 
     const confirmDeleteRule = (rule) => {
-        setConfirmModal({
+        setConfirmDialog({
             isOpen: true,
             title: 'Delete Clinical Rule',
             message: `Are you sure you want to remove the rule "${rule.rule_name}"? This will affect clinical compliance calculations for this patient.`,
@@ -842,12 +1048,13 @@ export default function ClientDetails() {
                     await api.delete(`/nutritionist/rules/${rule.id}`);
                     setRules(rules.filter(r => r.id !== rule.id));
                     showNotif("Rule deleted successfully!");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to delete rule", err);
                     showNotif("Failed to delete rule", "error");
                 }
             },
-            type: 'danger'
+            isDestructive: true
         });
     };
 
@@ -892,13 +1099,27 @@ export default function ClientDetails() {
                     <ArrowLeft size={24} />
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold text-[var(--color-secondary)]">{clientName}</h1>
+                    <h1 className={cn("text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
                     <p className="text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
                 </div>
                 <div className="ml-auto">
                     <Button 
                         variant={isConsultationMode ? "primary" : "outline"} 
-                        onClick={() => setIsConsultationMode(!isConsultationMode)}
+                        onClick={() => {
+                            if (isConsultationMode && isAdimeEditing) {
+                                setConfirmDialog({
+                                    isOpen: true,
+                                    title: 'Exit Active Session?',
+                                    message: 'You have unsaved clinical notes. Exiting will discard your current drafts. Continue?',
+                                    onConfirm: () => {
+                                        setIsConsultationMode(false);
+                                        setIsAdimeEditing(false);
+                                    }
+                                });
+                            } else {
+                                setIsConsultationMode(!isConsultationMode);
+                            }
+                        }}
                         className="flex gap-2"
                     >
                         <Monitor size={18} />
@@ -1048,7 +1269,7 @@ export default function ClientDetails() {
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <h2 className="text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none">{selectedProfile.child_name}</h2>
+                                                            <h2 className={cn("text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
                                                             <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-2">
                                                                 <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{selectedProfile.gender}</span>
                                                                 <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
@@ -1104,7 +1325,7 @@ export default function ClientDetails() {
                                                     </div>
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
-                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">{selectedProfile.activity_level?.replace('_', ' ') || 'N/A'}</div>
+                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">{selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A'}</div>
                                                     </div>
                                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
@@ -1149,14 +1370,14 @@ export default function ClientDetails() {
 
                                                 {/* Edit Form for Bio Info if in edit mode */}
                                                 {isClinicalEditing && (
-                                                    <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-3xl border-2 border-blue-200 dark:border-blue-800/30 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-200 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
                                                             <input 
                                                                 type="text"
                                                                 value={clinicalForm.child_name}
                                                                 onChange={(e) => setClinicalForm({...clinicalForm, child_name: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
                                                             />
                                                         </div>
                                                         <div className="space-y-1.5">
@@ -1164,7 +1385,7 @@ export default function ClientDetails() {
                                                             <select 
                                                                 value={clinicalForm.gender}
                                                                 onChange={(e) => setClinicalForm({...clinicalForm, gender: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
                                                             >
                                                                 <option value="Male">Male</option>
                                                                 <option value="Female">Female</option>
@@ -1176,7 +1397,7 @@ export default function ClientDetails() {
                                                                 type="date"
                                                                 value={clinicalForm.date_of_birth}
                                                                 onChange={(e) => setClinicalForm({...clinicalForm, date_of_birth: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 bg-white text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
                                                             />
                                                         </div>
                                                     </div>
@@ -1709,7 +1930,8 @@ export default function ClientDetails() {
                                                                 {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
                                                                     <div 
                                                                         key={log.id} 
-                                                                        className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-full md:h-40"
+                                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                        className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-full md:h-40 cursor-pointer shadow-sm hover:shadow-md"
                                                                     >
                                                                         <div className="w-full md:w-48 h-40 md:h-auto relative overflow-hidden flex-shrink-0">
                                                                             <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -1940,7 +2162,7 @@ export default function ClientDetails() {
                                                                             <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-2 tracking-widest">{field.label}</p>
                                                                             <div 
                                                                                 className="text-sm prose prose-sm dark:prose-invert max-w-none"
-                                                                                dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-gray-400">No data recorded.</em>' }}
+                                                                                dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
                                                                             />
                                                                         </div>
                                                                     ))}
@@ -1985,7 +2207,7 @@ export default function ClientDetails() {
                                             <div className="space-y-4">
                                                 <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider px-2">Recent Observations</h4>
                                                 {notes.length === 0 ? (
-                                                    <p className="text-center py-12 text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed">No notes added for this profile yet.</p>
+                                                    <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">No clinical observations recorded for this profile yet.</p>
                                                 ) : (
                                                     notes.map(note => (
                                                         <div key={note.id} className={`p-5 border rounded-xl relative group hover:shadow-md transition-all ${note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]'}`}>
@@ -2421,125 +2643,459 @@ export default function ClientDetails() {
 
             {/* Consultation Mode Overlay View */}
             {isConsultationMode && selectedProfile && (
-                <div className="fixed inset-0 z-40 bg-[var(--color-bg-page)] overflow-y-auto p-8 animate-in slide-in-from-bottom duration-500">
-                    <div className="max-w-6xl mx-auto space-y-8">
-                        <header className="flex justify-between items-end border-b pb-6">
-                            <div>
-                                <span className="text-xs font-black text-[var(--color-primary)] uppercase tracking-widest">Clinical Session Mode</span>
-                                <h2 className="text-4xl font-black text-[var(--color-secondary)] mt-2">Consultation Summary: {selectedProfile.child_name}</h2>
-                                <p className="text-gray-500 font-medium">Session Date: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-40 bg-[var(--color-bg-page)] overflow-y-auto p-4 md:p-8 animate-in slide-in-from-bottom duration-500">
+                    <div className="w-full max-w-[1600px] mx-auto space-y-6 md:space-y-8">
+                        <header className="flex flex-col md:flex-row justify-between items-start gap-4 md:items-center border-b border-[var(--color-divider)] pb-6">
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
+                                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] text-2xl sm:text-3xl font-black shadow-lg shadow-emerald-500/10 shrink-0">
+                                    {selectedProfile.child_name?.charAt(0)}
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                        <span className="text-[8px] sm:text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-[var(--color-primary)]/10 px-3 py-1 rounded-full">Active Clinical Session</span>
+                                        <span className="text-[8px] sm:text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 dark:border-amber-500/30">Z-Score: +0.4</span>
+                                    </div>
+                                    <h2 className="text-3xl sm:text-5xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter uppercase truncate">{selectedProfile.child_name}</h2>
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
+                                        <p className="text-[var(--color-text-muted)] font-bold uppercase text-[9px] sm:text-xs flex items-center gap-2">
+                                            <Calendar size={14} className="text-[var(--color-primary)]" /> 
+                                            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </p>
+                                        <span className="hidden sm:block h-1 w-1 bg-[var(--color-divider)] rounded-full" />
+                                        <p className="text-[9px] sm:text-xs font-black text-[var(--color-secondary)] uppercase">BMI: {((selectedProfile.weight_kg / Math.pow(selectedProfile.height_cm/100, 2)).toFixed(1))} kg/m²</p>
+                                    </div>
+                                </div>
                             </div>
-                            <Button variant="outline" onClick={() => setIsConsultationMode(false)} className="h-12 px-8 font-bold border-2">Exit Session</Button>
+                            <div className="flex w-full md:w-auto gap-2 sm:gap-3">
+                                <Button variant="outline" className="flex-1 md:flex-none h-10 sm:h-12 px-4 sm:px-6 font-black uppercase tracking-widest text-[8px] sm:text-[10px] border-2 border-[var(--color-divider)] flex gap-2 items-center justify-center">
+                                    <Activity size={14} className="hidden sm:block" /> Export
+                                </Button>
+                                <Button variant="primary" onClick={() => setIsConsultationMode(false)} className="flex-1 md:flex-none h-10 sm:h-12 px-6 sm:px-8 font-black uppercase tracking-widest text-[8px] sm:text-[10px] shadow-xl shadow-emerald-500/20">Exit Session</Button>
+                            </div>
                         </header>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Growth & Physical Status */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <Card className="border-2 border-[var(--color-primary)]/10 shadow-xl overflow-hidden">
-                                    <CardHeader className="bg-gray-50/50">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <TrendingUp size={20} className="text-[var(--color-primary)]" title="Growth Trend Analysis" /> Growth & Developmental Trends
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                            {/* Column 1: Patient Context & History */}
+                            <div className="space-y-6">
+                                <Card className="border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)] rounded-[2.5rem] overflow-hidden">
+                                    <CardHeader className="bg-[var(--color-bg-page)] border-b border-[var(--color-divider)] p-6">
+                                        <CardTitle className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
+                                            <User size={16} className="text-[var(--color-primary)]" /> Patient Baseline
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="p-6">
-                                        <div className="h-[300px] w-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={growthLogs}>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                                    <XAxis dataKey="logged_at" tickFormatter={(t) => new Date(t).toLocaleDateString()} fontSize={10} />
-                                                    <YAxis fontSize={10} domain={['auto', 'auto']} />
-                                                    <Tooltip labelFormatter={(l) => new Date(l).toLocaleDateString()} />
-                                                    <Legend />
-                                                    <Line name="Weight (kg)" type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{r: 6}} />
-                                                    <Line name="Height (cm)" type="monotone" dataKey="height_cm" stroke="#6366f1" strokeWidth={4} dot={{r: 6}} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
+                                    <CardContent className="p-6 space-y-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase mb-1">Height</p>
+                                                <p className="text-sm font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} cm</p>
+                                            </div>
+                                            <div className="p-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase mb-1">Weight</p>
+                                                <p className="text-sm font-black text-[var(--color-secondary)]">{selectedProfile.weight_kg} kg</p>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl">
+                                            <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase mb-2 flex items-center gap-2">
+                                                <ShieldAlert size={12} /> Critical Allergies
+                                            </p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
+                                                    <span key={a} className="px-2 py-0.5 bg-white dark:bg-red-900/40 text-red-600 dark:text-red-400 text-[8px] font-black rounded-md border border-red-100 dark:border-red-900/50 uppercase">{a}</span>
+                                                )) : <span className="text-[10px] font-bold text-amber-700/50 dark:text-amber-400/50">None Reported</span>}
+                                            </div>
+                                        </div>
+                                        <div className="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+                                            <p className="text-[9px] font-black text-indigo-600 uppercase mb-2">Medical History</p>
+                                            <p className="text-[10px] text-indigo-900/70 dark:text-indigo-200/70 font-medium italic leading-relaxed">
+                                                "{selectedProfile.medical_history || 'No established medical history reported.'}"
+                                            </p>
                                         </div>
                                     </CardContent>
                                 </Card>
- 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Card className="border-none shadow-md bg-green-50/50">
-                                        <CardContent className="p-6">
-                                            <h4 className="text-xs font-black text-green-700 uppercase mb-3 flex items-center gap-2">
-                                                <ClipboardCheck size={16} title="Meal Compliance Status" /> Latest Compliance Status
-                                            </h4>
-                                            <div className="flex items-end gap-4">
-                                                <span className="text-5xl font-black text-green-600">{reportData?.summary?.complianceRate || 100}%</span>
-                                                <div className="pb-1">
-                                                    <p className="text-sm font-bold text-green-800">30-Day Average</p>
-                                                    <p className="text-xs text-green-600">{reportData?.summary?.totalLogs || 0} meals analyzed</p>
+
+                                <Card className="border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)] rounded-[2.5rem] overflow-hidden">
+                                    <CardHeader className="bg-[var(--color-bg-page)] border-b border-[var(--color-divider)] p-6">
+                                        <CardTitle className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
+                                            <TrendingUp size={16} className="text-[var(--color-primary)]" /> Growth Suite
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-4">
+                                        <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden group">
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black uppercase opacity-70 mb-1">Active Trend</p>
+                                                <h4 className="text-lg font-black uppercase leading-tight">Patient Progress Chart</h4>
+                                                <Button 
+                                                    onClick={() => setIsGrowthChartOpen(true)}
+                                                    className="mt-4 w-full bg-white text-indigo-600 hover:bg-white/90 font-black text-[10px] uppercase py-3 rounded-xl flex items-center justify-center gap-2"
+                                                >
+                                                    <PieChart size={14} /> View Growth History
+                                                </Button>
+                                            </div>
+                                            <TrendingUp size={80} className="absolute -bottom-4 -right-4 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <Button 
+                                                variant="outline"
+                                                onClick={() => setIsVelocityModalOpen(true)}
+                                                className="w-full border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] text-[10px] font-black uppercase py-4 rounded-2xl flex items-center justify-center gap-2"
+                                            >
+                                                <Activity size={14} className="text-[var(--color-primary)]" /> View Velocity Ledger
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Column 2-3: Digital Nutritional Ledger */}
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="flex items-center justify-between px-2">
+                                    <h3 className="text-xl font-black text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-3">
+                                        <Utensils size={24} className="text-[var(--color-primary)]" /> Digital Nutritional Ledger
+                                    </h3>
+                                    <div className="flex gap-2">
+                                        <span className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] font-black rounded-full uppercase tracking-widest border border-[var(--color-primary)]/20 flex items-center gap-2">
+                                            <Filter size={12} /> All Entries
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 scrollbar-hide">
+                                    {logs.length === 0 ? (
+                                        <div className="text-center py-20 bg-[var(--color-bg-card)] rounded-[2.5rem] border-2 border-dashed border-[var(--color-divider)]">
+                                            <Monitor size={48} className="mx-auto text-[var(--color-divider)] mb-4" />
+                                            <p className="text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest">No Logged Data in Selected Range</p>
+                                        </div>
+                                    ) : (
+                                        logs.map((log) => (
+                                            <Card 
+                                                key={log.id} 
+                                                onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                className="border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all bg-[var(--color-bg-card)] rounded-[2rem] overflow-hidden group shadow-lg dark:shadow-none cursor-pointer"
+                                            >
+                                                <div className="flex flex-col md:flex-row">
+                                                    <div className="md:w-40 h-40 relative flex-shrink-0 overflow-hidden">
+                                                        <img src={log.image_url} alt="Meal" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <Eye size={24} className="text-white" />
+                                                        </div>
+                                                        <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[8px] font-black text-white uppercase tracking-widest flex items-center gap-1">
+                                                            <Clock size={10} /> {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-5 flex-grow flex flex-col justify-between">
+                                                        <div>
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] font-black rounded uppercase">{log.meal_category}</span>
+                                                                        {log.status === 'verified' && <span className="px-2 py-0.5 bg-green-500 text-white text-[8px] font-black rounded uppercase flex items-center gap-1"><BadgeCheck size={8} /> Verified</span>}
+                                                                    </div>
+                                                                    <h4 className="text-sm font-black text-[var(--color-secondary)] uppercase mt-1 line-clamp-1">{log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary}</h4>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-lg font-black text-[var(--color-secondary)]">{log.total_calories || 0}<span className="text-[10px] ml-1 opacity-50 uppercase tracking-tighter">kcal</span></p>
+                                                                    <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase">Calculated Intake</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-2 mt-3">
+                                                                {[
+                                                                    { label: 'Pro', value: log.total_protein_g, unit: 'g', color: 'text-emerald-500' },
+                                                                    { label: 'Carb', value: log.total_carbs_g, unit: 'g', color: 'text-amber-500' },
+                                                                    { label: 'Fat', value: log.total_fat_g, unit: 'g', color: 'text-orange-500' },
+                                                                    { label: 'Waste', value: 100 - (log.consumption_percent || 100), unit: '%', color: 'text-red-500' }
+                                                                ].map((m, i) => (
+                                                                    <div key={i} className="bg-[var(--color-bg-page)] rounded-xl p-2 border border-[var(--color-divider)]">
+                                                                        <p className="text-[7px] font-black text-[var(--color-text-muted)] uppercase mb-1">{m.label}</p>
+                                                                        <p className={`text-[10px] font-black ${m.color}`}>{m.value || 0}{m.unit}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        {log.caregiver_notes && (
+                                                            <div className="mt-3 p-2 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+                                                                <p className="text-[8px] font-black text-blue-600 uppercase flex items-center gap-1 mb-1"><MessageSquare size={10} /> Caregiver Note</p>
+                                                                <p className="text-[10px] font-medium text-blue-900/70 italic leading-tight">"{log.caregiver_notes}"</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                    <Card className="border-none shadow-md bg-blue-50/50">
-                                        <CardContent className="p-6">
-                                            <h4 className="text-xs font-black text-blue-700 uppercase mb-3 flex items-center gap-2">
-                                                <Info size={16} title="Patient Medical Context" /> Current Medical Context
-                                            </h4>
-                                            <div className="space-y-2">
-                                                <p className="text-sm font-bold text-blue-900">{selectedProfile.allergies?.length > 0 ? `Allergic to: ${selectedProfile.allergies.join(', ')}` : 'No known allergies'}</p>
-                                                <p className="text-xs text-blue-700 italic">"{selectedProfile.medical_history || 'No medical history reported.'}"</p>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                            </Card>
+                                        ))
+                                    )}
+
                                 </div>
                             </div>
 
-                            {/* Clinical Interventions & Rules */}
                             <div className="space-y-6">
-                                <Card className="h-full border-2 border-indigo-100 shadow-xl">
-                                    <CardHeader className="bg-indigo-50/50">
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <Activity size={20} className="text-indigo-600" /> Active Interventions
+                                {/* Diagnosis Evolution Tracking */}
+                                <Card className="border-2 border-indigo-100 dark:border-indigo-500/20 shadow-xl dark:shadow-none bg-indigo-50/10 dark:bg-indigo-500/5 rounded-[2.5rem] overflow-hidden">
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <TrendingUp size={14} /> Diagnosis Evolution
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="p-6">
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-white rounded-xl border-l-4 border-indigo-500 shadow-sm">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Latest Clinical Diagnosis</p>
-                                                <p className="text-sm font-bold text-gray-800">
-                                                    {adimeNotes[0]?.diagnosis || "No clinical diagnosis recorded yet."}
-                                                </p>
+                                    <CardContent className="p-6 pt-0">
+                                        {adimeNotes.length === 0 ? (
+                                            <p className="text-[10px] text-[var(--color-text-muted)] italic font-medium">No previous diagnosis history.</p>
+                                        ) : (
+                                            <div className="relative pl-4 space-y-4 before:absolute before:left-1 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-100 dark:before:bg-indigo-500/20">
+                                                {adimeNotes.slice(0, 3).map((note, idx) => (
+                                                    <div key={note.id} className="relative">
+                                                        <div className={`absolute -left-[1.125rem] top-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-zinc-900 ${idx === 0 ? 'bg-indigo-600 scale-125' : 'bg-indigo-200'}`} />
+                                                        <div className="flex justify-between items-start mb-0.5">
+                                                            <span className="text-[8px] font-black text-indigo-500 uppercase tracking-tighter">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                            {idx === 0 && <span className="text-[7px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded uppercase">Current</span>}
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-[var(--color-text-main)] line-clamp-2 leading-tight opacity-80">
+                                                            {stripHtml(note.diagnosis)}
+                                                        </p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            
-                                            <div className="pt-4 border-t border-dashed">
-                                                <p className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-widest">Enforced Dietary Rules</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                                
+                                {/* Clinical Risk Engine */}
+                                <Card className="border-2 border-red-100 dark:border-red-500/20 shadow-xl dark:shadow-none bg-red-50/30 dark:bg-red-500/5 rounded-[2.5rem] overflow-hidden">
+                                    <CardHeader className="bg-white/50 dark:bg-white/5 border-b border-red-100 dark:border-red-500/20 p-6">
+                                        <CardTitle className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-widest flex items-center gap-2">
+                                            <AlertCircle size={16} /> Risk Analysis Patterns
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-3">
+                                        {clinicalPatterns.map((alert, i) => (
+                                            <div key={i} className={`p-3 rounded-2xl border-2 ${
+                                                alert.severity === 'high' ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-500/40' : 
+                                                alert.severity === 'med' ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-500/40' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-500/40'
+                                            }`}>
+                                                <p className={`text-[9px] font-black uppercase mb-1 ${
+                                                    alert.severity === 'high' ? 'text-red-700 dark:text-red-400' : 
+                                                    alert.severity === 'med' ? 'text-orange-700 dark:text-orange-400' : 'text-blue-700 dark:text-blue-400'
+                                                }`}>{alert.title}</p>
+                                                <p className="text-[10px] font-medium leading-tight opacity-70 dark:text-white/70">{alert.desc}</p>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+
+                                {/* ADIME Workspace & Consultation Input */}
+                                <Card className="border-2 border-indigo-100 dark:border-indigo-500/20 shadow-2xl bg-[var(--color-bg-card)] rounded-[2.5rem] flex flex-col overflow-hidden min-h-[600px]">
+                                    <CardHeader className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 border-b-0">
+                                        <div className="flex justify-between items-center">
+                                            <CardTitle className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-tight">
+                                                <Stethoscope size={20} className="text-white/80" /> 
+                                                {isAdimeEditing ? 'Active Session Editor' : 'Clinical Workspace'}
+                                            </CardTitle>
+                                            <div className="flex gap-2">
+                                                {isAdimeEditing && adimeNotes.length > 0 && (
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        onClick={() => setShowLastAdimeReference(!showLastAdimeReference)}
+                                                        className={`bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[8px] font-black uppercase tracking-widest px-3 py-1 h-auto transition-all ${showLastAdimeReference ? 'bg-white/20 ring-1 ring-white/50' : ''}`}
+                                                    >
+                                                        {showLastAdimeReference ? 'Hide Reference' : 'Show Reference'}
+                                                    </Button>
+                                                )}
+                                                <Button 
+                                                    variant="ghost" 
+                                                    onClick={() => setIsAdimeEditing(!isAdimeEditing)}
+                                                    className="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[8px] font-black uppercase tracking-widest px-3 py-1 h-auto"
+                                                >
+                                                    {isAdimeEditing ? 'View History' : 'Edit Session'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    
+                                    <CardContent className="p-6 flex-1 flex flex-col space-y-4 overflow-y-auto scrollbar-hide">
+                                        {isAdimeEditing ? (
+                                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                {/* Side-by-Side ADIME Continuity Reference Panel */}
+                                                {showLastAdimeReference && adimeNotes.length > 0 && (
+                                                    <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border-2 border-amber-200 dark:border-amber-500/20 animate-in zoom-in-95 duration-300">
+                                                        <div className="flex justify-between items-center mb-3">
+                                                            <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                                                                <ClipboardCheck size={12} /> Continuity Reference (Last Session)
+                                                            </p>
+                                                            <span className="text-[8px] font-bold text-amber-600 opacity-60 uppercase">{new Date(adimeNotes[0].created_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-1">
+                                                                <h6 className="text-[7px] font-black text-amber-800 dark:text-amber-500 uppercase opacity-70">Last Diagnosis</h6>
+                                                                <div className="text-[10px] font-bold text-amber-900/80 dark:text-amber-200/80 line-clamp-2 italic leading-tight" dangerouslySetInnerHTML={{ __html: adimeNotes[0].diagnosis || 'Stable' }} />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <h6 className="text-[7px] font-black text-amber-800 dark:text-amber-500 uppercase opacity-70">Last Intervention</h6>
+                                                                <div className="text-[10px] font-bold text-amber-900/80 dark:text-amber-200/80 line-clamp-2 italic leading-tight" dangerouslySetInnerHTML={{ __html: adimeNotes[0].intervention || 'Maintain' }} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Consultation Journal */}
                                                 <div className="space-y-2">
-                                                    {rules.map(rule => (
-                                                        <div key={rule.id} className="flex justify-between items-center p-2 rounded bg-gray-50">
-                                                            <span className="text-xs font-bold text-gray-700">{rule.rule_name}</span>
-                                                            <span className="text-[10px] bg-white px-2 py-0.5 rounded border font-black text-[var(--color-primary)]">
-                                                                {rule.rule_type === 'max' ? '<' : '>'} {rule.rule_value}{rule.rule_unit}
-                                                            </span>
+                                                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-2">
+                                                        <MessageSquare size={12} /> Consultation Journal
+                                                    </label>
+                                                    <div className="bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl overflow-hidden min-h-[100px]">
+                                                        <ReactQuill 
+                                                            theme="snow"
+                                                            className="consultation-quill"
+                                                            value={consultationJournal}
+                                                            onChange={setConsultationJournal}
+                                                            modules={{ toolbar: false }}
+                                                            placeholder="Discussed meal timing with caregiver..."
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* ADIME Structured Inputs */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between px-1">
+                                                        <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">ADIME Record</p>
+                                                        {adimeNotes.length > 0 && (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[8px] font-bold text-indigo-600 uppercase">Prime from:</span>
+                                                                <select 
+                                                                    className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-500/30 text-[8px] font-black uppercase rounded-lg px-2 py-1 outline-none cursor-pointer"
+                                                                    onChange={(e) => {
+                                                                        const selected = adimeNotes.find(n => n.id === parseInt(e.target.value));
+                                                                        if (selected) {
+                                                                            setConsultationAdime({
+                                                                                assessment: selected.assessment || '',
+                                                                                diagnosis: selected.diagnosis || '',
+                                                                                intervention: selected.intervention || '',
+                                                                                monitoring: `${selected.monitoring || ''}${selected.evaluation ? '<br/><br/>' + selected.evaluation : ''}`,
+                                                                                evaluation: ''
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <option value="">Latest Session</option>
+                                                                    {adimeNotes.map(n => (
+                                                                        <option key={n.id} value={n.id}>{new Date(n.created_at).toLocaleDateString()}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
+                                                            <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-400 uppercase mb-2">Assessment</h5>
+                                                            <ReactQuill 
+                                                                theme="snow"
+                                                                value={consultationAdime.assessment}
+                                                                onChange={(val) => setConsultationAdime({...consultationAdime, assessment: val})}
+                                                                modules={{ toolbar: false }}
+                                                                placeholder="Physical observations..."
+                                                            />
+                                                        </div>
+                                                        <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
+                                                            <h5 className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 uppercase mb-2">Diagnosis</h5>
+                                                            <ReactQuill 
+                                                                theme="snow"
+                                                                value={consultationAdime.diagnosis}
+                                                                onChange={(val) => setConsultationAdime({...consultationAdime, diagnosis: val})}
+                                                                modules={{ toolbar: false }}
+                                                                placeholder="Identified problems..."
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                        <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-400 uppercase mb-2">Intervention Plan</h5>
+                                                        <ReactQuill 
+                                                            theme="snow"
+                                                            value={consultationAdime.intervention}
+                                                            onChange={(val) => setConsultationAdime({...consultationAdime, intervention: val})}
+                                                            modules={{ toolbar: false }}
+                                                            placeholder="Specific nutrition actions..."
+                                                        />
+                                                    </div>
+
+                                                    <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                        <h5 className="text-[8px] font-black text-amber-700 dark:text-amber-400 uppercase mb-2 flex items-center gap-2">
+                                                            <Activity size={12} /> Monitoring & Evaluation
+                                                        </h5>
+                                                        <ReactQuill 
+                                                            theme="snow"
+                                                            value={consultationAdime.monitoring}
+                                                            onChange={(val) => setConsultationAdime({...consultationAdime, monitoring: val, evaluation: ''})}
+                                                            modules={{ toolbar: false }}
+                                                            placeholder="Progress metrics and outcomes assessment..."
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <Button 
+                                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
+                                                    onClick={handleFinalizeSession}
+                                                    disabled={isFinalizing}
+                                                >
+                                                    {isFinalizing ? (
+                                                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    ) : <Save size={14} />}
+                                                    {isFinalizing ? "Saving Clinical Data..." : "Finalize & Save Session"}
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                                                <div className="p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
+                                                    <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                        <BadgeCheck size={12} /> Active Diagnosis
+                                                    </h5>
+                                                    <div 
+                                                        className="text-[11px] font-bold text-[var(--color-secondary)] leading-tight prose prose-xs dark:prose-invert max-w-none"
+                                                        dangerouslySetInnerHTML={{ __html: adimeNotes[0]?.diagnosis || "No diagnosis set." }}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="space-y-3">
+                                                    <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-1">Session Timeline</p>
+                                                    {adimeNotes.slice(0, 3).map((note, idx) => (
+                                                        <div key={note.id} className="p-4 bg-white dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm hover:border-indigo-200 transition-colors">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-[8px] font-black text-indigo-600 uppercase">Session #{adimeNotes.length - idx}</span>
+                                                                <span className="text-[8px] font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div 
+                                                                className="text-[10px] font-bold text-[var(--color-text-main)] line-clamp-1 prose prose-xs dark:prose-invert"
+                                                                dangerouslySetInnerHTML={{ __html: note.diagnosis }}
+                                                            />
                                                         </div>
                                                     ))}
                                                 </div>
-                                            </div>
 
-                                            <div className="pt-6">
-                                                <p className="text-[10px] font-black text-indigo-600 uppercase mb-2">Recommended Next Action</p>
-                                                <div className="p-4 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200">
-                                                    <p className="text-sm font-medium leading-relaxed">
-                                                        Based on the compliance rate of {reportData?.summary?.complianceRate}%, 
-                                                        continue with the current {rules[0]?.category || 'nutritional'} intervention. 
-                                                        Review sugar intake if compliance drops below 80%.
-                                                    </p>
+                                                <div className="pt-4 border-t border-[var(--color-divider)] border-dashed">
+                                                    <p className="text-[9px] font-black text-indigo-600 uppercase mb-3 tracking-widest">Current Guidance</p>
+                                                    <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden">
+                                                        <p className="text-[10px] font-medium leading-relaxed relative z-10">
+                                                            Target: <strong className="font-black underline decoration-white/30">{rules[0]?.category || 'Macro'} Optimization</strong>. Maintain &gt;80% adherence.
+                                                        </p>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            className="mt-3 w-full bg-white/10 hover:bg-white/20 text-white text-[8px] font-black uppercase tracking-widest border border-white/20 rounded-lg"
+                                                            onClick={handleGenerateParentGuide}
+                                                        >
+                                                            Generate Parent Guide
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
                         </div>
+                    </div>
 
                         <footer className="text-center pt-8 opacity-50">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">SmartNutri-AI Clinical Consultation System • Version 2.0</p>
                         </footer>
                     </div>
-                </div>
-            )}
+                )}
 
             {/* UI Overlays */}
             <Notification
@@ -2664,59 +3220,134 @@ export default function ClientDetails() {
                     </Button>
                 </form>
             </Modal>
-            {/* Universal Confirmation Modal */}
-            <Modal
-                isOpen={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                title={confirmModal.title}
-            >
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 p-5 bg-[var(--color-bg-card,#ffffff)] dark:bg-white/5 rounded-2xl border-2 border-red-500 shadow-sm">
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-full text-red-600 shadow-sm">
-                            <AlertTriangle size={28} />
-                        </div>
-                        <p className="text-sm text-[var(--color-text-main,#1f2937)] font-black leading-relaxed">
-                            {confirmModal.message}
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Button 
-                            variant="outline" 
-                            className="flex-1 font-bold rounded-xl"
-                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/20"
-                            onClick={() => {
-                                confirmModal.onConfirm();
-                                setConfirmModal({ ...confirmModal, isOpen: false });
-                            }}
-                        >
-                            Confirm Delete
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                onConfirm={confirmDialog.onConfirm}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                isDestructive={confirmDialog.isDestructive}
+            />
             
             <ReviewLogModal
                 isOpen={isReviewOpen}
                 onClose={() => setIsReviewOpen(false)}
                 log={selectedLogForReview}
-                onReviewComplete={() => {
+                onVerified={() => {
+                    fetchLogs(selectedProfile.id);
+                    fetchAdimeNotes(selectedProfile.id);
                     setIsReviewOpen(false);
-                    if (selectedProfile) fetchLogs(selectedProfile.id);
-                    fetchAllClientPending(); // Update sidebar badges
                 }}
             />
 
-            <Notification
-                show={notif.show}
-                type={notif.type}
-                message={notif.message}
-                onClose={() => setNotif({ ...notif, show: false })}
-            />
+            {/* Simplified Growth Chart Modal */}
+            <Modal
+                isOpen={isGrowthChartOpen}
+                onClose={() => setIsGrowthChartOpen(false)}
+                title={`Growth History - ${selectedProfile?.child_name}`}
+                maxWidth="max-w-6xl"
+            >
+                <div className="space-y-6">
+                    <div className="h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={[...growthLogs].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at))}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                <XAxis 
+                                    dataKey="logged_at" 
+                                    tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    fontSize={10} 
+                                    tick={{fill: 'var(--color-text-muted)', fontWeight: 700}} 
+                                />
+                                <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)', fontWeight: 700}} />
+                                <Tooltip 
+                                    labelFormatter={(val) => new Date(val).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                    contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', fontSize: '10px', fontWeight: 900 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
+                                
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="weight_kg" 
+                                    stroke="var(--color-primary)" 
+                                    strokeWidth={4} 
+                                    name="Weight (kg)" 
+                                    dot={{ r: 6, fill: 'var(--color-primary)', strokeWidth: 2, stroke: '#fff' }}
+                                    activeDot={{ r: 8 }}
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="height_cm" 
+                                    stroke="#6366f1" 
+                                    strokeWidth={4} 
+                                    name="Height (cm)" 
+                                    dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
+                                    activeDot={{ r: 8 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                        <span>Chronological Progress Tracking</span>
+                        <div className="flex gap-4">
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-[var(--color-primary)] rounded-full" /> Weight</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-indigo-500 rounded-full" /> Height</span>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* NEW: Velocity Ledger Modal */}
+            <Modal
+                isOpen={isVelocityModalOpen}
+                onClose={() => setIsVelocityModalOpen(false)}
+                title={`Clinical Velocity Ledger - ${selectedProfile?.child_name}`}
+                maxWidth="max-w-4xl"
+            >
+                <div className="space-y-4">
+                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-[var(--color-divider)]">
+                                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Weight (Δ)</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Height (Δ)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--color-divider)]">
+                                {velocityStats.length > 0 ? velocityStats.map((stat, i) => (
+                                    <tr key={i} className="hover:bg-indigo-500/5 transition-colors">
+                                        <td className="px-4 py-4 text-xs font-black text-[var(--color-text-main)] uppercase">
+                                            {new Date(stat.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-4 py-4 text-right">
+                                            <div className="text-sm font-black text-[var(--color-secondary)]">{stat.weight} <span className="text-[10px] opacity-50 uppercase">kg</span></div>
+                                            <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.weightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {parseFloat(stat.weightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                {parseFloat(stat.weightVel) > 0 ? '+' : ''}{stat.weightVel} kg/mo
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4 text-right">
+                                            <div className="text-sm font-black text-[var(--color-secondary)]">{stat.height} <span className="text-[10px] opacity-50 uppercase">cm</span></div>
+                                            <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.heightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {parseFloat(stat.heightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                {parseFloat(stat.heightVel) > 0 ? '+' : ''}{stat.heightVel} cm/mo
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="3" className="px-4 py-20 text-center text-xs font-bold text-[var(--color-text-muted)] italic uppercase">No velocity data recorded.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Button variant="outline" className="w-full font-black uppercase text-[10px] py-4 rounded-2xl" onClick={() => setIsVelocityModalOpen(false)}>Close Ledger</Button>
+                </div>
+            </Modal>
+
+
         </div>
     );
 }

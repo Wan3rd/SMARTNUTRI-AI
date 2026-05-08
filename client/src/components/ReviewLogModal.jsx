@@ -4,6 +4,7 @@ import { Button } from './common/Button';
 import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
+import Notification from './common/Notification';
 
 export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete }) {
     const [loading, setLoading] = useState(false);
@@ -12,6 +13,11 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [isEditing, setIsEditing] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [zoomScale, setZoomScale] = useState(1);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+
+    const showNotif = (message, type = 'success') => {
+        setNotif({ show: true, message, type });
+    };
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -53,7 +59,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             onClose();
         } catch (err) {
             console.error("Failed to submit review", err);
-            alert("Failed to save review. Please try again.");
+            showNotif("Failed to save review. Please try again.", "error");
         } finally {
             setLoading(false);
         }
@@ -63,12 +69,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         const newItems = [...editedAnalysis.items];
         newItems[idx] = { ...newItems[idx], [field]: parseFloat(value) || 0 };
 
-        // Recalculate totals
-        const total_calories_est = newItems.reduce((sum, item) => sum + (parseFloat(item.calories) || 0), 0);
+        // Recalculate totals with precision fix
+        const total_calories_est = Math.round(newItems.reduce((sum, item) => sum + (parseFloat(item.calories) || 0), 0));
         const macros_est = {
-            protein_g: newItems.reduce((sum, item) => sum + (parseFloat(item.protein_g) || 0), 0),
-            carbs_g: newItems.reduce((sum, item) => sum + (parseFloat(item.carbs_g) || 0), 0),
-            fat_g: newItems.reduce((sum, item) => sum + (parseFloat(item.fat_g) || 0), 0)
+            protein_g: parseFloat(newItems.reduce((sum, item) => sum + (parseFloat(item.protein_g) || 0), 0).toFixed(1)),
+            carbs_g: parseFloat(newItems.reduce((sum, item) => sum + (parseFloat(item.carbs_g) || 0), 0).toFixed(1)),
+            fat_g: parseFloat(newItems.reduce((sum, item) => sum + (parseFloat(item.fat_g) || 0), 0).toFixed(1))
         };
 
         setEditedAnalysis(prev => ({
@@ -154,12 +160,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             {log.profile?.medical_history && (
                                 <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
                                     <p className="text-[10px] text-blue-400 font-black uppercase flex items-center gap-1 mb-1"><Info size={12} /> Medical History</p>
-                                    <p className="text-xs text-blue-100/80 italic leading-relaxed">"{log.profile.medical_history}"</p>
+                                    <p className="text-xs text-blue-100/80 italic leading-relaxed">{log.profile.medical_history}</p>
                                 </div>
                             )}
                             <div className="flex flex-wrap gap-2">
                                 <span className="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 border-white/5">Allergies: {log.profile?.allergies?.join(', ') || 'None'}</span>
-                                <span className="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 border-white/5">Activity: {log.profile?.activity_level}</span>
+                                <span className="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 border-white/5 uppercase">Activity: {log.profile?.activity_level?.replace(/_/g, ' ') || 'N/A'}</span>
                             </div>
                         </motion.div>
                     </div>
@@ -187,7 +193,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     </p>
                                 </div>
                                 {log.is_parent_verified && (
-                                    <div className="bg-[#86bf9a]/20 text-[#065f46] px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-[#86bf9a]/30 shadow-sm">
+                                    <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-emerald-200 dark:border-emerald-500/30 shadow-sm transition-colors">
                                         <CheckCircle size={14} /> VERIFIED BY CAREGIVER
                                     </div>
                                 )}
@@ -251,28 +257,11 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         >
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
-                                                <div className="flex gap-2 mt-1">
-                                                    {isEditing ? (
-                                                        <div className="flex items-center gap-1 bg-[var(--color-bg-page)] rounded-md border border-orange-200 px-1.5 py-0.5">
-                                                            <input
-                                                                type="number"
-                                                                value={item.weight_g}
-                                                                onChange={(e) => handleItemChange(idx, 'weight_g', e.target.value)}
-                                                                className="w-12 bg-transparent text-[10px] font-black focus:outline-none"
-                                                            />
-                                                            <span className="text-[8px] font-black opacity-50 uppercase tracking-tighter">g Weight</span>
-                                                        </div>
-                                                    ) : (
-                                                        item.weight_g > 0 && (
-                                                            <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-md border-2 border-[var(--color-divider)] uppercase tracking-tighter">{item.weight_g}g</span>
-                                                        )
-                                                    )}
                                                     {item.cooking_method && (
                                                         <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-primary)] px-2 py-1 rounded-md border border-[var(--color-primary)]/20 uppercase tracking-tight flex items-center gap-1.5 whitespace-normal break-words">
                                                             <ChefHat size={12} className="shrink-0" /> {item.cooking_method}
                                                         </span>
                                                     )}
-                                                </div>
                                             </div>
                                             <div className={`flex gap-3 sm:gap-6 px-4 py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 bg-white shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
                                                 {[
@@ -291,7 +280,10 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                                 style={{ color: macro.col }}
                                                             />
                                                         ) : (
-                                                            <span className="text-xs font-black" style={{ color: macro.col }}>{item[macro.key] || 0}{macro.label !== "Kcal" ? 'g' : ''}</span>
+                                                            <span className="text-xs font-black" style={{ color: macro.col }}>
+                                                                {parseFloat(Number(item[macro.key] || 0).toFixed(1))}
+                                                                {macro.label !== "Kcal" ? 'g' : ''}
+                                                            </span>
                                                         )}
                                                         <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter" style={{ color: macro.col }}>{macro.label}</span>
                                                     </div>
@@ -309,8 +301,11 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         { val: macros.carbs_g, label: "TOTAL CARB", col: "#0d9488" },
                                         { val: macros.fat_g, label: "TOTAL FAT", col: "#d97706" }
                                     ].map((sum, si) => (
-                                        <div key={si} className="text-center bg-[var(--color-bg-card)] rounded-2xl p-3 border-2 border-[var(--color-divider)] shadow-sm hover:translate-y-[-2px] transition-transform" style={{ borderColor: `${sum.col}33` }}>
-                                            <div className="text-lg font-black" style={{ color: sum.col }}>{sum.val || 0}{si > 0 ? 'g' : ''}</div>
+                                        <div key={si} className="text-center bg-[var(--color-bg-card)] rounded-2xl p-3 border-2 border-[var(--color-divider)] shadow-sm hover:translate-y-[-2px] transition-transform overflow-hidden" style={{ borderColor: `${sum.col}33` }}>
+                                            <div className="text-base sm:text-lg font-black truncate" style={{ color: sum.col }}>
+                                                {parseFloat(Number(sum.val || 0).toFixed(1))}
+                                                {si > 0 ? 'g' : ''}
+                                            </div>
                                             <div className="text-[8px] font-black tracking-widest uppercase opacity-60" style={{ color: sum.col }}>{sum.label}</div>
                                         </div>
                                     ))}
@@ -401,6 +396,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
+            />
         </AnimatePresence>
     );
 }

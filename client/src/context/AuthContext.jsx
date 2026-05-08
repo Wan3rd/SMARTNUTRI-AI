@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
                     // Always fetch latest user data from server on load to sync status (Approved/Pending)
                     const res = await api.get('/auth/me');
                     setUser(res.data);
-                    
+
                     // Sync storage
                     if (localStorage.getItem('token')) {
                         localStorage.setItem('user', JSON.stringify(res.data));
@@ -64,14 +64,36 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
+            let data;
+            let headers = {};
+
+            if (userData.licenseFile) {
+                // Use FormData for multipart/form-data upload
+                data = new FormData();
+                data.append('email', userData.email?.toLowerCase());
+                data.append('password', userData.password);
+                data.append('full_name', userData.fullName);
+                data.append('role', userData.role);
+                data.append('professional_id', userData.professionalId);
+                data.append('phone', userData.phone);
+                data.append('clinic', userData.clinic);
+                data.append('license', userData.licenseFile);
+                headers = { 'Content-Type': 'multipart/form-data' };
+            } else {
+                // Use standard JSON
+                data = {
+                    email: userData.email?.toLowerCase(),
+                    password: userData.password,
+                    full_name: userData.fullName,
+                    role: userData.role,
+                    professional_id: userData.professionalId,
+                    phone: userData.phone,
+                    clinic: userData.clinic
+                };
+            }
+
             // 1. Register User
-            const res = await api.post('/auth/register', {
-                email: userData.email?.toLowerCase(),
-                password: userData.password,
-                full_name: userData.fullName,
-                role: userData.role,
-                professional_id: userData.professionalId
-            });
+            const res = await api.post('/auth/register', data, { headers });
 
             const { token, user: newUser } = res.data;
 
@@ -99,7 +121,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    const updateUser = (updatedUser) => {
+    function updateUser(updatedUser) {
         const token = localStorage.getItem('token');
         if (token) {
             localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -107,10 +129,27 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.setItem('user', JSON.stringify(updatedUser));
         }
         setUser(updatedUser);
+    }
+
+    const updatePreferences = async (prefs) => {
+        try {
+            await api.put('/auth/preferences', prefs);
+            const updatedUser = { ...user };
+            if (prefs.theme) updatedUser.theme_preference = prefs.theme;
+            if (prefs.privacy_mode !== undefined) updatedUser.privacy_mode = prefs.privacy_mode;
+            if (prefs.measurement_system) updatedUser.measurement_system = prefs.measurement_system;
+            if (prefs.nutrient_precision) updatedUser.nutrient_precision = prefs.nutrient_precision;
+            
+            updateUser(updatedUser);
+            return { success: true };
+        } catch (err) {
+            console.error("Failed to update preferences", err);
+            return { success: false };
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, updatePreferences }}>
             {!loading && children}
         </AuthContext.Provider>
     );

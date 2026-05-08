@@ -3,12 +3,17 @@ import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, A
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
+import Notification from './common/Notification';
+import { useAuth } from '../context/AuthContext';
+import { cn, formatValue } from '../lib/utils';
 import api from '../lib/api';
 
 export default function MealDetailModal({ log, onClose, onDelete }) {
+    const { user } = useAuth();
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [nutritionist, setNutritionist] = useState(null);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
 
     React.useEffect(() => {
         const handleKeyDown = (e) => {
@@ -39,7 +44,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
             }
         } catch (err) {
             console.error(err);
-            alert("Failed to delete log");
+            setNotif({ show: true, message: "Failed to delete log. Please try again.", type: 'error' });
             setIsDeleting(false);
             setShowConfirm(false);
         }
@@ -206,17 +211,17 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                                             <p className="font-black text-sm text-[var(--color-secondary)] uppercase tracking-tight">
                                                                 {item.name}
                                                             </p>
-                                                            <span className="text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums">
-                                                                {item.calories || 0} KCAL
+                                                            <span className="text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums uppercase">
+                                                                {formatValue(item.calories, user?.nutrient_precision)} KCAL
                                                             </span>
                                                         </div>
                                                         <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 uppercase">
-                                                            {item.measure_qty || 1} {item.serving_unit || 'Serving'} • {item.weight_g || 100}g
+                                                            {item.measure_qty || 1} {item.serving_unit || 'Serving'}
                                                         </p>
                                                         <div className="flex gap-3 text-[10px] mt-2.5 font-black border-t border-[var(--color-divider)] pt-2">
-                                                            <span className="text-blue-600 dark:text-blue-400 uppercase">P: {item.protein_g || 0}g</span>
-                                                            <span className="text-emerald-600 dark:text-emerald-400 uppercase">C: {item.carbs_g || 0}g</span>
-                                                            <span className="text-orange-600 dark:text-orange-400 uppercase">F: {item.fat_g || 0}g</span>
+                                                            <span className="text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Protein: {formatValue(item.protein_g, user?.nutrient_precision)}g</span>
+                                                            <span className="text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Carbs: {formatValue(item.carbs_g, user?.nutrient_precision)}g</span>
+                                                            <span className="text-orange-600 dark:text-orange-400 uppercase tracking-tighter">Fat: {formatValue(item.fat_g, user?.nutrient_precision)}g</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -235,8 +240,8 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                                 { val: nutrition.fat || nutrition.fat_g, label: "Fat", col: "#ea580c" }
                                             ].map((stat, si) => (
                                                 <div key={si} className="bg-[var(--color-bg-page)] p-4 rounded-2xl text-center border border-[var(--color-divider)] shadow-sm">
-                                                    <p className="text-2xl font-black tabular-nums leading-none mb-1" style={{ color: stat.col }}>
-                                                        {stat.val || 0}{si > 0 ? 'g' : ''}
+                                                    <p className="text-2xl font-black tabular-nums leading-none mb-1 uppercase" style={{ color: stat.col }}>
+                                                        {formatValue(stat.val, user?.nutrient_precision)}{si > 0 ? 'g' : ''}
                                                     </p>
                                                     <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">{stat.label}</p>
                                                 </div>
@@ -259,7 +264,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                     {/* Nutritionist Review */}
                     {log.status === 'reviewed' && log.nutritionist_review && (
                         <Card className="border-[var(--color-divider)] dark:border-green-900/30 bg-emerald-50/30 dark:bg-green-900/10 overflow-hidden shadow-sm">
-                            <div className="bg-emerald-600 dark:bg-[var(--color-secondary)] px-4 py-2.5 flex items-center justify-between">
+                            <div className="bg-emerald-600 dark:bg-emerald-800 px-4 py-2.5 flex items-center justify-between">
                                 <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
                                     <BadgeCheck size={12} className="text-emerald-300" /> Clinical Evaluation
                                 </span>
@@ -279,7 +284,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                         )}
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-[var(--color-text-main)] uppercase text-sm leading-none mb-1.5">
+                                        <h4 className={cn("font-black text-[var(--color-text-main)] uppercase text-sm leading-none mb-1.5", user?.privacy_mode && "privacy-blur")}>
                                             {nutritionist?.full_name || 'Nutritionist'}
                                         </h4>
                                         <div className="flex items-center gap-2">
@@ -401,6 +406,13 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                 confirmText="Delete"
                 isDestructive={true}
                 loading={isDeleting}
+            />
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
             />
         </div>
     );

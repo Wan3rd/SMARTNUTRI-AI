@@ -4,11 +4,14 @@ import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { cn } from '../lib/utils';
 import api from '../lib/api';
+import AnnouncementBanner from '../components/AnnouncementBanner';
 
 import AddClientModal from '../components/AddClientModal';
 import CreatePatientModal from '../components/CreatePatientModal';
 import ReviewLogModal from '../components/ReviewLogModal';
+import Notification from '../components/common/Notification';
 
 export default function NutritionistDashboard() {
     const { user } = useAuth();
@@ -21,6 +24,11 @@ export default function NutritionistDashboard() {
     const [isProfilingOpen, setIsProfilingOpen] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+
+    const showNotif = (message, type = 'success') => {
+        setNotif({ show: true, message, type });
+    };
 
     useEffect(() => {
         fetchData();
@@ -85,12 +93,6 @@ export default function NutritionistDashboard() {
 
                     {/* ── ACTIONS ── */}
                     <div className="pt-4 flex flex-col items-center gap-6">
-                        <Button 
-                            onClick={() => window.location.reload()}
-                            className="h-14 px-10 bg-[var(--color-text-main)] text-white dark:bg-white dark:text-black hover:opacity-90 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all hover:scale-105 flex gap-2"
-                        >
-                            <Activity size={16} /> Check Status
-                        </Button>
                         <p className="text-xs text-[var(--color-text-muted)] font-bold flex items-center gap-2">
                             Require assistance? <a href="mailto:clinical@smartnutri.ai" className="text-emerald-500 border-b border-emerald-500/20">Contact Support</a>
                         </p>
@@ -101,7 +103,8 @@ export default function NutritionistDashboard() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+            <AnnouncementBanner />
             {/* ── NUTRITIONIST HERO BANNER ── */}
             <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
                 {/* Gradient background */}
@@ -118,14 +121,16 @@ export default function NutritionistDashboard() {
                                 <User size={32} className="text-white/40" />
                             )}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-400 rounded-xl border-2 border-white flex items-center justify-center z-20 shadow-lg">
-                            <BadgeCheck size={14} className="text-white" />
-                        </div>
+                        {user?.status === 'approved' && (
+                            <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-400 rounded-xl border-2 border-white flex items-center justify-center z-20 shadow-lg">
+                                <BadgeCheck size={14} className="text-white" />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex-1 text-center sm:text-left">
                         <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mb-1">
-                            <h1 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!</h1>
+                            <h1 className={cn("text-3xl font-black text-white tracking-tight drop-shadow-md", user?.privacy_mode && "privacy-blur")}>Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!</h1>
                             <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm">
                                 Clinical Nutritionist
                             </span>
@@ -226,7 +231,7 @@ export default function NutritionistDashboard() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-[var(--color-secondary)] truncate">{client.full_name}</h3>
+                                        <h3 className={cn("font-bold text-[var(--color-secondary)] truncate", user?.privacy_mode && "privacy-blur")}>{client.full_name}</h3>
                                         <p className="text-xs text-[var(--color-text-muted)] truncate">{client.email}</p>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
@@ -252,20 +257,36 @@ export default function NutritionistDashboard() {
             <AddClientModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onClientAdded={fetchData}
+                onClientAdded={() => {
+                    fetchData();
+                    showNotif("Client link request sent!");
+                }}
             />
 
             <CreatePatientModal
                 isOpen={isProfilingOpen}
                 onClose={() => setIsProfilingOpen(false)}
-                onClientAdded={fetchData}
+                onClientAdded={() => {
+                    fetchData();
+                    showNotif("Patient profile created successfully!");
+                }}
             />
 
             <ReviewLogModal
                 isOpen={isReviewOpen}
                 onClose={() => setIsReviewOpen(false)}
                 log={selectedLog}
-                onReviewComplete={fetchData}
+                onReviewComplete={() => {
+                    fetchData();
+                    showNotif("Review finalized and saved!");
+                }}
+            />
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
             />
         </div>
     );

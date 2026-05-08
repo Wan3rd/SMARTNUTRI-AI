@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js';
 
 dotenv.config();
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
 
     if (!token) {
@@ -12,46 +12,64 @@ export const verifyToken = (req, res, next) => {
     }
 
     try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET || 'default_dev_secret');
-        req.user = verified;
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            console.error("FATAL ERROR: JWT_SECRET is not defined in environment variables.");
+            return res.status(500).json({ message: 'Internal Configuration Error' });
+        }
+        const verified = jwt.verify(token, secret);
+        
+        // GLOBAL SECURITY CHECK: Verify latest account status from DB
+        const user = await prisma.users.findUnique({
+            where: { id: verified.id }
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: 'Account no longer exists' });
+        }
+
+        if (user.is_suspended) {
+            return res.status(403).json({ message: 'Account Access Suspended: Please contact administration.' });
+        }
+
+        // Only block if not on the change-password or logout path
+        if (user.force_password_reset && !req.path.includes('/change-password') && !req.path.includes('/logout')) {
+            return res.status(403).json({ message: 'FORCE_RESET_REQUIRED', detail: 'Security policy requires a password update.' });
+        }
+
+        req.user = {
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name,
+            role: user.role,
+            status: user.status,
+            theme_preference: user.theme_preference
+        };
         next();
     } catch (err) {
-        res.status(400).json({ message: 'Invalid Token' });
+        res.status(401).json({ message: 'Invalid or Expired Token' });
     }
 };
 
 export const verifyNutritionist = (req, res, next) => {
-    verifyToken(req, res, async () => {
-        try {
-            // Fetch latest user from DB to ensure status is up to date
-            const user = await prisma.users.findUnique({
-                where: { id: req.user.id }
-            });
-
-            if (!user) return res.status(404).json({ message: 'User not found' });
-
-            if (user.role === 'nutritionist') {
-                if (user.status === 'approved') {
-                    req.user = user; // Update req.user with latest DB data
-                    next();
-                } else {
-                    return res.status(403).json({ message: 'Clinical Verification Required: Your account is currently under review by the administration.' });
-                }
-            } else if (user.role === 'admin') {
+    verifyToken(req, res, () => {
+        const user = req.user;
+        if (user.role === 'nutritionist' || user.role === 'admin') {
+            if (user.role === 'admin' || user.status === 'approved') {
                 next();
             } else {
-                res.status(403).json({ message: 'Access Denied: Nutritionist only route' });
+                return res.status(403).json({ message: 'Clinical Verification Required: Your account is currently under review.' });
             }
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ message: 'Server Error' });
+        } else {
+            res.status(403).json({ message: 'Access Denied: Nutritionist only route' });
         }
     });
 };
 
 export const verifyCaregiver = (req, res, next) => {
     verifyToken(req, res, () => {
-        if (req.user.role === 'parent' || req.user.role === 'caregiver' || req.user.role === 'admin') {
+        const user = req.user;
+        if (user.role === 'parent' || user.role === 'caregiver' || user.role === 'admin') {
             next();
         } else {
             res.status(403).json({ message: 'Access Denied: Caregiver only route' });
@@ -61,10 +79,9 @@ export const verifyCaregiver = (req, res, next) => {
 
 export const verifyAdmin = (req, res, next) => {
     verifyToken(req, res, () => {
-        if (req.user.role === 'admin') {
-            next();
-        } else {
-            res.status(403).json({ message: 'Access Denied: Administrative access required.' });
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Administrative access required.' });
         }
+        next();
     });
 };

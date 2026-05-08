@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
+import Notification from './common/Notification';
 import { useEffect } from 'react';
 
 const STEPS = [
@@ -22,7 +23,7 @@ const STEPS = [
 export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [formData, setFormData] = useState({
         // Parent Info
         parent_name: '',
@@ -82,21 +83,20 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
     const validateStep = () => {
         if (step === 0) {
             if (!formData.parent_name || !formData.parent_email || !formData.child_name || !formData.date_of_birth) {
-                setMessage({ type: 'error', text: 'Please fill in all identity fields before proceeding.' });
+                setNotif({ show: true, message: 'Please fill in all identity fields before proceeding.', type: 'error' });
                 return false;
             }
             if (!formData.parent_email.includes('@')) {
-                setMessage({ type: 'error', text: 'Please enter a valid email address.' });
+                setNotif({ show: true, message: 'Please enter a valid email address.', type: 'error' });
                 return false;
             }
         }
         if (step === 2) {
             if (!formData.height_cm || !formData.weight_kg) {
-                setMessage({ type: 'error', text: 'Initial height and weight are required for clinical profiling.' });
+                setNotif({ show: true, message: 'Initial height and weight are required for clinical profiling.', type: 'error' });
                 return false;
             }
         }
-        setMessage(null);
         return true;
     };
 
@@ -112,7 +112,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
 
     const handleSubmit = async () => {
         setLoading(true);
-        setMessage(null);
+        setNotif({ ...notif, show: false });
 
         try {
             const payload = {
@@ -121,28 +121,24 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
             };
 
             const res = await api.post('/nutritionist/create-client', payload);
-            setMessage({ type: 'success', text: 'Patient profile created successfully!' });
             
             if (onClientAdded) onClientAdded();
-            
-            setTimeout(() => {
-                onClose();
-                setStep(0);
-                setMessage(null);
-                setFormData({
-                    parent_name: '', parent_email: '', child_name: '', date_of_birth: '', gender: 'male',
-                    medical_history: '', family_history: '', food_intolerances: '', symptoms: '',
-                    medications: '', allergies: '', height_cm: '', weight_kg: '',
-                    waist_circumference: '', weighing_time: '', is_fasting: false, is_post_voiding: false,
-                    activity_level: 'moderate', lifestyle_factors: '',
-                    vaccinations: []
-                });
-            }, 2000);
+            onClose();
+            setStep(0);
+            setFormData({
+                parent_name: '', parent_email: '', child_name: '', date_of_birth: '', gender: 'male',
+                medical_history: '', family_history: '', food_intolerances: '', symptoms: '',
+                medications: '', allergies: '', height_cm: '', weight_kg: '',
+                waist_circumference: '', weighing_time: '', is_fasting: false, is_post_voiding: false,
+                activity_level: 'moderate', lifestyle_factors: '',
+                vaccinations: []
+            });
 
         } catch (err) {
-            setMessage({
+            setNotif({
+                show: true,
                 type: 'error',
-                text: err.response?.data?.message || 'Failed to create profile. Please check all fields.'
+                message: err.response?.data?.message || 'Failed to create profile. Please check all fields.'
             });
             setLoading(false);
         }
@@ -431,15 +427,12 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
                 </div>
 
                 <CardContent className="p-8">
-                    {message && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                            className={`mb-6 p-4 rounded-3xl flex items-center gap-3 text-sm font-bold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}
-                        >
-                            {message.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-                            {message.text}
-                        </motion.div>
-                    )}
+                    <Notification
+                        show={notif.show}
+                        type={notif.type}
+                        message={notif.message}
+                        onClose={() => setNotif({ ...notif, show: false })}
+                    />
 
                     <div className="min-h-[300px]">
                         <AnimatePresence mode="wait">

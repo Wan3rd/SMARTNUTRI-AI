@@ -1,15 +1,18 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary } from '../lib/cloudinary.js';
+import { sendResetPasswordEmail } from '../lib/mailer.js';
+import crypto from 'crypto';
 
 const router = express.Router();
 
 // REGISTER
-router.post('/register', async (req, res) => {
-    const { password, full_name, role, professional_id } = req.body;
+router.post('/register', upload.single('license'), async (req, res) => {
+    const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
     const email = req.body.email?.toLowerCase();
 
     try {
@@ -25,26 +28,71 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Handle License Image Upload if present
+        let license_image_url = null;
+        if (req.file && role === 'nutritionist') {
+            try {
+                const uploadFromBuffer = () => {
+                    return new Promise((resolve, reject) => {
+                        const stream = cloudinary.uploader.upload_stream(
+                            {
+                                folder: 'smartnutri/credentials',
+                                transformation: [{ width: 1200, crop: 'limit' }]
+                            },
+                            (error, result) => {
+                                if (result) resolve(result);
+                                else reject(error);
+                            }
+                        );
+                        stream.end(req.file.buffer);
+                    });
+                };
+                const uploadResult = await uploadFromBuffer();
+                license_image_url = uploadResult.secure_url;
+            } catch (uploadErr) {
+                console.error('License upload failed:', uploadErr);
+                // We continue even if upload fails, or should we error? 
+                // Let's error to be safe since it's a security document.
+                return res.status(500).json({ message: 'Credential document upload failed' });
+            }
+        }
+
         // Create user
         const newUser = await prisma.users.create({
             data: {
                 email,
                 password_hash: hashedPassword,
                 full_name,
-                role: role || 'parent',
-                professional_id
+                role: (role === 'nutritionist') ? 'nutritionist' : 'parent',
+                status: (role === 'nutritionist') ? 'pending' : 'approved',
+                professional_id,
+                phone,
+                specialization,
+                license_no,
+                clinic,
+                license_image_url
             },
             select: {
                 id: true,
                 email: true,
                 full_name: true,
                 role: true,
-                status: true
+                status: true,
+                theme_preference: true,
+                privacy_mode: true,
+                measurement_system: true,
+                nutrient_precision: true
             }
         });
 
         // Create Token
-        const token = jwt.sign({ id: newUser.id, role: newUser.role, status: newUser.status }, process.env.JWT_SECRET || 'default_dev_secret', {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            console.error("FATAL: JWT_SECRET is missing");
+            return res.status(500).json({ message: 'Internal Server Error' });
+        }
+
+        const token = jwt.sign({ id: newUser.id, role: newUser.role, status: newUser.status }, secret, {
             expiresIn: '1d',
         });
 
@@ -80,8 +128,14 @@ router.post('/login', async (req, res) => {
         }
 
         // Create Token
-        const token = jwt.sign({ id: user.id, role: user.role, status: user.status }, process.env.JWT_SECRET || 'default_dev_secret', {
-            expiresIn: '1d',
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            console.error("FATAL: JWT_SECRET is missing");
+            return res.status(500).json({ message: 'Internal Server Error' });
+        }
+
+        const token = jwt.sign({ id: user.id, role: user.role, status: user.status }, secret, {
+            expiresIn: rememberMe ? '7d' : '1d',
         });
 
         res.json({
@@ -91,7 +145,12 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 full_name: user.full_name,
                 role: user.role,
-                status: user.status
+                status: user.status,
+                force_password_reset: user.force_password_reset,
+                theme_preference: user.theme_preference,
+                privacy_mode: user.privacy_mode,
+                measurement_system: user.measurement_system,
+                nutrient_precision: user.nutrient_precision
             },
             token,
         });
@@ -219,6 +278,209 @@ router.post('/photo', verifyToken, (req, res, next) => {
     } catch (err) {
         console.error('Cloudinary/Database Error:', err);
         res.status(500).json({ message: 'Upload failed', error: err.message });
+    }
+});
+
+// UPLOAD LICENSE IMAGE (For Nutritionist Verification)
+router.post('/license-image', verifyToken, (req, res, next) => {
+    upload.single('license')(req, res, (err) => {
+        if (err) {
+            console.error('Multer Error:', err);
+            return res.status(500).json({ message: 'File processing failed', error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No license image uploaded' });
+        }
+
+        // Upload to Cloudinary from memory buffer
+        const uploadFromBuffer = () => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'smartnutri/credentials',
+                        transformation: [{ width: 1200, crop: 'limit' }] // High res for verification
+                    },
+                    (error, result) => {
+                        if (result) resolve(result);
+                        else reject(error);
+                    }
+                );
+                stream.end(req.file.buffer);
+            });
+        };
+
+        const result = await uploadFromBuffer();
+
+        const updatedUser = await prisma.users.update({
+            where: { id: req.user.id },
+            data: {
+                license_image_url: result.secure_url
+            }
+        });
+
+        const { password_hash, ...safeUser } = updatedUser;
+        res.json({ message: 'License document uploaded successfully', user: safeUser });
+    } catch (err) {
+        console.error('Cloudinary/Database Error:', err);
+        res.status(500).json({ message: 'Credential upload failed', error: err.message });
+    }
+});
+
+// FORGOT PASSWORD
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await prisma.users.findUnique({ where: { email: email?.toLowerCase() } });
+        
+        // Security best practice: don't reveal if user exists
+        if (!user) {
+            return res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hour
+
+        await prisma.users.update({
+            where: { id: user.id },
+            data: {
+                reset_password_token: token,
+                reset_password_expires: expires
+            }
+        });
+
+        await sendResetPasswordEmail(user.email, token, user.full_name);
+
+        res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// RESET PASSWORD
+router.post('/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    try {
+        const user = await prisma.users.findFirst({
+            where: {
+                reset_password_token: token,
+                reset_password_expires: { gt: new Date() }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await prisma.users.update({
+            where: { id: user.id },
+            data: {
+                password_hash: hashedPassword,
+                reset_password_token: null,
+                reset_password_expires: null,
+                force_password_reset: false
+            }
+        });
+
+        res.json({ success: true, message: 'Password has been reset' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// UPDATE USER PREFERENCES
+router.put('/preferences', verifyToken, async (req, res) => {
+    const { theme, privacy_mode, measurement_system, nutrient_precision } = req.body;
+    try {
+        const updateData = {};
+        if (theme !== undefined) updateData.theme_preference = theme;
+        if (privacy_mode !== undefined) updateData.privacy_mode = privacy_mode;
+        if (measurement_system !== undefined) updateData.measurement_system = measurement_system;
+        if (nutrient_precision !== undefined) updateData.nutrient_precision = nutrient_precision;
+
+        await prisma.users.update({
+            where: { id: req.user.id },
+            data: updateData
+        });
+        res.json({ success: true, message: 'Preferences saved' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Rate limiter for sensitive auth routes
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Limit each IP to 5 requests per window
+    message: { message: 'Too many requests. Please try again in an hour.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// CHANGE PASSWORD
+router.put('/change-password', verifyToken, authLimiter, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const user = await prisma.users.findUnique({
+            where: { id: req.user.id }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Verify current password
+        const validPass = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!validPass) {
+            return res.status(400).json({ message: 'Incorrect current password' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await prisma.users.update({
+            where: { id: user.id },
+            data: {
+                password_hash: hashedPassword,
+                force_password_reset: false
+            }
+        });
+
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /auth/announcements - Fetch active announcements for the current user
+router.get('/announcements', verifyToken, async (req, res) => {
+    try {
+        const announcements = await prisma.announcements.findMany({
+            where: {
+                is_active: true,
+                target_role: { in: ['all', req.user.role] },
+                OR: [
+                    { expires_at: null },
+                    { expires_at: { gt: new Date() } }
+                ]
+            },
+            orderBy: { created_at: 'desc' }
+        });
+        res.json(announcements);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 

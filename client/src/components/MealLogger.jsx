@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock } from 'lucide-react';
+import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from './common/ConfirmDialog';
+import Notification from './common/Notification';
 
 const COOKING_METHODS = [
     "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", 
@@ -48,8 +49,14 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         plateWaste: 100,
         loggedAt: getLocalISOTime()
     });
+    const debounceTimers = useRef({});
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+
+    const showNotif = (message, type = 'success') => {
+        setNotif({ show: true, message, type });
+    };
     const fileInputRef = useRef(null);
     const fileAfterInputRef = useRef(null);
 
@@ -108,12 +115,100 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         }
     };
 
+    const updateItemMacros = async (index, name, unit, method) => {
+        if (!name || name.length < 2) return;
+        
+        setVerifiedItems(prev => {
+            const next = [...prev];
+            if (next[index]) next[index] = { ...next[index], isUpdating: true, isStale: false };
+            return next;
+        });
+
+        try {
+            const res = await api.post('/logs/analyze-item', { 
+                name, 
+                serving_unit: unit,
+                cooking_method: method
+            });
+            const data = res.data;
+            
+            setVerifiedItems(prev => {
+                const next = [...prev];
+                const item = next[index];
+                if (!item) return prev;
+
+                const qty = item.measure_qty || 1;
+                
+                next[index] = {
+                    ...item,
+                    _base_calories: data.calories || 0,
+                    _base_protein_g: data.protein_g || 0,
+                    _base_carbs_g: data.carbs_g || 0,
+                    _base_fat_g: data.fat_g || 0,
+                    _base_weight_g: data.serving_weight_g || 100,
+                    // Scaled values
+                    calories: Math.round((data.calories || 0) * qty),
+                    protein_g: Math.round((data.protein_g || 0) * qty * 10) / 10,
+                    carbs_g: Math.round((data.carbs_g || 0) * qty * 10) / 10,
+                    fat_g: Math.round((data.fat_g || 0) * qty * 10) / 10,
+                    serving_weight_g: data.serving_weight_g || 100,
+                    isUpdating: false,
+                    isStale: false
+                };
+                return next;
+            });
+        } catch (err) {
+            console.error("Failed to update macros", err);
+            setVerifiedItems(prev => {
+                const next = [...prev];
+                if (next[index]) next[index] = { ...next[index], isUpdating: false };
+                return next;
+            });
+        }
+    };
+
     const handleItemChange = (index, field, value) => {
+        const item = verifiedItems[index];
+        if (!item) return;
+
+        const updatedName = field === 'name' ? value : item.name;
+        const updatedUnit = field === 'serving_unit' ? value : item.serving_unit;
+        const updatedMethod = field === 'cooking_method' ? value : item.cooking_method;
+
+        const isMacroField = field === 'name' || field === 'serving_unit' || field === 'cooking_method';
+
         setVerifiedItems(prev => {
             const newItems = [...prev];
-            newItems[index] = { ...newItems[index], [field]: value };
+            if (newItems[index]) {
+                newItems[index] = { 
+                    ...newItems[index], 
+                    [field]: value,
+                    isStale: isMacroField ? true : newItems[index].isStale
+                };
+            }
             return newItems;
         });
+
+        if (isMacroField) {
+            if (debounceTimers.current[index]) {
+                clearTimeout(debounceTimers.current[index]);
+            }
+            // Auto-timer removed as per user request to save tokens and give control.
+            // Syncing will now happen via manual button or onBlur.
+        }
+    };
+
+    const handleRowBlur = (e, index) => {
+        // If the relatedTarget is not inside the current row, trigger immediate sync if stale
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            const item = verifiedItems[index];
+            if (item && item.isStale && !item.isUpdating) {
+                if (debounceTimers.current[index]) {
+                    clearTimeout(debounceTimers.current[index]);
+                }
+                updateItemMacros(index, item.name, item.serving_unit, item.cooking_method);
+            }
+        }
     };
 
     const handleDeleteItem = (index) => {
@@ -145,7 +240,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
     const handleSaveVerified = async () => {
         if (!suppData.isParentVerified) {
-            alert('Please check the verification box to confirm the meal data is correct before saving.');
+            showNotif('Please check the verification box to confirm the meal data is correct before saving.', 'error');
             return;
         }
         setLoading(true);
@@ -308,7 +403,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 <select 
                                     value={suppData.mealCategory}
                                     onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
-                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                 >
                                     <option value="Breakfast">Breakfast</option>
                                     <option value="AM Snack">AM Snack</option>
@@ -324,7 +419,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     type="datetime-local"
                                     value={suppData.loggedAt}
                                     onChange={(e) => setSuppData({...suppData, loggedAt: e.target.value})}
-                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                 />
                             </div>
                         </div>
@@ -335,7 +430,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Before Meal</span>
                             {preview ? (
-                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-white dark:border-white/10 shadow-lg group">
+                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-[var(--color-divider)] shadow-lg group">
                                     <img src={preview} alt="Before" className="w-full h-full object-cover" />
                                     {status === 'idle' && (
                                         <button onClick={() => { setFile(null); setPreview(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
@@ -353,7 +448,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">After Meal</span>
                             {previewAfter ? (
-                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-white dark:border-white/10 shadow-lg group">
+                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-[var(--color-divider)] shadow-lg group">
                                     <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
                                     {status !== 'uploading' && (
                                         <button onClick={() => { setFileAfter(null); setPreviewAfter(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
@@ -420,7 +515,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         <select 
                                             value={suppData.mealCategory}
                                             onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
-                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-white text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value="Breakfast">Breakfast</option>
                                             <option value="AM Snack">AM Snack</option>
@@ -435,7 +530,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         <select 
                                             value={suppData.plateWaste}
                                             onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
-                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-white text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value={100}>Finished (100%)</option>
                                             <option value={75}>Mostly (75%)</option>
@@ -449,18 +544,29 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
                             <div className="space-y-3">
                                 {verifiedItems.map((item, idx) => (
-                                    <div key={idx} className="flex flex-col gap-2 p-2.5 bg-white dark:bg-white/5 border border-[var(--color-divider)] rounded-lg shadow-sm">
+                                    <div 
+                                        key={idx} 
+                                        onBlur={(e) => handleRowBlur(e, idx)}
+                                        className={`flex flex-col gap-2 p-2.5 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-lg shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.99]' : ''}`}
+                                    >
                                         <div className="flex gap-2 items-center">
-                                            <input 
-                                                value={item.name} 
-                                                onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                placeholder="Food name"
-                                                className="flex-1 min-w-0 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-black uppercase tracking-tight"
-                                            />
+                                            <div className="flex-1 relative">
+                                                <input 
+                                                    value={item.name} 
+                                                    onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                                                    placeholder="Food name"
+                                                    className="w-full p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-black uppercase tracking-tight"
+                                                />
+                                                {item.isUpdating && (
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                        <Loader2 size={12} className="animate-spin text-[var(--color-primary)]" />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <select 
                                                 value={item.cooking_method || ''} 
                                                 onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
-                                                className="w-32 sm:w-40 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-[10px] font-black uppercase tracking-tight"
+                                                className="w-32 sm:w-40 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-black uppercase tracking-tight"
                                             >
                                                 <option value="">Method...</option>
                                                 {COOKING_METHODS.map(method => (
@@ -506,7 +612,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             <select
                                                 value={item.serving_unit || 'Serving'}
                                                 onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
-                                                className="w-20 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-[10px] font-bold"
+                                                className="w-20 p-2 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-bold"
                                             >
                                                 <option value="Serving">Serving</option>
                                                 <option value="Cup">Cup</option>
@@ -525,11 +631,30 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
-                                        <div className="flex gap-3 text-[9px] mt-0.5 font-bold px-1">
-                                            <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} Cal</span>
-                                            <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g Pro</span>
-                                            <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g Carb</span>
-                                            <span className="text-yellow-600 dark:text-yellow-400">{item.fat_g || 0}g Fat</span>
+                                        <div className={`flex items-center gap-3 text-[9px] mt-0.5 font-bold px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
+                                            <div className="flex gap-3">
+                                                <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} Cal</span>
+                                                <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g Pro</span>
+                                                <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g Carb</span>
+                                                <span className="text-yellow-600 dark:text-yellow-400">{item.fat_g || 0}g Fat</span>
+                                            </div>
+
+                                            {item.isStale && !item.isUpdating && (
+                                                <button 
+                                                    onClick={() => updateItemMacros(idx, item.name, item.serving_unit, item.cooking_method)}
+                                                    className="ml-auto flex items-center gap-1 px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-md border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/20 transition-all animate-in fade-in zoom-in"
+                                                >
+                                                    <RefreshCw size={10} className="animate-spin-slow" />
+                                                    <span className="text-[7px] uppercase tracking-widest font-black">Sync Macros</span>
+                                                </button>
+                                            )}
+
+                                            {item.isUpdating && (
+                                                <div className="ml-auto flex items-center gap-1 text-[var(--color-primary)]">
+                                                    <Loader2 size={10} className="animate-spin" />
+                                                    <span className="text-[7px] uppercase tracking-widest font-black">AI Calculating...</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -551,7 +676,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         placeholder="Oil, sugar, butter..."
                                         value={suppData.hiddenIngredients}
                                         onChange={(e) => setSuppData({...suppData, hiddenIngredients: e.target.value})}
-                                        className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                        className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                     />
                                 </div>
 
@@ -562,7 +687,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             type="datetime-local"
                                             value={suppData.loggedAt}
                                             onChange={(e) => setSuppData({...suppData, loggedAt: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
                                     <div>
@@ -572,7 +697,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             placeholder="e.g. Vitamin C, Ceelin"
                                             value={suppData.supplements}
                                             onChange={(e) => setSuppData({...suppData, supplements: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
                                 </div>
@@ -583,7 +708,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         <select
                                             value={suppData.waterMl}
                                             onChange={(e) => setSuppData({...suppData, waterMl: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         >
                                             <option value="">None</option>
                                             <option value="250">1 glass (250ml)</option>
@@ -603,7 +728,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             placeholder="e.g. 30 min play"
                                             value={suppData.physicalActivity}
                                             onChange={(e) => setSuppData({...suppData, physicalActivity: e.target.value})}
-                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card,#ffffff)] text-[var(--color-text-main,#1f2937)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
                                 </div>
@@ -640,7 +765,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 </Button>
                                 <Button 
                                     className={`w-2/3 py-4 font-bold rounded-xl shadow-lg transition-all ${
-                                        loading ? '!bg-[var(--color-bg-card,#ffffff)] !text-[var(--color-text-main,#1f2937)] border border-green-500 shadow-none opacity-100'
+                                        loading ? '!bg-[var(--color-bg-card)] !text-[var(--color-text-main)] border border-green-500 shadow-none opacity-100'
                                         : !suppData.isParentVerified ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
                                         : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'
                                     }`} 
@@ -651,7 +776,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     {loading ? (
                                         <div className="flex items-center justify-center gap-3">
                                             <Loader2 className="animate-spin text-green-600" size={24} />
-                                            <span className="uppercase tracking-widest font-black text-[var(--color-text-main,#1f2937)]">Finalizing...</span>
+                                            <span className="uppercase tracking-widest font-black text-[var(--color-text-main)]">Finalizing...</span>
                                         </div>
                                     ) : "Save Log"}
                                 </Button>
@@ -687,6 +812,13 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                 message={`Are you sure you want to remove "${verifiedItems[itemIdxToDelete]?.name || 'this item'}" from the meal log?`}
                 confirmText="Remove Item"
                 isDestructive={true}
+            />
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
             />
         </Card>
     );

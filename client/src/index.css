@@ -30,6 +30,8 @@
   /* Slate 600 */
   --color-divider: #f1f5f9;
   /* Slate 100 */
+  --color-input-border: #cbd5e1;
+  /* Slate 300 */
 
   /* Font Families if needed, defaulting to sans */
 }
@@ -56,15 +58,17 @@
 
   --color-text-main: #f8fafc;
   /* Slate 50 */
-  --color-text-muted: #94a3b8;
-  /* Slate 400 */
-  --color-divider: #1e293b;
-  /* Slate 800 */
+  --color-text-muted: #cbd5e1;
+  /* Slate 300 - Brighter for better clinical contrast */
+  --color-divider: #334155;
+  /* Slate 700 - More visible borders */
+  --color-input-border: #475569;
+  /* Slate 600 */
 }
 
 /* Global Reset & Base Styles */
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -118,12 +122,29 @@ body {
 h1, h2, h3, h4, h5, h6, 
 .font-outfit,
 label,
-button,
 input,
 select,
 textarea,
+a,
 span[class*="uppercase"] {
   font-family: 'Outfit', sans-serif !important;
+}
+
+button, 
+a, 
+select,
+label[for],
+.cursor-pointer {
+  cursor: pointer;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+textarea {
+  cursor: text;
 }
 
 /* Utility to hide scrollbars while maintaining scroll functionality */
@@ -133,4 +154,25 @@ span[class*="uppercase"] {
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+.privacy-blur {
+  filter: blur(8px);
+  transition: filter 0.3s ease;
+  user-select: none;
+  pointer-events: none;
+}
+
+.privacy-blur:hover {
+  filter: blur(4px); /* Still blurry but less so, or keep it 8px for strictness */
+}
+
+/* Custom Animations */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
 }

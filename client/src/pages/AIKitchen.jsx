@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ChefHat, Sparkles, ThumbsDown, Utensils } from 'lucide-react';
 import api from '../lib/api';
 import ReactMarkdown from 'react-markdown';
+import { useProfile } from '../context/ProfileContext';
+import { AlertCircle } from 'lucide-react';
 
 export default function AIKitchen() {
+    const { selectedProfile } = useProfile();
     const [cravings, setCravings] = useState('');
     const [dislikes, setDislikes] = useState('');
     const [includeSteps, setIncludeSteps] = useState(false);
     const [loading, setLoading] = useState(false);
     const [recipe, setRecipe] = useState('');
 
+    const calculateAge = (dob) => {
+        if (!dob) return "7-12";
+        const diff = Date.now() - new Date(dob).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    };
+
     const handleGenerate = async () => {
         if (!cravings) return;
         setLoading(true);
         setRecipe('');
         try {
-            const prompt = `I need a creative recipe idea for a child (aged 7-12). 
+            const age = calculateAge(selectedProfile?.date_of_birth);
+            const autoAvoid = selectedProfile?.allergies || selectedProfile?.dislikes || 'None';
+            
+            const prompt = `I need a creative recipe idea for a child (aged ${age}). 
+            Child Context: Weighs ${selectedProfile?.weight || 'average'}kg. 
             Cravings/Ingredients: ${cravings}. 
-            Dislikes/Allergies to avoid: ${dislikes || 'None'}.
-            Provide a name for the dish (keep it simple dish name but easy to understand), a short description, and key ingredients. The meal should be suitable for a child aged 7-12. Keep it healthy. Use simple words and provide only foods that area easy to do and possible. Also keep it short as possible. Give a proper layout on your prompt so that it is easy to read and understand${includeSteps ? " Also provide step-by-step cooking instructions." : ""}`;
+            Known Allergies/Profile Dislikes: ${autoAvoid}.
+            Additional Dislikes to avoid: ${dislikes || 'None'}.
+            Provide a name for the dish (keep it simple dish name but easy to understand), a short description, and key ingredients. The meal should be suitable for a child aged ${age}. Keep it healthy. Use simple words and provide only foods that area easy to do and possible. Also keep it short as possible. Give a proper layout on your prompt so that it is easy to read and understand${includeSteps ? " Also provide step-by-step cooking instructions." : ""}`;
 
             const res = await api.post('/ai/gemini', { prompt });
             setRecipe(res.data.output);
@@ -59,15 +72,25 @@ export default function AIKitchen() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                                <ThumbsDown size={14} /> I want to avoid...
+                                <ThumbsDown size={14} /> Additional things to avoid...
                             </label>
                             <input
                                 className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
-                                placeholder="e.g. Eggs, nuts, spicy food"
+                                placeholder="e.g. Extra spicy food"
                                 value={dislikes}
                                 onChange={e => setDislikes(e.target.value)}
                             />
                         </div>
+
+                        {selectedProfile && (
+                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20 flex items-start gap-3">
+                                <AlertCircle size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                                <div>
+                                    <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest">Profile Safety Checks Active</p>
+                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Automatically avoiding: {selectedProfile.allergies || 'No allergies'} & {selectedProfile.dislikes || 'No dislikes'}</p>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex items-center gap-2 mb-4">
                             <input

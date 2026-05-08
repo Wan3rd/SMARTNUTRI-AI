@@ -107,15 +107,21 @@ router.get('/search', verifyToken, async (req, res) => {
 router.get('/plans', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const profile = await prisma.profiles.findFirst({
-            where: { user_id: userId },
-            select: { id: true }
-        });
+        const { profileId } = req.query;
 
-        if (!profile) return res.json([]);
+        let activeProfileId = profileId;
+
+        if (!activeProfileId) {
+            const profile = await prisma.profiles.findFirst({
+                where: { user_id: userId },
+                select: { id: true }
+            });
+            if (!profile) return res.json([]);
+            activeProfileId = profile.id;
+        }
 
         const plans = await prisma.meal_plans.findMany({
-            where: { profile_id: profile.id },
+            where: { profile_id: activeProfileId },
             orderBy: { date: 'asc' }
         });
         res.json(plans);
@@ -126,49 +132,6 @@ router.get('/plans', verifyToken, async (req, res) => {
 });
 
 const EDAMAM_API_URL = 'https://api.edamam.com/api/recipes/v2';
-
-// DEBUGGING ROUTE: Test Edamam Credentials
-router.get('/test-edamam', async (req, res) => {
-    try {
-        const appId = process.env.EDAMAM_APP_ID;
-        const appKey = process.env.EDAMAM_APP_KEY;
-
-        if (!appId || !appKey) {
-            return res.status(500).json({ message: 'Missing Keys in .env' });
-        }
-
-        console.log('--- EDAMAM DEBUG ---');
-        console.log(`App ID: '${appId}' (Length: ${appId.length})`);
-        console.log(`App Key: '${appKey.substring(0, 5)}...' (Length: ${appKey.length})`);
-
-        const params = {
-            type: 'public',
-            q: 'chicken',
-            app_id: appId.trim(), // Force trim
-            app_key: appKey.trim()
-        };
-
-        console.log('Requesting:', EDAMAM_API_URL, params);
-        const response = await axios.get(EDAMAM_API_URL, { params });
-
-        res.json({
-            status: 'Success!',
-            found: response.data.count,
-            sample: response.data.hits[0]?.recipe?.label
-        });
-
-    } catch (err) {
-        console.error('Test Failed:', err.response?.data || err.message);
-        res.status(500).json({
-            message: 'Test Failed',
-            details: err.response?.data || err.message,
-            sentParams: {
-                app_id: process.env.EDAMAM_APP_ID,
-                app_key: 'HIDDEN'
-            }
-        });
-    }
-});
 
 // GET /:id (Recipe Details)
 router.get('/:id', verifyToken, async (req, res) => {
@@ -232,9 +195,18 @@ router.post('/generate', verifyToken, async (req, res) => {
     try {
         // 1. Get User Profile
         const userId = req.user.id;
-        const profile = await prisma.profiles.findFirst({
-            where: { user_id: userId }
-        });
+        const { profileId } = req.body;
+
+        let profile;
+        if (profileId) {
+            profile = await prisma.profiles.findUnique({
+                where: { id: profileId }
+            });
+        } else {
+            profile = await prisma.profiles.findFirst({
+                where: { user_id: userId }
+            });
+        }
 
         if (!profile) {
             return res.status(404).json({ message: 'Child profile not found.' });
@@ -356,7 +328,7 @@ router.post('/generate', verifyToken, async (req, res) => {
 
 // POST /generate/day (Regenerate for a specific date)
 router.post('/generate/day', verifyToken, async (req, res) => {
-    const { date: targetDateStr } = req.body;
+    const { date: targetDateStr, profileId } = req.body;
     console.log(`Regenerating plan for date: ${targetDateStr}`);
 
     if (!targetDateStr) {
@@ -366,9 +338,16 @@ router.post('/generate/day', verifyToken, async (req, res) => {
     try {
         // 1. Get User Profile
         const userId = req.user.id;
-        const profile = await prisma.profiles.findFirst({
-            where: { user_id: userId }
-        });
+        let profile;
+        if (profileId) {
+            profile = await prisma.profiles.findUnique({
+                where: { id: profileId }
+            });
+        } else {
+            profile = await prisma.profiles.findFirst({
+                where: { user_id: userId }
+            });
+        }
 
         if (!profile) {
             return res.status(404).json({ message: 'Child profile not found.' });

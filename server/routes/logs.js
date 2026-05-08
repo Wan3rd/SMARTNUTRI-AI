@@ -141,6 +141,30 @@ router.post('/analyze', verifyToken, upload.single('image'), async (req, res) =>
     }
 });
 
+// POST /logs/analyze-item - Analyze a single item string (Caregiver manual correction)
+router.post('/analyze-item', verifyToken, async (req, res) => {
+    const { name, serving_unit, cooking_method } = req.body;
+    if (!name) return res.status(400).json({ message: 'Name is required' });
+
+    try {
+        const { generateText } = await import('../services/gemini.js');
+        const methodPrefix = cooking_method && cooking_method !== 'Unknown' ? `${cooking_method} ` : '';
+        const prompt = `Provide nutritional data for exactly 1 ${serving_unit || 'Serving'} of "${methodPrefix}${name}". 
+        Assume a standard kid-sized portion if ambiguous.
+        Output Format: {"name": "${name}", "serving_weight_g": 100, "calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "sugar_g": 0, "sodium_mg": 0}
+        Only output valid JSON. No markdown.`;
+
+        const raw = await generateText(prompt);
+        const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(cleaned);
+
+        res.json(result);
+    } catch (err) {
+        console.error("Single item analysis error:", err);
+        res.status(500).json({ message: 'Failed to analyze item' });
+    }
+});
+
 // POST /logs - Save verified meal log (Human-in-the-loop step 2)
 router.post('/', verifyToken, async (req, res) => {
     const {
@@ -164,6 +188,16 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     try {
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id: profile_id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot log meals for this profile' });
         // 1. Parse Hidden Ingredients if any
         const { parseTextToNutrients } = await import('../services/gemini.js');
         const hiddenItems = await parseTextToNutrients(hidden_ingredients);
@@ -261,8 +295,21 @@ router.post('/', verifyToken, async (req, res) => {
 // GET /profile/:id - Get history for a child
 router.get('/profile/:id', verifyToken, async (req, res) => {
     try {
+        const { id } = req.params;
+
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to meal history' });
+
         const logs = await prisma.meal_logs.findMany({
-            where: { profile_id: req.params.id },
+            where: { profile_id: id },
             include: {
                 profiles: true
             },
@@ -287,8 +334,16 @@ router.get('/profile/:id', verifyToken, async (req, res) => {
 router.delete('/bulk/day/:profileId/:date', verifyToken, async (req, res) => {
     const { profileId, date } = req.params;
     try {
-        // Create range for the entire day in UTC to be safe, 
-        // or parse the date string carefully.
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        // Only Parents or Admins can bulk delete (Nutritionists shouldn't delete logs normally)
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin';
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized to perform bulk deletion' });
+
+        // Create range for the entire day in UTC to be safe
         const startOfDay = new Date(`${date}T00:00:00.000Z`);
         const endOfDay = new Date(`${date}T23:59:59.999Z`);
 
@@ -312,10 +367,24 @@ router.delete('/bulk/day/:profileId/:date', verifyToken, async (req, res) => {
 // DELETE /:id - Delete a specific meal log
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
-        const deletedLog = await prisma.meal_logs.delete({
-            where: { id: req.params.id }
+        const { id } = req.params;
+
+        // Find the log and its profile to check ownership
+        const log = await prisma.meal_logs.findUnique({
+            where: { id },
+            include: { profiles: true }
         });
-        res.json({ message: 'Log deleted successfully', log: deletedLog });
+
+        if (!log) return res.status(404).json({ message: 'Log not found' });
+
+        const isAuthorized = log.profiles.user_id === req.user.id || req.user.role === 'admin';
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: Cannot delete this log' });
+
+        await prisma.meal_logs.delete({
+            where: { id }
+        });
+        res.json({ message: 'Log deleted successfully' });
     } catch (err) {
         if (err.code === 'P2025') {
             return res.status(404).json({ message: 'Log not found' });

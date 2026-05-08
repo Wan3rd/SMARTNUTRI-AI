@@ -129,8 +129,21 @@ router.put('/:id', verifyToken, async (req, res) => {
 // GET /:id/growth - Get growth logs for a profile
 router.get('/:id/growth', verifyToken, async (req, res) => {
     try {
+        const { id } = req.params;
+        
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to profile data' });
+
         const growthLogs = await prisma.growth_logs.findMany({
-            where: { profile_id: req.params.id },
+            where: { profile_id: id },
             orderBy: { logged_at: 'asc' }
         });
         res.json(growthLogs);
@@ -142,11 +155,23 @@ router.get('/:id/growth', verifyToken, async (req, res) => {
 
 // POST /:id/growth - Log new growth data
 router.post('/:id/growth', verifyToken, async (req, res) => {
+    const { id } = req.params;
     const { height_cm, weight_kg } = req.body;
     try {
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot modify this profile' });
+
         const newLog = await prisma.growth_logs.create({
             data: {
-                profile_id: req.params.id,
+                profile_id: id,
                 height_cm: parseFloat(height_cm),
                 weight_kg: parseFloat(weight_kg)
             }
@@ -154,7 +179,7 @@ router.post('/:id/growth', verifyToken, async (req, res) => {
 
         // Also update the main profile with latest height/weight
         await prisma.profiles.update({
-            where: { id: req.params.id },
+            where: { id: id },
             data: {
                 height_cm: parseFloat(height_cm),
                 weight_kg: parseFloat(weight_kg)
@@ -185,8 +210,21 @@ router.get('/vaccination-types', verifyToken, async (req, res) => {
 // GET /:id/vaccinations - Get vaccinations for a profile
 router.get('/:id/vaccinations', verifyToken, async (req, res) => {
     try {
+        const { id } = req.params;
+
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access' });
+
         const vaccinations = await prisma.profile_vaccinations.findMany({
-            where: { profile_id: req.params.id },
+            where: { profile_id: id },
             include: { vaccination_types: true },
             orderBy: { date_administered: 'desc' }
         });
@@ -199,11 +237,23 @@ router.get('/:id/vaccinations', verifyToken, async (req, res) => {
 
 // POST /:id/vaccinations - Add vaccination to profile
 router.post('/:id/vaccinations', verifyToken, async (req, res) => {
+    const { id } = req.params;
     const { vaccination_type_id, date_administered, notes } = req.body;
     try {
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized' });
+
         const newRecord = await prisma.profile_vaccinations.create({
             data: {
-                profile_id: req.params.id,
+                profile_id: id,
                 vaccination_type_id,
                 date_administered: date_administered ? new Date(date_administered) : null,
                 notes
@@ -220,8 +270,25 @@ router.post('/:id/vaccinations', verifyToken, async (req, res) => {
 // DELETE /vaccinations/:id - Remove vaccination
 router.delete('/vaccinations/:id', verifyToken, async (req, res) => {
     try {
+        const { id } = req.params;
+        
+        // Find the record and its profile to check ownership
+        const record = await prisma.profile_vaccinations.findUnique({
+            where: { id },
+            include: { profiles: true }
+        });
+
+        if (!record) return res.status(404).json({ message: 'Vaccination record not found' });
+
+        const isAuthorized = record.profiles.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: record.profiles.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized to delete this record' });
+
         await prisma.profile_vaccinations.delete({
-            where: { id: req.params.id }
+            where: { id }
         });
         res.json({ message: 'Vaccination removed' });
     } catch (err) {
@@ -241,9 +308,21 @@ router.post('/:id/photo', verifyToken, (req, res, next) => {
     });
 }, async (req, res) => {
     try {
+        const { id } = req.params;
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
+
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: Cannot update photo for this profile' });
 
         // Upload to Cloudinary from memory buffer
         const uploadFromBuffer = () => {
@@ -265,7 +344,7 @@ router.post('/:id/photo', verifyToken, (req, res, next) => {
         const result = await uploadFromBuffer();
 
         const updatedProfile = await prisma.profiles.update({
-            where: { id: req.params.id },
+            where: { id: id },
             data: {
                 profile_image_url: result.secure_url
             }
@@ -275,6 +354,37 @@ router.post('/:id/photo', verifyToken, (req, res, next) => {
     } catch (err) {
         console.error('Cloudinary/Database Error:', err);
         res.status(500).json({ message: 'Upload failed', error: err.message });
+    }
+});
+
+// DELETE /:id - Permanently delete a child profile
+router.delete('/:id', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Find the profile to check ownership
+        const profile = await prisma.profiles.findUnique({
+            where: { id }
+        });
+
+        if (!profile) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
+
+        // Ownership Check: Only the parent who owns the profile can delete it
+        if (profile.user_id !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized: You can only delete your own child profiles' });
+        }
+
+        // Delete the profile (Cascade delete handles associated logs, vaccinations, etc.)
+        await prisma.profiles.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'Profile and all associated data deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting profile:', err);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 

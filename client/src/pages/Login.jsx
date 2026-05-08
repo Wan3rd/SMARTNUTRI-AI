@@ -41,7 +41,7 @@ export default function Login() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
             <Card className="w-full max-w-md shadow-lg border-0 dark:border dark:border-[var(--color-divider)]">
                 <CardHeader className="text-center space-y-2 pb-6">
-                    <div className="mx-auto h-12 w-12 bg-[var(--color-primary)] rounded-xl flex items-center justify-center text-white font-bold text-xl mb-2">S</div>
+                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="mx-auto h-28 w-28 object-contain rounded-full mb-4 bg-transparent border-0" />
                     <CardTitle className="text-2xl text-[var(--color-secondary)]">Welcome Back</CardTitle>
                     <p className="text-[var(--color-text-muted)]">Sign in to SmartNutri-AI</p>
                 </CardHeader>
@@ -51,8 +51,7 @@ export default function Login() {
                             {error}
                         </div>
                     )}
-                    <form className="space-y-4" onSubmit={handleSubmit}>
-                        <div>
+                    <form className="space-y-4" onSubmit={handleSubmit}>                        <div>
                             <label className="text-sm font-medium text-[var(--color-text-main)]">Email</label>
                             <input
                                 type="email"
@@ -86,15 +85,20 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="rememberMe"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
-                            />
-                            <label htmlFor="rememberMe" className="text-sm text-[var(--color-text-muted)] cursor-pointer select-none">Remember me</label>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="rememberMe"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
+                                />
+                                <label htmlFor="rememberMe" className="text-sm text-[var(--color-text-muted)] cursor-pointer select-none font-bold uppercase tracking-widest text-[10px]">Remember me</label>
+                            </div>
+                            <Link to="/forgot-password" title="Recover your account" className="text-[var(--color-primary)] font-black uppercase tracking-widest text-[10px] hover:underline">
+                                Forgot Password?
+                            </Link>
                         </div>
 
                         <Button type="submit" className="w-full size-lg text-base mt-2" disabled={loading}>

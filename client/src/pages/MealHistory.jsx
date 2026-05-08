@@ -4,18 +4,24 @@ import { Button } from '../components/common/Button';
 import { Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../context/ProfileContext';
 import MealDetailModal from '../components/MealDetailModal';
+import Notification from '../components/common/Notification';
 
 export default function MealHistory() {
     const { user } = useAuth();
-    const [profiles, setProfiles] = useState([]);
-    const [selectedProfile, setSelectedProfile] = useState(null);
+    const { profiles, selectedProfile, loading: profileLoading } = useProfile();
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedLog, setSelectedLog] = useState(null);
     const [rules, setRules] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+
+    const showNotif = (message, type = 'success') => {
+        setNotif({ show: true, message, type });
+    };
 
     // Filters
     const [statusFilter, setStatusFilter] = useState('all');
@@ -28,15 +34,17 @@ export default function MealHistory() {
     const logsPerPage = 12;
 
     useEffect(() => {
-        fetchProfiles();
-    }, []);
+        if (!profileLoading && !selectedProfile) {
+            setLoading(false);
+        }
+    }, [profileLoading, selectedProfile]);
 
     useEffect(() => {
         if (selectedProfile) {
             fetchLogs();
             fetchRules();
         }
-    }, [selectedProfile]);
+    }, [selectedProfile?.id]);
 
     useEffect(() => {
         applyFilters();
@@ -139,18 +147,6 @@ export default function MealHistory() {
         return violations;
     }, [selectedHistoryDate, logs, rules]);
 
-    const fetchProfiles = async () => {
-        try {
-            const res = await api.get('/profiles');
-            setProfiles(res.data);
-            if (res.data.length > 0) setSelectedProfile(res.data[0]);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchLogs = async () => {
         setLoading(true);
         try {
@@ -200,7 +196,20 @@ export default function MealHistory() {
         }
 
         setFilteredLogs(filtered);
-        setCurrentPage(1); // Reset to first page when filters change
+        setCurrentPage(1); 
+
+        // Auto-select the first date in the filtered set if the current one is gone
+        const availableDates = Object.keys(filtered.reduce((acc, log) => {
+            const date = new Date(log.logged_at).toLocaleDateString();
+            acc[date] = true;
+            return acc;
+        }, {}));
+        
+        if (selectedHistoryDate && !availableDates.includes(selectedHistoryDate)) {
+            setSelectedHistoryDate(availableDates.sort((a, b) => new Date(b) - new Date(a))[0] || null);
+        } else if (!selectedHistoryDate && availableDates.length > 0) {
+            setSelectedHistoryDate(availableDates.sort((a, b) => new Date(b) - new Date(a))[0]);
+        }
     };
 
     const getComplianceBadge = (status) => {
@@ -238,22 +247,42 @@ export default function MealHistory() {
                 <p className="text-[var(--color-text-muted)] mt-1">Complete tracking of all logged meals</p>
             </div>
 
-            {/* Profile Selection */}
-            {profiles.length > 1 && (
-                <div className="flex flex-wrap gap-3 p-4 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                    {profiles.map(p => (
-                        <button
-                            key={p.id}
-                            onClick={() => setSelectedProfile(p)}
-                            className={`px-6 py-2.5 rounded-2xl border-2 transition-all text-xs font-black uppercase tracking-widest ${selectedProfile?.id === p.id
-                                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/30'
-                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)] hover:translate-y-[-2px]'}`}
-                        >
-                            {p.child_name}
-                        </button>
-                    ))}
+            {/* Filters Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[var(--color-bg-card)] p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                <div className="relative col-span-1 md:col-span-2">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search meals or ingredients..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                    />
                 </div>
-            )}
+                <div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-black uppercase tracking-tight"
+                    >
+                        <option value="all">All Reviews</option>
+                        <option value="reviewed">Expert Reviewed</option>
+                        <option value="pending">Awaiting Review</option>
+                    </select>
+                </div>
+                <div>
+                    <select
+                        value={complianceFilter}
+                        onChange={(e) => setComplianceFilter(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-black uppercase tracking-tight"
+                    >
+                        <option value="all">All Compliance</option>
+                        <option value="compliant">Compliant Only</option>
+                        <option value="flagged">Flagged Only</option>
+                    </select>
+                </div>
+            </div>
+
 
             <div className="flex flex-col md:flex-row gap-8 min-h-[600px]">
                 {/* LEFT SIDEBAR: DATE SELECTION */}
@@ -262,13 +291,13 @@ export default function MealHistory() {
                         <CardContent className="p-4">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block mb-4">Select Date</label>
                             <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0">
-                                {Object.keys(logs.reduce((acc, log) => {
+                                {Object.keys(filteredLogs.reduce((acc, log) => {
                                     const date = new Date(log.logged_at).toLocaleDateString();
                                     acc[date] = true;
                                     return acc;
                                 }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
                                     const isSelected = selectedHistoryDate === date;
-                                    const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                    const dayLogs = filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
                                     return (
                                         <button
                                             key={date}
@@ -346,10 +375,10 @@ export default function MealHistory() {
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {[
-                                        { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
-                                        { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
-                                        { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
-                                        { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                        { label: 'Total Calories', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                        { label: 'Total Protein', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                        { label: 'Total Carb', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                        { label: 'Total Fat', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
                                     ].map((stat, idx) => (
                                         <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">{stat.label}</div>
@@ -369,7 +398,7 @@ export default function MealHistory() {
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
-                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate)
+                                    {filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate)
                                         .sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))
                                         .map(log => (
                                         <div 
@@ -430,8 +459,23 @@ export default function MealHistory() {
 
             {/* Meal Detail Modal */}
             {selectedLog && (
-                <MealDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />
+                <MealDetailModal 
+                    log={selectedLog} 
+                    onClose={() => setSelectedLog(null)} 
+                    onDelete={() => {
+                        setSelectedLog(null);
+                        fetchLogs();
+                        showNotif("Meal log deleted successfully");
+                    }}
+                />
             )}
+
+            <Notification
+                show={notif.show}
+                type={notif.type}
+                message={notif.message}
+                onClose={() => setNotif({ ...notif, show: false })}
+            />
         </div>
     );
 }

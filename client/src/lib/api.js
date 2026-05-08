@@ -28,6 +28,13 @@ api.interceptors.response.use(
                 window.location.href = '/login';
             }
         }
+        
+        // Handle forced password reset requirement
+        if (error.response?.status === 403 && error.response?.data?.message === 'FORCE_RESET_REQUIRED') {
+            if (window.location.pathname !== '/settings') {
+                window.location.href = '/settings?reason=force_reset';
+            }
+        }
         return Promise.reject(error);
     }
 );

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
+import api from '../lib/api';
 
 const ThemeProviderContext = createContext({
     theme: "system",
@@ -11,9 +13,18 @@ export function ThemeProvider({
     storageKey = "vite-ui-theme",
     ...props
 }) {
-    const [theme, setTheme] = useState(
+    const { user, updateUser } = useAuth();
+    const [theme, setThemeState] = useState(
         () => localStorage.getItem(storageKey) || defaultTheme
     );
+
+    // Initial Sync from Database when user logs in
+    useEffect(() => {
+        if (user?.theme_preference && user.theme_preference !== theme) {
+            setThemeState(user.theme_preference);
+            localStorage.setItem(storageKey, user.theme_preference);
+        }
+    }, [user?.theme_preference]);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -33,12 +44,25 @@ export function ThemeProvider({
         root.classList.add(theme);
     }, [theme]);
 
+    const setTheme = async (newTheme) => {
+        setThemeState(newTheme);
+        localStorage.setItem(storageKey, newTheme);
+
+        // Sync to Backend if logged in
+        if (user) {
+            try {
+                await api.put('/auth/theme', { theme: newTheme });
+                // Update AuthContext user object to keep it in sync
+                updateUser({ ...user, theme_preference: newTheme });
+            } catch (err) {
+                console.error('Failed to sync theme to backend:', err);
+            }
+        }
+    };
+
     const value = {
         theme,
-        setTheme: (theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
-        },
+        setTheme,
     };
 
     return (

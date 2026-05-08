@@ -7,25 +7,30 @@ const router = express.Router();
 // Get Today's Progress
 router.get('/today', verifyToken, async (req, res) => {
     const userId = req.user.id;
+    const { profileId } = req.query;
     const todayStr = new Date().toISOString().split('T')[0];
     const today = new Date(todayStr);
 
     try {
-        // Get child profile linked to user
-        const profile = await prisma.profiles.findFirst({
-            where: { user_id: userId },
-            select: { id: true }
-        });
+        let activeProfileId = profileId;
 
-        if (!profile) {
-            return res.status(404).json({ message: 'Profile not found' });
+        if (!activeProfileId) {
+            // Fallback: Get first child profile linked to user
+            const profile = await prisma.profiles.findFirst({
+                where: { user_id: userId },
+                select: { id: true }
+            });
+            if (!profile) {
+                return res.status(404).json({ message: 'Profile not found' });
+            }
+            activeProfileId = profile.id;
         }
 
         // Get log
         const log = await prisma.daily_logs.findUnique({
             where: {
                 profile_id_date: {
-                    profile_id: profile.id,
+                    profile_id: activeProfileId,
                     date: today
                 }
             }
@@ -45,23 +50,27 @@ router.get('/today', verifyToken, async (req, res) => {
 // Update Water Intake
 router.post('/water', verifyToken, async (req, res) => {
     const userId = req.user.id;
-    const { action } = req.body; // 'increment' or 'decrement'
+    const { action, profileId } = req.body; // 'increment' or 'decrement'
     const todayStr = new Date().toISOString().split('T')[0];
     const today = new Date(todayStr);
 
     try {
-        const profile = await prisma.profiles.findFirst({
-            where: { user_id: userId },
-            select: { id: true }
-        });
-        if (!profile) return res.status(404).json({ message: 'No profile' });
-        const profileId = profile.id;
+        let activeProfileId = profileId;
+
+        if (!activeProfileId) {
+            const profile = await prisma.profiles.findFirst({
+                where: { user_id: userId },
+                select: { id: true }
+            });
+            if (!profile) return res.status(404).json({ message: 'No profile' });
+            activeProfileId = profile.id;
+        }
 
         // Upsert logic
         const existingLog = await prisma.daily_logs.findUnique({
             where: {
                 profile_id_date: {
-                    profile_id: profileId,
+                    profile_id: activeProfileId,
                     date: today
                 }
             }
@@ -71,7 +80,7 @@ router.post('/water', verifyToken, async (req, res) => {
             const water = action === 'increment' ? 1 : 0;
             const newLog = await prisma.daily_logs.create({
                 data: {
-                    profile_id: profileId,
+                    profile_id: activeProfileId,
                     date: today,
                     water_intake_glasses: water
                 }
