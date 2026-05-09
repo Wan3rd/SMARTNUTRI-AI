@@ -32,20 +32,22 @@ export default function Notification({ show, onClose, type = 'success', message,
     };
 
     return (
-        <div className="fixed top-4 right-4 z-[200] animate-in slide-in-from-right-full duration-300">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[200] animate-in slide-in-from-top-4 sm:slide-in-from-right-full duration-300">
             <div className={cn(
-                "flex items-center gap-3 p-4 rounded-xl border shadow-lg min-w-[300px] backdrop-blur-md",
+                "flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl border shadow-2xl backdrop-blur-md max-w-full sm:min-w-[320px] sm:max-w-md",
                 containerStyles[type]
             )}>
-                {icons[type]}
-                <div className="flex-1 text-sm font-black">
+                <div className="flex-shrink-0">
+                    {icons[type]}
+                </div>
+                <div className="flex-1 text-[11px] sm:text-sm font-black uppercase tracking-tight leading-tight">
                     {message}
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="flex-shrink-0 p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors ml-1"
                 >
-                    <X size={16} />
+                    <X size={14} className="sm:w-4 sm:h-4" />
                 </button>
             </div>
         </div>

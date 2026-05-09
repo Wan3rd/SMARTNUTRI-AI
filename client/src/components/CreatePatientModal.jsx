@@ -20,14 +20,14 @@ const STEPS = [
     { id: 'lifestyle', title: 'Lifestyle', icon: Activity }
 ];
 
-export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
+export default function CreatePatientModal({ isOpen, onClose, onClientAdded, parentId = null, parentEmail = '', parentName = '' }) {
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [formData, setFormData] = useState({
         // Parent Info
-        parent_name: '',
-        parent_email: '',
+        parent_name: parentName,
+        parent_email: parentEmail,
         // Child Basic
         child_name: '',
         date_of_birth: '',
@@ -49,17 +49,21 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
         // Lifestyle
         activity_level: 'moderate',
         lifestyle_factors: '',
+        dietary_preferences: 'Omnivore',
+        bristol_stool_scale: 4,
         // Vaccinations
         vaccinations: [] // Array of { vaccination_type_id, date_administered }
     });
-    const [vaccineTypes, setVaccineTypes] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (isOpen) {
-            fetchVaccineTypes();
+            setFormData(prev => ({
+                ...prev,
+                parent_name: parentName,
+                parent_email: parentEmail
+            }));
         }
-    }, [isOpen]);
+    }, [isOpen, parentName, parentEmail]);
 
     const fetchVaccineTypes = async () => {
         try {
@@ -82,11 +86,15 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
 
     const validateStep = () => {
         if (step === 0) {
-            if (!formData.parent_name || !formData.parent_email || !formData.child_name || !formData.date_of_birth) {
+            if (!parentId && (!formData.parent_name || !formData.parent_email)) {
                 setNotif({ show: true, message: 'Please fill in all identity fields before proceeding.', type: 'error' });
                 return false;
             }
-            if (!formData.parent_email.includes('@')) {
+            if (!formData.child_name || !formData.date_of_birth) {
+                setNotif({ show: true, message: 'Please fill in child identity fields before proceeding.', type: 'error' });
+                return false;
+            }
+            if (!parentId && !formData.parent_email.includes('@')) {
                 setNotif({ show: true, message: 'Please enter a valid email address.', type: 'error' });
                 return false;
             }
@@ -106,7 +114,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
         }
     };
     const prevStep = () => {
-        setMessage(null);
+        setNotif({ ...notif, show: false });
         setStep(s => Math.max(s - 1, 0));
     };
 
@@ -117,6 +125,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
         try {
             const payload = {
                 ...formData,
+                parentId, // Pass parentId if adding to existing client
                 allergies: formData.allergies.split(',').map(s => s.trim()).filter(Boolean)
             };
 
@@ -154,23 +163,27 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-4"
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Full Name</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
-                                    <input name="parent_name" value={formData.parent_name} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. Maria Clara" />
+                        {!parentId && (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Full Name</label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
+                                            <input name="parent_name" value={formData.parent_name} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. Maria Clara" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Email</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
+                                            <input name="parent_email" type="email" value={formData.parent_email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="email@example.com" />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Email</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
-                                    <input name="parent_email" type="email" value={formData.parent_email} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="email@example.com" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="h-px bg-[var(--color-divider)] my-4" />
+                                <div className="h-px bg-[var(--color-divider)] my-4" />
+                            </>
+                        )}
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Child's Full Name</label>
                             <div className="relative">
@@ -218,6 +231,26 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
                         <div className="md:col-span-2 space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Symptoms & Food Intolerances</label>
                             <input name="food_intolerances" value={formData.food_intolerances} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Lactose intolerance, Bloating..." />
+                        </div>
+                        <div className="md:col-span-2 space-y-3 p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border-2 border-amber-100 dark:border-amber-900/20">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                                <Activity size={12} /> Bristol Stool Scale (Baseline)
+                            </label>
+                            <div className="flex justify-between items-center gap-2">
+                                {[1,2,3,4,5,6,7].map(type => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => setFormData({...formData, bristol_stool_scale: type})}
+                                        className={`flex-1 h-10 rounded-xl font-black text-xs transition-all border-2 ${formData.bristol_stool_scale === type ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-white dark:bg-zinc-900 text-amber-600 border-amber-200 dark:border-amber-900/30'}`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[8px] text-amber-600/70 dark:text-amber-400/50 font-bold uppercase text-center tracking-tighter">
+                                Type 4 is Ideal. Type 1-2 (Constipation), Type 6-7 (Diarrhea)
+                            </p>
                         </div>
                     </motion.div>
                 );
@@ -361,6 +394,19 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
                         className="space-y-4"
                     >
                         <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Dietary Preference</label>
+                            <select name="dietary_preferences" value={formData.dietary_preferences} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                                <option value="Omnivore">Omnivore (No restrictions)</option>
+                                <option value="Vegetarian">Vegetarian</option>
+                                <option value="Vegan">Vegan</option>
+                                <option value="Halal">Halal</option>
+                                <option value="Kosher">Kosher</option>
+                                <option value="Pescatarian">Pescatarian</option>
+                                <option value="Lactose-Free">Lactose-Free</option>
+                                <option value="Gluten-Free">Gluten-Free</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Physical Activity Level</label>
                             <select name="activity_level" value={formData.activity_level} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
                                 <option value="sedentary">Sedentary (Little to no exercise)</option>
@@ -463,7 +509,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded }) {
                                 disabled={loading}
                                 className="flex-1 h-14 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest text-[10px] flex gap-2 shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all disabled:opacity-50"
                             >
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <>Finalize Patient Profile <CheckCircle size={14} /></>}
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : <>{parentId ? 'Add Child Profile' : 'Finalize Patient Profile'} <CheckCircle size={14} /></>}
                             </Button>
                         )}
                     </div>

@@ -126,11 +126,13 @@ export default function ParentDashboard() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <AnnouncementBanner />
-            <header className="text-center sm:text-left">
-                <h1 className={cn("text-2xl sm:text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight", user?.privacy_mode && "privacy-blur")}>
+            <header className="text-center sm:text-left px-2">
+                <h1 className={cn("text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
                     {selectedProfile?.child_name || 'Child Dashboard'}
                 </h1>
-                <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-bold uppercase tracking-wider mt-1">Clinical development tracking & expert logs</p>
+                <p className="text-[10px] sm:text-sm text-[var(--color-text-muted)] font-bold uppercase tracking-widest mt-1.5 opacity-80">
+                    Clinical development tracking & expert logs
+                </p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -146,22 +148,22 @@ export default function ParentDashboard() {
                         />
                     )}
 
-                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm">
-                        <CardContent className="p-6 sm:p-8">
-                            <h3 className="text-xs sm:text-sm font-black text-[var(--color-secondary)] mb-6 flex items-center gap-3 uppercase tracking-widest">
-                                <Activity size={18} className="text-[var(--color-primary)]" />
+                    <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm bg-white dark:bg-white/5">
+                        <CardContent className="p-5 sm:p-8">
+                            <h3 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] mb-6 flex items-center gap-2.5 uppercase tracking-widest">
+                                <Activity size={16} className="text-[var(--color-primary)]" />
                                 Daily Nutritional Goal
                             </h3>
                             {rules.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-5">
                                     {renderProgressBar('Calories', todayIntake.calories, getGoalForCategory('calories'), 'kcal')}
                                     {renderProgressBar('Protein', todayIntake.protein, getGoalForCategory('protein'), 'g')}
                                     {renderProgressBar('Sodium', todayIntake.sodium, getGoalForCategory('sodium'), 'mg')}
                                     {renderProgressBar('Sugar', todayIntake.sugar, getGoalForCategory('sugar'), 'g')}
                                 </div>
                             ) : (
-                                <div className="p-6 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
-                                    <p className="text-xs text-[var(--color-text-muted)] font-black uppercase">No clinical targets set</p>
+                                <div className="p-8 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
+                                    <p className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-widest">No clinical targets set</p>
                                 </div>
                             )}
                         </CardContent>
@@ -171,74 +173,60 @@ export default function ParentDashboard() {
                 {/* Right: Insights & Expert Feedback */}
                 <div className="lg:col-span-5 space-y-6">
                     {/* Assigned Nutritionist Card */}
-                    <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm group hover:shadow-xl transition-all duration-500">
+                    <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm group hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5">
                         <CardContent className="p-0">
-                            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-[var(--color-primary)] dark:to-[var(--color-primary-hover)] p-4 flex items-center justify-between">
-                                <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Your Health Partner</h3>
-                                <div className="h-6 w-6 bg-white/20 rounded-lg flex items-center justify-center">
-                                    <BadgeCheck size={14} className="text-white" />
+                            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-[var(--color-primary)] dark:to-[var(--color-primary-hover)] p-3.5 flex items-center justify-between">
+                                <h3 className="text-[9px] font-black text-white uppercase tracking-[0.2em]">Health Partner</h3>
+                                <div className="h-5 w-5 bg-white/20 rounded-md flex items-center justify-center">
+                                    <BadgeCheck size={12} className="text-white" />
                                 </div>
                             </div>
-                            <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+                            <div className="p-5 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
                                 <div className="relative flex-shrink-0">
-                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-4 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
+                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
                                         {assignedNutritionist?.profile_image_url ? (
                                             <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
                                         ) : (
-                                            <User size={32} className="text-gray-300" />
+                                            <User size={28} className="text-gray-300" />
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-emerald-500 rounded-xl border-4 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
-                                        <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
+                                    <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 bg-emerald-500 rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
+                                        <div className="h-1.5 w-1.5 bg-white rounded-full animate-pulse" />
                                     </div>
-                                    <div className="absolute inset-0 bg-[var(--color-primary)]/10 rounded-2xl scale-110 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[8px] sm:text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1.5">Assigned Clinician</p>
-                                    <h4 className={cn("text-lg sm:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
+                                    <p className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1">Clinician</p>
+                                    <h4 className={cn("text-base sm:text-lg lg:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
                                         {assignedNutritionist?.full_name || 'Dr. Expert'}
                                     </h4>
-                                    <p className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1">
+                                    <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1 opacity-80">
                                         {assignedNutritionist?.specialization || 'Clinical Nutritionist'}
                                     </p>
                                 </div>
                             </div>
                             
-                            <div className="px-6 pb-6 space-y-3">
-                                {/* Professional Credentials */}
-                                <div className="grid grid-cols-1 gap-2.5">
-                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                        <div className="h-9 w-9 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <BadgeCheck size={16} className="text-blue-600 dark:text-blue-400" />
+                            <div className="px-5 pb-5 space-y-2.5">
+                                <div className="grid grid-cols-1 gap-2">
+                                    <div className="flex items-center gap-3 p-2.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] transition-colors hover:bg-gray-100 dark:hover:bg-white/5">
+                                        <div className="h-8 w-8 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <BadgeCheck size={14} className="text-blue-600 dark:text-blue-400" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">PRC License No.</p>
-                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                            <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-1 opacity-70">License</p>
+                                            <p className="text-xs font-black text-[var(--color-text-main)] uppercase truncate">
                                                 {assignedNutritionist?.license_no || 'Pending Verification'}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                        <div className="h-9 w-9 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Phone size={16} className="text-emerald-600 dark:text-emerald-400" />
+                                    <div className="flex items-center gap-3 p-2.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] transition-colors hover:bg-gray-100 dark:hover:bg-white/5">
+                                        <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Phone size={14} className="text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">Contact Hotline</p>
-                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                            <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-1 opacity-70">Contact</p>
+                                            <p className="text-xs font-black text-[var(--color-text-main)] uppercase truncate">
                                                 {assignedNutritionist?.phone || 'No contact set'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-3.5 p-3.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                        <div className="h-9 w-9 bg-violet-50 dark:bg-violet-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Building2 size={16} className="text-violet-600 dark:text-violet-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.1em] leading-none mb-1.5 opacity-80">Affiliated Clinic</p>
-                                            <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">
-                                                {assignedNutritionist?.clinic || 'SmartNutri Network'}
                                             </p>
                                         </div>
                                     </div>

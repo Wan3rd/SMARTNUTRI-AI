@@ -129,29 +129,32 @@ export default function NutritionistDashboard() {
                     </div>
 
                     <div className="flex-1 text-center sm:text-left">
-                        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mb-1">
-                            <h1 className={cn("text-3xl font-black text-white tracking-tight drop-shadow-md", user?.privacy_mode && "privacy-blur")}>Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!</h1>
-                            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm">
+                        <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2 mb-2 sm:mb-1">
+                            <h1 className={cn("text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight", user?.privacy_mode && "privacy-blur")}>
+                                Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
+                            </h1>
+                            <span className="px-3 py-1 bg-white/20 text-white text-[9px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm">
                                 Clinical Nutritionist
                             </span>
                         </div>
-                        <p className="text-blue-100 font-medium text-sm flex items-center justify-center sm:justify-start gap-2">
-                            <Stethoscope size={14} /> {user?.specialization || 'Pediatric Specialist'} &bull; {user?.clinic || 'SmartNutri Clinical'}
+                        <p className="text-blue-100 font-medium text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-2 opacity-90">
+                            <Stethoscope size={14} className="shrink-0" /> 
+                            <span className="truncate">{user?.specialization || 'Pediatric Specialist'} &bull; {user?.clinic || 'SmartNutri Clinical'}</span>
                         </p>
                     </div>
 
-                    <div className="flex-shrink-0 flex gap-3">
+                    <div className="flex-shrink-0 flex flex-col xs:flex-row gap-3 w-full sm:w-auto">
                         <Button 
-                            className="bg-white/10 text-white hover:bg-white/20 border-white/20 shadow-lg font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-2xl flex gap-2 transition-all hover:scale-105"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none shadow-xl shadow-emerald-900/20 font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-2xl flex-1 sm:flex-none flex gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsModalOpen(true)}
                         >
                             <UserPlus size={14} /> Link Parent
                         </Button>
                         <Button 
-                            className="bg-white text-blue-600 hover:bg-blue-50 border-none shadow-lg font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-2xl flex gap-2 transition-all hover:scale-105"
+                            className="bg-white text-blue-600 hover:bg-blue-50 border-none shadow-lg font-black uppercase tracking-widest text-[9px] h-10 px-6 rounded-2xl flex-1 sm:flex-none flex gap-2 transition-all hover:scale-[1.02]"
                             onClick={() => setIsProfilingOpen(true)}
                         >
-                            <Stethoscope size={14} /> Create Patient Profile
+                            <Stethoscope size={14} /> Create Patient
                         </Button>
                     </div>
                 </div>
@@ -198,13 +201,13 @@ export default function NutritionistDashboard() {
 
 
             <section className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-[var(--color-secondary)]">My Clients</h2>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-1">
+                    <h2 className="text-lg font-black text-[var(--color-secondary)] uppercase tracking-tight">My Clients</h2>
+                    <div className="relative w-full sm:w-auto">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={14} />
                         <input
-                            placeholder="Search clients..."
-                            className="pl-9 pr-4 py-1.5 rounded-full border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] w-48 transition-all"
+                            placeholder="Search clinical profiles..."
+                            className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-bold focus:border-[var(--color-primary)] outline-none transition-all shadow-sm"
                         />
                     </div>
                 </div>

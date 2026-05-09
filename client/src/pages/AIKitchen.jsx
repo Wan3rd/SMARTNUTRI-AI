@@ -46,95 +46,157 @@ export default function AIKitchen() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div>
-                <h1 className="text-3xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
-                    <ChefHat className="text-[var(--color-primary)]" /> AI Kitchen
-                </h1>
-                <p className="text-[var(--color-text-muted)] mt-1">Tell our AI Chef what you're craving!</p>
-            </div>
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+            <header className="px-2">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="h-12 w-12 bg-[var(--color-primary)] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/20 animate-bounce-slow">
+                        <ChefHat size={28} />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl sm:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-none">AI Kitchen</h1>
+                        <p className="text-[10px] sm:text-xs font-black text-[var(--color-primary)] uppercase tracking-[0.2em] mt-1">Smart Pediatric Culinary Assistant</p>
+                    </div>
+                </div>
+                <p className="text-sm text-[var(--color-text-muted)] font-medium max-w-md">Our AI Chef analyzes your child's profile to create safe, nutritious, and creative recipes in seconds.</p>
+            </header>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>What are you in the mood for?</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">I'm craving / I have...</label>
-                            <textarea
-                                className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
-                                rows="3"
-                                placeholder="e.g. Strawberries, something crunchy, breakfast..."
-                                value={cravings}
-                                onChange={e => setCravings(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1 flex items-center gap-2">
-                                <ThumbsDown size={14} /> Additional things to avoid...
-                            </label>
-                            <input
-                                className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
-                                placeholder="e.g. Extra spicy food"
-                                value={dislikes}
-                                onChange={e => setDislikes(e.target.value)}
-                            />
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div className="lg:col-span-5 space-y-6">
+                    <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm bg-[var(--color-bg-card)] transition-colors">
+                        <CardHeader className="bg-[var(--color-bg-page)]/50 dark:bg-black/20 border-b border-[var(--color-divider)] p-6">
+                            <CardTitle className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
+                                <Sparkles size={16} className="text-[var(--color-primary)]" />
+                                Recipe Preferences
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 sm:p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Cravings / Ingredients</label>
+                                <textarea
+                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-bold focus:border-[var(--color-primary)] outline-none transition-all min-h-[120px] placeholder:opacity-50"
+                                    placeholder="e.g. Strawberries, something crunchy, breakfast..."
+                                    value={cravings}
+                                    onChange={e => setCravings(e.target.value)}
+                                />
+                            </div>
 
-                        {selectedProfile && (
-                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20 flex items-start gap-3">
-                                <AlertCircle size={16} className="text-[var(--color-primary)] dark:text-emerald-400 mt-0.5" />
-                                <div>
-                                    <p className="text-[10px] font-black text-[var(--color-secondary)] dark:text-emerald-300 uppercase tracking-widest">Profile Safety Checks Active</p>
-                                    <p className="text-[10px] text-[var(--color-secondary)] dark:text-emerald-400 font-medium">Automatically avoiding: {selectedProfile.allergies || 'No allergies'} & {selectedProfile.dislikes || 'No dislikes'}</p>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <ThumbsDown size={14} /> Things to avoid
+                                </label>
+                                <input
+                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-bold focus:border-[var(--color-primary)] outline-none transition-all placeholder:opacity-50"
+                                    placeholder="e.g. Extra spicy food"
+                                    value={dislikes}
+                                    onChange={e => setDislikes(e.target.value)}
+                                />
+                            </div>
+
+                            {selectedProfile && (
+                                <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border-2 border-emerald-500/20 flex items-start gap-4 transition-colors">
+                                    <div className="h-8 w-8 bg-emerald-500 text-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                        <AlertCircle size={16} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Clinical Safety Shield Active</p>
+                                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[8px] font-black text-emerald-600/70 dark:text-emerald-400/70 uppercase">Allergies:</span>
+                                                <span className="text-[10px] text-[var(--color-text-main)] font-bold">
+                                                    {Array.isArray(selectedProfile.allergies) 
+                                                        ? (selectedProfile.allergies.length > 0 ? selectedProfile.allergies.join(', ') : 'None') 
+                                                        : (selectedProfile.allergies || 'None')}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[8px] font-black text-emerald-600/70 dark:text-emerald-400/70 uppercase">Dislikes:</span>
+                                                <span className="text-[10px] text-[var(--color-text-main)] font-bold">{selectedProfile.dislikes || 'None'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-3 p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] cursor-pointer group hover:border-[var(--color-primary)]/30 transition-all">
+                                <input
+                                    type="checkbox"
+                                    id="includeSteps"
+                                    className="h-5 w-5 rounded-lg border-2 border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
+                                    checked={includeSteps}
+                                    onChange={e => setIncludeSteps(e.target.checked)}
+                                />
+                                <label htmlFor="includeSteps" className="text-[11px] font-black uppercase tracking-widest cursor-pointer select-none">
+                                    Include cooking steps
+                                </label>
+                            </div>
+
+                            <Button
+                                className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl shadow-lg shadow-[var(--color-primary)]/20 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:scale-100"
+                                onClick={handleGenerate}
+                                disabled={loading || !cravings}
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Analyzing Profile...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={18} />
+                                        <span>Generate Recipe</span>
+                                    </>
+                                )}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="lg:col-span-7 print-container">
+                    {recipe ? (
+                        <Card className="border-2 border-[var(--color-primary)]/20 rounded-[2rem] overflow-hidden shadow-xl bg-white dark:bg-white/5 animate-in zoom-in-95 fade-in duration-500 recipe-card">
+                            {/* PDF/Print Header */}
+                            <div className="print-header">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <img src="/SmartNutri-logo.png" alt="Logo" className="h-8 w-8" />
+                                        <span className="text-xl font-black text-[#064e3b] uppercase tracking-tighter">SmartNutri</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Clinical Recipe Record</p>
+                                        <p className="text-xs font-bold text-gray-800 uppercase tracking-tight">{selectedProfile?.child_name || 'Patient'} • {new Date().toLocaleDateString()}</p>
+                                    </div>
                                 </div>
                             </div>
-                        )}
 
-                        <div className="flex items-center gap-2 mb-4">
-                            <input
-                                type="checkbox"
-                                id="includeSteps"
-                                className="h-4 w-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
-                                checked={includeSteps}
-                                onChange={e => setIncludeSteps(e.target.checked)}
-                            />
-                            <label htmlFor="includeSteps" className="text-sm font-medium cursor-pointer">
-                                Include cooking steps
-                            </label>
-                        </div>
-                        <Button
-                            className="w-full bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] items-center justify-between group"
-                            onClick={handleGenerate}
-                            disabled={loading || !cravings}
-                        >
-                            <span className="flex items-center gap-2">
-                                <Sparkles size={18} className={loading ? "animate-spin" : "group-hover:animate-pulse"} />
-                                {loading ? "Cooking up ideas..." : "Generate Recipe"}
-                            </span>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <div className="space-y-6">
-                    {recipe ? (
-                        <Card className="border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-[var(--color-primary)]">
+                            <CardHeader className="bg-gradient-to-r from-[var(--color-primary)] to-emerald-700 p-6 sm:p-8 no-print">
+                                <CardTitle className="flex items-center gap-3 text-white uppercase tracking-widest text-base font-black">
                                     <Utensils size={20} /> Chef's Suggestion
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="prose dark:prose-invert max-w-none text-[var(--color-text-main)]">
+                            <CardContent className="p-6 sm:p-10">
+                                <div className="prose dark:prose-invert max-w-none 
+                                    prose-headings:text-[var(--color-secondary)] prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight
+                                    prose-p:text-[var(--color-text-main)] prose-p:font-medium prose-p:leading-relaxed
+                                    prose-strong:text-[var(--color-primary)] prose-strong:font-black
+                                    prose-li:mb-4 prose-li:text-[var(--color-text-main)] prose-li:font-medium
+                                ">
                                     <ReactMarkdown>{recipe}</ReactMarkdown>
+                                </div>
+                                <div className="mt-10 pt-8 border-t-2 border-[var(--color-divider)] flex justify-between items-center no-print">
+                                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Pediatric Culinary Guidance</p>
+                                    <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-[var(--color-primary)]" onClick={() => window.print()}>
+                                        Save as PDF
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-[var(--color-text-muted)] p-8 border-2 border-dashed border-[var(--color-divider)] rounded-xl">
-                            <ChefHat size={48} className="mb-4 opacity-20" />
-                            <p>Your custom recipe will appear here!</p>
+                        <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-[var(--color-text-muted)] p-12 border-4 border-dashed border-[var(--color-divider)] rounded-[3rem] bg-gray-50/30 dark:bg-black/10 transition-colors group">
+                            <div className="h-24 w-24 bg-white dark:bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                <ChefHat size={48} className="opacity-20 text-[var(--color-secondary)]" />
+                            </div>
+                            <h3 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest mb-2 opacity-50">Kitchen is ready</h3>
+                            <p className="text-center text-xs font-bold max-w-[240px] opacity-40 leading-relaxed">Input your child's cravings on the left to generate a personalized clinical recipe.</p>
                         </div>
                     )}
                 </div>

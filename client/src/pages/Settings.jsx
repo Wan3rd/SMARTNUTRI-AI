@@ -19,9 +19,9 @@ export default function Settings() {
         const params = new URLSearchParams(location.search);
         if (params.get('reason') === 'force_reset') {
             setShowPasswordModal(true);
-            setMessage({ 
-                type: 'error', 
-                text: 'Security Policy: An administrator has requested a mandatory password update for your account.' 
+            setMessage({
+                type: 'error',
+                text: 'Security Policy: An administrator has requested a mandatory password update for your account.'
             });
         }
     }, [location]);
@@ -159,16 +159,16 @@ export default function Settings() {
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-20">
-            <div>
-                <h1 className="text-3xl font-bold text-[var(--color-secondary)]">Settings ⚙️</h1>
-                <p className="text-[var(--color-text-muted)] mt-1">Manage app preferences and clinical configurations.</p>
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-20 px-4 sm:px-0">
+            <div className="pt-2 sm:pt-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-secondary)]">Settings</h1>
+                <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">Manage app preferences and clinical configurations.</p>
             </div>
 
             {sections.map((section, idx) => (
-                <Card key={idx} className="border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
-                    <CardHeader className="border-b border-[var(--color-divider)] pb-4 bg-gray-50/30 dark:bg-white/5">
-                        <CardTitle className="flex items-center gap-2 text-lg font-black uppercase tracking-tight">
+                <Card key={idx} className="border-2 border-[var(--color-divider)] overflow-hidden shadow-sm rounded-2xl sm:rounded-3xl">
+                    <CardHeader className="border-b border-[var(--color-divider)] p-4 sm:p-6 bg-gray-50/30 dark:bg-white/5">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-black uppercase tracking-tight">
                             <section.icon size={20} className="text-[var(--color-primary)]" />
                             {section.title}
                         </CardTitle>
@@ -178,13 +178,13 @@ export default function Settings() {
                             <div
                                 key={i}
                                 onClick={item.onClick}
-                                className={`flex items-center justify-between p-5 transition-all border-b last:border-0 border-[var(--color-divider)] ${item.onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''}`}
+                                className={`flex items-center justify-between p-4 sm:p-5 transition-all border-b last:border-0 border-[var(--color-divider)] ${item.onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''}`}
                             >
                                 <div>
-                                    <div className={`font-black uppercase text-sm ${item.type === 'danger' ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
+                                    <div className={`font-black uppercase text-xs sm:text-sm ${item.type === 'danger' ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
                                         {item.label}
                                     </div>
-                                    {item.desc && <div className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-0.5">{item.desc}</div>}
+                                    {item.desc && <div className="text-[9px] sm:text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-0.5">{item.desc}</div>}
                                 </div>
 
                                 <div>

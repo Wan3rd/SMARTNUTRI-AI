@@ -425,30 +425,32 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4 w-full">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full">
                         {/* Before Photo */}
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Before Meal</span>
+                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Before Meal</span>
                             {preview ? (
-                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-[var(--color-divider)] shadow-lg group">
+                                <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
                                     <img src={preview} alt="Before" className="w-full h-full object-cover" />
                                     {status === 'idle' && (
                                         <button onClick={() => { setFile(null); setPreview(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
                                     )}
                                 </div>
                             ) : (
-                                <div onClick={() => fileInputRef.current?.click()} className="w-full aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-[var(--color-primary)]/5 transition-all text-[var(--color-text-muted)]">
-                                    <Upload size={24} />
-                                    <span className="text-[10px] font-bold">ADD PHOTO</span>
+                                <div onClick={() => fileInputRef.current?.click()} className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[var(--color-primary)]/5 transition-all text-[var(--color-text-muted)] group">
+                                    <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform">
+                                        <Upload size={20} />
+                                    </div>
+                                    <span className="text-[9px] font-black uppercase tracking-tighter">Capture Photo</span>
                                 </div>
                             )}
                         </div>
 
                         {/* After Photo */}
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">After Meal</span>
+                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">After Meal</span>
                             {previewAfter ? (
-                                <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-[var(--color-divider)] shadow-lg group">
+                                <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
                                     <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
                                     {status !== 'uploading' && (
                                         <button onClick={() => { setFileAfter(null); setPreviewAfter(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
@@ -457,21 +459,23 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                             ) : (
                                 <div 
                                     onClick={() => status !== 'uploading' && fileAfterInputRef.current?.click()} 
-                                    className={`w-full aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all relative ${
+                                    className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all relative ${
                                         status === 'uploading'
                                             ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60'
-                                            : 'border-gray-200 dark:border-white/5 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)]'
+                                            : 'border-gray-200 dark:border-white/10 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] group'
                                     }`}
                                 >
                                     {status === 'uploading' ? (
                                         <>
                                             <Loader2 size={20} className="animate-spin text-gray-400" />
-                                            <span className="text-[9px] font-bold text-gray-400 text-center">WAIT FOR AI</span>
+                                            <span className="text-[8px] font-black text-gray-400 text-center uppercase">AI Analyzing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Upload size={24} />
-                                            <span className="text-[10px] font-bold">OPTIONAL</span>
+                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform">
+                                                <Upload size={20} />
+                                            </div>
+                                            <span className="text-[9px] font-black uppercase tracking-tighter">Optional Log</span>
                                         </>
                                     )}
                                 </div>
@@ -542,45 +546,46 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {verifiedItems.map((item, idx) => (
                                     <div 
                                         key={idx} 
                                         onBlur={(e) => handleRowBlur(e, idx)}
-                                        className={`flex flex-col gap-2 p-2.5 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-lg shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.99]' : ''}`}
+                                        className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.98]' : 'hover:border-[var(--color-primary)]/30'}`}
                                     >
-                                        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-                                            <div className="flex-1 min-w-[140px] relative">
-                                                <input 
-                                                    value={item.name} 
-                                                    onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                    placeholder="Food name"
-                                                    className="w-full p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-black uppercase tracking-tight"
-                                                />
-                                                {item.isUpdating && (
-                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                                        <Loader2 size={12} className="animate-spin text-[var(--color-primary)]" />
-                                                    </div>
-                                                )}
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 relative">
+                                                    <input 
+                                                        value={item.name} 
+                                                        onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                                                        placeholder="Food name..."
+                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleDeleteItem(idx)}
+                                                    className="p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-all active:scale-90"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
-                                            <div className="flex flex-1 gap-2 min-w-[200px]">
+
+                                            <div className="grid grid-cols-2 gap-2">
                                                 <select 
                                                     value={item.cooking_method || ''} 
                                                     onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
-                                                    className="flex-1 p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-black uppercase tracking-tight"
+                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[10px] font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="">Method...</option>
                                                     {COOKING_METHODS.map(method => (
                                                         <option key={method} value={method}>{method}</option>
                                                     ))}
-                                                    {item.cooking_method && !COOKING_METHODS.includes(item.cooking_method) && (
-                                                        <option value={item.cooking_method}>{item.cooking_method} (AI)</option>
-                                                    )}
                                                 </select>
                                                 <select
                                                     value={item.serving_unit || 'Serving'}
                                                     onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
-                                                    className="w-24 p-2.5 rounded-md border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-[10px] font-bold"
+                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[10px] font-black uppercase focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="Serving">Serving</option>
                                                     <option value="Cup">Cup</option>
@@ -592,72 +597,57 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                     <option value="Plate">Plate</option>
                                                 </select>
                                             </div>
-                                            <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-50 dark:bg-white/5 p-2 rounded-lg border border-[var(--color-divider)] sm:border-transparent">
-                                                <div className="flex flex-col items-center gap-0.5 min-w-[100px] flex-1 sm:flex-none">
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Qty</span>
-                                                        <span className="text-xs font-black text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-md tabular-nums">
-                                                            {item.measure_qty || 1}
-                                                        </span>
-                                                    </div>
-                                                    <input
-                                                        type="range"
-                                                        min="0.25"
-                                                        max="10"
-                                                        step="0.25"
-                                                        value={item.measure_qty || 1}
-                                                        onChange={(e) => {
-                                                            const qty = parseFloat(e.target.value) || 0;
-                                                            setVerifiedItems(prev => {
-                                                                const next = [...prev];
-                                                                const base = next[idx];
-                                                                next[idx] = {
-                                                                    ...base,
-                                                                    measure_qty: qty,
-                                                                    weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
-                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
-                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
-                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
-                                                                };
-                                                                return next;
-                                                            });
-                                                        }}
-                                                        className="w-full h-1.5 accent-[var(--color-primary)] cursor-pointer"
-                                                    />
+
+                                            <div className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-[var(--color-divider)] space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Portion Quantity</span>
+                                                    <span className="text-sm font-black text-[var(--color-primary)] tabular-nums">
+                                                        {item.measure_qty || 1}x
+                                                    </span>
                                                 </div>
-                                                <button 
-                                                    onClick={() => handleDeleteItem(idx)}
-                                                    className="p-2.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-colors"
-                                                    title="Delete this item"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <input
+                                                    type="range"
+                                                    min="0.25"
+                                                    max="5"
+                                                    step="0.25"
+                                                    value={item.measure_qty || 1}
+                                                    onChange={(e) => {
+                                                        const qty = parseFloat(e.target.value) || 0;
+                                                        setVerifiedItems(prev => {
+                                                            const next = [...prev];
+                                                            const base = next[idx];
+                                                            next[idx] = {
+                                                                ...base,
+                                                                measure_qty: qty,
+                                                                weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
+                                                                protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
+                                                                carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
+                                                                fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
+                                                            };
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="w-full h-2 accent-[var(--color-primary)] cursor-pointer"
+                                                />
                                             </div>
                                         </div>
-                                        <div className={`flex items-center gap-3 text-[9px] mt-0.5 font-bold px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
-                                            <div className="flex gap-3">
-                                                <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} Cal</span>
-                                                <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g Pro</span>
-                                                <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g Carb</span>
-                                                <span className="text-yellow-600 dark:text-yellow-400">{item.fat_g || 0}g Fat</span>
+
+                                        <div className={`flex flex-wrap items-center gap-3 text-[10px] mt-1 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
+                                                <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
+                                                <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>
                                             </div>
 
                                             {item.isStale && !item.isUpdating && (
                                                 <button 
                                                     onClick={() => updateItemMacros(idx, item.name, item.serving_unit, item.cooking_method)}
-                                                    className="ml-auto flex items-center gap-1 px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-md border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/20 transition-all animate-in fade-in zoom-in"
+                                                    className="ml-auto flex items-center gap-1 px-3 py-1 bg-[var(--color-primary)] text-white rounded-lg shadow-sm active:scale-95 transition-all"
                                                 >
                                                     <RefreshCw size={10} className="animate-spin-slow" />
-                                                    <span className="text-[7px] uppercase tracking-widest font-black">Sync Macros</span>
+                                                    <span className="text-[8px] uppercase tracking-widest font-black">Sync</span>
                                                 </button>
-                                            )}
-
-                                            {item.isUpdating && (
-                                                <div className="ml-auto flex items-center gap-1 text-[var(--color-primary)]">
-                                                    <Loader2 size={10} className="animate-spin" />
-                                                    <span className="text-[7px] uppercase tracking-widest font-black">AI Calculating...</span>
-                                                </div>
                                             )}
                                         </div>
                                     </div>

@@ -21,7 +21,15 @@ export const ProfileProvider = ({ children }) => {
         try {
             setLoading(true);
             const res = await api.get('/profiles');
-            setProfiles(res.data);
+            
+            // Sort profiles by age (Oldest to Youngest) for a stable UI
+            const sortedProfiles = [...res.data].sort((a, b) => {
+                if (!a.date_of_birth) return 1;
+                if (!b.date_of_birth) return -1;
+                return new Date(a.date_of_birth) - new Date(b.date_of_birth);
+            });
+
+            setProfiles(sortedProfiles);
             
             // Handle initial selection or restoration from localStorage
             const savedId = localStorage.getItem('selectedProfileId');

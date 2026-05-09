@@ -87,7 +87,6 @@ body {
   min-width: 320px;
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   /* Smooth scrolling for iOS */
 }
@@ -138,6 +137,7 @@ h6,
 label,
 input,
 select,
+max-width,
 textarea,
 a,
 span[class*="uppercase"] {
@@ -198,4 +198,80 @@ textarea {
 
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
+}
+
+/* Custom Sidebar Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Print Optimization */
+@media print {
+  aside, 
+  header, 
+  .no-print,
+  button,
+  .CardHeader {
+    display: none !important;
+  }
+
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .recipe-card {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    background: inherit !important;
+    color: inherit !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .prose {
+    max-width: 100% !important;
+    font-size: 12pt !important;
+    color: inherit !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 2rem !important;
+    border-bottom: 2px solid var(--color-primary) !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* Theme-specific text visibility in PDF */
+  .dark .print-header span,
+  .dark .print-header p {
+    color: var(--color-text-main) !important;
+  }
+}
+
+.print-header {
+  display: none;
 }

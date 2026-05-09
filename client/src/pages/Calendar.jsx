@@ -98,17 +98,32 @@ export default function Calendar() {
 
     const renderHeader = () => {
         return (
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-[var(--color-secondary)]">
-                    {format(currentMonth, 'MMMM yyyy')}
-                </h2>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-                            <ChevronLeft size={20} />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                <div className="flex flex-col items-center sm:items-start">
+                    <h2 className="text-xl sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">
+                        {format(currentMonth, 'MMMM yyyy')}
+                    </h2>
+                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Clinical History</p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                            setCurrentMonth(new Date());
+                            setSelectedDate(new Date());
+                        }}
+                        className="text-[10px] font-black uppercase tracking-widest hover:text-[var(--color-primary)]"
+                    >
+                        Today
+                    </Button>
+                    <div className="flex items-center gap-1 bg-[var(--color-divider)] p-1 rounded-xl">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                            <ChevronLeft size={16} />
                         </Button>
-                        <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                            <ChevronRight size={20} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                            <ChevronRight size={16} />
                         </Button>
                     </div>
                 </div>
@@ -117,18 +132,23 @@ export default function Calendar() {
     };
 
     const renderDays = () => {
-        const dateFormat = "EEE";
         const days = [];
         let startDate = startOfWeek(currentMonth);
 
         for (let i = 0; i < 7; i++) {
+            const dayName = format(addDays(startDate, i), 'EEE');
             days.push(
-                <div className="text-center font-medium text-[var(--color-text-muted)] py-2" key={i}>
-                    {format(addDays(startDate, i), dateFormat)}
+                <div className="text-center py-2" key={i}>
+                    <span className="hidden sm:block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                        {dayName}
+                    </span>
+                    <span className="block sm:hidden text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                        {dayName.charAt(0)}
+                    </span>
                 </div>
             );
         }
-        return <div className="grid grid-cols-7 mb-2">{days}</div>;
+        return <div className="grid grid-cols-7 mb-2 px-2">{days}</div>;
     };
 
     const renderCells = () => {
@@ -147,63 +167,73 @@ export default function Calendar() {
             for (let i = 0; i < 7; i++) {
                 formattedDate = format(day, dateFormat);
                 const cloneDay = day;
+                const dateKey = day.toLocaleDateString();
+                const status = dayStatuses[dateKey];
+                const dayLogs = logs.filter(l => isSameDay(new Date(l.logged_at), day));
 
                 days.push(
                     <div
                         className={cn(
-                            "min-h-[100px] border border-[var(--color-divider)] p-2 relative transition-colors hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer rounded-lg",
-                            !isSameMonth(day, monthStart) && "text-[var(--color-text-muted)] bg-gray-50/50 dark:bg-black/20",
-                            isSameDay(day, selectedDate) && "border-[var(--color-primary)] bg-[var(--color-primary)]/5 dark:bg-[var(--color-primary)]/10"
+                            "min-h-[60px] sm:min-h-[120px] border-2 border-[var(--color-divider)] p-1 sm:p-3 relative transition-all duration-300 cursor-pointer rounded-2xl group",
+                            !isSameMonth(day, monthStart) && "opacity-20 pointer-events-none",
+                            isSameDay(day, selectedDate) ? "border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10 z-20" : "hover:border-[var(--color-primary)]/30 hover:scale-[1.02]"
                         )}
                         key={day}
                         onClick={() => setSelectedDate(cloneDay)}
                     >
                         <span className={cn(
-                            "text-sm font-medium block mb-2 text-[var(--color-text-main)]",
-                            isSameDay(day, new Date()) && "text-[var(--color-primary)] font-bold"
+                            "text-xs sm:text-sm font-black block mb-1 sm:mb-2 tabular-nums",
+                            isSameDay(day, new Date()) ? "text-[var(--color-primary)]" : "text-[var(--color-text-main)]"
                         )}>
                             {formattedDate}
                         </span>
 
-                        {/* Heatmap Indicator */}
-                        <div className="absolute inset-0 z-0 opacity-10 rounded-lg">
-                            <div className={cn(
-                                "w-full h-full",
-                                dayStatuses[day.toLocaleDateString()] === 'danger' ? 'bg-red-500' :
-                                dayStatuses[day.toLocaleDateString()] === 'warning' ? 'bg-amber-500' :
-                                dayStatuses[day.toLocaleDateString()] === 'success' ? 'bg-emerald-500' :
-                                ''
-                            )} />
+                        {/* Status Heatmap Dot/Indicator */}
+                        <div className="flex justify-center sm:justify-start gap-1">
+                            {status && (
+                                <div className={cn(
+                                    "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full shadow-sm",
+                                    status === 'danger' ? 'bg-red-500 shadow-red-500/50' :
+                                    status === 'warning' ? 'bg-amber-500 shadow-amber-500/50' :
+                                    'bg-emerald-500 shadow-emerald-500/50'
+                                )} />
+                            )}
+                            {dayLogs.length > 1 && (
+                                <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-blue-400 opacity-40 hidden sm:block" />
+                            )}
                         </div>
 
-                        {/* Real Logs */}
-                        <div className="space-y-1 mt-1 relative z-10">
-                            {logs
-                                .filter(l => isSameDay(new Date(l.logged_at), day))
-                                .slice(0, 2)
-                                .map((log, idx) => (
-                                    <div key={idx} className={cn(
-                                        "text-[9px] p-1 rounded font-black uppercase tracking-tighter truncate",
-                                        log.compliance_status === 'flagged' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-                                    )}>
-                                        🍽️ {log.meal_category}
-                                    </div>
-                                ))
-                            }
+                        {/* Desktop Only Details */}
+                        <div className="hidden sm:block space-y-1.5 mt-3">
+                            {dayLogs.slice(0, 2).map((log, idx) => (
+                                <div key={idx} className={cn(
+                                    "text-[8px] p-1.5 rounded-lg font-black uppercase tracking-tighter truncate border-l-4",
+                                    log.compliance_status === 'flagged' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                                )}>
+                                    {log.meal_category}
+                                </div>
+                            ))}
+                            {dayLogs.length > 2 && (
+                                <p className="text-[7px] font-black text-[var(--color-text-muted)] text-center uppercase tracking-widest">+{dayLogs.length - 2} more</p>
+                            )}
                         </div>
 
+                        {/* Selected Indicator */}
+                        {isSameDay(day, selectedDate) && (
+                            <div className="absolute top-2 right-2 h-1 w-1 sm:h-2 sm:w-2 bg-[var(--color-primary)] rounded-full animate-ping" />
+                        )}
                     </div>
                 );
                 day = addDays(day, 1);
             }
             rows.push(
-                <div className="grid grid-cols-7 gap-2 mb-2" key={day}>
+                <div className="grid grid-cols-7 gap-2 sm:gap-4 mb-2 sm:mb-4" key={day}>
                     {days}
                 </div>
             );
             days = [];
         }
-        return <div className="bg-[var(--color-bg-card)] p-4 rounded-2xl shadow-sm border border-[var(--color-divider)]">{rows}</div>;
+        return <div className="bg-transparent rounded-2xl">{rows}</div>;
     };
 
     return (
@@ -218,59 +248,77 @@ export default function Calendar() {
             {renderCells()}
 
             {/* Selected Day Details */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Daily Log for {format(selectedDate, 'MMMM d, yyyy')}</CardTitle>
-                    <div className="flex items-center gap-2">
-                        <div className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                            dayStatuses[selectedDate.toLocaleDateString()] === 'danger' ? 'bg-red-100 text-red-700' :
-                            dayStatuses[selectedDate.toLocaleDateString()] === 'warning' ? 'bg-amber-100 text-amber-700' :
-                            dayStatuses[selectedDate.toLocaleDateString()] === 'success' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-gray-100 text-gray-500'
-                        )}>
-                            {dayStatuses[selectedDate.toLocaleDateString()] || 'No Data'}
-                        </div>
+            <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-lg bg-white dark:bg-white/5">
+                <CardHeader className="flex flex-row items-center justify-between p-6 sm:p-8 border-b-2 border-[var(--color-divider)] bg-gray-50/50 dark:bg-black/20">
+                    <div className="space-y-1">
+                        <CardTitle className="text-lg sm:text-xl font-black text-[var(--color-secondary)] uppercase tracking-tight">
+                            {format(selectedDate, 'MMMM d, yyyy')}
+                        </CardTitle>
+                        <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Daily Clinical Summary</p>
+                    </div>
+                    <div className={cn(
+                        "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm",
+                        dayStatuses[selectedDate.toLocaleDateString()] === 'danger' ? 'bg-red-500 text-white' :
+                        dayStatuses[selectedDate.toLocaleDateString()] === 'warning' ? 'bg-amber-500 text-white' :
+                        dayStatuses[selectedDate.toLocaleDateString()] === 'success' ? 'bg-emerald-500 text-white' :
+                        'bg-gray-100 text-gray-400'
+                    )}>
+                        {dayStatuses[selectedDate.toLocaleDateString()] || 'No Records'}
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6 sm:p-8">
                     <div className="space-y-4">
                         {logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate)).length > 0 ? (
                             logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate)).map(log => (
                                 <div key={log.id}
-                                    className="flex items-center gap-4 p-3 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] cursor-pointer hover:shadow-md transition-all"
+                                    className="flex flex-col xs:flex-row items-start xs:items-center gap-5 p-5 rounded-3xl bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] group cursor-pointer hover:border-[var(--color-primary)] transition-all hover:shadow-xl hover:translate-y-[-2px]"
                                     onClick={() => navigate('/meal-history')}
                                 >
-                                    <div className="h-12 w-12 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
+                                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
                                         <img src={log.image_url} alt="meal" className="w-full h-full object-cover" />
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <p className="font-semibold text-[var(--color-text-main)] w-3/4 truncate">
-                                                {log.meal_category}
-                                            </p>
+                                    <div className="flex-1 min-w-0 w-full">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <h4 className="font-black text-[var(--color-text-main)] text-lg uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">
+                                                    {log.meal_category}
+                                                </h4>
+                                            </div>
                                             <span className={cn(
-                                                "text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest",
-                                                log.compliance_status === 'flagged' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
+                                                "text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm",
+                                                log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
                                             )}>
                                                 {log.compliance_status}
                                             </span>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-[var(--color-text-muted)]">
-                                            <span className="flex items-center gap-1">
-                                                <Flame size={12} className="text-orange-500" />
-                                                <span className="font-bold">{log.total_calories}</span> kcal
-                                            </span>
-                                            <span className="font-bold text-blue-600 uppercase tracking-tighter">Protein: {log.total_protein_g}g</span>
-                                            <span className="font-bold text-emerald-600 uppercase tracking-tighter">Carb: {log.total_carbs_g}g</span>
-                                            <span className="font-bold text-orange-600 uppercase tracking-tighter">Fat: {log.total_fat_g}g</span>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-[var(--color-divider)]/50">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                                    <Flame size={12} className="text-orange-500" />
+                                                </div>
+                                                <span className="text-xs font-black tabular-nums">{log.total_calories} <span className="text-[9px] text-[var(--color-text-muted)]">KCAL</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center text-[10px] font-black text-blue-600">P</div>
+                                                <span className="text-xs font-black tabular-nums">{log.total_protein_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-[10px] font-black text-emerald-600">C</div>
+                                                <span className="text-xs font-black tabular-nums">{log.total_carbs_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-center text-[var(--color-text-muted)] py-4">No meals planned for this day.</p>
+                            <div className="py-16 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                                    <Apple className="text-[var(--color-text-muted)]" size={32} />
+                                </div>
+                                <p className="text-[var(--color-text-muted)] font-black uppercase text-[10px] tracking-[0.2em]">No clinical logs for this day</p>
+                            </div>
                         )}
                     </div>
                 </CardContent>

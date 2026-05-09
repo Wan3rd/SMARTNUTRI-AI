@@ -169,12 +169,12 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                 <Card className="border-2 border-[var(--color-divider)] rounded-[40px] overflow-hidden shadow-2xl">
                     <CardContent className="p-0">
                         {/* Header */}
-                        <div className="bg-[var(--color-primary)] p-8 text-white relative">
-                            <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full transition-colors">
-                                <X size={24} />
+                        <div className="bg-[var(--color-primary)] p-6 sm:p-8 text-white relative">
+                            <button onClick={onClose} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X size={20} sm:size={24} />
                             </button>
-                            <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Add New Profile</h2>
-                            <p className="text-white/80 font-bold text-sm">Register a new child to the SmartNutri-AI clinical engine</p>
+                            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Add New Profile</h2>
+                            <p className="text-white/80 font-bold text-[10px] sm:text-sm">Register a new child to the SmartNutri-AI clinical engine</p>
                             
                             {/* Progress */}
                             <div className="flex gap-4 mt-8">
@@ -186,7 +186,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                             </div>
                         </div>
 
-                        <form className="p-10 space-y-8" onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}>
+                        <form className="p-6 sm:p-10 space-y-6 sm:space-y-8" onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}>
                             {message.text && (
                                 <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
                                     {message.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
@@ -321,19 +321,19 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                             )}
 
                             {/* Footer Buttons */}
-                            <div className="flex gap-4 pt-6 border-t border-[var(--color-divider)]">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-[var(--color-divider)]">
                                 {step > 1 && (
-                                    <Button type="button" variant="outline" onClick={handleBack} className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-xs gap-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
-                                        <ChevronLeft size={18} /> Back
+                                    <Button type="button" variant="outline" onClick={handleBack} className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
+                                        <ChevronLeft size={16} /> Back
                                     </Button>
                                 )}
                                 {step < 3 ? (
-                                    <Button type="button" onClick={handleNext} className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
-                                        Continue <ChevronRight size={18} />
+                                    <Button type="button" onClick={handleNext} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        Continue <ChevronRight size={16} />
                                     </Button>
                                 ) : (
-                                    <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
-                                        {loading ? <Loader2 className="animate-spin" size={18} /> : 'Complete Profile'}
+                                    <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        {loading ? <Loader2 className="animate-spin" size={16} /> : 'Complete Profile'}
                                     </Button>
                                 )}
                             </div>

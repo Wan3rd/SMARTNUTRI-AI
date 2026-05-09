@@ -14,6 +14,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
+import CreatePatientModal from '../components/CreatePatientModal';
 
 // Global CSS Overrides for Quill Toolbar Visibility
 const quillStyles = `
@@ -138,6 +139,8 @@ export default function ClientDetails() {
         rule_value: '',
         rule_unit: 'kcal'
     });
+    const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
+    const [clientEmail, setClientEmail] = useState('');
 
     const [editingAdimeId, setEditingAdimeId] = useState(null);
     const [editAdimeForm, setEditAdimeForm] = useState({
@@ -498,6 +501,21 @@ export default function ClientDetails() {
             fetchRules(selectedProfile.id);
         }
     }, [selectedProfile, activeTab, isConsultationMode]);
+
+    useEffect(() => {
+        if (clientId) {
+            fetchClientEmail();
+        }
+    }, [clientId]);
+
+    const fetchClientEmail = async () => {
+        try {
+            const res = await api.get(`/nutritionist/clients/${clientId}`);
+            setClientEmail(res.data.email);
+        } catch (err) {
+            console.error("Error fetching client email", err);
+        }
+    };
 
     const fetchGrowthLogs = async (profileId) => {
         try {
@@ -1181,6 +1199,15 @@ export default function ClientDetails() {
                                         </div>
                                     );
                                 })}
+                                <button
+                                    onClick={() => setIsAddProfileOpen(true)}
+                                    className="w-full p-4 rounded-xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex flex-col items-center justify-center gap-2 mt-4"
+                                >
+                                    <div className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                        <Plus size={16} />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]">Add Child Profile</span>
+                                </button>
                             </div>
 
                     {/* Main Content */}
@@ -3348,6 +3375,17 @@ export default function ClientDetails() {
             </Modal>
 
 
+            <CreatePatientModal
+                isOpen={isAddProfileOpen}
+                onClose={() => setIsAddProfileOpen(false)}
+                parentId={clientId}
+                parentEmail={clientEmail}
+                parentName={clientName}
+                onClientAdded={() => {
+                    fetchProfiles();
+                    showNotif("Child profile added successfully!");
+                }}
+            />
         </div>
     );
 }
