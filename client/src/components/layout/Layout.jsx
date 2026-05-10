@@ -26,7 +26,7 @@ export function Layout({ children }) {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)]">
+        <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)] overflow-x-hidden">
             {/* Mobile Sidebar Overlay */}
             {isMobile && sidebarOpen && (
                 <div
@@ -44,22 +44,22 @@ export function Layout({ children }) {
                 )}>
                     {/* Unified Header */}
                     <header className={cn(
-                        "sticky top-0 z-30 flex h-16 items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-4 transition-all duration-300",
+                        "sticky top-0 z-30 flex h-14 sm:h-16 items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4 transition-all duration-300",
                         !isMobile && sidebarOpen ? "md:ml-0" : "ml-0"
                     )}>
                         <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={toggleSidebar}
-                            className="mr-3 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                            className="mr-2 sm:mr-3 h-9 w-9 sm:h-10 sm:w-10 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
                         >
-                            {sidebarOpen ? (isMobile ? <Menu size={20} /> : <ChevronLeft size={20} />) : <Menu size={20} />}
+                            {sidebarOpen ? (isMobile ? <Menu size={18} /> : <ChevronLeft size={20} />) : <Menu size={20} />}
                         </Button>
                         
                         {!sidebarOpen && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                                <img src="/SmartNutri-logo.png" alt="Logo" className="h-8 w-8 object-contain rounded-full" />
-                                <span className="font-black text-[var(--color-secondary)] uppercase tracking-tight">
+                                <img src="/SmartNutri-logo.png" alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain rounded-full" />
+                                <span className="font-black text-sm sm:text-base text-[var(--color-secondary)] uppercase tracking-tight">
                                     SmartNutri
                                 </span>
                             </div>
@@ -71,9 +71,7 @@ export function Layout({ children }) {
                     </header>
 
                     <main className={cn(
-                        "p-4 md:p-8 transition-all duration-300",
-                        // If sidebar is sticky on desktop, we don't need margin because it's in the flex flow.
-                        // But if it's fixed, we do.
+                        "p-4 sm:p-6 md:p-8 transition-all duration-300 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-8",
                     )}>
                         <div className="mx-auto max-w-7xl">
                             {children}

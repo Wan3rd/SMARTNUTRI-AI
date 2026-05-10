@@ -57,10 +57,6 @@ const quillStyles = `
     font-style: italic !important;
     opacity: 0.5 !important;
   }
-  .consultation-quill .ql-editor {
-    min-height: 80px !important;
-    padding: 12px !important;
-  }
   .quill-dark .ql-editor {
     color: white !important;
     min-height: 80px !important;
@@ -70,6 +66,16 @@ const quillStyles = `
     color: rgba(255,255,255,0.4) !important;
   }
 `;
+
+const BRISTOL_TYPES = [
+    { type: 1, label: 'Type 1', desc: 'Hard Lumps', detail: 'Separate hard lumps, like nuts (hard to pass). Indicates severe constipation.' },
+    { type: 2, label: 'Type 2', desc: 'Lumpy', detail: 'Sausage-shaped, but lumpy. Indicates mild constipation.' },
+    { type: 3, label: 'Type 3', desc: 'Cracked', detail: 'Like a sausage but with cracks on its surface. Normal.' },
+    { type: 4, label: 'Type 4', desc: 'Smooth', detail: 'Like a sausage or snake, smooth and soft. Ideal.' },
+    { type: 5, label: 'Type 5', desc: 'Soft Blobs', detail: 'Soft blobs with clear-cut edges (passed easily). Lacking fiber.' },
+    { type: 6, label: 'Type 6', desc: 'Mushy', detail: 'Fluffy pieces with ragged edges, a mushy stool. Mild diarrhea.' },
+    { type: 7, label: 'Type 7', desc: 'Liquid', detail: 'Watery, no solid pieces (entirely liquid). Severe diarrhea.' }
+];
 
 export default function ClientDetails() {
     const { clientId } = useParams();
@@ -159,7 +165,7 @@ export default function ClientDetails() {
         isOpen: false,
         title: '',
         message: '',
-        onConfirm: () => {},
+        onConfirm: () => { },
         isDestructive: true
     });
 
@@ -204,12 +210,12 @@ export default function ClientDetails() {
         if (!selectedProfile?.weight_kg || !selectedProfile?.height_cm) return null;
         const heightM = selectedProfile.height_cm / 100;
         const bmi = (selectedProfile.weight_kg / (heightM * heightM)).toFixed(1);
-        
+
         let status = 'Healthy Weight';
         let color = 'text-emerald-700 dark:text-emerald-300';
         let bgColor = 'bg-emerald-50 dark:bg-emerald-500/10';
         let borderColor = 'border-emerald-200 dark:border-emerald-500/20';
-        
+
         if (bmi < 18.5) {
             status = 'Underweight';
             color = 'text-amber-700 dark:text-amber-300';
@@ -226,7 +232,7 @@ export default function ClientDetails() {
             bgColor = 'bg-red-50 dark:bg-red-500/10';
             borderColor = 'border-red-200 dark:border-red-500/20';
         }
-        
+
         return { bmi, status, color, bgColor, borderColor };
     }, [selectedProfile]);
 
@@ -240,7 +246,7 @@ export default function ClientDetails() {
             height: (current.height_cm - previous.height_cm).toFixed(1)
         };
     }, [growthLogs]);
-    
+
     const clinicalPatterns = useMemo(() => {
         if (!logs || logs.length === 0) return [];
         const alerts = [];
@@ -276,15 +282,15 @@ export default function ClientDetails() {
     const velocityStats = useMemo(() => {
         if (!growthLogs || growthLogs.length < 2) return [];
         const sorted = [...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
-        
+
         const velocityData = [];
         for (let i = 0; i < Math.min(sorted.length - 1, 5); i++) {
             const current = sorted[i];
-            const prev = sorted[i+1];
-            
+            const prev = sorted[i + 1];
+
             const diffDays = (new Date(current.logged_at) - new Date(prev.logged_at)) / (1000 * 60 * 60 * 24);
             const months = diffDays / 30.44;
-            
+
             velocityData.push({
                 date: current.logged_at,
                 weight: current.weight_kg,
@@ -296,38 +302,9 @@ export default function ClientDetails() {
         return velocityData;
     }, [growthLogs]);
 
-    // --- Consultation Mode State ---
-    const [isConsultationMode, setIsConsultationMode] = useState(false);
     const [isClinicalEditing, setIsClinicalEditing] = useState(false);
     const [isAdimeEditing, setIsAdimeEditing] = useState(false);
     const [isFinalizing, setIsFinalizing] = useState(false);
-    const [consultationJournal, setConsultationJournal] = useState('');
-    const [consultationAdime, setConsultationAdime] = useState({
-        assessment: '',
-        diagnosis: '',
-        intervention: '',
-        monitoring: '',
-        evaluation: ''
-    });
-
-    useEffect(() => {
-        if (isConsultationMode && adimeNotes.length > 0) {
-            // Prime the consultation draft with the most recent record for continuity
-            const latest = adimeNotes[0];
-            setConsultationAdime({
-                assessment: latest.assessment || '',
-                diagnosis: latest.diagnosis || '',
-                intervention: latest.intervention || '',
-                monitoring: latest.monitoring || '',
-                evaluation: latest.evaluation || ''
-            });
-            setConsultationJournal(`Consultation Session: ${new Date().toLocaleDateString()}`);
-        } else if (isConsultationMode) {
-            // Fresh session if no history
-            setConsultationAdime({ assessment: '', diagnosis: '', intervention: '', monitoring: '', evaluation: '' });
-            setConsultationJournal(`New Consultation Session: ${new Date().toLocaleDateString()}`);
-        }
-    }, [isConsultationMode, adimeNotes.length]);
 
     const [isGrowthChartOpen, setIsGrowthChartOpen] = useState(false);
     const [isVelocityModalOpen, setIsVelocityModalOpen] = useState(false);
@@ -381,7 +358,7 @@ export default function ClientDetails() {
             }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
 
             let status = 'success';
-            
+
             // Check Profile Targets
             if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
             else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
@@ -390,7 +367,7 @@ export default function ClientDetails() {
             rules.forEach(rule => {
                 const limit = parseFloat(rule.rule_value);
                 if (!limit) return;
-                
+
                 let current = 0;
                 if (rule.category === 'Calories') current = totals.calories;
                 else if (rule.category === 'Protein') current = totals.protein;
@@ -424,7 +401,7 @@ export default function ClientDetails() {
         rules.forEach(rule => {
             const limit = parseFloat(rule.rule_value);
             if (!limit) return;
-            
+
             let current = 0;
             if (rule.category === 'Calories') current = totals.calories;
             else if (rule.category === 'Protein') current = totals.protein;
@@ -450,7 +427,7 @@ export default function ClientDetails() {
         const pendingIds = logs
             .filter(l => new Date(l.logged_at).toLocaleDateString() === date && l.status === 'pending')
             .map(l => l.id);
-        
+
         if (pendingIds.length === 0) return;
 
         try {
@@ -487,20 +464,17 @@ export default function ClientDetails() {
         if (selectedProfile && activeTab === 'notes') {
             fetchNotes(selectedProfile.id);
         }
-        if (selectedProfile && (activeTab === 'history' || activeTab === 'review' || isConsultationMode)) {
+        if (selectedProfile && (activeTab === 'history' || activeTab === 'review')) {
             fetchLogs(selectedProfile.id);
         }
-        if (selectedProfile && (activeTab === 'adime' || isConsultationMode)) {
+        if (selectedProfile && activeTab === 'adime') {
             fetchAdimeNotes(selectedProfile.id);
         }
-        if (selectedProfile && (activeTab === 'overview' || isConsultationMode)) {
+        if (selectedProfile && activeTab === 'overview') {
             fetchGrowthLogs(selectedProfile.id);
             fetchVaccinationData(selectedProfile.id);
         }
-        if (selectedProfile && isConsultationMode) {
-            fetchRules(selectedProfile.id);
-        }
-    }, [selectedProfile, activeTab, isConsultationMode]);
+    }, [selectedProfile, activeTab]);
 
     useEffect(() => {
         if (clientId) {
@@ -675,40 +649,6 @@ export default function ClientDetails() {
         }
     }, [profiles]);
 
-    const handleFinalizeSession = async () => {
-        setIsFinalizing(true);
-        try {
-            // 1. Save Consultation Journal as a Note
-            if (consultationJournal.trim() && !consultationJournal.includes('New Consultation Session')) {
-                await api.post('/notes', {
-                    nutritionist_id: user.id,
-                    client_id: selectedProfile.id,
-                    content: consultationJournal
-                });
-            }
-
-            // 2. Save/Update ADIME Note
-            await api.post('/nutritionist/adime-notes', {
-                profile_id: selectedProfile.id,
-                ...consultationAdime
-            });
-
-            // 3. Refresh data
-            await Promise.all([
-                fetchNotes(selectedProfile.id),
-                fetchAdimeNotes(selectedProfile.id)
-            ]);
-
-            showNotif("Clinical session finalized and archived.");
-            setIsAdimeEditing(false);
-        } catch (err) {
-            console.error("Failed to finalize session", err);
-            showNotif("Failed to save session data", "error");
-        } finally {
-            setIsFinalizing(false);
-        }
-    };
-
     const handleGenerateParentGuide = () => {
         const printWindow = window.open('', '_blank');
         const content = `
@@ -734,15 +674,10 @@ export default function ClientDetails() {
                     </div>
                     
                     <div class="section">
-                        <div class="section-title">Clinical Observations</div>
-                        <div class="card advice">${consultationJournal || 'No current session notes recorded.'}</div>
-                    </div>
-
-                    <div class="section">
                         <div class="section-title">Current Intervention Plan</div>
                         <div class="card advice">
-                            <strong>Diagnosis:</strong> ${consultationAdime.diagnosis || adimeNotes[0]?.diagnosis || 'Stable'} <br><br>
-                            <strong>Plan:</strong> ${consultationAdime.intervention || adimeNotes[0]?.intervention || 'Maintain current diet.'}
+                            <strong>Diagnosis:</strong> ${adimeNotes[0]?.diagnosis || 'Stable'} <br><br>
+                            <strong>Plan:</strong> ${adimeNotes[0]?.intervention || 'Maintain current diet.'}
                         </div>
                     </div>
 
@@ -770,7 +705,7 @@ export default function ClientDetails() {
             const res = await api.get(`/logs/profile/${profileId}`);
             const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
             setLogs(sortedLogs);
-            
+
             if (sortedLogs.length > 0) {
                 const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
                 setSelectedHistoryDate(latestDate);
@@ -788,7 +723,7 @@ export default function ClientDetails() {
             console.error("Error fetching notes", err);
         }
     };
-    
+
     const handleDeleteLog = async (logId) => {
         setConfirmDialog({
             isOpen: true,
@@ -811,7 +746,7 @@ export default function ClientDetails() {
     const handleClearLogsForDay = async (date) => {
         // Use a consistent date format for the API (ISO)
         const isoDate = new Date(date).toISOString().split('T')[0];
-        
+
         setConfirmDialog({
             isOpen: true,
             title: `Clear All Logs: ${date}`,
@@ -1080,12 +1015,12 @@ export default function ClientDetails() {
         e.preventDefault();
         try {
             const definition = editRuleForm.rule_definition || `${editRuleForm.rule_type === 'max' ? 'Max' : 'Min'} ${editRuleForm.rule_value}${editRuleForm.rule_unit}`;
-            
+
             await api.patch(`/nutritionist/rules/${editingRuleId}`, {
                 ...editRuleForm,
                 rule_definition: definition
             });
-            
+
             fetchRules(selectedProfile.id);
             setEditingRuleId(null);
             showNotif("Rule updated successfully!");
@@ -1120,30 +1055,6 @@ export default function ClientDetails() {
                     <h1 className={cn("text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
                     <p className="text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
                 </div>
-                <div className="ml-auto">
-                    <Button 
-                        variant={isConsultationMode ? "primary" : "outline"} 
-                        onClick={() => {
-                            if (isConsultationMode && isAdimeEditing) {
-                                setConfirmDialog({
-                                    isOpen: true,
-                                    title: 'Exit Active Session?',
-                                    message: 'You have unsaved clinical notes. Exiting will discard your current drafts. Continue?',
-                                    onConfirm: () => {
-                                        setIsConsultationMode(false);
-                                        setIsAdimeEditing(false);
-                                    }
-                                });
-                            } else {
-                                setIsConsultationMode(!isConsultationMode);
-                            }
-                        }}
-                        className="flex gap-2"
-                    >
-                        <Monitor size={18} />
-                        {isConsultationMode ? "Exit Consultation Mode" : "Enter Consultation Mode"}
-                    </Button>
-                </div>
             </header>
 
             {profiles.length === 0 ? (
@@ -1176,39 +1087,39 @@ export default function ClientDetails() {
                                             </span>
                                         </div>
                                     )}
-                                            <div className="flex items-center gap-3">
-                                                <div className={`h-10 w-10 rounded-full overflow-hidden flex-shrink-0 border-2 ${selectedProfile?.id === profile.id ? 'border-white/50' : 'border-[var(--color-divider)]'} bg-white/10 flex items-center justify-center`}>
-                                                    {profile.profile_image_url ? (
-                                                        <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
-                                                    ) : (
-                                                        <User size={20} className={selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'} />
-                                                    )}
+                                    <div className="flex items-center gap-3">
+                                        <div className={`h-10 w-10 rounded-full overflow-hidden flex-shrink-0 border-2 ${selectedProfile?.id === profile.id ? 'border-white/50' : 'border-[var(--color-divider)]'} bg-white/10 flex items-center justify-center`}>
+                                            {profile.profile_image_url ? (
+                                                <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
+                                            ) : (
+                                                <User size={20} className={selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'} />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className={`font-black truncate ${selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{profile.child_name}</div>
+                                            <div className="flex items-center justify-between">
+                                                <div className={`text-[10px] font-bold uppercase tracking-wider ${selectedProfile?.id === profile.id ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                    {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}y • {profile.gender}
                                                 </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className={`font-black truncate ${selectedProfile?.id === profile.id ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{profile.child_name}</div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${selectedProfile?.id === profile.id ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
-                                                            {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}y • {profile.gender}
-                                                        </div>
-                                                        <div className={`text-[10px] font-black ${selectedProfile?.id === profile.id ? 'text-white/90' : 'text-[var(--color-primary)]'}`}>
-                                                            {profile.weight_kg || '--'}kg / {profile.height_cm || '--'}cm
-                                                        </div>
-                                                    </div>
+                                                <div className={`text-[10px] font-black ${selectedProfile?.id === profile.id ? 'text-white/90' : 'text-[var(--color-primary)]'}`}>
+                                                    {profile.weight_kg || '--'}kg / {profile.height_cm || '--'}cm
                                                 </div>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                                <button
-                                    onClick={() => setIsAddProfileOpen(true)}
-                                    className="w-full p-4 rounded-xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex flex-col items-center justify-center gap-2 mt-4"
-                                >
-                                    <div className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform">
-                                        <Plus size={16} />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]">Add Child Profile</span>
-                                </button>
+                                </div>
+                            );
+                        })}
+                        <button
+                            onClick={() => setIsAddProfileOpen(true)}
+                            className="w-full p-4 rounded-xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex flex-col items-center justify-center gap-2 mt-4"
+                        >
+                            <div className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                <Plus size={16} />
                             </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]">Add Child Profile</span>
+                        </button>
+                    </div>
 
                     {/* Main Content */}
                     <div className="lg:col-span-3 space-y-6">
@@ -1262,7 +1173,7 @@ export default function ClientDetails() {
                                                         {focusedField ? `Editor: ${focusedField}` : 'Click to type'}
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center gap-1">
                                                     <button type="button" onClick={() => applyFormat('bold')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bold (Ctrl+B)">
                                                         <Bold size={18} strokeWidth={2.5} />
@@ -1384,7 +1295,7 @@ export default function ClientDetails() {
                                                                 Cancel
                                                             </Button>
                                                         )}
-                                                        <Button 
+                                                        <Button
                                                             variant={isClinicalEditing ? "primary" : "outline"}
                                                             onClick={() => isClinicalEditing ? handleClinicalSave() : setIsClinicalEditing(true)}
                                                             className="flex gap-2"
@@ -1397,34 +1308,34 @@ export default function ClientDetails() {
 
                                                 {/* Edit Form for Bio Info if in edit mode */}
                                                 {isClinicalEditing && (
-                                                    <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-200 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
-                                                            <input 
+                                                            <input
                                                                 type="text"
                                                                 value={clinicalForm.child_name}
-                                                                onChange={(e) => setClinicalForm({...clinicalForm, child_name: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
+                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, child_name: e.target.value })}
+                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                                             />
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Gender</label>
-                                                            <select 
+                                                            <select
                                                                 value={clinicalForm.gender}
-                                                                onChange={(e) => setClinicalForm({...clinicalForm, gender: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
+                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, gender: e.target.value })}
+                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                                                             >
-                                                                <option value="Male">Male</option>
-                                                                <option value="Female">Female</option>
+                                                                <option value="Male" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Male</option>
+                                                                <option value="Female" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Female</option>
                                                             </select>
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Date of Birth</label>
-                                                            <input 
+                                                            <input
                                                                 type="date"
                                                                 value={clinicalForm.date_of_birth}
-                                                                onChange={(e) => setClinicalForm({...clinicalForm, date_of_birth: e.target.value})}
-                                                                className="w-full p-3 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-white dark:bg-zinc-900 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all"
+                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, date_of_birth: e.target.value })}
+                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                                             />
                                                         </div>
                                                     </div>
@@ -1437,10 +1348,10 @@ export default function ClientDetails() {
                                                                 <Stethoscope size={14} /> Medical & Surgical History
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-[var(--color-primary)] outline-none min-h-[150px]"
                                                                     value={clinicalForm.medical_history}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, medical_history: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, medical_history: e.target.value })}
                                                                     placeholder="Enter detailed medical and surgical history..."
                                                                 />
                                                             ) : (
@@ -1455,10 +1366,10 @@ export default function ClientDetails() {
                                                                 <Link2 size={14} /> Current Medications
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-blue-500 outline-none min-h-[100px]"
                                                                     value={clinicalForm.medications}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, medications: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, medications: e.target.value })}
                                                                     placeholder="List current medications and dosages..."
                                                                 />
                                                             ) : (
@@ -1473,10 +1384,10 @@ export default function ClientDetails() {
                                                                 <Activity size={14} /> Family Medical History
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-emerald-500 outline-none min-h-[100px]"
                                                                     value={clinicalForm.family_history}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, family_history: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, family_history: e.target.value })}
                                                                     placeholder="History of diabetes, hypertension, allergies in the family..."
                                                                 />
                                                             ) : (
@@ -1500,25 +1411,24 @@ export default function ClientDetails() {
                                                                                 key={allergy}
                                                                                 onClick={() => {
                                                                                     const current = clinicalForm.allergies || [];
-                                                                                    const updated = current.includes(allergy) 
+                                                                                    const updated = current.includes(allergy)
                                                                                         ? current.filter(a => a !== allergy)
                                                                                         : [...current, allergy];
-                                                                                    setClinicalForm({...clinicalForm, allergies: updated});
+                                                                                    setClinicalForm({ ...clinicalForm, allergies: updated });
                                                                                 }}
-                                                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${
-                                                                                    (clinicalForm.allergies || []).includes(allergy)
+                                                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${(clinicalForm.allergies || []).includes(allergy)
                                                                                         ? 'bg-red-500 text-white border-red-500'
                                                                                         : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
-                                                                                }`}
+                                                                                    }`}
                                                                             >
                                                                                 {allergy}
                                                                             </button>
                                                                         ))}
                                                                     </div>
-                                                                    <textarea 
+                                                                    <textarea
                                                                         className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-red-500 outline-none min-h-[80px]"
                                                                         value={clinicalForm.food_intolerances}
-                                                                        onChange={(e) => setClinicalForm({...clinicalForm, food_intolerances: e.target.value})}
+                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, food_intolerances: e.target.value })}
                                                                         placeholder="Specific food intolerances or digestive triggers..."
                                                                     />
                                                                 </div>
@@ -1543,10 +1453,10 @@ export default function ClientDetails() {
                                                                 <Activity size={14} /> Clinical Symptoms & Observations
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-orange-500 outline-none min-h-[80px]"
                                                                     value={clinicalForm.symptoms}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, symptoms: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, symptoms: e.target.value })}
                                                                     placeholder="Current symptoms: bloating, fatigue, skin issues..."
                                                                 />
                                                             ) : (
@@ -1561,10 +1471,10 @@ export default function ClientDetails() {
                                                                 <Activity size={14} /> Lifestyle & Environmental Factors
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-purple-500 outline-none min-h-[80px]"
                                                                     value={clinicalForm.lifestyle_factors}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, lifestyle_factors: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, lifestyle_factors: e.target.value })}
                                                                     placeholder="Sleep quality, screen time, physical activity environment..."
                                                                 />
                                                             ) : (
@@ -1576,27 +1486,44 @@ export default function ClientDetails() {
 
                                                         <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
                                                             <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                                                                <Activity size={14} /> Bristol Stool History
+                                                                <Activity size={14} /> Bristol Stool Scale (Baseline)
                                                             </h4>
-                                                            <div className="grid grid-cols-7 gap-2">
-                                                                {[1,2,3,4,5,6,7].map(type => (
-                                                                    <button
-                                                                        key={type}
-                                                                        disabled={!isClinicalEditing}
-                                                                        onClick={() => setClinicalForm({...clinicalForm, bristol_stool_scale: type})}
-                                                                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all border-2 ${
-                                                                            (isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) === type
-                                                                                ? 'bg-amber-500 text-white border-amber-500'
-                                                                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-amber-500 disabled:opacity-50'
-                                                                        }`}
-                                                                    >
-                                                                        <span className="text-xs font-black">{type}</span>
-                                                                    </button>
-                                                                ))}
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                                                {BRISTOL_TYPES.map(type => {
+                                                                    const currentVal = isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale;
+                                                                    const isSelected = currentVal === type.type;
+                                                                    return (
+                                                                        <button
+                                                                            key={type.type}
+                                                                            type="button"
+                                                                            disabled={!isClinicalEditing}
+                                                                            onClick={() => isClinicalEditing && setClinicalForm({ ...clinicalForm, bristol_stool_scale: type.type })}
+                                                                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${isSelected
+                                                                                ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                                                                : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-amber-400 disabled:opacity-50'
+                                                                                } ${!isClinicalEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                                                                        >
+                                                                            <span className="text-xl">
+                                                                                {type.type === 1 && '🥜'}
+                                                                                {type.type === 2 && '🍇'}
+                                                                                {type.type === 3 && '🥖'}
+                                                                                {type.type === 4 && '🐍'}
+                                                                                {type.type === 5 && '💧'}
+                                                                                {type.type === 6 && '☁️'}
+                                                                                {type.type === 7 && '🌊'}
+                                                                            </span>
+                                                                            <div className="text-center">
+                                                                                <p className="text-[10px] font-black uppercase tracking-tight">{type.label}</p>
+                                                                                <p className={`text-[8px] font-bold uppercase leading-tight ${isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                                                    {type.desc}
+                                                                                </p>
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
                                                             </div>
-                                                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium text-center">
-                                                                Currently set to Type {(isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) || 4} 
-                                                                {(isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale) === 4 ? " (Ideal)" : ""}
+                                                            <p className="text-[9px] text-[var(--color-text-muted)] font-medium bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-[var(--color-divider)]">
+                                                                <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === (isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale))?.detail}
                                                             </p>
                                                         </div>
 
@@ -1605,10 +1532,10 @@ export default function ClientDetails() {
                                                                 <Activity size={14} /> Weigh-in Conditions
                                                             </h4>
                                                             {isClinicalEditing ? (
-                                                                <textarea 
+                                                                <textarea
                                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-indigo-500 outline-none min-h-[80px]"
                                                                     value={clinicalForm.weigh_in_conditions}
-                                                                    onChange={(e) => setClinicalForm({...clinicalForm, weigh_in_conditions: e.target.value})}
+                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, weigh_in_conditions: e.target.value })}
                                                                     placeholder="e.g. Early morning, before breakfast, same clothes..."
                                                                 />
                                                             ) : (
@@ -1622,125 +1549,125 @@ export default function ClientDetails() {
                                             </div>
 
                                             {/* 3. VACCINATION HISTORY & MANAGEMENT */}
-                                                <div className="mt-8 space-y-6">
-                                                    <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
-                                                        <div>
-                                                            <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Structured Vaccination History</h3>
-                                                            <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive immunization record and tracking</p>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            {isClinicalEditing && !isAddingVaccine && (
-                                                                <Button 
-                                                                    variant="primary"
-                                                                    onClick={() => setIsAddingVaccine(true)}
-                                                                    className="flex gap-2 text-xs font-black uppercase"
-                                                                >
-                                                                    <Plus size={16} />
-                                                                    Add Vaccine Record
-                                                                </Button>
-                                                            )}
-                                                        </div>
+                                            <div className="mt-8 space-y-6">
+                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                    <div>
+                                                        <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Structured Vaccination History</h3>
+                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive immunization record and tracking</p>
                                                     </div>
-
-                                                    {isAddingVaccine && (
-                                                        <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
-                                                                    <select 
-                                                                        value={newVaccine.typeId}
-                                                                        onChange={(e) => setNewVaccine({...newVaccine, typeId: e.target.value})}
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
-                                                                    >
-                                                                        <option value="">Select vaccine...</option>
-                                                                        {vaccinationTypes.map(t => (
-                                                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
-                                                                    <input 
-                                                                        type="date"
-                                                                        value={newVaccine.date}
-                                                                        onChange={(e) => setNewVaccine({...newVaccine, date: e.target.value})}
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Batch # / Notes</label>
-                                                                    <input 
-                                                                        type="text"
-                                                                        value={newVaccine.notes}
-                                                                        onChange={(e) => setNewVaccine({...newVaccine, notes: e.target.value})}
-                                                                        placeholder="e.g. Batch #7721-A"
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex justify-end gap-3">
-                                                                <Button variant="ghost" onClick={() => setIsAddingVaccine(false)} className="text-xs font-black uppercase">
-                                                                    Cancel
-                                                                </Button>
-                                                                <Button onClick={handleAddVaccine} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6">
-                                                                    Save Record
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {childVaccinations.length === 0 ? (
-                                                        <div className="p-12 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                                                            <Stethoscope size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
-                                                            <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">No Immunization Records</p>
-                                                            <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                            {childVaccinations.map(v => (
-                                                                <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
-                                                                    <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                                                                        <Check size={16} strokeWidth={3} />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
-                                                                            {v.vaccination_types?.name}
-                                                                        </h4>
-                                                                        <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
-                                                                            <Calendar size={10} />
-                                                                            {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                                                                        </div>
-                                                                        {v.notes && (
-                                                                            <p className="mt-1 text-[9px] text-[var(--color-text-muted)] italic font-bold uppercase tracking-tight leading-tight opacity-70">
-                                                                                {v.notes}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                    {isClinicalEditing && (
-                                                                        <button 
-                                                                            onClick={() => handleDeleteVaccine(v.id)}
-                                                                            className="p-1 text-red-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
-                                                                            title="Delete Record"
-                                                                        >
-                                                                            <Trash2 size={12} />
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex gap-2">
+                                                        {isClinicalEditing && !isAddingVaccine && (
+                                                            <Button
+                                                                variant="primary"
+                                                                onClick={() => setIsAddingVaccine(true)}
+                                                                className="flex gap-2 text-xs font-black uppercase"
+                                                            >
+                                                                <Plus size={16} />
+                                                                Add Vaccine Record
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
 
-                                                {/* 4. GROWTH TRACKING (Moved to bottom) */}
+                                                {isAddingVaccine && (
+                                                    <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
+                                                                <select
+                                                                    value={newVaccine.typeId}
+                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                >
+                                                                    <option value="">Select vaccine...</option>
+                                                                    {vaccinationTypes.map(t => (
+                                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={newVaccine.date}
+                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Batch # / Notes</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={newVaccine.notes}
+                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
+                                                                    placeholder="e.g. Batch #7721-A"
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-end gap-3">
+                                                            <Button variant="ghost" onClick={() => setIsAddingVaccine(false)} className="text-xs font-black uppercase">
+                                                                Cancel
+                                                            </Button>
+                                                            <Button onClick={handleAddVaccine} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6">
+                                                                Save Record
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {childVaccinations.length === 0 ? (
+                                                    <div className="p-12 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                                        <Stethoscope size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
+                                                        <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">No Immunization Records</p>
+                                                        <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        {childVaccinations.map(v => (
+                                                            <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
+                                                                <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                                                    <Check size={16} strokeWidth={3} />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
+                                                                        {v.vaccination_types?.name}
+                                                                    </h4>
+                                                                    <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
+                                                                        <Calendar size={10} />
+                                                                        {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                    </div>
+                                                                    {v.notes && (
+                                                                        <p className="mt-1 text-[9px] text-[var(--color-text-muted)] italic font-bold uppercase tracking-tight leading-tight opacity-70">
+                                                                            {v.notes}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                {isClinicalEditing && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteVaccine(v.id)}
+                                                                        className="p-1 text-red-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
+                                                                        title="Delete Record"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 4. GROWTH TRACKING (Moved to bottom) */}
                                             <div className="space-y-6 pt-4">
                                                 <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
                                                     <div>
                                                         <h3 className="font-black text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
                                                         <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
                                                     </div>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="outline" 
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
                                                         className="h-8 text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest"
                                                         onClick={() => setIsGrowthModalOpen(true)}
                                                     >
@@ -1762,18 +1689,18 @@ export default function ClientDetails() {
                                                                     <ResponsiveContainer width="100%" height="100%">
                                                                         <LineChart data={growthLogs}>
                                                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                            <XAxis 
-                                                                                dataKey="logged_at" 
+                                                                            <XAxis
+                                                                                dataKey="logged_at"
                                                                                 tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
                                                                                 fontSize={10}
-                                                                                tick={{fill: 'var(--color-text-muted)'}}
+                                                                                tick={{ fill: 'var(--color-text-muted)' }}
                                                                             />
-                                                                            <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                            <Tooltip 
+                                                                            <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
+                                                                            <Tooltip
                                                                                 labelFormatter={(label) => new Date(label).toLocaleDateString()}
                                                                                 contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
                                                                             />
-                                                                            <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-secondary)'}} activeDot={{r: 6}} />
+                                                                            <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-secondary)' }} activeDot={{ r: 6 }} />
                                                                         </LineChart>
                                                                     </ResponsiveContainer>
                                                                 ) : (
@@ -1795,18 +1722,18 @@ export default function ClientDetails() {
                                                                     <ResponsiveContainer width="100%" height="100%">
                                                                         <LineChart data={growthLogs}>
                                                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                            <XAxis 
-                                                                                dataKey="logged_at" 
+                                                                            <XAxis
+                                                                                dataKey="logged_at"
                                                                                 tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
                                                                                 fontSize={10}
-                                                                                tick={{fill: 'var(--color-text-muted)'}}
+                                                                                tick={{ fill: 'var(--color-text-muted)' }}
                                                                             />
-                                                                            <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)'}} domain={['auto', 'auto']} />
-                                                                            <Tooltip 
+                                                                            <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
+                                                                            <Tooltip
                                                                                 labelFormatter={(label) => new Date(label).toLocaleDateString()}
                                                                                 contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
                                                                             />
-                                                                            <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{r: 4, fill: 'var(--color-primary)'}} activeDot={{r: 6}} />
+                                                                            <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />
                                                                         </LineChart>
                                                                     </ResponsiveContainer>
                                                                 ) : (
@@ -1845,19 +1772,17 @@ export default function ClientDetails() {
                                                             <button
                                                                 key={date}
                                                                 onClick={() => setSelectedHistoryDate(date)}
-                                                                className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${
-                                                                    isSelected 
-                                                                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10' 
+                                                                className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${isSelected
+                                                                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10'
                                                                         : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${
-                                                                        dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                        dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                        dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                        'bg-gray-300'
-                                                                    }`} />
+                                                                    <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                            dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                    'bg-gray-300'
+                                                                        }`} />
                                                                     <div className="text-left">
                                                                         <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{date}</div>
                                                                         <div className={`text-[9px] font-bold uppercase tracking-tighter ${isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]'}`}>
@@ -1891,8 +1816,8 @@ export default function ClientDetails() {
                                                                         <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
                                                                     </div>
                                                                     {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
-                                                                        <Button 
-                                                                            variant="ghost" 
+                                                                        <Button
+                                                                            variant="ghost"
                                                                             onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
                                                                             className="h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest"
                                                                         >
@@ -1900,8 +1825,8 @@ export default function ClientDetails() {
                                                                             Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
                                                                         </Button>
                                                                     )}
-                                                                    <Button 
-                                                                        variant="ghost" 
+                                                                    <Button
+                                                                        variant="ghost"
                                                                         onClick={() => handleClearLogsForDay(selectedHistoryDate)}
                                                                         className="h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest"
                                                                     >
@@ -1955,8 +1880,8 @@ export default function ClientDetails() {
 
                                                             <div className="grid grid-cols-1 gap-4">
                                                                 {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
-                                                                    <div 
-                                                                        key={log.id} 
+                                                                    <div
+                                                                        key={log.id}
                                                                         onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
                                                                         className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-full md:h-40 cursor-pointer shadow-sm hover:shadow-md"
                                                                     >
@@ -1970,9 +1895,8 @@ export default function ClientDetails() {
                                                                             <div>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
-                                                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                                                                        (log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                                                                    }`}>
+                                                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${(log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                                                        }`}>
                                                                                         {(log.status === 'verified' || log.status === 'reviewed') ? 'Clinically Verified' : 'Awaiting Review'}
                                                                                     </div>
                                                                                 </div>
@@ -1987,18 +1911,18 @@ export default function ClientDetails() {
                                                                                     <div className="flex flex-col">
                                                                                         <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</span>
                                                                                         <span className="text-xs font-black text-blue-600">
-                                                                                            {log.consumption_percent === 100 ? 'Finished' : 
-                                                                                             log.consumption_percent === 75 ? 'Mostly' : 
-                                                                                             log.consumption_percent === 50 ? 'Half' : 
-                                                                                             log.consumption_percent === 25 ? 'A Little' : 
-                                                                                             log.consumption_percent === 0 ? 'None' : 
-                                                                                             'Finished'}
+                                                                                            {log.consumption_percent === 100 ? 'Finished' :
+                                                                                                log.consumption_percent === 75 ? 'Mostly' :
+                                                                                                    log.consumption_percent === 50 ? 'Half' :
+                                                                                                        log.consumption_percent === 25 ? 'A Little' :
+                                                                                                            log.consumption_percent === 0 ? 'None' :
+                                                                                                                'Finished'}
                                                                                         </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="flex justify-end items-center gap-2 pt-2">
-                                                                                <Button 
+                                                                                <Button
                                                                                     variant="ghost"
                                                                                     onClick={() => handleDeleteLog(log.id)}
                                                                                     className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
@@ -2006,9 +1930,9 @@ export default function ClientDetails() {
                                                                                 >
                                                                                     <Trash2 size={16} />
                                                                                 </Button>
-                                                                                <Button 
-                                                                                    variant="ghost" 
-                                                                                    size="sm" 
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="sm"
                                                                                     onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
                                                                                     className="h-8 text-[10px] font-black uppercase tracking-widest text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
                                                                                 >
@@ -2035,11 +1959,11 @@ export default function ClientDetails() {
                                                     {logs.filter(l => l.status === 'pending').length} Actions Required
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {logs.filter(l => l.status === 'pending').map(log => (
-                                                    <Card 
-                                                        key={log.id} 
+                                                    <Card
+                                                        key={log.id}
                                                         onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
                                                         className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] overflow-hidden group"
                                                     >
@@ -2085,7 +2009,7 @@ export default function ClientDetails() {
 
                                                 <form onSubmit={handleAddAdimeNote} className="space-y-6">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        { [
+                                                        {[
                                                             { key: 'assessment', label: 'Assessment' },
                                                             { key: 'diagnosis', label: 'Diagnosis' },
                                                             { key: 'intervention', label: 'Intervention' },
@@ -2094,7 +2018,7 @@ export default function ClientDetails() {
                                                             <div key={idx} className="space-y-1">
                                                                 <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">{field.label}</label>
                                                                 <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === field.key ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
-                                                                    <ReactQuill 
+                                                                    <ReactQuill
                                                                         ref={el => editorRefs.current[field.key] = el}
                                                                         theme="snow"
                                                                         value={newAdime[field.key]}
@@ -2162,7 +2086,7 @@ export default function ClientDetails() {
                                                                             <div key={idx} className="space-y-1">
                                                                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{field.label}</label>
                                                                                 <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
-                                                                                    <ReactQuill 
+                                                                                    <ReactQuill
                                                                                         theme="snow"
                                                                                         value={editAdimeForm[field.key]}
                                                                                         onChange={(val) => setEditAdimeForm({ ...editAdimeForm, [field.key]: val })}
@@ -2187,7 +2111,7 @@ export default function ClientDetails() {
                                                                     ].map((field, idx) => (
                                                                         <div key={idx} className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm">
                                                                             <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-2 tracking-widest">{field.label}</p>
-                                                                            <div 
+                                                                            <div
                                                                                 className="text-sm prose prose-sm dark:prose-invert max-w-none"
                                                                                 dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
                                                                             />
@@ -2213,16 +2137,16 @@ export default function ClientDetails() {
 
                                                 <form onSubmit={handleAddNote} className="space-y-3">
                                                     <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'notes' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
-                                                    <ReactQuill 
-                                                        ref={el => editorRefs.current['notes'] = el}
-                                                        theme="snow"
-                                                        value={newNote}
-                                                        onChange={setNewNote}
-                                                        onFocus={() => setFocusedField('notes')}
-                                                        modules={{ toolbar: false }}
-                                                        placeholder="Add a new observation, milestone, or follow-up note..."
-                                                    />
-                                                </div>
+                                                        <ReactQuill
+                                                            ref={el => editorRefs.current['notes'] = el}
+                                                            theme="snow"
+                                                            value={newNote}
+                                                            onChange={setNewNote}
+                                                            onFocus={() => setFocusedField('notes')}
+                                                            modules={{ toolbar: false }}
+                                                            placeholder="Add a new observation, milestone, or follow-up note..."
+                                                        />
+                                                    </div>
                                                     <div className="flex justify-end pt-2">
                                                         <Button type="submit" disabled={!newNote.trim()} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
                                                             Save Clinical Note
@@ -2239,11 +2163,11 @@ export default function ClientDetails() {
                                                     notes.map(note => (
                                                         <div key={note.id} className={`p-5 border rounded-xl relative group hover:shadow-md transition-all ${note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]'}`}>
                                                             {note.is_pinned && <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>}
-                                                            
+
                                                             {editingNoteId === note.id ? (
                                                                 <form onSubmit={handleUpdateNote} className="space-y-3">
                                                                     <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-primary)]">
-                                                                        <ReactQuill 
+                                                                        <ReactQuill
                                                                             theme="snow"
                                                                             value={editNoteForm}
                                                                             onChange={setEditNoteForm}
@@ -2257,7 +2181,7 @@ export default function ClientDetails() {
                                                                 </form>
                                                             ) : (
                                                                 <>
-                                                                    <div 
+                                                                    <div
                                                                         className="prose prose-sm dark:prose-invert max-w-none mb-4"
                                                                         dangerouslySetInnerHTML={{ __html: note.content }}
                                                                     />
@@ -2366,9 +2290,9 @@ export default function ClientDetails() {
                                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                                                         <div className="space-y-1.5">
                                                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Category</label>
-                                                                            <select 
+                                                                            <select
                                                                                 value={editRuleForm.category}
-                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, category: e.target.value})}
+                                                                                onChange={(e) => setEditRuleForm({ ...editRuleForm, category: e.target.value })}
                                                                                 className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
                                                                             >
                                                                                 {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
@@ -2376,19 +2300,19 @@ export default function ClientDetails() {
                                                                         </div>
                                                                         <div className="space-y-1">
                                                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Rule Name</label>
-                                                                            <input 
+                                                                            <input
                                                                                 type="text"
                                                                                 value={editRuleForm.rule_name}
-                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, rule_name: e.target.value})}
+                                                                                onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_name: e.target.value })}
                                                                                 className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
                                                                                 placeholder="e.g. Daily Limit"
                                                                             />
                                                                         </div>
                                                                         <div className="space-y-1">
                                                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Logic</label>
-                                                                            <select 
+                                                                            <select
                                                                                 value={editRuleForm.rule_type}
-                                                                                onChange={(e) => setEditRuleForm({...editRuleForm, rule_type: e.target.value})}
+                                                                                onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_type: e.target.value })}
                                                                                 className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
                                                                             >
                                                                                 <option value="max">Maximum (Limit)</option>
@@ -2398,17 +2322,17 @@ export default function ClientDetails() {
                                                                         <div className="space-y-1">
                                                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Value & Unit</label>
                                                                             <div className="flex gap-2">
-                                                                                <input 
+                                                                                <input
                                                                                     type="number"
                                                                                     value={editRuleForm.rule_value}
-                                                                                    onChange={(e) => setEditRuleForm({...editRuleForm, rule_value: e.target.value})}
+                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_value: e.target.value })}
                                                                                     className="flex-grow p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
                                                                                     placeholder="Value"
                                                                                 />
-                                                                                <input 
+                                                                                <input
                                                                                     type="text"
                                                                                     value={editRuleForm.rule_unit}
-                                                                                    onChange={(e) => setEditRuleForm({...editRuleForm, rule_unit: e.target.value})}
+                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_unit: e.target.value })}
                                                                                     className="w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center"
                                                                                     placeholder="Unit"
                                                                                 />
@@ -2610,7 +2534,7 @@ export default function ClientDetails() {
                                                                 <span>{date}</span>
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-[10px] font-normal text-[var(--color-text-muted)] lowercase">{groupedPlan[date].length} meals scheduled</span>
-                                                                    <button 
+                                                                    <button
                                                                         onClick={() => { setSelectedDateForMeal(date); setIsMealModalOpen(true); }}
                                                                         className="p-1 hover:bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded transition-colors cursor-pointer"
                                                                         title="Add Manual Meal"
@@ -2638,7 +2562,7 @@ export default function ClientDetails() {
                                                                                 <span>P: {meal.protein_g}g</span>
                                                                             </div>
                                                                         </div>
-                                                                        <button 
+                                                                        <button
                                                                             onClick={() => handleDeleteMeal(meal.id)}
                                                                             className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all cursor-pointer"
                                                                         >
@@ -2667,462 +2591,6 @@ export default function ClientDetails() {
                     </div>
                 </div>
             )}
-
-            {/* Consultation Mode Overlay View */}
-            {isConsultationMode && selectedProfile && (
-                <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-40 bg-[var(--color-bg-page)] overflow-y-auto p-4 md:p-8 animate-in slide-in-from-bottom duration-500">
-                    <div className="w-full max-w-[1600px] mx-auto space-y-6 md:space-y-8">
-                        <header className="flex flex-col md:flex-row justify-between items-start gap-4 md:items-center border-b border-[var(--color-divider)] pb-6">
-                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
-                                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] text-2xl sm:text-3xl font-black shadow-lg shadow-emerald-500/10 shrink-0">
-                                    {selectedProfile.child_name?.charAt(0)}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                        <span className="text-[8px] sm:text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-[var(--color-primary)]/10 px-3 py-1 rounded-full">Active Clinical Session</span>
-                                        <span className="text-[8px] sm:text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 dark:border-amber-500/30">Z-Score: +0.4</span>
-                                    </div>
-                                    <h2 className="text-3xl sm:text-5xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter uppercase truncate">{selectedProfile.child_name}</h2>
-                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
-                                        <p className="text-[var(--color-text-muted)] font-bold uppercase text-[9px] sm:text-xs flex items-center gap-2">
-                                            <Calendar size={14} className="text-[var(--color-primary)]" /> 
-                                            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                        </p>
-                                        <span className="hidden sm:block h-1 w-1 bg-[var(--color-divider)] rounded-full" />
-                                        <p className="text-[9px] sm:text-xs font-black text-[var(--color-secondary)] uppercase">BMI: {((selectedProfile.weight_kg / Math.pow(selectedProfile.height_cm/100, 2)).toFixed(1))} kg/m²</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex w-full md:w-auto gap-2 sm:gap-3">
-                                <Button variant="outline" className="flex-1 md:flex-none h-10 sm:h-12 px-4 sm:px-6 font-black uppercase tracking-widest text-[8px] sm:text-[10px] border-2 border-[var(--color-divider)] flex gap-2 items-center justify-center">
-                                    <Activity size={14} className="hidden sm:block" /> Export
-                                </Button>
-                                <Button variant="primary" onClick={() => setIsConsultationMode(false)} className="flex-1 md:flex-none h-10 sm:h-12 px-6 sm:px-8 font-black uppercase tracking-widest text-[8px] sm:text-[10px] shadow-xl shadow-emerald-500/20">Exit Session</Button>
-                            </div>
-                        </header>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                            {/* Column 1: Patient Context & History */}
-                            <div className="space-y-6">
-                                <Card className="border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)] rounded-[2.5rem] overflow-hidden">
-                                    <CardHeader className="bg-[var(--color-bg-page)] border-b border-[var(--color-divider)] p-6">
-                                        <CardTitle className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
-                                            <User size={16} className="text-[var(--color-primary)]" /> Patient Baseline
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 space-y-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="p-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase mb-1">Height</p>
-                                                <p className="text-sm font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} cm</p>
-                                            </div>
-                                            <div className="p-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase mb-1">Weight</p>
-                                                <p className="text-sm font-black text-[var(--color-secondary)]">{selectedProfile.weight_kg} kg</p>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl">
-                                            <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase mb-2 flex items-center gap-2">
-                                                <ShieldAlert size={12} /> Critical Allergies
-                                            </p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
-                                                    <span key={a} className="px-2 py-0.5 bg-white dark:bg-red-900/40 text-red-600 dark:text-red-400 text-[8px] font-black rounded-md border border-red-100 dark:border-red-900/50 uppercase">{a}</span>
-                                                )) : <span className="text-[10px] font-bold text-amber-700/50 dark:text-amber-400/50">None Reported</span>}
-                                            </div>
-                                        </div>
-                                        <div className="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
-                                            <p className="text-[9px] font-black text-indigo-600 uppercase mb-2">Medical History</p>
-                                            <p className="text-[10px] text-indigo-900/70 dark:text-indigo-200/70 font-medium italic leading-relaxed">
-                                                "{selectedProfile.medical_history || 'No established medical history reported.'}"
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)] rounded-[2.5rem] overflow-hidden">
-                                    <CardHeader className="bg-[var(--color-bg-page)] border-b border-[var(--color-divider)] p-6">
-                                        <CardTitle className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
-                                            <TrendingUp size={16} className="text-[var(--color-primary)]" /> Growth Suite
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 space-y-4">
-                                        <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden group">
-                                            <div className="relative z-10">
-                                                <p className="text-[10px] font-black uppercase opacity-70 mb-1">Active Trend</p>
-                                                <h4 className="text-lg font-black uppercase leading-tight">Patient Progress Chart</h4>
-                                                <Button 
-                                                    onClick={() => setIsGrowthChartOpen(true)}
-                                                    className="mt-4 w-full bg-white text-indigo-600 hover:bg-white/90 font-black text-[10px] uppercase py-3 rounded-xl flex items-center justify-center gap-2"
-                                                >
-                                                    <PieChart size={14} /> View Growth History
-                                                </Button>
-                                            </div>
-                                            <TrendingUp size={80} className="absolute -bottom-4 -right-4 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-2">
-                                            <Button 
-                                                variant="outline"
-                                                onClick={() => setIsVelocityModalOpen(true)}
-                                                className="w-full border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] text-[10px] font-black uppercase py-4 rounded-2xl flex items-center justify-center gap-2"
-                                            >
-                                                <Activity size={14} className="text-[var(--color-primary)]" /> View Velocity Ledger
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            {/* Column 2-3: Digital Nutritional Ledger */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <div className="flex items-center justify-between px-2">
-                                    <h3 className="text-xl font-black text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-3">
-                                        <Utensils size={24} className="text-[var(--color-primary)]" /> Digital Nutritional Ledger
-                                    </h3>
-                                    <div className="flex gap-2">
-                                        <span className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] font-black rounded-full uppercase tracking-widest border border-[var(--color-primary)]/20 flex items-center gap-2">
-                                            <Filter size={12} /> All Entries
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 scrollbar-hide">
-                                    {logs.length === 0 ? (
-                                        <div className="text-center py-20 bg-[var(--color-bg-card)] rounded-[2.5rem] border-2 border-dashed border-[var(--color-divider)]">
-                                            <Monitor size={48} className="mx-auto text-[var(--color-divider)] mb-4" />
-                                            <p className="text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest">No Logged Data in Selected Range</p>
-                                        </div>
-                                    ) : (
-                                        logs.map((log) => (
-                                            <Card 
-                                                key={log.id} 
-                                                onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                className="border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all bg-[var(--color-bg-card)] rounded-[2rem] overflow-hidden group shadow-lg dark:shadow-none cursor-pointer"
-                                            >
-                                                <div className="flex flex-col md:flex-row">
-                                                    <div className="md:w-40 h-40 relative flex-shrink-0 overflow-hidden">
-                                                        <img src={log.image_url} alt="Meal" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <Eye size={24} className="text-white" />
-                                                        </div>
-                                                        <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[8px] font-black text-white uppercase tracking-widest flex items-center gap-1">
-                                                            <Clock size={10} /> {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-5 flex-grow flex flex-col justify-between">
-                                                        <div>
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] font-black rounded uppercase">{log.meal_category}</span>
-                                                                        {log.status === 'verified' && <span className="px-2 py-0.5 bg-green-500 text-white text-[8px] font-black rounded uppercase flex items-center gap-1"><BadgeCheck size={8} /> Verified</span>}
-                                                                    </div>
-                                                                    <h4 className="text-sm font-black text-[var(--color-secondary)] uppercase mt-1 line-clamp-1">{log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary}</h4>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-lg font-black text-[var(--color-secondary)]">{log.total_calories || 0}<span className="text-[10px] ml-1 opacity-50 uppercase tracking-tighter">kcal</span></p>
-                                                                    <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase">Calculated Intake</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid grid-cols-4 gap-2 mt-3">
-                                                                {[
-                                                                    { label: 'Pro', value: log.total_protein_g, unit: 'g', color: 'text-emerald-500' },
-                                                                    { label: 'Carb', value: log.total_carbs_g, unit: 'g', color: 'text-amber-500' },
-                                                                    { label: 'Fat', value: log.total_fat_g, unit: 'g', color: 'text-orange-500' },
-                                                                    { label: 'Waste', value: 100 - (log.consumption_percent || 100), unit: '%', color: 'text-red-500' }
-                                                                ].map((m, i) => (
-                                                                    <div key={i} className="bg-[var(--color-bg-page)] rounded-xl p-2 border border-[var(--color-divider)]">
-                                                                        <p className="text-[7px] font-black text-[var(--color-text-muted)] uppercase mb-1">{m.label}</p>
-                                                                        <p className={`text-[10px] font-black ${m.color}`}>{m.value || 0}{m.unit}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        {log.caregiver_notes && (
-                                                            <div className="mt-3 p-2 bg-blue-500/5 border border-blue-500/10 rounded-xl">
-                                                                <p className="text-[8px] font-black text-blue-600 uppercase flex items-center gap-1 mb-1"><MessageSquare size={10} /> Caregiver Note</p>
-                                                                <p className="text-[10px] font-medium text-blue-900/70 italic leading-tight">"{log.caregiver_notes}"</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        ))
-                                    )}
-
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                {/* Diagnosis Evolution Tracking */}
-                                <Card className="border-2 border-indigo-100 dark:border-indigo-500/20 shadow-xl dark:shadow-none bg-indigo-50/10 dark:bg-indigo-500/5 rounded-[2.5rem] overflow-hidden">
-                                    <CardHeader className="p-6 pb-2">
-                                        <CardTitle className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                                            <TrendingUp size={14} /> Diagnosis Evolution
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 pt-0">
-                                        {adimeNotes.length === 0 ? (
-                                            <p className="text-[10px] text-[var(--color-text-muted)] italic font-medium">No previous diagnosis history.</p>
-                                        ) : (
-                                            <div className="relative pl-4 space-y-4 before:absolute before:left-1 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-100 dark:before:bg-indigo-500/20">
-                                                {adimeNotes.slice(0, 3).map((note, idx) => (
-                                                    <div key={note.id} className="relative">
-                                                        <div className={`absolute -left-[1.125rem] top-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-zinc-900 ${idx === 0 ? 'bg-indigo-600 scale-125' : 'bg-indigo-200'}`} />
-                                                        <div className="flex justify-between items-start mb-0.5">
-                                                            <span className="text-[8px] font-black text-indigo-500 uppercase tracking-tighter">{new Date(note.created_at).toLocaleDateString()}</span>
-                                                            {idx === 0 && <span className="text-[7px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded uppercase">Current</span>}
-                                                        </div>
-                                                        <p className="text-[10px] font-bold text-[var(--color-text-main)] line-clamp-2 leading-tight opacity-80">
-                                                            {stripHtml(note.diagnosis)}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                                
-                                {/* Clinical Risk Engine */}
-                                <Card className="border-2 border-red-100 dark:border-red-500/20 shadow-xl dark:shadow-none bg-red-50/30 dark:bg-red-500/5 rounded-[2.5rem] overflow-hidden">
-                                    <CardHeader className="bg-white/50 dark:bg-white/5 border-b border-red-100 dark:border-red-500/20 p-6">
-                                        <CardTitle className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-widest flex items-center gap-2">
-                                            <AlertCircle size={16} /> Risk Analysis Patterns
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 space-y-3">
-                                        {clinicalPatterns.map((alert, i) => (
-                                            <div key={i} className={`p-3 rounded-2xl border-2 ${
-                                                alert.severity === 'high' ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-500/40' : 
-                                                alert.severity === 'med' ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-500/40' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-500/40'
-                                            }`}>
-                                                <p className={`text-[9px] font-black uppercase mb-1 ${
-                                                    alert.severity === 'high' ? 'text-red-700 dark:text-red-400' : 
-                                                    alert.severity === 'med' ? 'text-orange-700 dark:text-orange-400' : 'text-blue-700 dark:text-blue-400'
-                                                }`}>{alert.title}</p>
-                                                <p className="text-[10px] font-medium leading-tight opacity-70 dark:text-white/70">{alert.desc}</p>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-
-                                {/* ADIME Workspace & Consultation Input */}
-                                <Card className="border-2 border-indigo-100 dark:border-indigo-500/20 shadow-2xl bg-[var(--color-bg-card)] rounded-[2.5rem] flex flex-col overflow-hidden min-h-[600px]">
-                                    <CardHeader className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 border-b-0">
-                                        <div className="flex justify-between items-center">
-                                            <CardTitle className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-tight">
-                                                <Stethoscope size={20} className="text-white/80" /> 
-                                                {isAdimeEditing ? 'Active Session Editor' : 'Clinical Workspace'}
-                                            </CardTitle>
-                                            <div className="flex gap-2">
-                                                {isAdimeEditing && adimeNotes.length > 0 && (
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        onClick={() => setShowLastAdimeReference(!showLastAdimeReference)}
-                                                        className={`bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[8px] font-black uppercase tracking-widest px-3 py-1 h-auto transition-all ${showLastAdimeReference ? 'bg-white/20 ring-1 ring-white/50' : ''}`}
-                                                    >
-                                                        {showLastAdimeReference ? 'Hide Reference' : 'Show Reference'}
-                                                    </Button>
-                                                )}
-                                                <Button 
-                                                    variant="ghost" 
-                                                    onClick={() => setIsAdimeEditing(!isAdimeEditing)}
-                                                    className="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[8px] font-black uppercase tracking-widest px-3 py-1 h-auto"
-                                                >
-                                                    {isAdimeEditing ? 'View History' : 'Edit Session'}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    
-                                    <CardContent className="p-6 flex-1 flex flex-col space-y-4 overflow-y-auto scrollbar-hide">
-                                        {isAdimeEditing ? (
-                                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                                                {/* Side-by-Side ADIME Continuity Reference Panel */}
-                                                {showLastAdimeReference && adimeNotes.length > 0 && (
-                                                    <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border-2 border-amber-200 dark:border-amber-500/20 animate-in zoom-in-95 duration-300">
-                                                        <div className="flex justify-between items-center mb-3">
-                                                            <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                                                                <ClipboardCheck size={12} /> Continuity Reference (Last Session)
-                                                            </p>
-                                                            <span className="text-[8px] font-bold text-amber-600 opacity-60 uppercase">{new Date(adimeNotes[0].created_at).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="space-y-1">
-                                                                <h6 className="text-[7px] font-black text-amber-800 dark:text-amber-500 uppercase opacity-70">Last Diagnosis</h6>
-                                                                <div className="text-[10px] font-bold text-amber-900/80 dark:text-amber-200/80 line-clamp-2 italic leading-tight" dangerouslySetInnerHTML={{ __html: adimeNotes[0].diagnosis || 'Stable' }} />
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <h6 className="text-[7px] font-black text-amber-800 dark:text-amber-500 uppercase opacity-70">Last Intervention</h6>
-                                                                <div className="text-[10px] font-bold text-amber-900/80 dark:text-amber-200/80 line-clamp-2 italic leading-tight" dangerouslySetInnerHTML={{ __html: adimeNotes[0].intervention || 'Maintain' }} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Consultation Journal */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-2">
-                                                        <MessageSquare size={12} /> Consultation Journal
-                                                    </label>
-                                                    <div className="bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl overflow-hidden min-h-[100px]">
-                                                        <ReactQuill 
-                                                            theme="snow"
-                                                            className="consultation-quill"
-                                                            value={consultationJournal}
-                                                            onChange={setConsultationJournal}
-                                                            modules={{ toolbar: false }}
-                                                            placeholder="Discussed meal timing with caregiver..."
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* ADIME Structured Inputs */}
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between px-1">
-                                                        <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">ADIME Record</p>
-                                                        {adimeNotes.length > 0 && (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[8px] font-bold text-indigo-600 uppercase">Prime from:</span>
-                                                                <select 
-                                                                    className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-500/30 text-[8px] font-black uppercase rounded-lg px-2 py-1 outline-none cursor-pointer"
-                                                                    onChange={(e) => {
-                                                                        const selected = adimeNotes.find(n => n.id === parseInt(e.target.value));
-                                                                        if (selected) {
-                                                                            setConsultationAdime({
-                                                                                assessment: selected.assessment || '',
-                                                                                diagnosis: selected.diagnosis || '',
-                                                                                intervention: selected.intervention || '',
-                                                                                monitoring: `${selected.monitoring || ''}${selected.evaluation ? '<br/><br/>' + selected.evaluation : ''}`,
-                                                                                evaluation: ''
-                                                                            });
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <option value="">Latest Session</option>
-                                                                    {adimeNotes.map(n => (
-                                                                        <option key={n.id} value={n.id}>{new Date(n.created_at).toLocaleDateString()}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
-                                                            <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-400 uppercase mb-2">Assessment</h5>
-                                                            <ReactQuill 
-                                                                theme="snow"
-                                                                value={consultationAdime.assessment}
-                                                                onChange={(val) => setConsultationAdime({...consultationAdime, assessment: val})}
-                                                                modules={{ toolbar: false }}
-                                                                placeholder="Physical observations..."
-                                                            />
-                                                        </div>
-                                                        <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
-                                                            <h5 className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 uppercase mb-2">Diagnosis</h5>
-                                                            <ReactQuill 
-                                                                theme="snow"
-                                                                value={consultationAdime.diagnosis}
-                                                                onChange={(val) => setConsultationAdime({...consultationAdime, diagnosis: val})}
-                                                                modules={{ toolbar: false }}
-                                                                placeholder="Identified problems..."
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-sm">
-                                                        <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-400 uppercase mb-2">Intervention Plan</h5>
-                                                        <ReactQuill 
-                                                            theme="snow"
-                                                            value={consultationAdime.intervention}
-                                                            onChange={(val) => setConsultationAdime({...consultationAdime, intervention: val})}
-                                                            modules={{ toolbar: false }}
-                                                            placeholder="Specific nutrition actions..."
-                                                        />
-                                                    </div>
-
-                                                    <div className="p-4 bg-white dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-sm">
-                                                        <h5 className="text-[8px] font-black text-amber-700 dark:text-amber-400 uppercase mb-2 flex items-center gap-2">
-                                                            <Activity size={12} /> Monitoring & Evaluation
-                                                        </h5>
-                                                        <ReactQuill 
-                                                            theme="snow"
-                                                            value={consultationAdime.monitoring}
-                                                            onChange={(val) => setConsultationAdime({...consultationAdime, monitoring: val, evaluation: ''})}
-                                                            modules={{ toolbar: false }}
-                                                            placeholder="Progress metrics and outcomes assessment..."
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <Button 
-                                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
-                                                    onClick={handleFinalizeSession}
-                                                    disabled={isFinalizing}
-                                                >
-                                                    {isFinalizing ? (
-                                                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    ) : <Save size={14} />}
-                                                    {isFinalizing ? "Saving Clinical Data..." : "Finalize & Save Session"}
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                                                <div className="p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
-                                                    <h5 className="text-[8px] font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                        <BadgeCheck size={12} /> Active Diagnosis
-                                                    </h5>
-                                                    <div 
-                                                        className="text-[11px] font-bold text-[var(--color-secondary)] leading-tight prose prose-xs dark:prose-invert max-w-none"
-                                                        dangerouslySetInnerHTML={{ __html: adimeNotes[0]?.diagnosis || "No diagnosis set." }}
-                                                    />
-                                                </div>
-                                                
-                                                <div className="space-y-3">
-                                                    <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-1">Session Timeline</p>
-                                                    {adimeNotes.slice(0, 3).map((note, idx) => (
-                                                        <div key={note.id} className="p-4 bg-white dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm hover:border-indigo-200 transition-colors">
-                                                            <div className="flex justify-between items-center mb-1">
-                                                                <span className="text-[8px] font-black text-indigo-600 uppercase">Session #{adimeNotes.length - idx}</span>
-                                                                <span className="text-[8px] font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleDateString()}</span>
-                                                            </div>
-                                                            <div 
-                                                                className="text-[10px] font-bold text-[var(--color-text-main)] line-clamp-1 prose prose-xs dark:prose-invert"
-                                                                dangerouslySetInnerHTML={{ __html: note.diagnosis }}
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                <div className="pt-4 border-t border-[var(--color-divider)] border-dashed">
-                                                    <p className="text-[9px] font-black text-indigo-600 uppercase mb-3 tracking-widest">Current Guidance</p>
-                                                    <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden">
-                                                        <p className="text-[10px] font-medium leading-relaxed relative z-10">
-                                                            Target: <strong className="font-black underline decoration-white/30">{rules[0]?.category || 'Macro'} Optimization</strong>. Maintain &gt;80% adherence.
-                                                        </p>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            className="mt-3 w-full bg-white/10 hover:bg-white/20 text-white text-[8px] font-black uppercase tracking-widest border border-white/20 rounded-lg"
-                                                            onClick={handleGenerateParentGuide}
-                                                        >
-                                                            Generate Parent Guide
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    </div>
-
-                        <footer className="text-center pt-8 opacity-50">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">SmartNutri-AI Clinical Consultation System • Version 2.0</p>
-                        </footer>
-                    </div>
-                )}
 
             {/* UI Overlays */}
             <Notification
@@ -3181,10 +2649,10 @@ export default function ClientDetails() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider">Meal Type</label>
-                            <select 
+                            <select
                                 className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                                 value={mealForm.meal_type}
-                                onChange={(e) => setMealForm({...mealForm, meal_type: e.target.value})}
+                                onChange={(e) => setMealForm({ ...mealForm, meal_type: e.target.value })}
                             >
                                 <option>Breakfast</option>
                                 <option>Lunch</option>
@@ -3194,51 +2662,51 @@ export default function ClientDetails() {
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider">Calories</label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                                 placeholder="kcal"
                                 value={mealForm.calories}
-                                onChange={(e) => setMealForm({...mealForm, calories: e.target.value})}
+                                onChange={(e) => setMealForm({ ...mealForm, calories: e.target.value })}
                             />
                         </div>
                     </div>
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider">Meal/Recipe Name</label>
-                        <input 
+                        <input
                             required
                             className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                             placeholder="e.g. Scrambled Eggs with Spinach"
                             value={mealForm.recipe_name}
-                            onChange={(e) => setMealForm({...mealForm, recipe_name: e.target.value})}
+                            onChange={(e) => setMealForm({ ...mealForm, recipe_name: e.target.value })}
                         />
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-blue-600 uppercase">Protein (g)</label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                                 value={mealForm.protein_g}
-                                onChange={(e) => setMealForm({...mealForm, protein_g: e.target.value})}
+                                onChange={(e) => setMealForm({ ...mealForm, protein_g: e.target.value })}
                             />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-amber-600 uppercase">Carbs (g)</label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                                 value={mealForm.carbs_g}
-                                onChange={(e) => setMealForm({...mealForm, carbs_g: e.target.value})}
+                                onChange={(e) => setMealForm({ ...mealForm, carbs_g: e.target.value })}
                             />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-emerald-600 uppercase">Fats (g)</label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)]"
                                 value={mealForm.fats_g}
-                                onChange={(e) => setMealForm({...mealForm, fats_g: e.target.value})}
+                                onChange={(e) => setMealForm({ ...mealForm, fats_g: e.target.value })}
                             />
                         </div>
                     </div>
@@ -3255,7 +2723,7 @@ export default function ClientDetails() {
                 message={confirmDialog.message}
                 isDestructive={confirmDialog.isDestructive}
             />
-            
+
             <ReviewLogModal
                 isOpen={isReviewOpen}
                 onClose={() => setIsReviewOpen(false)}
@@ -3277,36 +2745,36 @@ export default function ClientDetails() {
                 <div className="space-y-6">
                     <div className="h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)] flex flex-col" style={{ minWidth: 0 }}>
                         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <LineChart data={[...growthLogs].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at))}>
+                            <LineChart data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                <XAxis 
-                                    dataKey="logged_at" 
+                                <XAxis
+                                    dataKey="logged_at"
                                     tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                    fontSize={10} 
-                                    tick={{fill: 'var(--color-text-muted)', fontWeight: 700}} 
+                                    fontSize={10}
+                                    tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }}
                                 />
-                                <YAxis fontSize={10} tick={{fill: 'var(--color-text-muted)', fontWeight: 700}} />
-                                <Tooltip 
+                                <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }} />
+                                <Tooltip
                                     labelFormatter={(val) => new Date(val).toLocaleDateString(undefined, { dateStyle: 'long' })}
                                     contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', fontSize: '10px', fontWeight: 900 }}
                                 />
                                 <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
-                                
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="weight_kg" 
-                                    stroke="var(--color-primary)" 
-                                    strokeWidth={4} 
-                                    name="Weight (kg)" 
+
+                                <Line
+                                    type="monotone"
+                                    dataKey="weight_kg"
+                                    stroke="var(--color-primary)"
+                                    strokeWidth={4}
+                                    name="Weight (kg)"
                                     dot={{ r: 6, fill: 'var(--color-primary)', strokeWidth: 2, stroke: '#fff' }}
                                     activeDot={{ r: 8 }}
                                 />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="height_cm" 
-                                    stroke="#6366f1" 
-                                    strokeWidth={4} 
-                                    name="Height (cm)" 
+                                <Line
+                                    type="monotone"
+                                    dataKey="height_cm"
+                                    stroke="#6366f1"
+                                    strokeWidth={4}
+                                    name="Height (cm)"
                                     dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
                                     activeDot={{ r: 8 }}
                                 />

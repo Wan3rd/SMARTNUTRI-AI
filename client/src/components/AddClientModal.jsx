@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, UserPlus, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import Notification from './common/Notification';
 
@@ -9,6 +9,17 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

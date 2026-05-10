@@ -40,7 +40,7 @@ export default function Notification({ show, onClose, type = 'success', message,
                 <div className="flex-shrink-0">
                     {icons[type]}
                 </div>
-                <div className="flex-1 text-[11px] sm:text-sm font-black uppercase tracking-tight leading-tight">
+                <div className="flex-1 text-[11px] sm:text-sm font-semibold tracking-wide leading-relaxed">
                     {message}
                 </div>
                 <button

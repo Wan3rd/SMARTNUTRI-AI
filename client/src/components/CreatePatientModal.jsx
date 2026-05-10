@@ -5,12 +5,60 @@ import {
     X, UserPlus, AlertCircle, CheckCircle, 
     Stethoscope, Activity, Heart, Scale, 
     ArrowRight, ArrowLeft, Loader2, Info,
-    User, Mail, Calendar, Baby, ShieldCheck, Plus, Trash2, Search
+    User, Mail, Calendar, Baby, ShieldCheck, Plus, Trash2, Search, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
 import { useEffect } from 'react';
+import { cn } from '../lib/utils';
+
+const ALLERGY_OPTIONS = [
+    "None",
+    "Peanuts",
+    "Tree Nuts",
+    "Milk/Dairy",
+    "Eggs",
+    "Wheat/Gluten",
+    "Soy",
+    "Fish",
+    "Shellfish",
+    "Sesame",
+    "Mustard",
+    "Sulfites",
+    "Corn",
+    "Nightshades",
+    "Legumes"
+];
+
+const ACTIVITY_LEVELS = [
+    { id: 'sedentary', label: 'Sedentary', desc: 'Little to no exercise' },
+    { id: 'light', label: 'Lightly Active', desc: 'Light exercise 1-3 days/wk' },
+    { id: 'moderate', label: 'Moderately Active', desc: 'Moderate exercise 3-5 days/wk' },
+    { id: 'very', label: 'Very Active', desc: 'Hard exercise 6-7 days/wk' },
+    { id: 'extra', label: 'Extra Active', desc: 'Physical job / 2x training' }
+];
+
+const DIETARY_OPTIONS = [
+    "Omnivore (No restrictions)",
+    "Vegetarian",
+    "Vegan",
+    "Halal",
+    "Kosher",
+    "Gluten-Free",
+    "Lactose-Free",
+    "Pescatarian"
+];
+
+const BRISTOL_TYPES = [
+    { type: 1, label: 'Type 1', desc: 'Hard Lumps', detail: 'Separate hard lumps, like nuts (hard to pass). Indicates severe constipation.' },
+    { type: 2, label: 'Type 2', desc: 'Lumpy', detail: 'Sausage-shaped, but lumpy. Indicates mild constipation.' },
+    { type: 3, label: 'Type 3', desc: 'Cracked', detail: 'Like a sausage but with cracks on its surface. Normal.' },
+    { type: 4, label: 'Type 4', desc: 'Smooth', detail: 'Like a sausage or snake, smooth and soft. Ideal.' },
+    { type: 5, label: 'Type 5', desc: 'Soft Blobs', detail: 'Soft blobs with clear-cut edges (passed easily). Lacking fiber.' },
+    { type: 6, label: 'Type 6', desc: 'Mushy', detail: 'Fluffy pieces with ragged edges, a mushy stool. Mild diarrhea.' },
+    { type: 7, label: 'Type 7', desc: 'Liquid', detail: 'Watery, no solid pieces (entirely liquid). Severe diarrhea.' }
+];
 
 const STEPS = [
     { id: 'identity', title: 'Identity', icon: User },
@@ -24,6 +72,10 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    const [vaccineTypes, setVaccineTypes] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isAllergiesDropdownOpen, setIsAllergiesDropdownOpen] = useState(false);
+    const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
     const [formData, setFormData] = useState({
         // Parent Info
         parent_name: parentName,
@@ -31,25 +83,23 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         // Child Basic
         child_name: '',
         date_of_birth: '',
-        gender: 'male',
+        gender: 'Male',
         // Clinical
         medical_history: '',
         family_history: '',
         food_intolerances: '',
         symptoms: '',
         medications: '',
-        allergies: '',
+        allergies: ['None'],
         // Anthropometric
         height_cm: '',
         weight_kg: '',
         waist_circumference: '',
-        weighing_time: '',
-        is_fasting: false,
-        is_post_voiding: false,
+        weigh_in_conditions: '',
         // Lifestyle
         activity_level: 'moderate',
         lifestyle_factors: '',
-        dietary_preferences: 'Omnivore',
+        dietary_preferences: ['Omnivore (No restrictions)'],
         bristol_stool_scale: 4,
         // Vaccinations
         vaccinations: [] // Array of { vaccination_type_id, date_administered }
@@ -62,7 +112,13 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 parent_name: parentName,
                 parent_email: parentEmail
             }));
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
         }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen, parentName, parentEmail]);
 
     const fetchVaccineTypes = async () => {
@@ -74,6 +130,12 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         }
     };
 
+    useEffect(() => {
+        if (isOpen && step === 3 && vaccineTypes.length === 0) {
+            fetchVaccineTypes();
+        }
+    }, [isOpen, step, vaccineTypes.length]);
+
     if (!isOpen) return null;
 
     const handleChange = (e) => {
@@ -82,6 +144,18 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    const isStepValid = () => {
+        if (step === 0) {
+            if (!parentId && (!formData.parent_name || !formData.parent_email)) return false;
+            if (!formData.child_name || !formData.date_of_birth) return false;
+            if (!parentId && !formData.parent_email.includes('@')) return false;
+        }
+        if (step === 2) {
+            if (!formData.height_cm || !formData.weight_kg) return false;
+        }
+        return true;
     };
 
     const validateStep = () => {
@@ -125,8 +199,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         try {
             const payload = {
                 ...formData,
-                parentId, // Pass parentId if adding to existing client
-                allergies: formData.allergies.split(',').map(s => s.trim()).filter(Boolean)
+                dietary_preferences: formData.dietary_preferences.join(', '), // Convert array to string for backend
+                parentId // Pass parentId if adding to existing client
             };
 
             const res = await api.post('/nutritionist/create-client', payload);
@@ -135,11 +209,12 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             onClose();
             setStep(0);
             setFormData({
-                parent_name: '', parent_email: '', child_name: '', date_of_birth: '', gender: 'male',
+                parent_name: '', parent_email: '', child_name: '', date_of_birth: '', gender: 'Male',
                 medical_history: '', family_history: '', food_intolerances: '', symptoms: '',
-                medications: '', allergies: '', height_cm: '', weight_kg: '',
-                waist_circumference: '', weighing_time: '', is_fasting: false, is_post_voiding: false,
+                medications: '', allergies: ['None'], height_cm: '', weight_kg: '',
+                waist_circumference: '', weigh_in_conditions: '',
                 activity_level: 'moderate', lifestyle_factors: '',
+                dietary_preferences: ['Omnivore (No restrictions)'], bristol_stool_scale: 4,
                 vaccinations: []
             });
 
@@ -166,14 +241,14 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         {!parentId && (
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 min-w-0">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Full Name</label>
                                         <div className="relative">
                                             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
                                             <input name="parent_name" value={formData.parent_name} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. Maria Clara" />
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 min-w-0">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Parent Email</label>
                                         <div className="relative">
                                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
@@ -191,17 +266,27 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                 <input name="child_name" value={formData.child_name} onChange={handleChange} className="w-full pl-10 pr-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm font-bold text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Child's Name" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Birth Date</label>
-                                <input name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+                                <input name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Sex</label>
-                                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                </select>
+                                <div className="flex bg-[var(--color-bg-page)] p-1 rounded-2xl border-2 border-slate-200 dark:border-[var(--color-divider)]">
+                                    {['Male', 'Female'].map(g => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, gender: g }))}
+                                            className={`flex-1 py-2 sm:py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${formData.gender === g 
+                                                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' 
+                                                : 'text-[var(--color-text-muted)] hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -221,8 +306,98 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <textarea name="family_history" value={formData.family_history} onChange={handleChange} className="w-full px-4 py-2 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] h-24 outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Diabetes, Hypertension in family..." />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allergies (comma separated)</label>
-                            <input name="allergies" value={formData.allergies} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Peanuts, Shellfish..." />
+                            <label className="block mb-2 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
+                            
+                            <div className="mb-4 relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAllergiesDropdownOpen(!isAllergiesDropdownOpen)}
+                                    className={cn(
+                                        "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
+                                        isAllergiesDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
+                                    )}
+                                >
+                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
+                                        <Plus size={14} className="inline mr-2" /> <span className="truncate">Add Allergy...</span>
+                                    </span>
+                                    <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)] flex-shrink-0", isAllergiesDropdownOpen && "rotate-180")} />
+                                </button>
+
+                                {isAllergiesDropdownOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setIsAllergiesDropdownOpen(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                        >
+                                            {ALLERGY_OPTIONS.map(option => {
+                                                const isSelected = formData.allergies.includes(option);
+                                                if (isSelected) return null;
+
+                                                return (
+                                                    <button
+                                                        key={option}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (option === 'None') {
+                                                                setFormData(prev => ({ ...prev, allergies: ['None'] }));
+                                                            } else {
+                                                                let newAllergies = formData.allergies.filter(a => a !== 'None');
+                                                                newAllergies.push(option);
+                                                                setFormData(prev => ({ ...prev, allergies: newAllergies }));
+                                                            }
+                                                            setIsAllergiesDropdownOpen(false);
+                                                        }}
+                                                        className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
+                                                    >
+                                                        {option}
+                                                    </button>
+                                                );
+                                            })}
+                                            {ALLERGY_OPTIONS.every(o => formData.allergies.includes(o)) && (
+                                                <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                                                    All allergies selected
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                {(formData.allergies.length === 0 || (formData.allergies.length === 1 && formData.allergies[0] === "None")) ? (
+                                    <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
+                                ) : (
+                                    formData.allergies.map(allergy => (
+                                        <div
+                                            key={allergy}
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
+                                                ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
+                                                : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
+                                                }`}
+                                        >
+                                            {allergy}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newAllergies = formData.allergies.filter(a => a !== allergy);
+                                                    setFormData(prev => ({ 
+                                                        ...prev, 
+                                                        allergies: newAllergies.length === 0 ? ['None'] : newAllergies 
+                                                    }));
+                                                }}
+                                                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
+                                            >
+                                                <X size={10} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Medications</label>
@@ -233,23 +408,40 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <input name="food_intolerances" value={formData.food_intolerances} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Lactose intolerance, Bloating..." />
                         </div>
                         <div className="md:col-span-2 space-y-3 p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border-2 border-amber-100 dark:border-amber-900/20">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 flex items-center gap-2 mb-2">
                                 <Activity size={12} /> Bristol Stool Scale (Baseline)
                             </label>
-                            <div className="flex justify-between items-center gap-2">
-                                {[1,2,3,4,5,6,7].map(type => (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                                {BRISTOL_TYPES.map(type => (
                                     <button
-                                        key={type}
+                                        key={type.type}
                                         type="button"
-                                        onClick={() => setFormData({...formData, bristol_stool_scale: type})}
-                                        className={`flex-1 h-10 rounded-xl font-black text-xs transition-all border-2 ${formData.bristol_stool_scale === type ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-white dark:bg-zinc-900 text-amber-600 border-amber-200 dark:border-amber-900/30'}`}
+                                        onClick={() => setFormData({...formData, bristol_stool_scale: type.type})}
+                                        className={`flex flex-col items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-2xl border-2 transition-all group ${formData.bristol_stool_scale === type.type
+                                            ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                            : 'bg-white dark:bg-amber-950/20 text-amber-600 border-amber-200 dark:border-amber-900/30 hover:border-amber-400'
+                                            }`}
                                     >
-                                        {type}
+                                        <span className="text-lg sm:text-xl">
+                                            {type.type === 1 && '🥜'}
+                                            {type.type === 2 && '🍇'}
+                                            {type.type === 3 && '🥖'}
+                                            {type.type === 4 && '🐍'}
+                                            {type.type === 5 && '💧'}
+                                            {type.type === 6 && '☁️'}
+                                            {type.type === 7 && '🌊'}
+                                        </span>
+                                        <div className="text-center">
+                                            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight leading-tight">{type.label}</p>
+                                            <p className={`text-[7px] sm:text-[8px] font-bold uppercase leading-tight mt-0.5 ${formData.bristol_stool_scale === type.type ? 'text-white/90' : 'text-amber-600/70 dark:text-amber-400/70'}`}>
+                                                {type.desc}
+                                            </p>
+                                        </div>
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-[8px] text-amber-600/70 dark:text-amber-400/50 font-bold uppercase text-center tracking-tighter">
-                                Type 4 is Ideal. Type 1-2 (Constipation), Type 6-7 (Diarrhea)
+                            <p className="text-[9px] text-amber-700 dark:text-amber-400 font-medium bg-amber-100/50 dark:bg-amber-900/30 p-3 rounded-xl border border-amber-200 dark:border-amber-900/50 leading-relaxed mt-2">
+                                <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === formData.bristol_stool_scale)?.detail}
                             </p>
                         </div>
                     </motion.div>
@@ -260,48 +452,34 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-6"
                     >
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <div className="space-y-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] opacity-70">Height (cm)</label>
                                 <input name="height_cm" type="number" step="0.1" value={formData.height_cm} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400" placeholder="000.0" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] opacity-70">Weight (kg)</label>
                                 <input name="weight_kg" type="number" step="0.1" value={formData.weight_kg} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400" placeholder="00.0" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] opacity-70">Waist (cm)</label>
                                 <input name="waist_circumference" type="number" step="0.1" value={formData.waist_circumference} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400" placeholder="Optional" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[var(--color-bg-page)] p-6 rounded-3xl border-2 border-[var(--color-divider)]">
+                        <div className="bg-[var(--color-bg-page)] p-6 rounded-3xl border-2 border-[var(--color-divider)]">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                                    <Info size={12} className="text-emerald-500" /> Weighing Conditions
+                                    <Info size={12} className="text-emerald-500" /> Standard Weigh-in Conditions
                                 </label>
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className="relative">
-                                            <input type="checkbox" name="is_fasting" checked={formData.is_fasting} onChange={handleChange} className="peer hidden" />
-                                            <div className="h-5 w-5 rounded-md border-2 border-slate-300 dark:border-[var(--color-divider)] bg-[var(--color-bg-card)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all shadow-sm" />
-                                            <CheckCircle size={12} className="absolute inset-0 m-auto text-white opacity-0 peer-checked:opacity-100" />
-                                        </div>
-                                        <span className="text-xs font-bold text-[var(--color-text-main)] opacity-80">Fasting Status</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className="relative">
-                                            <input type="checkbox" name="is_post_voiding" checked={formData.is_post_voiding} onChange={handleChange} className="peer hidden" />
-                                            <div className="h-5 w-5 rounded-md border-2 border-slate-300 dark:border-[var(--color-divider)] bg-[var(--color-bg-card)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all shadow-sm" />
-                                            <CheckCircle size={12} className="absolute inset-0 m-auto text-white opacity-0 peer-checked:opacity-100" />
-                                        </div>
-                                        <span className="text-xs font-bold text-[var(--color-text-main)] opacity-80">Post-voiding Status</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] opacity-70">Weighing Time</label>
-                                <input name="weighing_time" type="time" value={formData.weighing_time} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500" />
-                                <p className="text-[8px] text-[var(--color-text-main)] opacity-40 italic">Best practice: Early morning before breakfast.</p>
+                                <textarea 
+                                    name="weigh_in_conditions" 
+                                    value={formData.weigh_in_conditions} 
+                                    onChange={handleChange} 
+                                    rows="2"
+                                    className="w-full px-4 py-3 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl text-sm font-medium text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 resize-none" 
+                                    placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only" 
+                                />
+                                <p className="text-[8px] text-[var(--color-text-main)] opacity-40 italic font-bold uppercase tracking-tight">Consistent clinical baseline is critical for accurate growth velocity calculations.</p>
                             </div>
                         </div>
                     </motion.div>
@@ -326,7 +504,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 gap-3">
                             {vaccineTypes
                                 .filter(type => type.name.toLowerCase().includes(searchTerm.toLowerCase()))
                                 .map(type => {
@@ -393,28 +571,88 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-4"
                     >
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Dietary Preference</label>
-                            <select name="dietary_preferences" value={formData.dietary_preferences} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
-                                <option value="Omnivore">Omnivore (No restrictions)</option>
-                                <option value="Vegetarian">Vegetarian</option>
-                                <option value="Vegan">Vegan</option>
-                                <option value="Halal">Halal</option>
-                                <option value="Kosher">Kosher</option>
-                                <option value="Pescatarian">Pescatarian</option>
-                                <option value="Lactose-Free">Lactose-Free</option>
-                                <option value="Gluten-Free">Gluten-Free</option>
-                            </select>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Dietary Preferences (Select multiple)</label>
+                            <div className="flex flex-wrap gap-2">
+                                {DIETARY_OPTIONS.map(option => {
+                                    const isSelected = formData.dietary_preferences.includes(option);
+                                    return (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            onClick={() => {
+                                                setFormData(prev => {
+                                                    const current = prev.dietary_preferences;
+                                                    let updated;
+                                                    if (isSelected) {
+                                                        updated = current.filter(item => item !== option);
+                                                        if (updated.length === 0) updated = ["Omnivore (No restrictions)"]; // fallback
+                                                    } else {
+                                                        // If selecting distinct value, remove "Omnivore" if present
+                                                        updated = [...current.filter(i => i !== "Omnivore (No restrictions)"), option];
+                                                    }
+                                                    return { ...prev, dietary_preferences: updated };
+                                                });
+                                            }}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-wide uppercase transition-all border-2 cursor-pointer ${isSelected
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-500 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-main)] border-slate-200 dark:border-[var(--color-divider)] hover:border-emerald-300'
+                                                }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1 relative">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Physical Activity Level</label>
-                            <select name="activity_level" value={formData.activity_level} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
-                                <option value="sedentary">Sedentary (Little to no exercise)</option>
-                                <option value="light">Lightly Active (Light exercise 1-3 days/week)</option>
-                                <option value="moderate">Moderately Active (Moderate exercise 3-5 days/week)</option>
-                                <option value="very">Very Active (Hard exercise 6-7 days/week)</option>
-                                <option value="extra">Extra Active (Very hard exercise & physical job)</option>
-                            </select>
+                            <button
+                                type="button"
+                                onClick={() => setIsActivityDropdownOpen(!isActivityDropdownOpen)}
+                                className={cn(
+                                    "w-full px-4 py-3 flex items-center justify-between bg-[var(--color-bg-page)] border-2 rounded-2xl text-sm text-[var(--color-text-main)] font-bold outline-none transition-all cursor-pointer",
+                                    isActivityDropdownOpen ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-[var(--color-divider)] hover:border-emerald-300"
+                                )}
+                            >
+                                <div className="flex flex-col items-start">
+                                    <span>{ACTIVITY_LEVELS.find(a => a.id === formData.activity_level)?.label}</span>
+                                    <span className="text-[10px] text-[var(--color-text-muted)] font-medium -mt-0.5">{ACTIVITY_LEVELS.find(a => a.id === formData.activity_level)?.desc}</span>
+                                </div>
+                                <ChevronDown size={18} className={cn("text-[var(--color-text-muted)] transition-transform duration-300", isActivityDropdownOpen && "rotate-180")} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isActivityDropdownOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsActivityDropdownOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute top-full left-0 w-full mt-2 py-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 overflow-hidden"
+                                        >
+                                            {ACTIVITY_LEVELS.map(level => (
+                                                <button
+                                                    key={level.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(prev => ({ ...prev, activity_level: level.id }));
+                                                        setIsActivityDropdownOpen(false);
+                                                    }}
+                                                    className={cn(
+                                                        "w-full text-left px-4 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors flex flex-col items-start border-l-4",
+                                                        formData.activity_level === level.id ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10" : "border-transparent"
+                                                    )}
+                                                >
+                                                    <span className={cn("text-sm font-bold", formData.activity_level === level.id ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--color-text-main)]")}>{level.label}</span>
+                                                    <span className="text-[10px] text-[var(--color-text-muted)]">{level.desc}</span>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Lifestyle & Habits</label>
@@ -434,31 +672,34 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-            <Card className="w-full max-w-2xl relative shadow-2xl overflow-hidden rounded-[2.5rem] bg-[var(--color-bg-card)] border-none">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+            <Card className="w-full max-w-2xl relative shadow-2xl overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none max-h-[95vh] sm:max-h-[90vh] flex flex-col">
                 {/* Header with Stepper */}
-                <div className="bg-[var(--color-divider)] p-8 pb-4">
-                    <div className="flex justify-between items-center mb-8">
+                <div className="bg-[var(--color-divider)] p-5 sm:p-8 pb-4 shrink-0">
+                    <div className="flex justify-between items-center mb-6 sm:mb-8">
                         <div>
-                            <h2 className="text-2xl font-black text-[var(--color-text-main)] tracking-tight uppercase">Patient Profiling</h2>
-                            <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Initial Clinical Intake</p>
+                            <h2 className="text-xl sm:text-2xl font-black text-[var(--color-text-main)] tracking-tight uppercase">Patient Profiling</h2>
+                            <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Initial Clinical Intake</p>
                         </div>
                         <button onClick={onClose} className="p-2 bg-[var(--color-bg-card)] rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-[var(--color-divider)]">
-                            <X size={20} />
+                            <X size={18} sm:size={20} />
                         </button>
                     </div>
 
-                    <div className="flex justify-between items-center px-4">
+                    <div className="flex justify-between items-center px-1 sm:px-4">
                         {STEPS.map((s, i) => (
                             <React.Fragment key={s.id}>
-                                <div className="flex flex-col items-center gap-2 z-10">
-                                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-2 ${step >= i ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-muted)]'}`}>
-                                        <s.icon size={20} />
+                                <div className="flex flex-col items-center gap-1.5 sm:gap-2 z-10">
+                                    <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-500 border-2 ${step >= i ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-muted)]'}`}>
+                                        <s.icon size={step === i ? 18 : 16} className="sm:w-5 sm:h-5" />
                                     </div>
-                                    <span className={`text-[8px] font-black uppercase tracking-widest ${step >= i ? 'text-emerald-500' : 'text-[var(--color-text-muted)]'}`}>{s.title}</span>
+                                    <span className={cn(
+                                        "text-[7px] sm:text-[8px] font-black uppercase tracking-widest transition-opacity hidden sm:block",
+                                        step === i ? "opacity-100" : "opacity-40 sm:opacity-100"
+                                    )}>{s.title}</span>
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className="flex-1 h-[2px] bg-[var(--color-divider)] mx-2 -mt-6">
+                                    <div className="flex-1 h-[2px] bg-[var(--color-divider)] mx-1 sm:mx-2 -mt-1 sm:-mt-6">
                                         <motion.div 
                                             className="h-full bg-emerald-500"
                                             initial={{ width: '0%' }}
@@ -472,7 +713,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                     </div>
                 </div>
 
-                <CardContent className="p-8">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8">
                     <Notification
                         show={notif.show}
                         type={notif.type}
@@ -485,21 +726,33 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             {renderStep()}
                         </AnimatePresence>
                     </div>
+                    {step === 0 && (
+                        <p className="text-[9px] text-center text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest mt-6 bg-slate-100 dark:bg-white/5 py-3 rounded-xl border border-slate-200 dark:border-white/10">
+                            * Default parent password: <span className="text-emerald-600 dark:text-emerald-400">smartnutri123</span>
+                        </p>
+                    )}
+                </div>
 
-                    <div className="flex gap-4 mt-10">
+                <div className="p-4 sm:p-6 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] shrink-0">
+                    <div className="flex gap-3 sm:gap-4 max-w-md mx-auto w-full">
                         {step > 0 && (
                             <Button 
                                 variant="outline" 
                                 onClick={prevStep}
-                                className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] flex gap-2"
+                                className="h-12 sm:h-14 px-5 sm:px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2"
                             >
-                                <ArrowLeft size={14} /> Back
+                                <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
                             </Button>
                         )}
                         {step < STEPS.length - 1 ? (
                             <Button 
                                 onClick={nextStep}
-                                className="flex-1 h-14 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white font-black uppercase tracking-widest text-[10px] flex gap-2 shadow-xl hover:opacity-90"
+                                className={cn(
+                                    "flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl transition-all duration-300",
+                                    isStepValid() 
+                                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" 
+                                        : "bg-slate-800 dark:bg-slate-700 hover:opacity-90"
+                                )}
                             >
                                 Next Step <ArrowRight size={14} />
                             </Button>
@@ -507,18 +760,13 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <Button 
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="flex-1 h-14 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest text-[10px] flex gap-2 shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all disabled:opacity-50"
                             >
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <>{parentId ? 'Add Child Profile' : 'Finalize Patient Profile'} <CheckCircle size={14} /></>}
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : <>{parentId ? 'Add Child Profile' : 'Finalize Profile'} <CheckCircle size={14} /></>}
                             </Button>
                         )}
                     </div>
-                    {step === 0 && (
-                        <p className="text-[9px] text-center text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest mt-6 bg-slate-100 dark:bg-white/5 py-2 rounded-xl">
-                            * Default parent password: <span className="text-emerald-600 dark:text-emerald-400">smartnutri123</span>
-                        </p>
-                    )}
-                </CardContent>
+                </div>
             </Card>
         </div>
     );

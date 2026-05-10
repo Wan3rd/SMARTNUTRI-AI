@@ -73,26 +73,26 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                 className={cn(
                     "flex flex-col border-r border-[var(--color-divider)] bg-[var(--color-bg-card)] transition-all duration-300 ease-in-out z-50 overflow-hidden fixed inset-y-0 left-0",
                     isMobile
-                        ? "w-64 shadow-2xl"
+                        ? "w-72 shadow-2xl"
                         : "h-screen",
-                    !isOpen && (isMobile ? "-translate-x-full" : "-translate-x-full lg:-translate-x-full")
+                    !isOpen && "-translate-x-full"
                 )}
-                style={{ width: '16rem' }}
+                style={{ width: isMobile ? '18rem' : '16rem' }}
             >
-                <div className="flex flex-col h-full w-64 flex-shrink-0 overflow-y-auto custom-scrollbar p-6">
-                    <div className="mb-10 flex items-center justify-between gap-2">
+                <div className="flex flex-col h-full w-full flex-shrink-0 overflow-y-auto custom-scrollbar p-5 sm:p-6">
+                    <div className="mb-8 sm:mb-10 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-10 w-10 object-contain rounded-full shadow-sm" />
-                            <span className="text-xl font-black text-[var(--color-secondary)] uppercase tracking-tighter">SmartNutri</span>
+                            <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-full shadow-sm" />
+                            <span className="text-lg sm:text-xl font-black text-[var(--color-secondary)] uppercase tracking-tighter">SmartNutri</span>
                         </div>
                         {isMobile && (
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={onClose}
-                                className="h-8 w-8 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                                className="h-9 w-9 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
                             >
-                                <X size={18} />
+                                <X size={20} />
                             </Button>
                         )}
                     </div>
@@ -112,7 +112,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                                     )}
                                 </div>
                                 <div className="flex-1 text-left min-w-0">
-                                    <p className="text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">{selectedProfile?.child_name || 'Select Child'}</p>
+                                    <p className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">{selectedProfile?.child_name || 'Select Child'}</p>
                                     <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">Active Patient</p>
                                 </div>
                                 <ChevronDown size={16} className={cn("text-[var(--color-text-muted)] transition-transform", isProfileMenuOpen && "rotate-180")} />
@@ -181,15 +181,19 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                                     )
                                 }
                             >
-                                <item.icon size={18} className="transition-transform group-hover:scale-110" />
-                                <span className="flex-1 font-bold">{item.label}</span>
-                                {item.label === 'Meal History' && newReviewsCount > 0 && (
-                                    <span className="flex items-center justify-center min-w-[18px] h-[18px] bg-emerald-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-emerald-500/20 animate-pulse">
-                                        {newReviewsCount}
-                                    </span>
-                                )}
-                                {({ isActive }) => isActive && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--color-primary)] rounded-r-full" />
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon size={18} className="transition-transform group-hover:scale-110" />
+                                        <span className="flex-1 font-bold">{item.label}</span>
+                                        {item.label === 'Meal History' && newReviewsCount > 0 && (
+                                            <span className="flex items-center justify-center min-w-[18px] h-[18px] bg-emerald-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-emerald-500/20 animate-pulse">
+                                                {newReviewsCount}
+                                            </span>
+                                        )}
+                                        {isActive && (
+                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--color-primary)] rounded-r-full" />
+                                        )}
+                                    </>
                                 )}
                             </NavLink>
                         ))}
