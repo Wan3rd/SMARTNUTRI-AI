@@ -17,7 +17,13 @@ const VACCINES = [
     { name: 'Japanese Encephalitis', description: 'Prevents mosquito-borne JE virus' },
     { name: 'Influenza', description: 'Seasonal flu vaccine' },
     { name: 'Typhoid', description: 'Prevents typhoid fever' },
-    { name: 'Meningococcal', description: 'Prevents meningitis' }
+    { name: 'Meningococcal', description: 'Prevents meningitis' },
+    { name: 'COVID-19', description: 'Coronavirus disease prevention' },
+    { name: 'Tdap Booster', description: 'Tetanus, Diphtheria, and Pertussis (Booster)' },
+    { name: 'Rabies', description: 'Anti-rabies immunization' },
+    { name: 'Dengue', description: 'Prevents Dengue fever (e.g. Dengvaxia)' },
+    { name: 'Yellow Fever', description: 'Required for international travel to certain areas' },
+    { name: 'Cholera', description: 'Prevents cholera infection' }
 ];
 
 async function main() {

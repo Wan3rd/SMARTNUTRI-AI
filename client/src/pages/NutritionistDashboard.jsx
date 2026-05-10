@@ -4,26 +4,33 @@ import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLoading } from '../context/LoadingContext';
 import { cn } from '../lib/utils';
 import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
+import { motion } from 'framer-motion';
 
 import AddClientModal from '../components/AddClientModal';
 import CreatePatientModal from '../components/CreatePatientModal';
 import ReviewLogModal from '../components/ReviewLogModal';
 import Notification from '../components/common/Notification';
+import { DashboardSkeleton } from '../components/SkeletonShell';
+
+
 
 export default function NutritionistDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { startLoading, stopLoading } = useLoading();
     const [clients, setClients] = useState([]);
     const [pendingLogs, setPendingLogs] = useState([]);
     const [stats, setStats] = useState({ clients: 0, pending: 0 });
-    const [loading, setLoading] = useState(true);
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProfilingOpen, setIsProfilingOpen] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
     const showNotif = (message, type = 'success') => {
@@ -31,8 +38,18 @@ export default function NutritionistDashboard() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        const loadNutritionistData = async () => {
+            if (user?.role === 'nutritionist' && user?.status === 'approved') {
+                startLoading('Syncing Clinical Command Center...');
+                await fetchData();
+                setIsInitialSync(false);
+                stopLoading();
+            } else {
+                setIsInitialSync(false);
+            }
+        };
+        loadNutritionistData();
+    }, [user?.id, user?.status]);
 
     const fetchData = async () => {
         try {
@@ -48,10 +65,10 @@ export default function NutritionistDashboard() {
             });
         } catch (err) {
             console.error("Failed to fetch nutritionist data", err);
-        } finally {
-            setLoading(false);
         }
     };
+
+    if (isInitialSync) return <DashboardSkeleton />;
 
     if (user?.role === 'nutritionist' && user?.status !== 'approved') {
         return (
@@ -197,49 +214,82 @@ export default function NutritionistDashboard() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={14} />
                         <input
                             placeholder="Search clinical profiles..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full sm:w-64 pl-10 pr-4 h-12 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-bold focus:border-[var(--color-primary)] outline-none transition-all shadow-sm"
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {clients.map(client => {
-                        const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
-                        return (
-                            <Card
-                                key={client.id}
-                                onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
-                                className="hover:shadow-lg transition-all cursor-pointer border-2 border-[var(--color-divider)] relative group rounded-[2rem] overflow-hidden"
-                            >
+                    {loading ? (
+                        // Skeleton State
+                        [1, 2, 3, 4, 5, 6].map(i => (
+                            <Card key={i} className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden bg-white/50 dark:bg-white/5">
                                 <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
-                                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] relative shrink-0">
-                                        <Users size={20} className="sm:w-6 sm:h-6" />
-                                        {clientPendingCount > 0 && (
-                                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
-                                                    {clientPendingCount}
-                                                </span>
-                                            </span>
-                                        )}
+                                    <SkeletonLoader className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <SkeletonLoader className="h-4 w-3/4 rounded-lg" />
+                                        <SkeletonLoader className="h-3 w-1/2 rounded-lg opacity-50" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className={cn("font-black text-sm sm:text-base text-[var(--color-secondary)] truncate", user?.privacy_mode && "privacy-blur")}>{client.full_name}</h3>
-                                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium truncate">{client.email}</p>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1 shrink-0">
-                                        <div className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                            {client.status}
-                                        </div>
-                                        {clientPendingCount > 0 && (
-                                            <span className="text-[7px] sm:text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest animate-pulse">Needs Review</span>
-                                        )}
+                                    <div className="flex flex-col items-end gap-2">
+                                        <SkeletonLoader className="h-4 w-12 rounded-full" />
+                                        <SkeletonLoader className="h-2 w-16 rounded-full opacity-30" />
                                     </div>
                                 </CardContent>
                             </Card>
-                        );
-                    })}
-                    {clients.length === 0 && (
+                        ))
+                    ) : (
+                        clients
+                            .filter(client => 
+                                client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map(client => {
+                            const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
+                            return (
+                                <motion.div
+                                    key={client.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <Card
+                                        onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
+                                        className="h-full hover:shadow-lg transition-all cursor-pointer border-2 border-[var(--color-divider)] relative group rounded-[2rem] overflow-hidden"
+                                    >
+                                        <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+                                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] relative shrink-0">
+                                                <Users size={20} className="sm:w-6 sm:h-6" />
+                                                {clientPendingCount > 0 && (
+                                                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
+                                                            {clientPendingCount}
+                                                        </span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className={cn("font-black text-sm sm:text-base text-[var(--color-secondary)] truncate", user?.privacy_mode && "privacy-blur")}>{client.full_name}</h3>
+                                                <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium truncate">{client.email}</p>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                <div className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {client.status}
+                                                </div>
+                                                {clientPendingCount > 0 && (
+                                                    <span className="text-[7px] sm:text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest animate-pulse">Needs Review</span>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            );
+                        })
+                    )}
+                    {!loading && clients.length === 0 && (
                         <p className="col-span-full text-center py-12 text-[var(--color-text-muted)] font-bold bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
                             No clients linked yet. Start by adding a parent portal account.
                         </p>

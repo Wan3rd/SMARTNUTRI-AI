@@ -65,6 +65,7 @@
   /* Slate 700 - More visible borders */
   --color-input-border: #475569;
   /* Slate 600 */
+  color-scheme: dark;
 }
 
 /* Global Reset & Base Styles */
@@ -80,6 +81,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Layout Variables */
+  --header-height: 64px;
+  --header-height-mobile: 56px;
 }
 
 body {
@@ -274,4 +279,70 @@ textarea {
 
 .print-header {
   display: none;
+}
+
+/* Glassmorphism & Mesh Gradients */
+@utility glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+@utility mesh-emerald {
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(160, 84%, 94%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(165, 84%, 94%, 1) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, hsla(162, 84%, 94%, 1) 0px, transparent 50%);
+}
+
+.dark .mesh-emerald {
+  background-color: #020617;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(160, 84%, 8%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(165, 84%, 8%, 1) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, hsla(162, 84%, 8%, 1) 0px, transparent 50%);
+}
+
+/* Hardware Accelerated Clinical Pulse */
+@keyframes clinical-ring-outer {
+  0% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 0.6; }
+  100% { transform: scale(1) rotate(360deg); opacity: 0.3; }
+}
+
+@keyframes clinical-ring-inner {
+  0% { transform: scale(1.2) rotate(0deg); opacity: 0.2; }
+  50% { transform: scale(1) rotate(-180deg); opacity: 0.4; }
+  100% { transform: scale(1.2) rotate(-360deg); opacity: 0.2; }
+}
+
+.animate-clinical-outer {
+  animation: clinical-ring-outer 3s linear infinite;
+  will-change: transform, opacity;
+}
+
+.animate-clinical-inner {
+  animation: clinical-ring-inner 4s linear infinite;
+  will-change: transform, opacity;
+}
+
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-pulse {
+  0% { background-color: var(--color-divider); opacity: 0.5; }
+  50% { background-color: var(--color-divider); opacity: 0.8; }
+  100% { background-color: var(--color-divider); opacity: 0.5; }
+}
+
+@utility skeleton {
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+  border-radius: 0.75rem;
+  min-height: 1rem;
 }

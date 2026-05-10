@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter } from 'lucide-react';
@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useLoading } from '../context/LoadingContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, Scatter } from 'recharts';
 import Modal from '../components/common/Modal';
 import Notification from '../components/common/Notification';
@@ -15,6 +16,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
 import CreatePatientModal from '../components/CreatePatientModal';
+import { ClientDetailsSkeleton } from '../components/SkeletonShell';
 
 // Global CSS Overrides for Quill Toolbar Visibility
 const quillStyles = `
@@ -77,12 +79,40 @@ const BRISTOL_TYPES = [
     { type: 7, label: 'Type 7', desc: 'Liquid', detail: 'Watery, no solid pieces (entirely liquid). Severe diarrhea.' }
 ];
 
+const Sparkline = ({ data, color, dataKey }) => (
+    <div className="h-10 w-24 opacity-50">
+        <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+                <defs>
+                    <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area 
+                    type="monotone" 
+                    dataKey={dataKey} 
+                    stroke={color} 
+                    strokeWidth={2} 
+                    fillOpacity={1} 
+                    fill={`url(#gradient-${dataKey})`}
+                    isAnimationActive={false}
+                />
+            </AreaChart>
+        </ResponsiveContainer>
+    </div>
+);
+
+
+
 export default function ClientDetails() {
     const { clientId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { startLoading, stopLoading } = useLoading();
     const location = useLocation();
-    const clientName = location.state?.clientName || 'Client';
+    const [fetchedClientName, setFetchedClientName] = useState('');
+    const clientName = location.state?.clientName || fetchedClientName || 'Client';
 
     const [profiles, setProfiles] = useState([]);
     const [selectedProfile, setSelectedProfile] = useState(null);
@@ -113,7 +143,7 @@ export default function ClientDetails() {
         rule_unit: 'kcal'
     });
     const [standards, setStandards] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [showLastAdimeReference, setShowLastAdimeReference] = useState(true);
 
     const stripHtml = (html) => {
@@ -169,8 +199,14 @@ export default function ClientDetails() {
         isDestructive: true
     });
 
-    // --- Meal Planner State ---
-    const [activeTab, setActiveTab] = useState('profiles');
+    // --- Meal Planner & Tab State ---
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabFromUrl = searchParams.get('tab') || 'overview';
+    const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+    useEffect(() => {
+        setSearchParams({ tab: activeTab }, { replace: true });
+    }, [activeTab, setSearchParams]);
     const [mealPlan, setMealPlan] = useState([]);
     const [generatingPlan, setGeneratingPlan] = useState(false);
     const [isMealModalOpen, setIsMealModalOpen] = useState(false);
@@ -193,6 +229,7 @@ export default function ClientDetails() {
         monitoring: '',
         evaluation: ''
     });
+    const [savingAdime, setSavingAdime] = useState(false);
 
     // --- Growth State ---
     const [growthLogs, setGrowthLogs] = useState([]);
@@ -248,36 +285,58 @@ export default function ClientDetails() {
     }, [growthLogs]);
 
     const clinicalPatterns = useMemo(() => {
-        if (!logs || logs.length === 0) return [];
         const alerts = [];
         const last7Days = new Date();
         last7Days.setDate(last7Days.getDate() - 7);
 
-        const dailyMealCount = {};
-        logs.forEach(log => {
-            const dateStr = new Date(log.logged_at).toDateString();
-            if (new Date(log.logged_at) >= last7Days && ['Breakfast', 'Lunch', 'Dinner'].includes(log.meal_category)) {
-                dailyMealCount[dateStr] = (dailyMealCount[dateStr] || 0) + 1;
+        // 1. Meal Patterns
+        if (logs && logs.length > 0) {
+            const dailyMealCount = {};
+            logs.forEach(log => {
+                const dateStr = new Date(log.logged_at).toDateString();
+                if (new Date(log.logged_at) >= last7Days && ['Breakfast', 'Lunch', 'Dinner'].includes(log.meal_category)) {
+                    dailyMealCount[dateStr] = (dailyMealCount[dateStr] || 0) + 1;
+                }
+            });
+
+            const skippingDays = Object.entries(dailyMealCount).filter(([_, count]) => count < 2);
+            if (skippingDays.length > 0) {
+                alerts.push({ icon: Utensils, title: 'Meal Skipping Pattern', desc: `Patient missed core meals on ${skippingDays.length} days in the last week.`, severity: 'high' });
             }
-        });
 
-        const skippingDays = Object.entries(dailyMealCount).filter(([_, count]) => count < 2);
-        if (skippingDays.length > 0) {
-            alerts.push({ title: 'Meal Skipping Pattern', desc: `Patient missed core meals on ${skippingDays.length} days in the last week.`, severity: 'high' });
+            const highSodium = logs.filter(l => (l.total_sodium_mg || 0) > 800).length;
+            if (highSodium > 0) {
+                alerts.push({ icon: ShieldAlert, title: 'Sodium Threshold Alert', desc: `${highSodium} meal entries exceeded 800mg sodium limit.`, severity: 'med' });
+            }
+
+            const lowConsumption = logs.filter(l => (l.consumption_percent || 100) < 50).length;
+            if (lowConsumption >= 3) {
+                alerts.push({ icon: AlertTriangle, title: 'Low Intake Alert', desc: `Consistent low plate consumption (<50%) detected in ${lowConsumption} recent meals.`, severity: 'high' });
+            }
         }
 
-        const highSodium = logs.filter(l => (l.total_sodium_mg || 0) > 800).length;
-        if (highSodium > 0) {
-            alerts.push({ title: 'Sodium Threshold Alert', desc: `${highSodium} meal entries exceeded 800mg sodium limit.`, severity: 'med' });
+        // 2. Bristol Stool Patterns
+        const recentBristolLogs = logs?.filter(l => l.bristol_stool_scale && new Date(l.logged_at) >= last7Days) || [];
+        const diarrheaLogs = recentBristolLogs.filter(l => l.bristol_stool_scale >= 6);
+        const constipationLogs = recentBristolLogs.filter(l => l.bristol_stool_scale <= 2);
+
+        if (diarrheaLogs.length > 0) {
+            alerts.push({ icon: AlertCircle, title: 'GI Distress: Diarrhea', desc: `${diarrheaLogs.length} instances of Bristol Type 6/7 (Loose/Liquid) detected this week.`, severity: 'critical' });
+        }
+        if (constipationLogs.length > 0) {
+            alerts.push({ icon: AlertCircle, title: 'GI Distress: Constipation', desc: `${constipationLogs.length} instances of Bristol Type 1/2 (Hard) detected this week.`, severity: 'med' });
         }
 
-        const lowConsumption = logs.filter(l => (l.consumption_percent || 100) < 50).length;
-        if (lowConsumption >= 3) {
-            alerts.push({ title: 'Low Intake Alert', desc: `Consistent low plate consumption (<50%) detected in ${lowConsumption} recent meals.`, severity: 'high' });
+        // 3. Growth Patterns
+        if (growthLogs.length > 1) {
+            const weightVelocity = parseFloat(growthDeltas.weight);
+            if (weightVelocity < -0.5) {
+                alerts.push({ icon: TrendingDown, title: 'Rapid Weight Loss', desc: `Significant weight loss of ${weightVelocity}kg detected since last visit.`, severity: 'critical' });
+            }
         }
 
-        return alerts.length > 0 ? alerts : [{ title: 'Baseline Stable', desc: 'No significant clinical risks detected in recent logs.', severity: 'low' }];
-    }, [logs]);
+        return alerts.length > 0 ? alerts : [{ icon: Check, title: 'Baseline Stable', desc: 'No significant clinical risks detected in recent logs.', severity: 'low' }];
+    }, [logs, growthLogs, growthDeltas]);
 
     const velocityStats = useMemo(() => {
         if (!growthLogs || growthLogs.length < 2) return [];
@@ -486,8 +545,11 @@ export default function ClientDetails() {
         try {
             const res = await api.get(`/nutritionist/clients/${clientId}`);
             setClientEmail(res.data.email);
+            if (res.data.full_name) {
+                setFetchedClientName(res.data.full_name);
+            }
         } catch (err) {
-            console.error("Error fetching client email", err);
+            console.error("Error fetching client details", err);
         }
     };
 
@@ -609,6 +671,20 @@ export default function ClientDetails() {
 
     const handleAddAdimeNote = async (e) => {
         e.preventDefault();
+        
+        // Validation: Check if any field has meaningful content
+        const hasContent = Object.values(newAdime).some(val => {
+            if (!val) return false;
+            const stripped = val.replace(/<[^>]*>/g, '').trim();
+            return stripped.length > 0;
+        });
+
+        if (!hasContent) {
+            showNotif("Please enter some clinical data before saving.", "error");
+            return;
+        }
+
+        setSavingAdime(true);
         try {
             await api.post('/nutritionist/adime-notes', {
                 profile_id: selectedProfile.id,
@@ -626,6 +702,8 @@ export default function ClientDetails() {
         } catch (err) {
             console.error("Failed to add clinical note", err);
             showNotif("Failed to save note", "error");
+        } finally {
+            setSavingAdime(false);
         }
     };
 
@@ -783,8 +861,10 @@ export default function ClientDetails() {
             });
             setNewNote('');
             fetchNotes(selectedProfile.id);
+            showNotif("Clinical observation added successfully", "success");
         } catch (err) {
             console.error("Error adding note", err);
+            showNotif("Failed to save observation note", "error");
         }
     };
 
@@ -899,16 +979,34 @@ export default function ClientDetails() {
 
     const handleGeneratePlan = async () => {
         if (!selectedProfile) return;
-        setGeneratingPlan(true);
-        try {
-            await api.post('/nutritionist/plan/generate', { profileId: selectedProfile.id });
-            showNotif("New 7-day plan generated successfully!");
-            fetchMealPlan(selectedProfile.id);
-        } catch (err) {
-            console.error("Failed to generate plan", err);
-            showNotif("Failed to generate plan. Please try again.", "error");
-        } finally {
-            setGeneratingPlan(false);
+
+        const performGeneration = async () => {
+            setGeneratingPlan(true);
+            try {
+                await api.post('/nutritionist/plan/generate', { profileId: selectedProfile.id });
+                showNotif("New 7-day plan generated successfully!");
+                fetchMealPlan(selectedProfile.id);
+            } catch (err) {
+                console.error("Failed to generate plan", err);
+                showNotif("Failed to generate plan. Please try again.", "error");
+            } finally {
+                setGeneratingPlan(false);
+            }
+        };
+
+        if (mealPlan.length > 0) {
+            setConfirmDialog({
+                isOpen: true,
+                title: 'Overwrite Existing Plan?',
+                message: 'This patient already has a recorded 7-day meal schedule. Generating a new one will permanently replace all current entries. Do you want to proceed?',
+                onConfirm: () => {
+                    performGeneration();
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                },
+                isDestructive: true
+            });
+        } else {
+            performGeneration();
         }
     };
 
@@ -921,7 +1019,18 @@ export default function ClientDetails() {
     }, {});
 
     useEffect(() => {
-        fetchProfiles();
+        const loadInitialClientData = async () => {
+            if (clientId) {
+                startLoading('Syncing Clinical Patient Records...');
+                await fetchProfiles();
+                // Wait for profiles to be set, then others will trigger? 
+                // Actually fetchProfiles sets selectedProfile which triggers other effects.
+                // But for the initial sync to be clean, we should wait for everything.
+                setIsInitialSync(false);
+                stopLoading();
+            }
+        };
+        loadInitialClientData();
     }, [clientId]);
 
     useEffect(() => {
@@ -947,8 +1056,6 @@ export default function ClientDetails() {
             if (res.data.length > 0) setSelectedProfile(res.data[0]);
         } catch (err) {
             console.error("Failed to fetch profiles", err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -1042,7 +1149,25 @@ export default function ClientDetails() {
         });
     };
 
-    if (loading) return <div className="p-8 text-center">Loading client details...</div>;
+    if (isInitialSync) return <ClientDetailsSkeleton />;
+
+    if (!selectedProfile && !isInitialSync) return (
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-page)] p-6">
+            <Card className="max-w-md w-full border-2 border-dashed border-[var(--color-divider)] rounded-[2.5rem] p-12 text-center">
+                <div className="h-20 w-20 bg-gray-100 dark:bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <User size={40} className="text-gray-300" />
+                </div>
+                <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight mb-2">No Profiles Found</h2>
+                <p className="text-sm text-[var(--color-text-muted)] font-medium mb-8">This client does not have any active patient profiles linked yet.</p>
+                <Button 
+                    onClick={() => setIsAddProfileOpen(true)}
+                    className="w-full bg-[var(--color-primary)] text-white rounded-2xl py-4 font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                >
+                    Create Patient Profile
+                </Button>
+            </Card>
+        </div>
+    );
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -1130,7 +1255,7 @@ export default function ClientDetails() {
                                 </CardHeader>
                                 <CardContent>
                                     {/* Tabs Navigation */}
-                                    <div className="flex gap-6 border-b border-[var(--color-divider)] mb-6 overflow-x-auto">
+                                    <div className="flex gap-4 sm:gap-6 border-b border-[var(--color-divider)] mb-6 overflow-x-auto scrollbar-hide">
                                         {[
                                             { id: 'overview', label: 'Overview' },
                                             { id: 'history', label: 'Log History' },
@@ -1166,10 +1291,10 @@ export default function ClientDetails() {
                                     {(activeTab === 'adime' || activeTab === 'notes') && (
                                         <div className="space-y-6 mb-8 animate-in slide-in-from-top-4 duration-500">
                                             {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR (Only for ADIME & Notes) */}
-                                            <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex items-center justify-center p-1.5 gap-1">
-                                                <div className="flex items-center gap-2 px-3 border-r border-[var(--color-divider)]">
+                                            <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex flex-wrap items-center justify-center p-1.5 gap-1 sm:gap-2">
+                                                <div className="flex items-center gap-2 px-2 sm:px-3 border-r border-[var(--color-divider)]">
                                                     <div className={`w-2 h-2 rounded-full ${focusedField ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                                                    <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest whitespace-nowrap">
+                                                    <span className="text-[9px] sm:text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-tighter sm:tracking-widest whitespace-nowrap truncate max-w-[120px] sm:max-w-none">
                                                         {focusedField ? `Editor: ${focusedField}` : 'Click to type'}
                                                     </span>
                                                 </div>
@@ -1194,114 +1319,268 @@ export default function ClientDetails() {
 
                                     {/* TAB 1: OVERVIEW */}
                                     {activeTab === 'overview' && (
-                                        <div className="space-y-8 animate-in fade-in duration-500">
+                                        <motion.div 
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            className="space-y-8"
+                                        >
                                             {/* 1. BIOGRAPHICAL SUMMARY (Nutritionist's Quick Look) */}
-                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="h-20 w-20 rounded-2xl overflow-hidden bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] border-4 border-white dark:border-zinc-800 shadow-lg flex-shrink-0">
-                                                            {selectedProfile.profile_image_url ? (
-                                                                <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="p-4 sm:p-6 glass mesh-emerald rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl relative overflow-hidden"
+                                            >
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 sm:gap-0 relative z-10">
+                                                    <div className="flex items-center gap-3 sm:gap-5">
+                                                        <motion.div 
+                                                            whileHover={{ scale: 1.05, rotate: 5 }}
+                                                            className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-white/50 dark:border-white/10 shadow-xl flex-shrink-0 backdrop-blur-xl"
+                                                        >
+                                                            {loading ? <SkeletonLoader /> : (
+                                                                selectedProfile?.profile_image_url ? (
+                                                                    <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
+                                                                ) : (
+                                                                    <User size={40} strokeWidth={2.5} className="text-[var(--color-primary)] sm:w-12 sm:h-12" />
+                                                                )
+                                                            )}
+                                                        </motion.div>
+                                                        <div className="min-w-0">
+                                                            {loading ? (
+                                                                <div className="space-y-2">
+                                                                    <SkeletonLoader className="h-8 w-48" />
+                                                                    <SkeletonLoader className="h-4 w-32" />
+                                                                </div>
                                                             ) : (
-                                                                <User size={40} strokeWidth={2.5} className="text-[var(--color-primary)]" />
+                                                                <>
+                                                                    <h2 className={cn("text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none truncate mb-1", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
+                                                                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex-wrap">
+                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm">{selectedProfile.gender}</span>
+                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                                    </div>
+                                                                </>
                                                             )}
                                                         </div>
-                                                        <div>
-                                                            <h2 className={cn("text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
-                                                            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-2">
-                                                                <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{selectedProfile.gender}</span>
-                                                                <span className="px-2 py-1 bg-[var(--color-bg-page)] rounded-lg border border-[var(--color-divider)]">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                    </div>
+                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                                        {!loading && clinicalPatterns.some(a => a.severity === 'critical' || a.severity === 'high') && (
+                                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full animate-pulse shadow-xl shadow-red-500/30">
+                                                                <AlertCircle size={16} />
+                                                                <span className="text-[11px] font-black uppercase tracking-widest">{clinicalPatterns.filter(a => a.severity === 'critical' || a.severity === 'high').length} Urgent Alerts</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
+                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
+                                                            <div className="text-sm font-black text-[var(--color-secondary)]">
+                                                                {loading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Date of Birth</div>
-                                                        <div className="text-sm font-black text-[var(--color-secondary)]">{new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}</div>
-                                                    </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                        <div className="flex justify-between items-start mb-1">
+                                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
+                                                    <motion.div 
+                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                        className="p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-xl backdrop-blur-md"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-1 relative z-10">
                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Weight</div>
-                                                            {parseFloat(growthDeltas.weight) !== 0 && (
+                                                            {!loading && parseFloat(growthDeltas.weight) !== 0 && (
                                                                 <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                                     {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
                                                                     {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="text-xl font-black text-[var(--color-primary)]">{selectedProfile.weight_kg} <span className="text-xs font-bold opacity-60">kg</span></div>
-                                                    </div>
-                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                        <div className="flex justify-between items-start mb-1">
+                                                        <div className="flex items-end justify-between relative z-10">
+                                                            <div className="text-xl font-black text-[var(--color-primary)]">
+                                                                {loading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-xs font-bold opacity-60">kg</span></>}
+                                                            </div>
+                                                            {loading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
+                                                                growthLogs.length > 1 && (
+                                                                    <Sparkline 
+                                                                        data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)} 
+                                                                        color="#10b981" 
+                                                                        dataKey="weight_kg" 
+                                                                    />
+                                                                )
+                                                            )}
+                                                        </div>
+                                                        {!loading && growthLogs.length > 1 && (
+                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center gap-1.5 border-t border-white/20 pt-2 relative z-10">
+                                                                <Activity size={10} className="text-emerald-500" />
+                                                                <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} kg/mo</span></span>
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                    <motion.div 
+                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                        className="p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-xl backdrop-blur-md"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-1 relative z-10">
                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Height</div>
-                                                            {parseFloat(growthDeltas.height) !== 0 && (
+                                                            {!loading && parseFloat(growthDeltas.height) !== 0 && (
                                                                 <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                                     {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
                                                                     {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <div className="text-xl font-black text-[var(--color-secondary)]">{selectedProfile.height_cm} <span className="text-xs font-bold opacity-60">cm</span></div>
-                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5">
-                                                                {Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imperial
+                                                        <div className="flex items-end justify-between relative z-10">
+                                                            <div className="flex flex-col">
+                                                                <div className="text-xl font-black text-[var(--color-secondary)]">
+                                                                    {loading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-xs font-bold opacity-60">cm</span></>}
+                                                                </div>
+                                                                <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5">
+                                                                    {loading ? <SkeletonLoader className="h-3 w-20" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imperial</>}
+                                                                </div>
                                                             </div>
+                                                            {loading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
+                                                                growthLogs.length > 1 && (
+                                                                    <Sparkline 
+                                                                        data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)} 
+                                                                        color="#3b82f6" 
+                                                                        dataKey="height_cm" 
+                                                                    />
+                                                                )
+                                                            )}
                                                         </div>
-                                                    </div>
-                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex flex-col justify-between">
+                                                        {!loading && growthLogs.length > 1 && (
+                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center gap-1.5 border-t border-white/20 pt-2 relative z-10">
+                                                                <Activity size={10} className="text-blue-500" />
+                                                                <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} cm/mo</span></span>
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                    <motion.div 
+                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                        className="p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-white/20 dark:border-white/10 flex flex-col justify-between shadow-xl backdrop-blur-md"
+                                                    >
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Indicator</div>
                                                         {bmiData ? (
                                                             <div className="space-y-1.5">
-                                                                <div className="text-xl font-black text-[var(--color-text-main)]">{bmiData.bmi}</div>
-                                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-lg border ${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color} text-[10px] font-black uppercase tracking-tight`}>
-                                                                    {bmiData.status}
+                                                                <div className="text-xl font-black text-[var(--color-text-main)]">{loading ? <SkeletonLoader className="h-7 w-12" /> : bmiData.bmi}</div>
+                                                                <div className={cn(
+                                                                    "inline-flex items-center px-3 py-1 rounded-xl border backdrop-blur-md shadow-sm text-[10px] font-black uppercase tracking-tight",
+                                                                    loading ? "skeleton h-6 w-24" : `${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color}`
+                                                                )}>
+                                                                    {loading ? "" : bmiData.status}
                                                                 </div>
                                                             </div>
                                                         ) : <div className="text-sm font-black text-[var(--color-text-muted)] italic">No data</div>}
-                                                    </div>
-                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                    </motion.div>
+                                                    <motion.div 
+                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                        className="p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl backdrop-blur-md"
+                                                    >
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
-                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">{selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A'}</div>
-                                                    </div>
-                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">
+                                                            {loading ? <SkeletonLoader className="h-5 w-24" /> : (selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A')}
+                                                        </div>
+                                                    </motion.div>
+                                                    <motion.div 
+                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                        className="col-span-2 lg:col-span-1 p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl backdrop-blur-md"
+                                                    >
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
                                                         <div className="flex flex-wrap gap-1 mt-2">
-                                                            {selectedProfile.allergies?.length > 0 ? (
-                                                                selectedProfile.allergies.map(allergy => (
-                                                                    <span key={allergy} className="px-2 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-md text-[9px] font-black uppercase whitespace-nowrap">
-                                                                        {allergy}
-                                                                    </span>
-                                                                ))
+                                                            {loading ? (
+                                                                <div className="flex gap-1">
+                                                                    <SkeletonLoader className="h-5 w-16" />
+                                                                    <SkeletonLoader className="h-5 w-12" />
+                                                                </div>
                                                             ) : (
-                                                                <span className="text-sm font-black text-emerald-500 italic">None</span>
+                                                                selectedProfile.allergies?.length > 0 ? (
+                                                                    selectedProfile.allergies.map(allergy => (
+                                                                        <span key={allergy} className="px-3 py-1 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 rounded-xl text-[9px] font-black uppercase whitespace-nowrap backdrop-blur-md shadow-sm">
+                                                                            {allergy}
+                                                                        </span>
+                                                                    ))
+                                                                ) : (
+                                                                    <span className="text-sm font-black text-emerald-500 italic">None</span>
+                                                                )
                                                             )}
                                                         </div>
-                                                    </div>
+                                                    </motion.div>
                                                 </div>
-                                            </div>
+                                            </motion.div>
+
+                                            {/* Clinical Intelligence Dashboard */}
+                                            <motion.div 
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="mt-6 pt-6 border-t border-[var(--color-divider)]"
+                                            >
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <Activity size={14} className="text-[var(--color-primary)]" />
+                                                    <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-widest">Clinical Intelligence</h3>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                    {clinicalPatterns.map((alert, idx) => (
+                                                        <motion.div 
+                                                            key={idx}
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            transition={{ delay: idx * 0.1 }}
+                                                            className={cn(
+                                                                "p-3 rounded-xl border flex flex-col gap-2 transition-all",
+                                                                alert.severity === 'critical' ? "bg-red-50/30 dark:bg-red-900/5 border-red-100 dark:border-red-900/10" :
+                                                                alert.severity === 'high' ? "bg-orange-50/30 dark:bg-orange-900/5 border-orange-100 dark:border-orange-900/10" :
+                                                                alert.severity === 'med' ? "bg-amber-50/30 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/10" :
+                                                                "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-100 dark:border-emerald-900/10"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <alert.icon size={14} className={cn(
+                                                                    alert.severity === 'critical' ? "text-red-500" :
+                                                                    alert.severity === 'high' ? "text-orange-600" :
+                                                                    alert.severity === 'med' ? "text-amber-500" :
+                                                                    "text-emerald-500"
+                                                                )} />
+                                                                <span className={cn(
+                                                                    "text-[8px] font-black uppercase tracking-tighter",
+                                                                    alert.severity === 'critical' ? "text-red-600" :
+                                                                    alert.severity === 'high' ? "text-orange-600" :
+                                                                    alert.severity === 'med' ? "text-amber-600" :
+                                                                    "text-emerald-600"
+                                                                )}>
+                                                                    {alert.severity}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-black uppercase tracking-tight text-[var(--color-text-main)] mb-0.5">
+                                                                    {alert.title}
+                                                                </div>
+
+                                                                <p className="text-[9px] font-bold text-[var(--color-text-muted)] leading-tight">
+                                                                    {alert.desc}
+                                                                </p>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
 
                                             {/* 2. CLINICAL & MEDICAL RECORDS */}
                                             <div className="space-y-6">
-                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
                                                     <div>
-                                                        <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Clinical & Medical Records</h3>
-                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive medical history and current status</p>
+                                                        <h3 className="font-black text-lg md:text-xl text-[var(--color-secondary)] uppercase tracking-tight">Clinical & Medical Records</h3>
+                                                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive medical history and current status</p>
                                                     </div>
-                                                    <div className="flex gap-2">
+                                                    <div className="flex gap-2 w-full sm:w-auto">
                                                         {isClinicalEditing && (
-                                                            <Button variant="ghost" onClick={() => setIsClinicalEditing(false)} className="text-xs font-black uppercase">
+                                                            <Button variant="ghost" onClick={() => setIsClinicalEditing(false)} className="flex-1 sm:flex-none text-xs font-black uppercase">
                                                                 Cancel
                                                             </Button>
                                                         )}
                                                         <Button
                                                             variant={isClinicalEditing ? "primary" : "outline"}
                                                             onClick={() => isClinicalEditing ? handleClinicalSave() : setIsClinicalEditing(true)}
-                                                            className="flex gap-2"
+                                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2"
                                                         >
                                                             {isClinicalEditing ? <Save size={16} /> : <Edit2 size={16} />}
-                                                            {isClinicalEditing ? "Save Records" : "Edit Records"}
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-widest">{isClinicalEditing ? "Save" : "Edit"}</span>
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -1417,8 +1696,8 @@ export default function ClientDetails() {
                                                                                     setClinicalForm({ ...clinicalForm, allergies: updated });
                                                                                 }}
                                                                                 className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${(clinicalForm.allergies || []).includes(allergy)
-                                                                                        ? 'bg-red-500 text-white border-red-500'
-                                                                                        : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
+                                                                                    ? 'bg-red-500 text-white border-red-500'
+                                                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
                                                                                     }`}
                                                                             >
                                                                                 {allergy}
@@ -1436,7 +1715,7 @@ export default function ClientDetails() {
                                                                 <div className="space-y-3">
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
-                                                                            <span key={a} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase border border-red-100">{a}</span>
+                                                                            <span key={a} className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-black uppercase border border-red-100 dark:border-red-800/30">{a}</span>
                                                                         )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
                                                                     </div>
                                                                     {selectedProfile.food_intolerances && (
@@ -1577,11 +1856,11 @@ export default function ClientDetails() {
                                                                 <select
                                                                     value={newVaccine.typeId}
                                                                     onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
-                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
                                                                 >
-                                                                    <option value="">Select vaccine...</option>
+                                                                    <option value="" className="bg-[var(--color-bg-card)]">Select vaccine...</option>
                                                                     {vaccinationTypes.map(t => (
-                                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                                        <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
                                                                     ))}
                                                                 </select>
                                                             </div>
@@ -1591,7 +1870,7 @@ export default function ClientDetails() {
                                                                     type="date"
                                                                     value={newVaccine.date}
                                                                     onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
-                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
                                                                 />
                                                             </div>
                                                             <div className="space-y-1.5">
@@ -1601,7 +1880,7 @@ export default function ClientDetails() {
                                                                     value={newVaccine.notes}
                                                                     onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
                                                                     placeholder="e.g. Batch #7721-A"
-                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 bg-white text-sm font-bold outline-none focus:border-emerald-500 transition-all"
+                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1660,19 +1939,21 @@ export default function ClientDetails() {
 
                                             {/* 4. GROWTH TRACKING (Moved to bottom) */}
                                             <div className="space-y-6 pt-4">
-                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
                                                     <div>
-                                                        <h3 className="font-black text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
-                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
+                                                        <h3 className="font-black text-lg md:text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
+                                                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
                                                     </div>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest"
-                                                        onClick={() => setIsGrowthModalOpen(true)}
-                                                    >
-                                                        <Plus size={14} className="mr-2" /> Log New Growth Data
-                                                    </Button>
+                                                    <div className="w-full sm:w-auto">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="w-full sm:w-auto h-10 sm:h-8 text-xs sm:text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest flex items-center justify-center"
+                                                            onClick={() => setIsGrowthModalOpen(true)}
+                                                        >
+                                                            <Plus size={14} className="mr-2" /> Log New Growth Data
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1751,15 +2032,15 @@ export default function ClientDetails() {
                                                     Currently tracking <strong>{rules.length} active nutrition rules</strong> for this profile. All clinical parameters and growth metrics are up to date as of {new Date().toLocaleDateString()}.
                                                 </p>
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     )}
 
                                     {/* TAB: LOG HISTORY (Date-Grouped) */}
                                     {activeTab === 'history' && (
                                         <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
                                             {/* LEFT SIDEBAR: DATE SELECTION */}
-                                            <div className="w-full md:w-72 flex-shrink-0 space-y-4">
-                                                <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-2 mb-4">Log Timeline</h3>
+                                            <div className="w-full md:w-72 flex-shrink-0 space-y-2 sm:space-y-4 sticky top-0 z-10 bg-[var(--color-bg-page)] pt-2 md:pt-0 pb-2 md:pb-0 md:bg-transparent -mx-4 px-4 md:mx-0 md:px-0">
+                                                <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest px-2 mb-2 sm:mb-4 hidden md:block">Log Timeline</h3>
                                                 <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0">
                                                     {Object.keys(logs.reduce((acc, log) => {
                                                         const date = new Date(log.logged_at).toLocaleDateString();
@@ -1773,15 +2054,15 @@ export default function ClientDetails() {
                                                                 key={date}
                                                                 onClick={() => setSelectedHistoryDate(date)}
                                                                 className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${isSelected
-                                                                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10'
-                                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
+                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10'
+                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
                                                                     }`}
                                                             >
                                                                 <div className="flex items-center gap-3">
                                                                     <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                            dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                    'bg-gray-300'
+                                                                        dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                            dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                'bg-gray-300'
                                                                         }`} />
                                                                     <div className="text-left">
                                                                         <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{date}</div>
@@ -1810,8 +2091,8 @@ export default function ClientDetails() {
                                                                     <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
                                                                     <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
                                                                 </div>
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                                                    <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
                                                                         <Activity size={12} />
                                                                         <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
                                                                     </div>
@@ -1819,7 +2100,7 @@ export default function ClientDetails() {
                                                                         <Button
                                                                             variant="ghost"
                                                                             onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
-                                                                            className="h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest"
+                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
                                                                         >
                                                                             <Check size={12} className="mr-1" />
                                                                             Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
@@ -1828,7 +2109,7 @@ export default function ClientDetails() {
                                                                     <Button
                                                                         variant="ghost"
                                                                         onClick={() => handleClearLogsForDay(selectedHistoryDate)}
-                                                                        className="h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest"
+                                                                        className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
                                                                     >
                                                                         <Trash2 size={12} className="mr-1 group-hover:scale-110" />
                                                                         Clear Day
@@ -1891,11 +2172,11 @@ export default function ClientDetails() {
                                                                                 {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                             </div>
                                                                         </div>
-                                                                        <div className="p-6 flex-grow flex flex-col justify-between">
+                                                                        <div className="p-4 sm:p-6 flex-grow flex flex-col justify-between">
                                                                             <div>
-                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 sm:gap-0">
                                                                                     <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
-                                                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${(log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${(log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                                                                                         }`}>
                                                                                         {(log.status === 'verified' || log.status === 'reviewed') ? 'Clinically Verified' : 'Awaiting Review'}
                                                                                     </div>
@@ -2032,8 +2313,21 @@ export default function ClientDetails() {
                                                         ))}
                                                     </div>
                                                     <div className="flex justify-end">
-                                                        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-                                                            <Save size={18} /> Save ADIME Note
+                                                        <Button 
+                                                            type="submit" 
+                                                            disabled={savingAdime || !Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0)}
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 font-black uppercase text-xs tracking-widest px-8 py-4 h-auto shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:grayscale"
+                                                        >
+                                                            {savingAdime ? (
+                                                                <>
+                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                    Saving Record...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Save size={18} /> Save ADIME Note
+                                                                </>
+                                                            )}
                                                         </Button>
                                                     </div>
                                                 </form>
@@ -2232,37 +2526,74 @@ export default function ClientDetails() {
                                     {/* TAB: INSIGHTS */}
                                     {activeTab === 'insights' && reportData && (
                                         <div className="space-y-6 animate-in fade-in duration-300">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm text-center">
-                                                    <p className="text-sm text-[var(--color-text-muted)]">Compliance Rate (30 Days)</p>
-                                                    <p className="text-4xl font-bold text-[var(--color-primary)] mt-2">{reportData.summary.complianceRate}%</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">Compliance Rate (30 Days)</p>
+                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] mt-2 tracking-tighter">{reportData.summary.complianceRate}%</p>
                                                 </div>
-                                                <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm text-center">
-                                                    <p className="text-sm text-[var(--color-text-muted)]">Total Meals Logged</p>
-                                                    <p className="text-4xl font-bold text-[var(--color-secondary)] mt-2">{reportData.summary.totalLogs}</p>
+                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-secondary)] transition-colors">Total Meals Logged</p>
+                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter">{reportData.summary.totalLogs}</p>
                                                 </div>
-                                                <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm text-center">
-                                                    <p className="text-sm text-[var(--color-text-muted)]">Flagged Interactions</p>
-                                                    <p className="text-4xl font-bold text-red-500 mt-2">{reportData.summary.flaggedCount}</p>
+                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-red-500 transition-colors">Flagged Interactions</p>
+                                                    <p className="text-3xl sm:text-4xl font-black text-red-500 mt-2 tracking-tighter">{reportData.summary.flaggedCount}</p>
                                                 </div>
                                             </div>
 
-                                            <div className="p-6 rounded-xl border bg-white dark:bg-white/5 shadow-sm">
-                                                <h3 className="font-bold mb-6">Health Score & Compliance Trend</h3>
-                                                <div className="h-[300px] w-full min-h-[300px] flex flex-col" style={{ minWidth: 0 }}>
+                                            <div className="p-4 sm:p-8 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5">
+                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                                                    <h3 className="font-black text-sm sm:text-base uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2">
+                                                        <Activity size={18} className="text-[var(--color-primary)]" />
+                                                        Health Score & Compliance Trend
+                                                    </h3>
+                                                    <div className="flex gap-2">
+                                                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Compliance
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-[250px] sm:h-[350px] w-full min-h-[250px] flex flex-col" style={{ minWidth: 0 }}>
                                                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                                         <LineChart
                                                             data={logs.slice().reverse()}
-                                                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                                            margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                                                         >
-                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                            <XAxis dataKey="logged_at" stroke="var(--color-text-muted)" fontSize={12} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
-                                                            <YAxis stroke="var(--color-text-muted)" fontSize={12} domain={[0, 100]} />
-                                                            <Tooltip
-                                                                contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', color: 'var(--color-text-main)' }}
+                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" opacity={0.5} />
+                                                            <XAxis 
+                                                                dataKey="logged_at" 
+                                                                stroke="var(--color-text-muted)" 
+                                                                fontSize={10} 
+                                                                tickLine={false}
+                                                                axisLine={false}
+                                                                tickFormatter={(val) => new Date(val).toLocaleDateString([], { month: 'short', day: 'numeric' })} 
                                                             />
-                                                            <Legend />
-                                                            <Line type="monotone" dataKey="compliance_score" name="Daily Compliance Score" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                                            <YAxis 
+                                                                stroke="var(--color-text-muted)" 
+                                                                fontSize={10} 
+                                                                tickLine={false}
+                                                                axisLine={false}
+                                                                domain={[0, 100]} 
+                                                            />
+                                                            <Tooltip
+                                                                contentStyle={{ 
+                                                                    backgroundColor: 'var(--color-bg-card)', 
+                                                                    borderColor: 'var(--color-divider)', 
+                                                                    borderRadius: '12px',
+                                                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                            />
+                                                            <Line 
+                                                                type="monotone" 
+                                                                dataKey="compliance_score" 
+                                                                name="Compliance" 
+                                                                stroke="var(--color-primary)" 
+                                                                strokeWidth={4} 
+                                                                dot={{ r: 0 }} 
+                                                                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-primary)' }} 
+                                                            />
                                                         </LineChart>
                                                     </ResponsiveContainer>
                                                 </div>
@@ -2497,23 +2828,23 @@ export default function ClientDetails() {
                                     {/* TAB 3: PLANNER */}
                                     {activeTab === 'plan' && (
                                         <div className="space-y-6 animate-in fade-in duration-300">
-                                            <div className="flex justify-between items-center bg-[var(--color-primary)]/5 dark:bg-[var(--color-primary)]/10 p-5 rounded-xl border border-[var(--color-primary)]/20 shadow-sm">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[var(--color-primary)]/5 dark:bg-[var(--color-primary)]/10 p-5 rounded-2xl border-2 border-[var(--color-primary)]/20 shadow-lg shadow-black/5 gap-4">
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)]">Adaptive Meal Planner</h3>
-                                                    <p className="text-xs text-[var(--color-text-muted)]">AI-generated schedule based on your clinical rules.</p>
+                                                    <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight">Adaptive Meal Planner</h3>
+                                                    <p className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)]">AI-generated schedule based on clinical rules.</p>
                                                 </div>
-                                                <div className="flex gap-3">
+                                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                                     <Button
                                                         onClick={handleClearPlan}
                                                         variant="outline"
-                                                        className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2 cursor-pointer"
+                                                        className="w-full sm:w-auto text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2 cursor-pointer font-black uppercase text-[10px] tracking-widest py-3 sm:py-2"
                                                     >
                                                         <Trash2 size={16} /> Clear Plan
                                                     </Button>
                                                     <Button
                                                         onClick={handleGeneratePlan}
                                                         disabled={generatingPlan}
-                                                        className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white gap-2 shadow-lg shadow-green-500/10 cursor-pointer"
+                                                        className="w-full sm:w-auto bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white gap-2 shadow-lg shadow-green-500/10 cursor-pointer font-black uppercase text-[10px] tracking-widest py-3 sm:py-2"
                                                     >
                                                         {generatingPlan ? 'Generating...' : '✨ Create New Plan'}
                                                     </Button>
@@ -2524,29 +2855,29 @@ export default function ClientDetails() {
                                                 {mealPlan.length === 0 && !generatingPlan ? (
                                                     <div className="text-center py-16 text-[var(--color-text-muted)] border-2 border-dashed border-[var(--color-divider)] rounded-2xl bg-[var(--color-bg-page)] dark:bg-white/5">
                                                         <Utensils size={40} className="mx-auto mb-4 opacity-20" />
-                                                        <p className="font-bold">No active meal plan.</p>
-                                                        <p className="text-xs">Click the button above to generate a 7-day schedule.</p>
+                                                        <p className="font-black uppercase text-sm tracking-widest">No active meal plan.</p>
+                                                        <p className="text-xs mt-1">Click the button above to generate a 7-day schedule.</p>
                                                     </div>
                                                 ) : (
                                                     Object.keys(groupedPlan).sort().map(date => (
-                                                        <div key={date} className="border border-[var(--color-divider)] rounded-xl overflow-hidden hover:border-[var(--color-primary)]/40 transition-colors bg-[var(--color-bg-card)]">
-                                                            <div className="bg-[var(--color-bg-page)] dark:bg-white/5 p-3 font-black text-xs uppercase tracking-widest text-[var(--color-secondary)] border-b border-[var(--color-divider)] flex justify-between items-center">
+                                                        <div key={date} className="border-2 border-[var(--color-divider)] rounded-2xl overflow-hidden hover:border-[var(--color-primary)]/40 transition-colors bg-[var(--color-bg-card)] shadow-sm">
+                                                            <div className="bg-[var(--color-bg-page)] dark:bg-white/5 p-4 font-black text-xs sm:text-sm uppercase tracking-widest text-[var(--color-secondary)] border-b-2 border-[var(--color-divider)] flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
                                                                 <span>{date}</span>
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="text-[10px] font-normal text-[var(--color-text-muted)] lowercase">{groupedPlan[date].length} meals scheduled</span>
+                                                                <div className="flex items-center gap-4">
+                                                                    <span className="hidden sm:inline text-[10px] font-normal text-[var(--color-text-muted)] lowercase">{groupedPlan[date].length} meals scheduled</span>
                                                                     <button
                                                                         onClick={() => { setSelectedDateForMeal(date); setIsMealModalOpen(true); }}
-                                                                        className="p-1 hover:bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded transition-colors cursor-pointer"
+                                                                        className="p-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-lg transition-all cursor-pointer border border-[var(--color-primary)]/20"
                                                                         title="Add Manual Meal"
                                                                     >
-                                                                        <Plus size={14} />
+                                                                        <Plus size={18} />
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 {groupedPlan[date].map((meal, idx) => (
-                                                                    <div key={idx} className="group relative flex gap-3 items-start p-3 rounded-xl hover:bg-[var(--color-bg-page)] dark:hover:bg-white/5 transition-all border border-transparent hover:border-[var(--color-divider)]">
-                                                                        <div className="w-16 h-16 bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-secondary)]/20 rounded-xl flex-shrink-0 overflow-hidden shadow-sm flex items-center justify-center border border-[var(--color-primary)]/10">
+                                                                    <div key={idx} className="group relative flex gap-4 items-center p-4 rounded-2xl bg-[var(--color-bg-page)]/30 dark:bg-white/5 border-2 border-transparent hover:border-[var(--color-divider)] hover:shadow-md transition-all">
+                                                                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-secondary)]/20 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm flex items-center justify-center border border-[var(--color-primary)]/10">
                                                                             {meal.image_url ? (
                                                                                 <img src={meal.image_url} className="w-full h-full object-cover" alt={meal.recipe_name} />
                                                                             ) : (
@@ -2554,19 +2885,19 @@ export default function ClientDetails() {
                                                                             )}
                                                                         </div>
                                                                         <div className="min-w-0 flex-1">
-                                                                            <div className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-wider mb-0.5">{meal.meal_type}</div>
-                                                                            <div className="font-bold text-sm leading-tight text-[var(--color-text-main)] truncate">{meal.recipe_name}</div>
-                                                                            <div className="text-[11px] text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
-                                                                                <span className="font-bold text-[var(--color-secondary)]">{meal.calories} kcal</span>
-                                                                                <span className="opacity-30">•</span>
-                                                                                <span>P: {meal.protein_g}g</span>
+                                                                            <div className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1">{meal.meal_type}</div>
+                                                                            <div className="font-black text-sm sm:text-base leading-tight text-[var(--color-text-main)] truncate uppercase tracking-tight">{meal.recipe_name}</div>
+                                                                            <div className="text-[11px] text-[var(--color-text-muted)] mt-1.5 flex items-center gap-3">
+                                                                                <span className="font-black text-[var(--color-secondary)] bg-[var(--color-secondary)]/5 px-2 py-0.5 rounded border border-[var(--color-secondary)]/10">{meal.calories} kcal</span>
+                                                                                <span className="opacity-30">|</span>
+                                                                                <span className="font-bold">PRO: {meal.protein_g}g</span>
                                                                             </div>
                                                                         </div>
                                                                         <button
                                                                             onClick={() => handleDeleteMeal(meal.id)}
-                                                                            className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all cursor-pointer"
+                                                                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all cursor-pointer"
                                                                         >
-                                                                            <Trash2 size={14} />
+                                                                            <Trash2 size={16} />
                                                                         </button>
                                                                     </div>
                                                                 ))}
@@ -2732,6 +3063,7 @@ export default function ClientDetails() {
                     fetchLogs(selectedProfile.id);
                     fetchAdimeNotes(selectedProfile.id);
                     setIsReviewOpen(false);
+                    showNotif("Meal log verified and clinical status updated", "success");
                 }}
             />
 

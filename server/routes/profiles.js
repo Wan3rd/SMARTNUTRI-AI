@@ -31,34 +31,52 @@ router.post('/', verifyToken, async (req, res) => {
     } = req.body;
 
     try {
-        const newProfile = await prisma.profiles.create({
-            data: {
-                users: { connect: { id: req.user.id } },
-                child_name,
-                date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
-                gender,
-                height_cm: height_cm ? parseFloat(height_cm) : null,
-                weight_kg: weight_kg ? parseFloat(weight_kg) : null,
-                activity_level,
-                allergies,
-                dietary_preferences,
-                vaccinations,
-                medications,
-                weigh_in_conditions,
-                bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : null,
-                medical_history: medical_history || '',
-                family_history: family_history || '',
-                food_intolerances: food_intolerances || '',
-                symptoms: symptoms || '',
-                lifestyle_factors: lifestyle_factors || '',
-                waist_circumference: waist_circumference ? parseFloat(waist_circumference) : null,
-                weighing_time,
-                is_fasting: is_fasting || false,
-                is_post_voiding: is_post_voiding || false
+        const result = await prisma.$transaction(async (tx) => {
+            const profile = await tx.profiles.create({
+                data: {
+                    users: { connect: { id: req.user.id } },
+                    child_name,
+                    date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
+                    gender,
+                    height_cm: height_cm ? parseFloat(height_cm) : null,
+                    weight_kg: weight_kg ? parseFloat(weight_kg) : null,
+                    activity_level,
+                    allergies: Array.isArray(allergies) ? allergies : (allergies ? [allergies] : []),
+                    dietary_preferences,
+                    vaccinations: typeof vaccinations === 'string' ? vaccinations : null, // Legacy support
+                    medications,
+                    weigh_in_conditions,
+                    bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : null,
+                    medical_history: medical_history || '',
+                    family_history: family_history || '',
+                    food_intolerances: food_intolerances || '',
+                    symptoms: symptoms || '',
+                    lifestyle_factors: lifestyle_factors || '',
+                    waist_circumference: waist_circumference ? parseFloat(waist_circumference) : null,
+                    weighing_time,
+                    is_fasting: is_fasting || false,
+                    is_post_voiding: is_post_voiding || false
+                }
+            });
+
+            // Handle structured vaccinations
+            if (vaccinations && Array.isArray(vaccinations) && vaccinations.length > 0) {
+                const vaccinationData = vaccinations.map(v => ({
+                    profile_id: profile.id,
+                    vaccination_type_id: v.vaccination_type_id,
+                    date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
+                    notes: v.notes || 'Recorded during onboarding'
+                }));
+                
+                await tx.profile_vaccinations.createMany({
+                    data: vaccinationData
+                });
             }
+
+            return profile;
         });
 
-        res.status(201).json(newProfile);
+        res.status(201).json(result);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

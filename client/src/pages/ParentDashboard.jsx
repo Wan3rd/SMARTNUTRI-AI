@@ -7,21 +7,24 @@ import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Inf
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
+import { useLoading } from '../context/LoadingContext';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
+import { DashboardSkeleton } from '../components/SkeletonShell';
 
 export default function ParentDashboard() {
     const { user } = useAuth();
     const { selectedProfile, loading: profileLoading } = useProfile();
+    const { startLoading, stopLoading } = useLoading();
     const [allLogs, setAllLogs] = useState([]);
     const [recentLogs, setRecentLogs] = useState([]);
     const [rules, setRules] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedLog, setSelectedLog] = useState(null);
     const [filterTab, setFilterTab] = useState('all');
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
+    const [isInitialSync, setIsInitialSync] = useState(true);
 
     useEffect(() => {
         fetchAssignedNutritionist();
@@ -30,11 +33,12 @@ export default function ParentDashboard() {
     useEffect(() => {
         const loadDashboardData = async () => {
             if (selectedProfile) {
-                setLoading(true);
+                startLoading('Syncing Child Profile...');
                 await Promise.all([fetchLogs(), fetchRules()]);
-                setLoading(false);
+                setIsInitialSync(false);
+                stopLoading();
             } else if (!profileLoading) {
-                setLoading(false);
+                setIsInitialSync(false);
             }
         };
         loadDashboardData();
@@ -121,7 +125,9 @@ export default function ParentDashboard() {
         );
     };
 
-    if (loading) return <div className="p-8 text-center text-[var(--color-text-muted)] font-medium">Loading SmartNutri...</div>;
+
+
+    if (isInitialSync) return <DashboardSkeleton />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">

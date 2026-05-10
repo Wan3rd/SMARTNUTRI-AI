@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLoading } from '../../context/LoadingContext';
 
 export function Layout({ children }) {
     // Start with false on mobile, true on desktop
@@ -24,9 +26,99 @@ export function Layout({ children }) {
     }, [sidebarOpen]);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+    const { isLoading, loadingMessage, progress, hasTimedOut, stopLoading } = useLoading();
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)] overflow-x-hidden">
+            {/* Global Transition Orchestrator */}
+            <AnimatePresence mode="wait">
+                {isLoading && (
+                    /* GPU layer: overlay fade is a one-shot — fine on main thread */
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center mesh-emerald overflow-hidden"
+                    >
+                        {/* Content entrance: one-shot scale-in — fine on main thread */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="relative z-10 text-center"
+                        >
+                            {/* ── CLINICAL PULSE RINGS (GPU-accelerated via CSS) ── */}
+                            <div className="relative mb-8 flex justify-center">
+                                {/* Outer ring: rotates + pulses entirely on GPU */}
+                                <div className="absolute h-32 w-32 rounded-full border-4 border-[var(--color-primary)]/20 animate-clinical-outer" />
+                                {/* Inner ring: counter-rotates on GPU */}
+                                <div className="absolute h-40 w-40 rounded-full border-2 border-[var(--color-primary)]/10 animate-clinical-inner" />
+                                <div className="relative h-24 w-24 rounded-3xl glass flex items-center justify-center shadow-2xl border border-white/40">
+                                    <Activity size={48} className="text-[var(--color-primary)] animate-pulse" />
+                                </div>
+                            </div>
+
+                            {/* Loading Content */}
+                            <div className="glass px-8 py-6 rounded-[2rem] border border-white/40 shadow-2xl backdrop-blur-xl max-w-sm mx-auto">
+                                <h2 className="text-xl font-black text-[var(--color-secondary)] uppercase tracking-tighter mb-2">SMARTNUTRI-AI</h2>
+
+                                {/* State switch: one-shot transition — fine on main thread */}
+                                <AnimatePresence mode="wait">
+                                    {!hasTimedOut ? (
+                                        <motion.div
+                                            key="loading"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="flex flex-col items-center gap-3"
+                                        >
+                                            {/* ── PROGRESS BAR (CSS transition — zero JS overhead) ── */}
+                                            <div className="h-1.5 w-48 bg-[var(--color-primary)]/10 rounded-full overflow-hidden relative border border-[var(--color-primary)]/5">
+                                                <div
+                                                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-[var(--color-primary)] to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                                    style={{
+                                                        width: `${progress}%`,
+                                                        transition: 'width 0.4s ease-out',
+                                                        willChange: 'width',
+                                                    }}
+                                                />
+                                            </div>
+                                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">
+                                                {loadingMessage}
+                                            </p>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="timeout"
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="flex flex-col items-center gap-4"
+                                        >
+                                            <div className="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-500/10 px-4 py-2 rounded-xl border border-red-100 dark:border-red-500/20">
+                                                <AlertTriangle size={16} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Synchronization Failed</span>
+                                            </div>
+                                            <p className="text-[11px] font-medium text-[var(--color-text-muted)] text-center leading-relaxed">
+                                                The clinical server is taking longer than usual to respond. This may be due to a slow network connection.
+                                            </p>
+                                            <Button
+                                                onClick={stopLoading}
+                                                className="w-full h-12 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 transition-all active:scale-95"
+                                            >
+                                                <RefreshCw size={14} className={isLoading ? "animate-spin-slow" : ""} />
+                                                Dismiss & Retry
+                                            </Button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Mobile Sidebar Overlay */}
             {isMobile && sidebarOpen && (
                 <div
@@ -43,10 +135,13 @@ export function Layout({ children }) {
                     !isMobile && sidebarOpen ? "lg:pl-64" : "pl-0"
                 )}>
                     {/* Unified Header */}
-                    <header className={cn(
-                        "sticky top-0 z-30 flex h-14 sm:h-16 items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4 transition-all duration-300",
-                        !isMobile && sidebarOpen ? "md:ml-0" : "ml-0"
-                    )}>
+                    <header 
+                        className={cn(
+                            "fixed top-0 z-30 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4 transition-all duration-300",
+                            !isMobile && sidebarOpen ? "left-64 right-0" : "left-0 right-0"
+                        )}
+                        style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }}
+                    >
                         <Button 
                             variant="ghost" 
                             size="icon" 
@@ -69,6 +164,9 @@ export function Layout({ children }) {
                             {/* Add other header actions here if needed */}
                         </div>
                     </header>
+
+                    {/* Header Spacer to prevent content from going under fixed header */}
+                    <div style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }} />
 
                     <main className={cn(
                         "p-4 sm:p-6 md:p-8 transition-all duration-300 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-8",

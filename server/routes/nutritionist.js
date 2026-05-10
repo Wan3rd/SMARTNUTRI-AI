@@ -197,6 +197,23 @@ router.get('/clients', verifyToken, isNutritionist, async (req, res) => {
     }
 });
 
+// GET /clients/:id - Get specific client details
+router.get('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        const client = await prisma.users.findUnique({
+            where: { id: req.params.id },
+            select: { id: true, email: true, full_name: true }
+        });
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        res.json(client);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // GET /clients/:parentId/profiles - Get children profiles for a client
 router.get('/clients/:parentId/profiles', verifyToken, isNutritionist, async (req, res) => {
     try {

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { useNavigate } from 'react-router-dom';
+import { Activity } from 'lucide-react';
+import { motion } from 'framer-motion';
 import api from '../lib/api';
+import VaccinationStep from '../components/VaccinationStep';
+import { useLoading } from '../context/LoadingContext';
 
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)",
@@ -30,7 +34,8 @@ const ALLERGY_OPTIONS = [
 
 export default function Onboarding() {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const { startLoading, stopLoading } = useLoading();
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [error, setError] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -42,7 +47,7 @@ export default function Onboarding() {
         activityLevel: 'moderate',
         allergies: [],
         dietaryPreferences: [],
-        vaccinations: '',
+        vaccinations: [],
         medications: '',
         weighInConditions: '',
         bristolStoolScale: '4',
@@ -77,7 +82,7 @@ export default function Onboarding() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        startLoading('Initializing Clinical Profile...');
         setError(null);
 
         try {
@@ -106,9 +111,17 @@ export default function Onboarding() {
             console.error(err);
             setError("Failed to save profile. Please try again.");
         } finally {
-            setLoading(false);
+            stopLoading();
         }
     };
+
+
+
+    React.useEffect(() => {
+        setIsInitialSync(false);
+    }, []);
+
+    if (isInitialSync) return null;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
@@ -258,34 +271,28 @@ export default function Onboarding() {
                                 />
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-[var(--color-text-main)]">Current Medications</label>
-                                    <input
-                                        type="text"
-                                        name="medications"
-                                        className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                                        placeholder="e.g. Daily Vitamins, Inhaler"
-                                        value={formData.medications}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-[var(--color-text-main)]">Vaccination Status</label>
-                                    <input
-                                        type="text"
-                                        name="vaccinations"
-                                        className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                                        placeholder="e.g. Up to date"
-                                        value={formData.vaccinations}
-                                        onChange={handleChange}
-                                    />
-                                </div>
+                            <div className="pt-4">
+                                <VaccinationStep 
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-[var(--color-text-main)]">Current Medications</label>
+                                <input
+                                    type="text"
+                                    name="medications"
+                                    className="w-full p-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                                    placeholder="e.g. Daily Vitamins, Inhaler"
+                                    value={formData.medications}
+                                    onChange={handleChange}
+                                />
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full size-lg text-base mt-2" disabled={loading}>
-                            {loading ? 'Saving Profile...' : 'Complete Setup'}
+                        <Button type="submit" className="w-full size-lg text-base mt-2">
+                            Complete Setup
                         </Button>
                     </form>
                 </CardContent>

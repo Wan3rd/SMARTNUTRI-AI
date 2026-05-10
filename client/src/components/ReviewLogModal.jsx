@@ -5,6 +5,7 @@ import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff,
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
+import ConfirmDialog from './common/ConfirmDialog';
 
 export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete }) {
     const [loading, setLoading] = useState(false);
@@ -14,6 +15,32 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [previewImage, setPreviewImage] = useState(null);
     const [zoomScale, setZoomScale] = useState(1);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
+    const isDirty = () => {
+        if (!log) return false;
+        const initialReview = log.nutritionist_review?.comment || '';
+        const initialAnalysis = JSON.stringify(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+        const currentAnalysis = JSON.stringify(editedAnalysis);
+
+        return review !== initialReview || initialAnalysis !== currentAnalysis;
+    };
+
+    const handleDismiss = () => {
+        if (isDirty()) {
+            setConfirmDialog({
+                isOpen: true,
+                title: 'Discard Clinical Edits?',
+                message: 'You have modified the nutritional analysis or added professional comments. Are you sure you want to discard these changes?',
+                onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                    onClose();
+                }
+            });
+        } else {
+            onClose();
+        }
+    };
 
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
@@ -26,7 +53,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     setPreviewImage(null);
                     setZoomScale(1);
                 } else {
-                    onClose();
+                    handleDismiss();
                 }
             }
         };
@@ -55,11 +82,61 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 },
                 status: 'verified'
             });
-            onReviewComplete?.();
-            onClose();
+            showNotif("Meal log successfully verified", "success");
+            setTimeout(() => {
+                onReviewComplete?.();
+                onClose();
+            }, 1000);
         } catch (err) {
             console.error("Failed to submit review", err);
             showNotif("Failed to save review. Please try again.", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveDraft = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            await api.patch(`/nutritionist/logs/${log.id}/review`, {
+                nutritionist_review: {
+                    title: "Review in Progress",
+                    comment: review,
+                    verified_analysis: editedAnalysis
+                },
+                status: 'reviewed'
+            });
+            showNotif("Progress saved successfully", "success");
+            onReviewComplete?.(); // Refresh data in background
+        } catch (err) {
+            console.error("Failed to save draft", err);
+            showNotif("Failed to save progress", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            await api.patch(`/nutritionist/logs/${log.id}/review`, {
+                nutritionist_review: {
+                    title: "Action Required",
+                    comment: review || "Nutritionist requested correction/clarification.",
+                    verified_analysis: editedAnalysis
+                },
+                status: 'rejected'
+            });
+            showNotif("Meal log rejected", "info");
+            setTimeout(() => {
+                onReviewComplete?.();
+                onClose();
+            }, 1000);
+        } catch (err) {
+            console.error("Failed to reject log", err);
+            showNotif("Failed to process rejection", "error");
         } finally {
             setLoading(false);
         }
@@ -110,7 +187,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     return (
         <AnimatePresence>
-            <div key="modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-hidden">
+            <div key="modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-hidden" onClick={(e) => {
+                if (e.target === e.currentTarget) handleDismiss();
+            }}>
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -119,7 +198,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     className="w-full max-w-6xl relative h-[90vh] flex shadow-2xl rounded-3xl overflow-hidden border-2 border-white/10"
                 >
                     {/* Left Side: Images & Profile (Dark Theme) */}
-                    <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide">
+                    <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide shrink-0">
                         <div className="flex flex-col gap-4 mb-6">
                             <motion.div
                                 variants={itemVariants}
@@ -176,15 +255,48 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             whileHover={{ rotate: 90, scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={onClose}
-                            className="absolute right-6 top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all z-50 bg-[var(--color-bg-page)] rounded-full p-2 shadow-lg border-2 border-[var(--color-divider)]"
+                            className="absolute right-4 top-4 lg:right-6 lg:top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all z-50 bg-[var(--color-bg-page)] rounded-full p-2 shadow-lg border-2 border-[var(--color-divider)] hidden lg:flex"
                         >
                             <X size={20} />
                         </motion.button>
 
-                        <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-8 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
-                            <motion.div variants={itemVariants} className="flex justify-between items-start">
+                        <div className="flex-1 overflow-y-auto p-0 lg:p-12 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
+                            {/* MOBILE ONLY: Hero Image & Profile Header */}
+                            <div className="flex lg:hidden relative w-full h-[40vh] shrink-0">
+                                <img onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20 flex flex-col justify-end p-5 pointer-events-none">
+                                    <div className="flex justify-between items-end w-full relative z-10 pointer-events-auto">
+                                        <div className="flex-1 pr-4">
+                                            <div className="flex gap-2 mb-1.5 flex-wrap">
+                                                <span className="text-[9px] bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
+                                                    {log.profile?.gender || 'N/A'} • {log.profile?.date_of_birth ? `${new Date().getFullYear() - new Date(log.profile.date_of_birth).getFullYear()}Y` : 'N/A'}
+                                                </span>
+                                                <span className="text-[9px] bg-white/20 backdrop-blur-md text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-white/10">
+                                                    {log.meal_category === 'Other' ? 'Dietary' : log.meal_category || 'Meal'}
+                                                </span>
+                                            </div>
+                                            <h2 className="text-2xl font-black text-white leading-tight drop-shadow-md line-clamp-1">{log.child_name || 'Anonymous Patient'}</h2>
+                                            <p className="text-[10px] text-white/80 font-bold mt-1 line-clamp-1 drop-shadow-md">Allergies: {log.profile?.allergies?.join(', ') || 'None'}</p>
+                                        </div>
+                                        {log.image_after_url && (
+                                            <div onClick={() => setPreviewImage(log.image_after_url)} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-white/20 overflow-hidden shadow-2xl relative cursor-zoom-in shrink-0">
+                                                 <img src={log.image_after_url} className="w-full h-full object-cover" />
+                                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                                                     <span className="text-[8px] font-black text-white uppercase tracking-widest text-center shadow-black drop-shadow-md">View<br/>After</span>
+                                                 </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <button onClick={onClose} className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-2 rounded-full border border-white/20 z-50">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="px-5 py-6 lg:px-0 lg:py-0 space-y-6 sm:space-y-8">
+                                <motion.div variants={itemVariants} className="flex justify-between items-start">
                                 <div>
-                                    <h2 className="text-3xl font-black text-[var(--color-secondary)] tracking-tight mb-2 uppercase">
+                                    <h2 className="text-xl sm:text-3xl font-black text-[var(--color-secondary)] tracking-tight mb-2 uppercase">
                                         {log.meal_category === 'Other' ? 'Dietary' : log.meal_category || 'Meal'} Assessment
                                     </h2>
                                     <p className="text-sm font-bold text-[var(--color-text-muted)] flex items-center gap-2">
@@ -225,17 +337,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     { icon: <Info size={16} />, label: "Tools", value: log.serving_spoon_used ? 'Standard Spoon' : 'Estimated', color: "#6366f1" },
                                     { icon: <Activity size={16} />, label: "Exercise", value: log.physical_activity || 'None', color: "#f59e0b" }
                                 ].map((stat, i) => (
-                                    <div key={i} className={`bg-[var(--color-bg-page)] p-4 rounded-2xl border-2 transition-all shadow-sm ${isEditing && stat.label === "Consumption" ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-divider)] group hover:border-[var(--color-primary)]'}`}>
-                                        <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
+                                    <div key={i} className={`bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 transition-all shadow-lg shadow-black/5 ${isEditing && stat.label === "Consumption" ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl'}`}>
+                                        <p className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
                                             {stat.icon} {stat.label}
                                         </p>
-                                        <div className="text-sm font-black text-[var(--color-text-main)] uppercase">{stat.value}</div>
+                                        <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">{stat.value}</div>
                                     </div>
                                 ))}
                             </motion.div>
 
                             {/* Food Analysis Table */}
-                            <motion.div variants={itemVariants} className="bg-[var(--color-bg-page)] rounded-3xl p-6 border-2 border-[var(--color-divider)] shadow-inner">
+                            <motion.div variants={itemVariants} className="bg-[var(--color-bg-page)] rounded-3xl p-4 sm:p-6 border-2 border-[var(--color-divider)] shadow-inner">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="font-black text-sm uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
@@ -253,17 +365,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.2 + (idx * 0.05) }}
-                                            className={`bg-[var(--color-bg-card)] p-4 rounded-2xl border-2 border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all border-l-4 ${isEditing ? 'border-l-orange-500 bg-orange-50/5' : 'border-l-[var(--color-primary)]'}`}
+                                            className={`bg-[var(--color-bg-card)] p-4 rounded-2xl border-2 border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all border-l-4 shadow-md shadow-black/5 hover:shadow-lg ${isEditing ? 'border-l-orange-500 bg-orange-50/5' : 'border-l-[var(--color-primary)]'}`}
                                         >
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
+                                                <span className="text-sm sm:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
                                                     {item.cooking_method && (
                                                         <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-primary)] px-2 py-1 rounded-md border border-[var(--color-primary)]/20 uppercase tracking-tight flex items-center gap-1.5 whitespace-normal break-words">
                                                             <ChefHat size={12} className="shrink-0" /> {item.cooking_method}
                                                         </span>
                                                     )}
                                             </div>
-                                            <div className={`flex gap-3 sm:gap-6 px-4 py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 bg-white shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
+                                            <div className={`flex gap-3 sm:gap-6 px-3 sm:px-4 py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 bg-white shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
                                                 {[
                                                     { key: 'calories', label: "Kcal", col: "#e11d48" },
                                                     { key: 'protein_g', label: "Pro", col: "#4f46e5" },
@@ -294,19 +406,19 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 </div>
 
                                 {/* Summary Totals */}
-                                <div className="grid grid-cols-4 gap-3 pt-6 border-t-2 border-dashed border-[var(--color-divider)]">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t-2 border-dashed border-[var(--color-divider)]">
                                     {[
                                         { val: editedAnalysis?.total_calories_est, label: "TOTAL KCAL", col: "#e11d48" },
                                         { val: macros.protein_g, label: "TOTAL PRO", col: "#4f46e5" },
                                         { val: macros.carbs_g, label: "TOTAL CARB", col: "#0d9488" },
                                         { val: macros.fat_g, label: "TOTAL FAT", col: "#d97706" }
                                     ].map((sum, si) => (
-                                        <div key={si} className="text-center bg-[var(--color-bg-card)] rounded-2xl p-3 border-2 border-[var(--color-divider)] shadow-sm hover:translate-y-[-2px] transition-transform overflow-hidden" style={{ borderColor: `${sum.col}33` }}>
-                                            <div className="text-base sm:text-lg font-black truncate" style={{ color: sum.col }}>
+                                        <div key={si} className="text-center bg-[var(--color-bg-card)] rounded-2xl p-4 border-2 border-[var(--color-divider)] shadow-lg shadow-black/5 hover:translate-y-[-2px] transition-transform overflow-hidden" style={{ borderColor: `${sum.col}33` }}>
+                                            <div className="text-lg sm:text-2xl font-black truncate" style={{ color: sum.col }}>
                                                 {parseFloat(Number(sum.val || 0).toFixed(1))}
                                                 {si > 0 ? 'g' : ''}
                                             </div>
-                                            <div className="text-[8px] font-black tracking-widest uppercase opacity-60" style={{ color: sum.col }}>{sum.label}</div>
+                                            <div className="text-[10px] font-black tracking-widest uppercase opacity-60" style={{ color: sum.col }}>{sum.label}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -314,12 +426,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                             {/* AI Insights */}
                             {log.violation_details?.xai_feedback && (
-                                <motion.div variants={itemVariants} className="bg-indigo-50/30 dark:bg-indigo-900/10 p-6 rounded-3xl border-2 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group">
+                                <motion.div variants={itemVariants} className="bg-indigo-50/30 dark:bg-indigo-900/10 p-4 sm:p-6 rounded-3xl border-2 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group shadow-lg shadow-indigo-500/5">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
-                                    <h3 className="text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-2">
+                                    <h3 className="text-xs font-black uppercase text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-2">
                                         <Activity size={14} className="animate-pulse" /> Clinical AI reasoning
                                     </h3>
-                                    <p className="text-sm text-[var(--color-text-main)] italic font-bold leading-relaxed relative z-10">
+                                    <p className="text-xs sm:text-base text-[var(--color-text-main)] italic font-bold leading-relaxed relative z-10">
                                         "{log.violation_details.xai_feedback}"
                                     </p>
                                 </motion.div>
@@ -327,12 +439,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                             {/* Professional Feedback */}
                             <motion.div variants={itemVariants} className="flex flex-col space-y-3">
-                                <label className="text-sm font-black uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
+                                <label className="text-xs sm:text-base font-black uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
                                     <Edit2 size={16} className="text-[var(--color-primary)]" />
                                     Professional Evaluation
                                 </label>
                                 <textarea
-                                    className="w-full min-h-[160px] p-6 rounded-3xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all resize-none shadow-inner custom-scrollbar"
+                                    className="w-full min-h-[160px] p-4 sm:p-6 rounded-3xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all resize-none shadow-xl shadow-black/5 custom-scrollbar"
                                     placeholder="Enter clinical recommendations, dietary adjustments, or caregiver feedback..."
                                     value={review}
                                     onChange={(e) => setReview(e.target.value)}
@@ -340,18 +452,39 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </motion.div>
 
                             {/* Actions */}
-                            <motion.div variants={itemVariants} className="flex gap-4 pt-4 pb-8">
-                                <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-bg-page)] transition-all" onClick={onClose}>
-                                    Dismiss
-                                </Button>
-                                <Button
-                                    onClick={handleApprove}
-                                    className="flex-[2] py-4 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-xl shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none"
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Processing...' : 'Approve & Finalize Review'}
-                                </Button>
+                            <motion.div variants={itemVariants} className="flex flex-col-reverse sm:flex-row gap-4 pt-4 pb-8">
+                                <div className="flex flex-1 gap-2">
+                                    <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-bg-page)] transition-all" onClick={handleDismiss}>
+                                        Dismiss
+                                    </Button>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-orange-600 border-orange-100 hover:bg-orange-50 transition-all" 
+                                        onClick={handleReject}
+                                        disabled={loading}
+                                    >
+                                        Reject
+                                    </Button>
+                                </div>
+                                <div className="flex-[2] flex gap-2">
+                                    <Button
+                                        onClick={handleSaveDraft}
+                                        className="flex-1 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest shadow-xl transition-all border-none"
+                                        disabled={loading}
+                                    >
+                                        Save Progress
+                                    </Button>
+                                    <Button
+                                        onClick={handleApprove}
+                                        className="flex-[1.5] py-4 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-xl shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none"
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Processing...' : 'Approve & Finalize'}
+                                    </Button>
+                                </div>
                             </motion.div>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
@@ -403,6 +536,15 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 type={notif.type}
                 message={notif.message}
                 onClose={() => setNotif({ ...notif, show: false })}
+            />
+
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                isDestructive={true}
             />
         </AnimatePresence>
     );

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, ShieldAlert, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock, Eye, EyeOff, FileUp, CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
+import { Activity, User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, ShieldAlert, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock, Eye, EyeOff, FileUp, CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLoading } from '../context/LoadingContext';
 import { cn, convertHeight, convertWeight } from '../lib/utils';
+import { ProfileSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
@@ -121,6 +123,7 @@ export default function Profile() {
     };
 
     const { user, logout, updateUser } = useAuth();
+    const { startLoading, stopLoading } = useLoading();
     const navigate = useNavigate();
 
     // Redirect admins away from profile page
@@ -129,9 +132,8 @@ export default function Profile() {
             navigate('/', { replace: true });
         }
     }, [user, navigate]);
-
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isEditing, setIsEditing] = useState(false);
 
@@ -207,38 +209,47 @@ export default function Profile() {
     const [cropTarget, setCropTarget] = useState('child'); // 'parent' or 'child' or 'nutritionist' or 'license'
 
     useEffect(() => {
-        if (user?.role !== 'nutritionist') {
-            fetchProfile();
-            fetchVaccinationData();
-            // Fetch parent account data
-            api.get('/auth/me').then(res => {
-                setParentData({
-                    fullName: res.data.full_name || '',
-                    email: res.data.email || '',
-                    phone: res.data.phone || '',
-                    profileImageUrl: res.data.profile_image_url || ''
-                });
-            }).catch(err => console.error("Error fetching parent account", err));
-        } else {
-            // Fetch linked client count for nutritionist stats
-            api.get('/nutritionist/clients').then(res => setClientCount(res.data?.length ?? 0)).catch(() => setClientCount(0));
-            // Fetch nutritionist profile from backend
-            api.get('/auth/me').then(res => {
-                const data = res.data;
-                setNutri(prev => ({
-                    ...prev,
-                    fullName: data.full_name || user?.full_name || '',
-                    email: data.email || user?.email || '',
-                    phone: data.phone || '',
-                    specialization: data.specialization || 'Pediatric Nutrition',
-                    licenseNo: data.license_no || '',
-                    clinic: data.clinic || '',
-                    profileImageUrl: data.profile_image_url || '',
-                    licenseImageUrl: data.license_image_url || ''
-                }));
-            }).catch(err => console.error("Error fetching nutritionist profile", err))
-                .finally(() => setLoading(false));
-        }
+        const fetchInitialData = async () => {
+            startLoading('Syncing Clinical Identity...');
+            try {
+                if (user?.role !== 'nutritionist') {
+                    await Promise.all([fetchProfile(), fetchVaccinationData()]);
+                    // Fetch parent account data
+                    const res = await api.get('/auth/me');
+                    setParentData({
+                        fullName: res.data.full_name || '',
+                        email: res.data.email || '',
+                        phone: res.data.phone || '',
+                        profileImageUrl: res.data.profile_image_url || ''
+                    });
+                } else {
+                    // Fetch linked client count for nutritionist stats
+                    const [clientsRes, authRes] = await Promise.all([
+                        api.get('/nutritionist/clients'),
+                        api.get('/auth/me')
+                    ]);
+                    setClientCount(clientsRes.data?.length ?? 0);
+                    const data = authRes.data;
+                    setNutri(prev => ({
+                        ...prev,
+                        fullName: data.full_name || user?.full_name || '',
+                        email: data.email || user?.email || '',
+                        phone: data.phone || '',
+                        specialization: data.specialization || 'Pediatric Nutrition',
+                        licenseNo: data.license_no || '',
+                        clinic: data.clinic || '',
+                        profileImageUrl: data.profile_image_url || '',
+                        licenseImageUrl: data.license_image_url || ''
+                    }));
+                }
+            } catch (err) {
+                console.error("Error fetching initial profile data", err);
+            } finally {
+                setIsInitialSync(false);
+                stopLoading();
+            }
+        };
+        if (user) fetchInitialData();
     }, [user]);
 
     const handleNutriSave = async () => {
@@ -253,7 +264,7 @@ export default function Profile() {
                 clinic: nutri.clinic,
                 profile_image_url: nutri.profileImageUrl
             });
-            setNutriMsg({ type: 'success', text: 'Saved' });
+            setNutriMsg({ type: 'success', text: 'Nutritionist professional profile updated' });
 
             // Sync with global auth state
             if (updateUser) {
@@ -267,7 +278,7 @@ export default function Profile() {
             setNutriEditing(false);
         } catch (err) {
             console.error(err);
-            setNutriMsg({ type: 'error', text: 'Failed to save to server.' });
+            setNutriMsg({ type: 'error', text: 'Failed to synchronize clinical profile' });
         } finally {
             setNutriSaving(false);
         }
@@ -282,7 +293,7 @@ export default function Profile() {
                 phone: parentData.phone,
                 profile_image_url: parentData.profileImageUrl
             });
-            setParentMsg({ type: 'success', text: 'Saved' });
+            setParentMsg({ type: 'success', text: 'Account information updated' });
 
             if (updateUser) {
                 updateUser({
@@ -294,9 +305,65 @@ export default function Profile() {
             setParentEditing(false);
         } catch (err) {
             console.error(err);
-            setParentMsg({ type: 'error', text: 'Failed to update account.' });
+            setParentMsg({ type: 'error', text: 'Failed to update account details' });
         } finally {
             setParentSaving(false);
+        }
+    };
+
+    const handleCancelNutri = () => {
+        const isDirty = nutri.fullName !== (user?.full_name || '') ||
+                        nutri.phone !== (user?.phone || '') ||
+                        nutri.specialization !== (user?.specialization || 'Pediatric Nutrition') ||
+                        nutri.licenseNo !== (user?.license_no || '') ||
+                        nutri.clinic !== (user?.clinic || '');
+        
+        if (isDirty) {
+            setConfirmDialog({
+                isOpen: true,
+                title: 'Discard Professional Edits?',
+                message: 'You have unsaved changes in your professional clinical profile. Are you sure you want to discard them?',
+                onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                    setNutriEditing(false);
+                    // Reset to user data
+                    setNutri(prev => ({
+                        ...prev,
+                        fullName: user?.full_name || '',
+                        phone: user?.phone || '',
+                        specialization: user?.specialization || 'Pediatric Nutrition',
+                        licenseNo: user?.license_no || '',
+                        clinic: user?.clinic || ''
+                    }));
+                }
+            });
+        } else {
+            setNutriEditing(false);
+        }
+    };
+
+    const handleCancelParent = () => {
+        const isDirty = parentData.fullName !== (user?.full_name || '') ||
+                        parentData.phone !== (user?.phone || '');
+        
+        if (isDirty) {
+            setConfirmDialog({
+                isOpen: true,
+                title: 'Discard Account Edits?',
+                message: 'You have unsaved changes in your account information. Are you sure you want to discard them?',
+                onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                    setParentEditing(false);
+                    // Reset to user data
+                    setParentData(prev => ({
+                        ...prev,
+                        fullName: user?.full_name || '',
+                        phone: user?.phone || ''
+                    }));
+                }
+            });
+        } else {
+            setParentEditing(false);
         }
     };
 
@@ -321,6 +388,36 @@ export default function Profile() {
                 .catch(err => console.error(err));
         }
     }, [profileData.id]);
+
+    const handleCancelProfile = () => {
+        // Find initial state from allProfiles
+        const initial = allProfiles.find(p => p.id === profileData.id);
+        if (!initial) {
+            setIsEditing(false);
+            return;
+        }
+
+        const isDirty = profileData.childName !== (initial.child_name || '') ||
+                        profileData.age !== (initial.age?.toString() || '') ||
+                        profileData.height.toString() !== (initial.height_cm?.toString() || '') ||
+                        profileData.weight.toString() !== (initial.weight_kg?.toString() || '') ||
+                        profileData.medicalHistory !== (initial.medical_history || '');
+        
+        if (isDirty) {
+            setConfirmDialog({
+                isOpen: true,
+                title: 'Discard Profile Edits?',
+                message: 'You have unsaved changes to this clinical child profile. Are you sure you want to discard them?',
+                onConfirm: () => {
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                    setIsEditing(false);
+                    fetchProfile(profileData.id); // Reset
+                }
+            });
+        } else {
+            setIsEditing(false);
+        }
+    };
 
     const fetchProfile = async (specificProfileId = null) => {
         try {
@@ -371,8 +468,6 @@ export default function Profile() {
             }
         } catch (err) {
             console.error("Error fetching profiles", err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -429,8 +524,10 @@ export default function Profile() {
             setChildVaccinations([res.data, ...childVaccinations]);
             setIsAddingVaccine(false);
             setNewVaccine({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+            setMessage({ type: 'success', text: 'Vaccination record added' });
         } catch (err) {
             console.error("Error adding vaccine", err);
+            setMessage({ type: 'error', text: 'Failed to add immunization record' });
         }
     };
 
@@ -551,9 +648,9 @@ export default function Profile() {
                 });
                 setProfileData(prev => ({ ...prev, profileImageUrl: res.data.profile_image_url }));
             }
-            if (cropTarget === 'nutritionist') setNutriMsg({ type: 'success', text: 'Saved' });
-            else if (cropTarget === 'parent') setParentMsg({ type: 'success', text: 'Saved' });
-            else setMessage({ type: 'success', text: 'Saved' });
+            if (cropTarget === 'nutritionist') setNutriMsg({ type: 'success', text: 'Profile photo updated' });
+            else if (cropTarget === 'parent') setParentMsg({ type: 'success', text: 'Account photo updated' });
+            else setMessage({ type: 'success', text: 'Child profile photo updated' });
 
             setImageToCrop(null);
         } catch (err) {
@@ -620,17 +717,18 @@ export default function Profile() {
                 medical_history: profileData.medicalHistory
             });
 
-            setMessage({ type: 'success', text: 'Saved' });
+            setMessage({ type: 'success', text: 'Child clinical profile updated' });
             setIsEditing(false);
         } catch (err) {
             console.error(err);
-            setMessage({ type: 'error', text: 'Failed to update profile.' });
+            setMessage({ type: 'error', text: 'Failed to update clinical profile data' });
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Loading profile...</div>;
+
+    if (isInitialSync) return <ProfileSkeleton />;
 
     // --- NUTRITIONIST VIEW ---
     if (user?.role === 'nutritionist') {
@@ -659,7 +757,7 @@ export default function Profile() {
                         {/* Avatar with pulse ring */}
                         <div className="relative flex-shrink-0 group">
                             <div className="absolute inset-0 rounded-3xl bg-white/30 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
-                            <div className="relative h-24 w-24 overflow-hidden bg-white/20 backdrop-blur-sm rounded-3xl border-2 border-white/40 flex items-center justify-center text-white text-3xl font-black shadow-2xl select-none">
+                            <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-white/20 backdrop-blur-sm rounded-3xl border-2 border-white/40 flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-2xl select-none">
                                 {isUploadingPhoto ? (
                                     <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
                                         <Loader2 size={32} className="animate-spin text-white" />
@@ -693,7 +791,7 @@ export default function Profile() {
                         {/* Name & role */}
                         <div className="flex-1 text-center sm:text-left min-w-0">
                             <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 mb-2 sm:mb-1">
-                                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md truncate max-w-full text-center sm:text-left">{nutri.fullName}</h1>
+                                <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md truncate max-w-full text-center sm:text-left leading-tight">{nutri.fullName}</h1>
                                 <span className="px-3 py-1 bg-white/20 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm whitespace-nowrap">
                                     Nutritionist
                                 </span>
@@ -702,23 +800,23 @@ export default function Profile() {
                         </div>
 
                         {/* Member since pill */}
-                        <div className="flex-shrink-0 text-center">
-                            <div className="px-5 py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/25">
-                                <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest mb-0.5">Member Since</p>
-                                <p className="text-xl font-black text-white">{memberSince}</p>
+                        <div className="flex-shrink-0 text-center w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="px-4 sm:px-5 py-2 sm:py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/25 flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0">
+                                <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest sm:mb-0.5">Member Since:</p>
+                                <p className="text-lg sm:text-xl font-black text-white">{memberSince}</p>
                             </div>
                         </div>
                     </div>
                 </motion.div>
 
                 {/* ── STATS ROW ── */}
-                <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2 sm:gap-4">
                     {[
                         { label: 'Active Clients', value: clientCount ?? '—', icon: Users, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
                         { label: 'Role', value: 'Clinical', icon: Stethoscope, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
                         {
                             label: 'Status',
-                            value: user?.status === 'approved' ? 'Verified' : 'Pending Audit',
+                            value: user?.status === 'approved' ? 'Verified' : 'Pending',
                             icon: user?.status === 'approved' ? Shield : ShieldAlert,
                             color: user?.status === 'approved'
                                 ? 'text-violet-600 bg-violet-50 dark:bg-violet-900/20'
@@ -728,13 +826,13 @@ export default function Profile() {
                         <motion.div
                             whileHover={{ y: -5, transition: { duration: 0.2 } }}
                             key={stat.label}
-                            className="p-5 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm flex flex-col items-center gap-2 hover:shadow-md transition-all"
+                            className="p-3 sm:p-5 bg-white dark:bg-white/5 rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-sm flex flex-col items-center gap-1 sm:gap-2 hover:shadow-md transition-all"
                         >
-                            <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${stat.color}`}>
-                                <stat.icon size={20} />
+                            <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl flex items-center justify-center ${stat.color}`}>
+                                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
-                            <p className="text-2xl font-black text-[var(--color-text-main)]">{stat.value}</p>
-                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">{stat.label}</p>
+                            <p className="text-lg sm:text-2xl font-black text-[var(--color-text-main)] leading-none mt-1 sm:mt-0 text-center">{stat.value}</p>
+                            <p className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter sm:tracking-widest text-center leading-tight truncate w-full px-1">{stat.label}</p>
                         </motion.div>
                     ))}
                 </motion.div>
@@ -749,10 +847,10 @@ export default function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* ── PROFESSIONAL IDENTITY ── */}
                     <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
-                                    <Stethoscope size={18} className="text-blue-500" /> Professional Info
+                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-4 sm:p-6">
+                            <div className="flex items-center justify-between gap-2">
+                                <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                    <Stethoscope size={18} className="text-blue-500 shrink-0" /> <span className="truncate">Professional Info</span>
                                 </CardTitle>
                                 {!nutriEditing ? (
                                     <button
@@ -764,7 +862,7 @@ export default function Profile() {
                                 ) : (
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => { setNutriEditing(false); setNutriMsg({ type: '', text: '' }); }}
+                                            onClick={handleCancelNutri}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-white/10 text-[var(--color-text-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-gray-200"
                                         >Cancel</button>
                                         <button
@@ -790,9 +888,9 @@ export default function Profile() {
 
                     {/* ── LICENSE VERIFICATION ── */}
                     <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
-                            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
-                                <ShieldCheck size={18} className="text-emerald-500" /> Credential Verification
+                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-4 sm:p-6">
+                            <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                <ShieldCheck size={18} className="text-emerald-500 shrink-0" /> <span className="truncate">Verification</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 sm:p-6 space-y-6">
@@ -818,21 +916,21 @@ export default function Profile() {
                                             alt="License Document"
                                         />
                                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <label className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-gray-100 transition-colors">
+                                            <label className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white text-black rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-gray-100 transition-colors shadow-xl">
                                                 <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'license')} accept="image/*" />
-                                                <Edit2 size={12} /> Replace Document
+                                                <Edit2 size={12} /> Replace
                                             </label>
                                         </div>
-                                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1.5 sm:gap-2">
                                             <button
                                                 onClick={() => setIsLicenseBlurred(!isLicenseBlurred)}
-                                                className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-md transition-all border border-white/20"
+                                                className="p-1.5 sm:p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-md transition-all border border-white/20 shadow-md"
                                                 title={isLicenseBlurred ? "Unblur Document" : "Blur Document"}
                                             >
-                                                {isLicenseBlurred ? <Eye size={14} /> : <EyeOff size={14} />}
+                                                {isLicenseBlurred ? <Eye size={12} className="sm:w-3.5 sm:h-3.5" /> : <EyeOff size={12} className="sm:w-3.5 sm:h-3.5" />}
                                             </button>
-                                            <div className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest rounded-md shadow-lg flex items-center gap-1">
-                                                <CheckCircle2 size={10} /> Document Uploaded
+                                            <div className="px-1.5 py-1 sm:px-2 sm:py-1 bg-emerald-500 text-white text-[7px] sm:text-[8px] font-black uppercase tracking-widest rounded-md shadow-lg flex items-center gap-1">
+                                                <CheckCircle2 size={10} className="hidden xs:block" /> Uploaded
                                             </div>
                                         </div>
                                     </div>
@@ -1047,7 +1145,7 @@ export default function Profile() {
                         ) : (
                             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                                 <button
-                                    onClick={() => setParentEditing(false)}
+                                    onClick={handleCancelParent}
                                     className="px-4 py-3 sm:py-2 bg-gray-100 dark:bg-white/5 text-[var(--color-text-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer order-2 sm:order-1"
                                 >Cancel</button>
                                 <button
@@ -1225,7 +1323,7 @@ export default function Profile() {
                         <div className="flex flex-col sm:flex-row gap-3 w-full">
                             <Button
                                 variant="outline"
-                                onClick={() => { setIsEditing(false); fetchProfile(); }}
+                                onClick={handleCancelProfile}
                                 className="w-full sm:w-auto h-11 px-6 rounded-xl border-2 border-[var(--color-divider)] font-black uppercase tracking-widest text-[10px] order-2 sm:order-1"
                             >
                                 Cancel

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { User, Calendar, Baby, Activity, Info, Loader2, X, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { User, Calendar, Baby, Activity, Info, Loader2, X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck } from 'lucide-react';
 import { Button } from './common/Button';
 import { Card, CardContent } from './common/Card';
 import api from '../lib/api';
+import VaccinationStep from './VaccinationStep';
 
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)", "Vegetarian", "Vegan", "Halal", "Kosher", "Gluten-Free", "Lactose-Free", "Pescatarian"
@@ -15,6 +16,7 @@ const ALLERGY_OPTIONS = [
 const STEPS = [
     { title: 'Basic Info', icon: Baby },
     { title: 'Measurements', icon: Activity },
+    { title: 'Vaccines', icon: ShieldCheck },
     { title: 'Dietary', icon: Info }
 ];
 
@@ -47,8 +49,11 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
         weightKg: '',
         activityLevel: 'Moderate',
         allergies: ['None'],
-        dietaryPreferences: []
+        dietaryPreferences: [],
+        vaccinations: []
     });
+    
+
 
     // Sync DOB parts to formData
     React.useEffect(() => {
@@ -89,7 +94,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
 
     const handleNext = () => {
         if (validateStep(step)) {
-            setStep(prev => Math.min(prev + 1, 3));
+            setStep(prev => Math.min(prev + 1, 4));
         }
     };
     
@@ -116,13 +121,13 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
         if (isSubmitting.current) return;
         
         // If not on the final step, just try to go to the next step
-        if (step < 3) {
+        if (step < 4) {
             handleNext();
             return;
         }
 
         // Only on the final step do we validate everything and submit
-        if (!validateStep(3)) return;
+        if (!validateStep(4)) return;
 
         isSubmitting.current = true;
         setLoading(true);
@@ -137,7 +142,8 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                 weight_kg: formData.weightKg,
                 activity_level: formData.activityLevel,
                 allergies: formData.allergies,
-                dietary_preferences: formData.dietaryPreferences.join(', ')
+                dietary_preferences: formData.dietaryPreferences.join(', '),
+                vaccinations: formData.vaccinations
             };
 
             await api.post('/profiles', payload);
@@ -150,7 +156,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                 setStep(1);
                 setFormData({
                     childName: '', dateOfBirth: '', gender: 'Male', heightCm: '', weightKg: '',
-                    activityLevel: 'moderate', allergies: [], dietaryPreferences: []
+                    activityLevel: 'moderate', allergies: [], dietaryPreferences: [], vaccinations: []
                 });
                 setMessage({ type: '', text: '' });
                 isSubmitting.current = false;
@@ -290,8 +296,16 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                                 </div>
                             )}
 
-                            {/* Step 3: Dietary */}
+                            {/* Step 3: Vaccines */}
                             {step === 3 && (
+                                <VaccinationStep 
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                />
+                            )}
+
+                            {/* Step 4: Dietary */}
+                            {step === 4 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Allergies</label>
@@ -327,7 +341,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                                         <ChevronLeft size={16} /> Back
                                     </Button>
                                 )}
-                                {step < 3 ? (
+                                {step < 4 ? (
                                     <Button type="button" onClick={handleNext} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
                                         Continue <ChevronRight size={16} />
                                     </Button>

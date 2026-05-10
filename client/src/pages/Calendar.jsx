@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Snackbar, Alert } from '@mui/material';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -9,15 +10,18 @@ import { cn } from '../lib/utils';
 
 import api from '../lib/api';
 import { useProfile } from '../context/ProfileContext';
+import { useLoading } from '../context/LoadingContext';
 
 export default function Calendar() {
     const navigate = useNavigate();
     const { selectedProfile, loading: profileLoading } = useProfile();
+    const { startLoading, stopLoading } = useLoading();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [logs, setLogs] = useState([]);
     const [rules, setRules] = useState([]);
     const [dayStatuses, setDayStatuses] = useState({});
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [notification, setNotification] = useState({
         open: false,
         message: '',
@@ -31,11 +35,13 @@ export default function Calendar() {
         } else if (!profileLoading) {
             setLogs([]);
             setRules([]);
+            setIsInitialSync(false);
         }
     }, [selectedProfile?.id, currentMonth, profileLoading]);
 
     const fetchData = async () => {
         if (!selectedProfile) return;
+        startLoading('Syncing Clinical Calendar...');
         try {
             const [logsRes, rulesRes] = await Promise.all([
                 api.get(`/logs/profile/${selectedProfile.id}`),
@@ -44,8 +50,11 @@ export default function Calendar() {
             setLogs(logsRes.data);
             setRules(rulesRes.data);
             calculateHeatmap(logsRes.data, rulesRes.data);
+            setIsInitialSync(false);
         } catch (err) {
             console.error(err);
+        } finally {
+            stopLoading();
         }
     };
 
@@ -235,6 +244,12 @@ export default function Calendar() {
         }
         return <div className="bg-transparent rounded-2xl">{rows}</div>;
     };
+
+    if (isInitialSync) return null;
+
+    if (!selectedProfile && !profileLoading) {
+        return <div className="p-8 text-center text-[var(--color-text-muted)] font-medium">Please select a child profile to view the health calendar.</div>;
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

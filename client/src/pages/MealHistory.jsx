@@ -1,23 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Activity, Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
+import { HistorySkeleton } from '../components/SkeletonShell';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
+import { useLoading } from '../context/LoadingContext';
 import MealDetailModal from '../components/MealDetailModal';
 import Notification from '../components/common/Notification';
 
 export default function MealHistory() {
     const { user } = useAuth();
     const { profiles, selectedProfile, loading: profileLoading } = useProfile();
+    const { startLoading, stopLoading } = useLoading();
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedLog, setSelectedLog] = useState(null);
     const [rules, setRules] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    const [isInitialSync, setIsInitialSync] = useState(true);
 
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
@@ -34,17 +38,18 @@ export default function MealHistory() {
     const logsPerPage = 12;
 
     useEffect(() => {
-        if (!profileLoading && !selectedProfile) {
-            setLoading(false);
-        }
-    }, [profileLoading, selectedProfile]);
-
-    useEffect(() => {
-        if (selectedProfile) {
-            fetchLogs();
-            fetchRules();
-        }
-    }, [selectedProfile?.id]);
+        const loadHistoryData = async () => {
+            if (selectedProfile) {
+                startLoading('Syncing Historical Records...');
+                await Promise.all([fetchLogs(), fetchRules()]);
+                setIsInitialSync(false);
+                stopLoading();
+            } else if (!profileLoading) {
+                setIsInitialSync(false);
+            }
+        };
+        loadHistoryData();
+    }, [selectedProfile?.id, profileLoading]);
 
     useEffect(() => {
         applyFilters();
@@ -148,7 +153,6 @@ export default function MealHistory() {
     }, [selectedHistoryDate, logs, rules]);
 
     const fetchLogs = async () => {
-        setLoading(true);
         try {
             const res = await api.get(`/logs/profile/${selectedProfile.id}`);
             const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
@@ -160,8 +164,6 @@ export default function MealHistory() {
             }
         } catch (err) {
             console.error('Error fetching logs:', err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -233,8 +235,10 @@ export default function MealHistory() {
     const currentLogs = filteredLogs.slice(indexOfFirstLog, indexOfLastLog);
     const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
 
-    if (loading) {
-        return <div className="p-8 text-center text-[var(--color-text-muted)]">Loading meal history...</div>;
+    if (isInitialSync) return <HistorySkeleton />;
+
+    if (!selectedProfile && !profileLoading) {
+        return <div className="p-8 text-center text-[var(--color-text-muted)]">Please select a child profile to view meal history.</div>;
     }
 
     return (

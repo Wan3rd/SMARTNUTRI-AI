@@ -95,13 +95,16 @@ function AppContent() {
 }
 
 import { ProfileProvider } from './context/ProfileContext';
+import { LoadingProvider } from './context/LoadingContext';
 
 function App() {
   return (
     <AuthProvider>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <ProfileProvider>
-          <AppContent />
+          <LoadingProvider>
+            <AppContent />
+          </LoadingProvider>
         </ProfileProvider>
       </ThemeProvider>
     </AuthProvider>
