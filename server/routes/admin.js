@@ -67,7 +67,7 @@ router.patch('/nutritionists/:id/verify', verifyAdmin, async (req, res) => {
 
     try {
         const oldUser = await prisma.users.findUnique({ where: { id }, select: { status: true } });
-        
+
         const updatedUser = await prisma.users.update({
             where: { id },
             data: { status },
@@ -133,7 +133,7 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
 
     try {
         const oldUser = await prisma.users.findUnique({ where: { id }, select: { email: true, full_name: true, role: true } });
-        
+
         await prisma.users.delete({
             where: { id }
         });
@@ -225,9 +225,9 @@ router.patch('/users/:id/suspend', verifyAdmin, async (req, res) => {
             ipAddress: req.ip
         });
 
-        res.json({ 
-            message: `Account for ${updatedUser.full_name} has been ${is_suspended ? 'suspended' : 'reactivated'}`, 
-            user: updatedUser 
+        res.json({
+            message: `Account for ${updatedUser.full_name} has been ${is_suspended ? 'suspended' : 'reactivated'}`,
+            user: updatedUser
         });
     } catch (err) {
         console.error(err);
@@ -260,11 +260,11 @@ router.patch('/users/:id/force-reset', verifyAdmin, async (req, res) => {
             ipAddress: req.ip
         });
 
-        res.json({ 
-            message: force_password_reset 
-                ? `Account security policy updated: ${updatedUser.full_name} will be required to change their password on next login.` 
-                : `Forced reset requirement cleared for ${updatedUser.full_name}.`, 
-            user: updatedUser 
+        res.json({
+            message: force_password_reset
+                ? `Account security policy updated: ${updatedUser.full_name} will be required to change their password on next login.`
+                : `Forced reset requirement cleared for ${updatedUser.full_name}.`,
+            user: updatedUser
         });
     } catch (err) {
         console.error(err);
@@ -507,7 +507,7 @@ router.delete('/announcements/:id', verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         const oldAnn = await prisma.announcements.findUnique({ where: { id }, select: { title: true } });
-        
+
         await prisma.announcements.delete({ where: { id } });
 
         await logAuditAction({

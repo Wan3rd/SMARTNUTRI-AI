@@ -14,16 +14,17 @@ import AddClientModal from '../components/AddClientModal';
 import CreatePatientModal from '../components/CreatePatientModal';
 import ReviewLogModal from '../components/ReviewLogModal';
 import Notification from '../components/common/Notification';
-import { DashboardSkeleton } from '../components/SkeletonShell';
+import { DashboardSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 
 
 
 export default function NutritionistDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { startLoading, stopLoading } = useLoading();
+
     const [clients, setClients] = useState([]);
     const [pendingLogs, setPendingLogs] = useState([]);
+    const { isLoading, startLoading, stopLoading } = useLoading();
     const [stats, setStats] = useState({ clients: 0, pending: 0 });
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,6 +32,7 @@ export default function NutritionistDashboard() {
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewStatus, setViewStatus] = useState('active');
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
     const showNotif = (message, type = 'success') => {
@@ -209,7 +211,29 @@ export default function NutritionistDashboard() {
 
             <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-1">
-                    <h2 className="text-lg font-black text-[var(--color-secondary)] uppercase tracking-tight">My Clients</h2>
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <h2 className="text-lg font-black text-[var(--color-secondary)] uppercase tracking-tight">My Clients</h2>
+                        <div className="flex bg-[var(--color-bg-card)] p-1 rounded-xl border border-[var(--color-divider)]">
+                            <button 
+                                onClick={() => setViewStatus('active')}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                    viewStatus === 'active' ? "bg-[var(--color-primary)] text-white shadow-md" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                )}
+                            >
+                                Active
+                            </button>
+                            <button 
+                                onClick={() => setViewStatus('archived')}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                    viewStatus === 'archived' ? "bg-zinc-600 text-white shadow-md" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                )}
+                            >
+                                Archived
+                            </button>
+                        </div>
+                    </div>
                     <div className="relative w-full sm:w-auto">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={14} />
                         <input
@@ -222,7 +246,7 @@ export default function NutritionistDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {loading ? (
+                    {isLoading ? (
                         // Skeleton State
                         [1, 2, 3, 4, 5, 6].map(i => (
                             <Card key={i} className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden bg-white/50 dark:bg-white/5">
@@ -241,12 +265,14 @@ export default function NutritionistDashboard() {
                         ))
                     ) : (
                         clients
+                            .filter(client => client.status === viewStatus)
                             .filter(client => 
                                 client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                 client.email?.toLowerCase().includes(searchQuery.toLowerCase())
                             )
                             .map(client => {
                             const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
+                            const isArchived = client.status === 'archived';
                             return (
                                 <motion.div
                                     key={client.id}
@@ -257,12 +283,18 @@ export default function NutritionistDashboard() {
                                 >
                                     <Card
                                         onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
-                                        className="h-full hover:shadow-lg transition-all cursor-pointer border-2 border-[var(--color-divider)] relative group rounded-[2rem] overflow-hidden"
+                                        className={cn(
+                                            "h-full hover:shadow-lg transition-all cursor-pointer border-2 relative group rounded-[2rem] overflow-hidden",
+                                            isArchived ? "border-dashed border-[var(--color-divider)] opacity-80 grayscale-[0.5]" : "border-[var(--color-divider)]"
+                                        )}
                                     >
                                         <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
-                                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] relative shrink-0">
+                                            <div className={cn(
+                                                "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0",
+                                                isArchived ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                                            )}>
                                                 <Users size={20} className="sm:w-6 sm:h-6" />
-                                                {clientPendingCount > 0 && (
+                                                {!isArchived && clientPendingCount > 0 && (
                                                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
                                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                                                         <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
@@ -272,14 +304,21 @@ export default function NutritionistDashboard() {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className={cn("font-black text-sm sm:text-base text-[var(--color-secondary)] truncate", user?.privacy_mode && "privacy-blur")}>{client.full_name}</h3>
-                                                <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium truncate">{client.email}</p>
+                                                <h3 className={cn("font-black text-sm sm:text-base truncate", isArchived ? "text-[var(--color-text-muted)]" : "text-[var(--color-secondary)]", user?.privacy_mode && "privacy-blur")}>
+                                                    {client.full_name}
+                                                </h3>
+                                                <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium truncate">
+                                                    {isArchived ? `Deactivated: ${client.deactivation_reason || 'No reason'}` : client.email}
+                                                </p>
                                             </div>
                                             <div className="flex flex-col items-end gap-1 shrink-0">
-                                                <div className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                <div className={cn(
+                                                    "px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider",
+                                                    isArchived ? "bg-zinc-200 text-zinc-600" : "bg-green-100 text-green-700"
+                                                )}>
                                                     {client.status}
                                                 </div>
-                                                {clientPendingCount > 0 && (
+                                                {!isArchived && clientPendingCount > 0 && (
                                                     <span className="text-[7px] sm:text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest animate-pulse">Needs Review</span>
                                                 )}
                                             </div>
@@ -289,9 +328,9 @@ export default function NutritionistDashboard() {
                             );
                         })
                     )}
-                    {!loading && clients.length === 0 && (
+                    {!isLoading && clients.filter(c => c.status === viewStatus).length === 0 && (
                         <p className="col-span-full text-center py-12 text-[var(--color-text-muted)] font-bold bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                            No clients linked yet. Start by adding a parent portal account.
+                            {viewStatus === 'active' ? "No active clients linked yet." : "No archived clients found."}
                         </p>
                     )}
                 </div>

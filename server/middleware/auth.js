@@ -32,8 +32,15 @@ export const verifyToken = async (req, res, next) => {
             return res.status(403).json({ message: 'Account Access Suspended: Please contact snutri244@gmail.com to know more.' });
         }
 
-        // Only block if not on the change-password or logout path
-        if (user.force_password_reset && !req.path.includes('/change-password') && !req.path.includes('/logout')) {
+        if (user.deleted_at) {
+            return res.status(403).json({ message: 'ACCOUNT_DEACTIVATED', detail: 'This account has been deactivated.' });
+        }
+
+        // Only block if not on the change-password, me, or logout path
+        if (user.force_password_reset && 
+            !req.path.includes('/change-password') && 
+            !req.path.includes('/me') && 
+            !req.path.includes('/logout')) {
             return res.status(403).json({ message: 'FORCE_RESET_REQUIRED', detail: 'Security policy requires a password update.' });
         }
 

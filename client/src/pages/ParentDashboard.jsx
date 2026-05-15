@@ -413,6 +413,7 @@ export default function ParentDashboard() {
             {selectedLog && (
                 <MealDetailModal
                     log={selectedLog}
+                    rules={rules}
                     onClose={() => setSelectedLog(null)}
                     onDelete={(deletedId) => {
                         setSelectedLog(null);

@@ -7,12 +7,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Bell, Shield, Smartphone, Scale, UserCog, HelpCircle, ChevronRight, Key } from 'lucide-react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import DeactivateAccountModal from '../components/DeactivateAccountModal';
 
 export default function Settings() {
     const { user, updatePreferences } = useAuth();
     const { setTheme, theme } = useTheme();
     const [message, setMessage] = useState({ type: 'success', text: '' });
     const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
@@ -152,7 +154,12 @@ export default function Settings() {
                 },
                 ...(user?.role !== 'admin' ? [
                     { label: "Data Export", desc: "Download your nutrition data", type: "link" },
-                    { label: "Delete Account", desc: "Permanently remove your data", type: "danger" }
+                    { 
+                        label: "Delete Account", 
+                        desc: "Deactivate your account and clinical data", 
+                        type: "danger",
+                        onClick: () => setShowDeactivateModal(true)
+                    }
                 ] : []),
             ]
         }
@@ -223,6 +230,11 @@ export default function Settings() {
             <ChangePasswordModal
                 isOpen={showPasswordModal}
                 onClose={() => setShowPasswordModal(false)}
+            />
+
+            <DeactivateAccountModal
+                isOpen={showDeactivateModal}
+                onClose={() => setShowDeactivateModal(false)}
             />
         </div>
     );

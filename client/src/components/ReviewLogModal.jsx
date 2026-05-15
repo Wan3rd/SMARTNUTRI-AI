@@ -454,13 +454,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             {/* Actions */}
                             <motion.div variants={itemVariants} className="flex flex-col-reverse sm:flex-row gap-4 pt-4 pb-8">
                                 <div className="flex flex-1 gap-2">
-                                    <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-bg-page)] transition-all" onClick={handleDismiss}>
+                                    <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
                                         Dismiss
                                     </Button>
                                     <Button 
                                         type="button" 
                                         variant="outline" 
-                                        className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-orange-600 border-orange-100 hover:bg-orange-50 transition-all" 
+                                        className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-orange-600 border-orange-500/20 dark:border-orange-500/40 hover:bg-orange-500/10 transition-all" 
                                         onClick={handleReject}
                                         disabled={loading}
                                     >
@@ -470,7 +470,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 <div className="flex-[2] flex gap-2">
                                     <Button
                                         onClick={handleSaveDraft}
-                                        className="flex-1 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest shadow-xl transition-all border-none"
+                                        className="flex-1 py-4 rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest shadow-xl transition-all border-none"
                                         disabled={loading}
                                     >
                                         Save Progress

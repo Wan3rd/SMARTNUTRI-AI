@@ -172,7 +172,7 @@ router.get('/me', verifyToken, async (req, res) => {
             where: { id: req.user.id }
         });
         if (!user) return res.status(404).json({ message: 'User not found' });
-        
+
         // Remove sensitive data
         const { password_hash, ...safeUser } = user;
         res.json(safeUser);
@@ -340,7 +340,7 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     try {
         const user = await prisma.users.findUnique({ where: { email: email?.toLowerCase() } });
-        
+
         // Security best practice: don't reveal if user exists
         if (!user) {
             return res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
@@ -486,6 +486,56 @@ router.get('/announcements', verifyToken, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// FORCE CHANGE PASSWORD (for new accounts)
+router.post('/change-password-force', verifyToken, async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await prisma.users.update({
+            where: { id: req.user.id },
+            data: {
+                password_hash: hashedPassword,
+                force_password_reset: false
+            }
+        });
+
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update password' });
+    }
+});
+
+// DEACTIVATE ACCOUNT (Soft Delete)
+router.post('/deactivate', verifyToken, async (req, res) => {
+    const { password, reason } = req.body;
+    try {
+        const user = await prisma.users.findUnique({ where: { id: req.user.id } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const validPass = await bcrypt.compare(password, user.password_hash);
+        if (!validPass) {
+            return res.status(400).json({ message: 'Invalid password' });
+        }
+
+        await prisma.users.update({
+            where: { id: req.user.id },
+            data: {
+                deleted_at: new Date(),
+                status: 'archived',
+                deactivation_reason: reason || 'Not specified'
+            }
+        });
+
+        res.json({ success: true, message: 'Account deactivated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to deactivate account' });
     }
 });
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, startOfDay } from 'date-fns';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter } from 'lucide-react';
+import { ArrowLeft, User, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -16,7 +17,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
 import CreatePatientModal from '../components/CreatePatientModal';
-import { ClientDetailsSkeleton } from '../components/SkeletonShell';
+import { ClientDetailsSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 
 // Global CSS Overrides for Quill Toolbar Visibility
 const quillStyles = `
@@ -109,7 +110,7 @@ export default function ClientDetails() {
     const { clientId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { startLoading, stopLoading } = useLoading();
+    const { isLoading, startLoading, stopLoading } = useLoading();
     const location = useLocation();
     const [fetchedClientName, setFetchedClientName] = useState('');
     const clientName = location.state?.clientName || fetchedClientName || 'Client';
@@ -155,6 +156,11 @@ export default function ClientDetails() {
     // --- Modal & Notif States ---
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
+    const showNotif = (message, type = 'success') => {
+        setNotif({ show: true, message, type });
+        setTimeout(() => setNotif(prev => ({ ...prev, show: false })), 3000);
+    };
+
     // --- History State ---
     const [logs, setLogs] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
@@ -176,6 +182,7 @@ export default function ClientDetails() {
         rule_unit: 'kcal'
     });
     const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
+    const [clientData, setClientData] = useState(null);
     const [clientEmail, setClientEmail] = useState('');
 
     const [editingAdimeId, setEditingAdimeId] = useState(null);
@@ -208,6 +215,68 @@ export default function ClientDetails() {
         setSearchParams({ tab: activeTab }, { replace: true });
     }, [activeTab, setSearchParams]);
     const [mealPlan, setMealPlan] = useState([]);
+    const [portionMatrix, setPortionMatrix] = useState([
+        { meal_type: 'Breakfast', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+        { meal_type: 'AM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+        { meal_type: 'Lunch', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+        { meal_type: 'PM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+        { meal_type: 'Dinner', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+    ]);
+    const [isSavingPortions, setIsSavingPortions] = useState(false);
+
+    useEffect(() => {
+        if (selectedProfile) {
+            fetchPortionPlan(selectedProfile.id);
+        }
+    }, [selectedProfile?.id]);
+
+    const fetchPortionPlan = async (profileId) => {
+        try {
+            const res = await api.get(`/nutritionist/portion-plan/${profileId}`);
+            if (res.data && res.data.length > 0) {
+                // Map the results back to the matrix structure
+                const newMatrix = portionMatrix.map(row => {
+                    const savedRow = res.data.find(r => r.meal_type === row.meal_type);
+                    return savedRow ? { ...row, ...savedRow } : row;
+                });
+                setPortionMatrix(newMatrix);
+            } else {
+                // Reset to default if no plan exists
+                setPortionMatrix([
+                    { meal_type: 'Breakfast', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                    { meal_type: 'AM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                    { meal_type: 'Lunch', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                    { meal_type: 'PM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                    { meal_type: 'Dinner', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                ]);
+            }
+        } catch (err) {
+            console.error("Error fetching portion plan", err);
+        }
+    };
+
+    const handleSavePortions = async () => {
+        setIsSavingPortions(true);
+        try {
+            await api.post('/nutritionist/portion-plan', {
+                profile_id: selectedProfile.id,
+                matrix: portionMatrix
+            });
+            showNotif("Portion plan saved successfully!");
+        } catch (err) {
+            console.error(err);
+            showNotif("Failed to save portion plan", "error");
+        } finally {
+            setIsSavingPortions(false);
+        }
+    };
+
+    const updatePortionCell = (mealType, field, value) => {
+        setPortionMatrix(prev => prev.map(row => 
+            row.meal_type === mealType ? { ...row, [field]: value } : row
+        ));
+    };
+
     const [generatingPlan, setGeneratingPlan] = useState(false);
     const [isMealModalOpen, setIsMealModalOpen] = useState(false);
     const [selectedDateForMeal, setSelectedDateForMeal] = useState(null);
@@ -219,6 +288,16 @@ export default function ClientDetails() {
         carbs_g: '',
         fats_g: ''
     });
+
+    // --- Weekly Planning State ---
+    const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    const weekDays = useMemo(() => {
+        return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+    }, [currentWeekStart]);
+
+    const handlePrevWeek = () => setCurrentWeekStart(prev => subWeeks(prev, 1));
+    const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
+    const handleThisWeek = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
     // --- ADIME Notes State ---
     const [adimeNotes, setAdimeNotes] = useState([]);
@@ -235,6 +314,9 @@ export default function ClientDetails() {
     const [growthLogs, setGrowthLogs] = useState([]);
     const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
     const [newGrowth, setNewGrowth] = useState({ height_cm: '', weight_kg: '' });
+    const [isEditGrowthModalOpen, setIsEditGrowthModalOpen] = useState(false);
+    const [editingGrowthLog, setEditingGrowthLog] = useState(null);
+    const [editGrowthForm, setEditGrowthForm] = useState({ height_cm: '', weight_kg: '', logged_at: '' });
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLogForReview, setSelectedLogForReview] = useState(null);
     const [allClientPendingLogs, setAllClientPendingLogs] = useState([]);
@@ -328,6 +410,38 @@ export default function ClientDetails() {
         }
 
         // 3. Growth Patterns
+        const latestGrowth = growthLogs[growthLogs.length - 1];
+        if (latestGrowth?.clinical_analysis) {
+            const { weight, height, trends } = latestGrowth.clinical_analysis;
+            
+            if (weight.status !== 'Normal') {
+                alerts.push({ 
+                    icon: AlertCircle, 
+                    title: `Growth Alert: ${weight.status}`, 
+                    desc: `Weight-for-age is in the ${weight.percentile}th percentile (Z: ${weight.zScore}).`, 
+                    severity: weight.zScore < -3 ? 'critical' : 'high' 
+                });
+            }
+            
+            if (height.status !== 'Normal') {
+                alerts.push({ 
+                    icon: AlertCircle, 
+                    title: `Growth Alert: ${height.status}`, 
+                    desc: `Height-for-age is in the ${height.percentile}th percentile (Z: ${height.zScore}).`, 
+                    severity: height.zScore < -3 ? 'critical' : 'high' 
+                });
+            }
+
+            if (trends?.clinical_warning) {
+                alerts.push({
+                    icon: TrendingDown,
+                    title: 'Clinical Trend Warning',
+                    desc: `${trends.clinical_warning}: Significant percentile shift detected since last visit.`,
+                    severity: 'critical'
+                });
+            }
+        }
+
         if (growthLogs.length > 1) {
             const weightVelocity = parseFloat(growthDeltas.weight);
             if (weightVelocity < -0.5) {
@@ -544,6 +658,7 @@ export default function ClientDetails() {
     const fetchClientEmail = async () => {
         try {
             const res = await api.get(`/nutritionist/clients/${clientId}`);
+            setClientData(res.data);
             setClientEmail(res.data.email);
             if (res.data.full_name) {
                 setFetchedClientName(res.data.full_name);
@@ -553,12 +668,67 @@ export default function ClientDetails() {
         }
     };
 
+    const handleRestoreClient = async () => {
+        try {
+            startLoading('Restoring account...');
+            await api.patch(`/nutritionist/clients/${clientId}/restore`);
+            await fetchClientEmail();
+            showNotif("Account restored successfully!");
+        } catch (err) {
+            console.error("Restore failed", err);
+            showNotif("Failed to restore account", "error");
+        } finally {
+            stopLoading();
+        }
+    };
+
     const fetchGrowthLogs = async (profileId) => {
         try {
             const res = await api.get(`/profiles/${profileId}/growth`);
             setGrowthLogs(res.data);
         } catch (err) {
             console.error("Error fetching growth logs", err);
+        }
+    };
+
+    const handleDeleteGrowthLog = async (logId) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Delete Growth Record',
+            message: 'Are you sure you want to permanently delete this height/weight log entry? This will update the primary biometric profile for this child.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/profiles/growth-record/${logId}`);
+                    setGrowthLogs(prev => prev.filter(l => l.id !== logId));
+                    showNotif("Growth record deleted successfully.");
+                    // Refresh profile to get updated height/weight if we deleted the latest
+                    const res = await api.get(`/profiles/${selectedProfile.id}`);
+                    setSelectedProfile(res.data);
+                    setProfiles(prev => prev.map(p => p.id === res.data.id ? res.data : p));
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                } catch (err) {
+                    console.error("Delete growth log failed", err);
+                    showNotif("Failed to delete record", "error");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
+    const handleUpdateGrowthLog = async (e) => {
+        e.preventDefault();
+        try {
+            await api.patch(`/profiles/growth-record/${editingGrowthLog}`, editGrowthForm);
+            fetchGrowthLogs(selectedProfile.id);
+            // Refresh profile to get updated height/weight if we edited the latest
+            const res = await api.get(`/profiles/${selectedProfile.id}`);
+            setSelectedProfile(res.data);
+            setProfiles(prev => prev.map(p => p.id === res.data.id ? res.data : p));
+            setIsEditGrowthModalOpen(false);
+            showNotif("Growth record updated successfully!");
+        } catch (err) {
+            console.error("Failed to update growth log", err);
+            showNotif("Failed to update record", "error");
         }
     };
 
@@ -1068,9 +1238,7 @@ export default function ClientDetails() {
         }
     };
 
-    const showNotif = (message, type = 'success') => {
-        setNotif({ show: true, message, type });
-    };
+
 
     const handleAddRule = async (e) => {
         e.preventDefault();
@@ -1170,8 +1338,38 @@ export default function ClientDetails() {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="min-h-screen bg-[var(--color-bg-page)] pb-20 font-outfit relative">
             <style>{quillStyles}</style>
+
+            {/* --- ARCHIVE BANNER --- */}
+            {clientData?.deleted_at && (
+                <div className="bg-zinc-900 dark:bg-zinc-950 text-white p-4 flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left z-50 sticky top-0 animate-in slide-in-from-top duration-500 shadow-xl border-b border-zinc-800">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-zinc-800 rounded-xl">
+                            <Clock size={20} className="text-zinc-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Clinical Archive Mode</p>
+                            <p className="text-sm font-bold">This client was deactivated on {new Date(clientData.deleted_at).toLocaleDateString()}. Data is read-only.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-px bg-zinc-800 hidden sm:block" />
+                        <div className="text-xs font-medium text-zinc-400">
+                            Reason: <span className="text-white italic">"{clientData.deactivation_reason || 'Not specified'}"</span>
+                        </div>
+                        <Button 
+                            onClick={handleRestoreClient}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all"
+                        >
+                            <Zap size={14} className="mr-2" />
+                            Restore Account
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-8 animate-in fade-in duration-500">
             <header className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
                     <ArrowLeft size={24} />
@@ -1263,6 +1461,7 @@ export default function ClientDetails() {
                                             { id: 'adime', label: 'Clinical (ADIME)' },
                                             { id: 'notes', label: 'Notes' },
                                             { id: 'rules', label: 'Rules Engine' },
+                                            { id: 'portions', label: 'Portion Exchange' },
                                             { id: 'plan', label: 'Meal Planner' }
                                         ].map(tab => {
                                             const isHistoryPending = tab.id === 'history' && allClientPendingLogs.filter(l => l.profile_id === selectedProfile?.id).length > 0;
@@ -1336,7 +1535,7 @@ export default function ClientDetails() {
                                                             whileHover={{ scale: 1.05, rotate: 5 }}
                                                             className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-white/50 dark:border-white/10 shadow-xl flex-shrink-0 backdrop-blur-xl"
                                                         >
-                                                            {loading ? <SkeletonLoader /> : (
+                                                            {isLoading ? <SkeletonLoader /> : (
                                                                 selectedProfile?.profile_image_url ? (
                                                                     <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
                                                                 ) : (
@@ -1345,7 +1544,7 @@ export default function ClientDetails() {
                                                             )}
                                                         </motion.div>
                                                         <div className="min-w-0">
-                                                            {loading ? (
+                                                            {isLoading ? (
                                                                 <div className="space-y-2">
                                                                     <SkeletonLoader className="h-8 w-48" />
                                                                     <SkeletonLoader className="h-4 w-32" />
@@ -1362,7 +1561,7 @@ export default function ClientDetails() {
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                                        {!loading && clinicalPatterns.some(a => a.severity === 'critical' || a.severity === 'high') && (
+                                                        {!isLoading && clinicalPatterns.some(a => a.severity === 'critical' || a.severity === 'high') && (
                                                             <div className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full animate-pulse shadow-xl shadow-red-500/30">
                                                                 <AlertCircle size={16} />
                                                                 <span className="text-[11px] font-black uppercase tracking-widest">{clinicalPatterns.filter(a => a.severity === 'critical' || a.severity === 'high').length} Urgent Alerts</span>
@@ -1371,7 +1570,7 @@ export default function ClientDetails() {
                                                         <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
                                                             <div className="text-sm font-black text-[var(--color-secondary)]">
-                                                                {loading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                                                {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1384,7 +1583,7 @@ export default function ClientDetails() {
                                                     >
                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Weight</div>
-                                                            {!loading && parseFloat(growthDeltas.weight) !== 0 && (
+                                                            {!isLoading && parseFloat(growthDeltas.weight) !== 0 && (
                                                                 <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                                     {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
                                                                     {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
@@ -1393,9 +1592,9 @@ export default function ClientDetails() {
                                                         </div>
                                                         <div className="flex items-end justify-between relative z-10">
                                                             <div className="text-xl font-black text-[var(--color-primary)]">
-                                                                {loading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-xs font-bold opacity-60">kg</span></>}
+                                                                {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-xs font-bold opacity-60">kg</span></>}
                                                             </div>
-                                                            {loading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
+                                                            {isLoading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
                                                                 growthLogs.length > 1 && (
                                                                     <Sparkline 
                                                                         data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)} 
@@ -1405,10 +1604,20 @@ export default function ClientDetails() {
                                                                 )
                                                             )}
                                                         </div>
-                                                        {!loading && growthLogs.length > 1 && (
-                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center gap-1.5 border-t border-white/20 pt-2 relative z-10">
-                                                                <Activity size={10} className="text-emerald-500" />
-                                                                <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} kg/mo</span></span>
+                                                        {!isLoading && growthLogs.length > 1 && (
+                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center justify-between border-t border-white/20 pt-2 relative z-10">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Activity size={10} className="text-emerald-500" />
+                                                                    <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} kg/mo</span></span>
+                                                                </div>
+                                                                {growthLogs[growthLogs.length - 1]?.clinical_analysis?.weight && (
+                                                                    <span className={cn(
+                                                                        "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                                                                        growthLogs[growthLogs.length - 1].clinical_analysis.weight.zScore < -2 ? "bg-red-500 text-white" : "bg-emerald-500/10 text-emerald-600"
+                                                                    )}>
+                                                                        P{growthLogs[growthLogs.length - 1].clinical_analysis.weight.percentile}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </motion.div>
@@ -1418,7 +1627,7 @@ export default function ClientDetails() {
                                                     >
                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Current Height</div>
-                                                            {!loading && parseFloat(growthDeltas.height) !== 0 && (
+                                                            {!isLoading && parseFloat(growthDeltas.height) !== 0 && (
                                                                 <div className={`text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                                     {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
                                                                     {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
@@ -1428,13 +1637,13 @@ export default function ClientDetails() {
                                                         <div className="flex items-end justify-between relative z-10">
                                                             <div className="flex flex-col">
                                                                 <div className="text-xl font-black text-[var(--color-secondary)]">
-                                                                    {loading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-xs font-bold opacity-60">cm</span></>}
+                                                                    {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-xs font-bold opacity-60">cm</span></>}
                                                                 </div>
                                                                 <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5">
-                                                                    {loading ? <SkeletonLoader className="h-3 w-20" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imperial</>}
+                                                                    {isLoading ? <SkeletonLoader className="h-3 w-20" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imperial</>}
                                                                 </div>
                                                             </div>
-                                                            {loading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
+                                                            {isLoading ? <SkeletonLoader className="h-10 w-24 opacity-30" /> : (
                                                                 growthLogs.length > 1 && (
                                                                     <Sparkline 
                                                                         data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)} 
@@ -1444,10 +1653,20 @@ export default function ClientDetails() {
                                                                 )
                                                             )}
                                                         </div>
-                                                        {!loading && growthLogs.length > 1 && (
-                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center gap-1.5 border-t border-white/20 pt-2 relative z-10">
-                                                                <Activity size={10} className="text-blue-500" />
-                                                                <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} cm/mo</span></span>
+                                                        {!isLoading && growthLogs.length > 1 && (
+                                                            <div className="mt-2 text-[9px] font-bold text-[var(--color-text-muted)] flex items-center justify-between border-t border-white/20 pt-2 relative z-10">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Activity size={10} className="text-blue-500" />
+                                                                    <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)} cm/mo</span></span>
+                                                                </div>
+                                                                {growthLogs[growthLogs.length - 1]?.clinical_analysis?.height && (
+                                                                    <span className={cn(
+                                                                        "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                                                                        growthLogs[growthLogs.length - 1].clinical_analysis.height.zScore < -2 ? "bg-red-500 text-white" : "bg-blue-500/10 text-blue-600"
+                                                                    )}>
+                                                                        P{growthLogs[growthLogs.length - 1].clinical_analysis.height.percentile}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </motion.div>
@@ -1458,12 +1677,12 @@ export default function ClientDetails() {
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Indicator</div>
                                                         {bmiData ? (
                                                             <div className="space-y-1.5">
-                                                                <div className="text-xl font-black text-[var(--color-text-main)]">{loading ? <SkeletonLoader className="h-7 w-12" /> : bmiData.bmi}</div>
+                                                                <div className="text-xl font-black text-[var(--color-text-main)]">{isLoading ? <SkeletonLoader className="h-7 w-12" /> : bmiData.bmi}</div>
                                                                 <div className={cn(
                                                                     "inline-flex items-center px-3 py-1 rounded-xl border backdrop-blur-md shadow-sm text-[10px] font-black uppercase tracking-tight",
-                                                                    loading ? "skeleton h-6 w-24" : `${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color}`
+                                                                    isLoading ? "skeleton h-6 w-24" : `${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color}`
                                                                 )}>
-                                                                    {loading ? "" : bmiData.status}
+                                                                    {isLoading ? "" : bmiData.status}
                                                                 </div>
                                                             </div>
                                                         ) : <div className="text-sm font-black text-[var(--color-text-muted)] italic">No data</div>}
@@ -1474,7 +1693,7 @@ export default function ClientDetails() {
                                                     >
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
                                                         <div className="text-sm font-black text-[var(--color-text-main)] capitalize mt-2">
-                                                            {loading ? <SkeletonLoader className="h-5 w-24" /> : (selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A')}
+                                                            {isLoading ? <SkeletonLoader className="h-5 w-24" /> : (selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A')}
                                                         </div>
                                                     </motion.div>
                                                     <motion.div 
@@ -1483,7 +1702,7 @@ export default function ClientDetails() {
                                                     >
                                                         <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
                                                         <div className="flex flex-wrap gap-1 mt-2">
-                                                            {loading ? (
+                                                            {isLoading ? (
                                                                 <div className="flex gap-1">
                                                                     <SkeletonLoader className="h-5 w-16" />
                                                                     <SkeletonLoader className="h-5 w-12" />
@@ -2023,6 +2242,97 @@ export default function ClientDetails() {
                                                             </div>
                                                         </CardContent>
                                                     </Card>
+                                                </div>
+                                            </div>
+
+                                            {/* GROWTH HISTORY LIST (DELETABLE) */}
+                                            <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden mb-6">
+                                                <div className="px-6 py-4 border-b border-[var(--color-divider)] bg-[var(--color-bg-page)] flex justify-between items-center">
+                                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                        <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
+                                                    </h4>
+                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
+                                                </div>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left">
+                                                        <thead>
+                                                            <tr className="border-b border-[var(--color-divider)] bg-gray-50/50 dark:bg-white/5">
+                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Recorded</th>
+                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height (cm)</th>
+                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight (kg)</th>
+                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Status</th>
+                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-[var(--color-divider)]">
+                                                            {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
+                                                                <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
+                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                        <span className="text-xs font-bold text-[var(--color-text-main)]">
+                                                                            {new Date(log.logged_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                        <span className="text-xs font-black text-[var(--color-secondary)]">{log.height_cm} cm</span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                        <span className="text-xs font-black text-[var(--color-primary)]">{log.weight_kg} kg</span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                        {log.clinical_analysis && (
+                                                                            <div className="flex gap-1">
+                                                                                <span className={cn(
+                                                                                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                                                                    log.clinical_analysis.weight.status === 'Normal' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                                                                                )}>
+                                                                                    W: {log.clinical_analysis.weight.status}
+                                                                                </span>
+                                                                                <span className={cn(
+                                                                                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                                                                    log.clinical_analysis.height.status === 'Normal' ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
+                                                                                )}>
+                                                                                    H: {log.clinical_analysis.height.status}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                setEditingGrowthLog(log.id);
+                                                                                setEditGrowthForm({
+                                                                                    height_cm: log.height_cm,
+                                                                                    weight_kg: log.weight_kg,
+                                                                                    logged_at: new Date(log.logged_at).toISOString().split('T')[0]
+                                                                                });
+                                                                                setIsEditGrowthModalOpen(true);
+                                                                            }}
+                                                                            className="h-8 w-8 p-0 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
+                                                                        >
+                                                                            <Edit2 size={14} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleDeleteGrowthLog(log.id)}
+                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            {growthLogs.length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
+                                                                        No growth history logs recorded yet.
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
 
@@ -2827,89 +3137,330 @@ export default function ClientDetails() {
 
                                     {/* TAB 3: PLANNER */}
                                     {activeTab === 'plan' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
-                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[var(--color-primary)]/5 dark:bg-[var(--color-primary)]/10 p-5 rounded-2xl border-2 border-[var(--color-primary)]/20 shadow-lg shadow-black/5 gap-4">
+                                        <div className="space-y-6 animate-in fade-in duration-500">
+                                            {/* PLANNER HEADER & NAV */}
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                                                 <div>
-                                                    <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight">Adaptive Meal Planner</h3>
-                                                    <p className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)]">AI-generated schedule based on clinical rules.</p>
+                                                    <h3 className="font-black text-xl text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-3">
+                                                        <ChefHat className="text-[var(--color-primary)]" size={24} /> 
+                                                        Weekly Clinical Planner
+                                                    </h3>
+                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
+                                                        Week of {format(currentWeekStart, 'MMMM d, yyyy')} — {format(addDays(currentWeekStart, 6), 'MMMM d, yyyy')}
+                                                    </p>
                                                 </div>
-                                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                                
+                                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                                    <div className="flex items-center bg-[var(--color-bg-card)] rounded-2xl border-2 border-[var(--color-divider)] p-1">
+                                                        <button 
+                                                            onClick={handlePrevWeek}
+                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all"
+                                                        >
+                                                            <ArrowLeft size={18} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleThisWeek}
+                                                            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
+                                                        >
+                                                            Today
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleNextWeek}
+                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all rotate-180"
+                                                        >
+                                                            <ArrowLeft size={18} />
+                                                        </button>
+                                                    </div>
                                                     <Button
-                                                        onClick={handleClearPlan}
-                                                        variant="outline"
-                                                        className="w-full sm:w-auto text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2 cursor-pointer font-black uppercase text-[10px] tracking-widest py-3 sm:py-2"
+                                                        onClick={() => {
+                                                            setConfirmDialog({
+                                                                isOpen: true,
+                                                                title: 'Clear Weekly Plan',
+                                                                message: 'Are you sure you want to clear all planned meals for this child? This cannot be undone.',
+                                                                onConfirm: handleClearPlan
+                                                            });
+                                                        }}
+                                                        variant="ghost"
+                                                        className="flex-grow md:flex-none h-11 px-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/30"
                                                     >
-                                                        <Trash2 size={16} /> Clear Plan
-                                                    </Button>
-                                                    <Button
-                                                        onClick={handleGeneratePlan}
-                                                        disabled={generatingPlan}
-                                                        className="w-full sm:w-auto bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white gap-2 shadow-lg shadow-green-500/10 cursor-pointer font-black uppercase text-[10px] tracking-widest py-3 sm:py-2"
-                                                    >
-                                                        {generatingPlan ? 'Generating...' : '✨ Create New Plan'}
+                                                        <Trash2 size={18} />
                                                     </Button>
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                {mealPlan.length === 0 && !generatingPlan ? (
-                                                    <div className="text-center py-16 text-[var(--color-text-muted)] border-2 border-dashed border-[var(--color-divider)] rounded-2xl bg-[var(--color-bg-page)] dark:bg-white/5">
-                                                        <Utensils size={40} className="mx-auto mb-4 opacity-20" />
-                                                        <p className="font-black uppercase text-sm tracking-widest">No active meal plan.</p>
-                                                        <p className="text-xs mt-1">Click the button above to generate a 7-day schedule.</p>
+                                            {/* THE WEEKLY GRID */}
+                                            <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden shadow-sm relative">
+                                                {/* Scrolling Indicator for Desktop/Mobile */}
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none md:hidden">
+                                                    <div className="bg-[var(--color-primary)] text-white p-2 rounded-full shadow-lg animate-pulse">
+                                                        <ArrowLeft size={16} className="rotate-180" />
                                                     </div>
-                                                ) : (
-                                                    Object.keys(groupedPlan).sort().map(date => (
-                                                        <div key={date} className="border-2 border-[var(--color-divider)] rounded-2xl overflow-hidden hover:border-[var(--color-primary)]/40 transition-colors bg-[var(--color-bg-card)] shadow-sm">
-                                                            <div className="bg-[var(--color-bg-page)] dark:bg-white/5 p-4 font-black text-xs sm:text-sm uppercase tracking-widest text-[var(--color-secondary)] border-b-2 border-[var(--color-divider)] flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
-                                                                <span>{date}</span>
-                                                                <div className="flex items-center gap-4">
-                                                                    <span className="hidden sm:inline text-[10px] font-normal text-[var(--color-text-muted)] lowercase">{groupedPlan[date].length} meals scheduled</span>
-                                                                    <button
-                                                                        onClick={() => { setSelectedDateForMeal(date); setIsMealModalOpen(true); }}
-                                                                        className="p-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-lg transition-all cursor-pointer border border-[var(--color-primary)]/20"
-                                                                        title="Add Manual Meal"
-                                                                    >
-                                                                        <Plus size={18} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                {groupedPlan[date].map((meal, idx) => (
-                                                                    <div key={idx} className="group relative flex gap-4 items-center p-4 rounded-2xl bg-[var(--color-bg-page)]/30 dark:bg-white/5 border-2 border-transparent hover:border-[var(--color-divider)] hover:shadow-md transition-all">
-                                                                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-secondary)]/20 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm flex items-center justify-center border border-[var(--color-primary)]/10">
-                                                                            {meal.image_url ? (
-                                                                                <img src={meal.image_url} className="w-full h-full object-cover" alt={meal.recipe_name} />
-                                                                            ) : (
-                                                                                <Utensils size={24} className="text-[var(--color-primary)]" />
-                                                                            )}
+                                                </div>
+
+                                                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--color-primary)]/20">
+                                                    <table className="w-full border-collapse min-w-[1400px]">
+                                                        <thead>
+                                                            <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
+                                                                <th className="p-4 w-36 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                    <div className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">Time / Day</div>
+                                                                </th>
+                                                                {weekDays.map(day => (
+                                                                    <th key={day.toString()} className={cn(
+                                                                        "p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 transition-colors",
+                                                                        isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/10" : ""
+                                                                    )}>
+                                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{format(day, 'EEEE')}</div>
+                                                                        <div className={cn(
+                                                                            "text-lg font-black mt-1",
+                                                                            isSameDay(day, new Date()) ? "text-[var(--color-primary)]" : "text-[var(--color-text-main)]"
+                                                                        )}>
+                                                                            {format(day, 'MMM d')}
                                                                         </div>
-                                                                        <div className="min-w-0 flex-1">
-                                                                            <div className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1">{meal.meal_type}</div>
-                                                                            <div className="font-black text-sm sm:text-base leading-tight text-[var(--color-text-main)] truncate uppercase tracking-tight">{meal.recipe_name}</div>
-                                                                            <div className="text-[11px] text-[var(--color-text-muted)] mt-1.5 flex items-center gap-3">
-                                                                                <span className="font-black text-[var(--color-secondary)] bg-[var(--color-secondary)]/5 px-2 py-0.5 rounded border border-[var(--color-secondary)]/10">{meal.calories} kcal</span>
-                                                                                <span className="opacity-30">|</span>
-                                                                                <span className="font-bold">PRO: {meal.protein_g}g</span>
+                                                                        {/* Daily Totals in Header */}
+                                                                        {(() => {
+                                                                            const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day));
+                                                                            const totalCal = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+                                                                            return (
+                                                                                <div className={cn(
+                                                                                    "mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all",
+                                                                                    totalCal > 0 
+                                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm" 
+                                                                                        : "bg-white/50 dark:bg-black/20 border-[var(--color-divider)]"
+                                                                                )}>
+                                                                                    <Activity size={12} />
+                                                                                    <span className="text-[10px] font-black uppercase tracking-tighter">{totalCal || 0} kcal</span>
+                                                                                </div>
+                                                                            );
+                                                                        })()}
+                                                                    </th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
+                                                                <tr key={type} className="border-b-2 border-[var(--color-divider)] last:border-b-0 group">
+                                                                    <td className="p-4 border-r-2 border-[var(--color-divider)] bg-[var(--color-bg-page)]/30 group-hover:bg-[var(--color-bg-page)]/50 transition-colors sticky left-0 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                        <div className="flex flex-col items-center justify-center gap-1">
+                                                                            <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">{type}</span>
+                                                                            <div className="h-9 w-9 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] group-hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
+                                                                                <Utensils size={16} />
                                                                             </div>
                                                                         </div>
-                                                                        <button
-                                                                            onClick={() => handleDeleteMeal(meal.id)}
-                                                                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all cursor-pointer"
-                                                                        >
-                                                                            <Trash2 size={16} />
-                                                                        </button>
-                                                                    </div>
+                                                                    </td>
+                                                                    {weekDays.map(day => {
+                                                                        const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day) && m.meal_type === type);
+                                                                        return (
+                                                                            <td key={day.toString()} className={cn(
+                                                                                "p-3 border-r-2 border-[var(--color-divider)] last:border-r-0 align-top hover:bg-[var(--color-primary)]/5 transition-all relative group/slot min-h-[160px]",
+                                                                                isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/5" : ""
+                                                                            )}>
+                                                                                <div className="space-y-2">
+                                                                                    {dayMeals.map(meal => (
+                                                                                        <div key={meal.id} className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm hover:shadow-xl hover:border-[var(--color-primary)]/50 transition-all group/meal relative">
+                                                                                            <div className="flex justify-between items-start mb-2">
+                                                                                                <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight leading-tight line-clamp-2">{meal.recipe_name}</div>
+                                                                                                <button 
+                                                                                                    onClick={() => handleDeleteMeal(meal.id)}
+                                                                                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover/meal:opacity-100 transition-all"
+                                                                                                >
+                                                                                                    <Trash2 size={14} />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                                                                                    {meal.calories || '--'} kcal
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
+                                                                                                    {meal.protein_g || '--'}g P
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    
+                                                                                    <button 
+                                                                                        onClick={() => {
+                                                                                            setSelectedDateForMeal(format(day, 'yyyy-MM-dd'));
+                                                                                            setMealForm(prev => ({ ...prev, meal_type: type }));
+                                                                                            setIsMealModalOpen(true);
+                                                                                        }}
+                                                                                        className="w-full py-4 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all group/add flex flex-col items-center justify-center gap-1.5 min-h-[60px]"
+                                                                                    >
+                                                                                        <Plus size={16} className="group-hover/add:scale-125 transition-transform" />
+                                                                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-0 group-hover/slot:opacity-100 transition-opacity">Schedule {type}</span>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </td>
+                                                                        );
+                                                                    })}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* FOOTER INFO */}
+                                            <div className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border-2 border-amber-100 dark:border-amber-800/30 flex gap-4 items-start">
+                                                <div className="p-3 bg-amber-100 dark:bg-amber-800/50 rounded-2xl text-amber-600 dark:text-amber-400">
+                                                    <AlertCircle size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest text-xs mb-1">Weekly Planning Guidelines</h4>
+                                                    <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
+                                                        Ensure the total daily calories across all slots align with the child's clinical targets. Parents will see this schedule on their dashboard in real-time. Use the <strong>"Insights"</strong> tab to verify the nutritional balance of your proposed plan.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TAB: PORTION EXCHANGE */}
+                                    {activeTab === 'portions' && (
+                                        <div className="space-y-6 animate-in fade-in duration-500">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border-2 border-[var(--color-divider)] shadow-sm">
+                                                <div>
+                                                    <h3 className="font-black text-2xl text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-3">
+                                                        <Table className="text-[var(--color-primary)]" size={28} /> 
+                                                        Portion Exchange Matrix
+                                                    </h3>
+                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-2 uppercase tracking-widest opacity-70">
+                                                        Medical Grade Portion Distribution Plan
+                                                    </p>
+                                                </div>
+                                                <Button 
+                                                    onClick={handleSavePortions} 
+                                                    disabled={isSavingPortions}
+                                                    className="w-full md:w-auto px-10 py-4 bg-[var(--color-primary)] text-white shadow-xl shadow-blue-500/20 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
+                                                >
+                                                    {isSavingPortions ? 'Saving...' : <><Save size={18} /> Update Matrix</>}
+                                                </Button>
+                                            </div>
+
+                                            {/* PORTION GRID */}
+                                            <div className="bg-white dark:bg-white/5 rounded-[2.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full border-collapse min-w-[1000px]">
+                                                        <thead>
+                                                            <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
+                                                                <th className="p-6 text-left w-48 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                    <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
+                                                                </th>
+                                                                <th className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/50 dark:bg-blue-900/10">
+                                                                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em]">Total Daily</span>
+                                                                </th>
+                                                                {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                    <th key={meal} className="p-6 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
+                                                                        <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                                    </th>
                                                                 ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {[
+                                                                { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
+                                                                { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
+                                                                { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
+                                                                { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
+                                                                { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
+                                                                { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
+                                                            ].map(item => (
+                                                                <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
+                                                                    <td className="p-6 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                                                                {item.icon}
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
+                                                                                <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/20 dark:bg-blue-900/5">
+                                                                        <div className="text-lg font-black text-blue-600 dark:text-blue-400">
+                                                                            {portionMatrix.reduce((sum, row) => sum + (parseFloat(row[item.id]) || 0), 0)}
+                                                                        </div>
+                                                                    </td>
+                                                                    {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                        <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0">
+                                                                            <input 
+                                                                                type="number"
+                                                                                step="0.5"
+                                                                                min="0"
+                                                                                className="w-full bg-transparent border-0 text-center font-black text-[var(--color-text-main)] focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-white/10"
+                                                                                placeholder="0"
+                                                                                value={portionMatrix.find(r => r.meal_type === meal)?.[item.id] || ''}
+                                                                                onChange={(e) => updatePortionCell(meal, item.id, e.target.value)}
+                                                                            />
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                            {/* Special Row for Sugar */}
+                                                            <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
+                                                                <td className="p-6 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
+                                                                            <AlertCircle size={14} />
+                                                                        </div>
+                                                                        <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/20 dark:bg-blue-900/5">-</td>
+                                                                <td colSpan="5" className="p-4">
+                                                                    <input 
+                                                                        type="text"
+                                                                        className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic"
+                                                                        placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
+                                                                        value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
+                                                                        onChange={(e) => {
+                                                                            // For sugar, we just save it in the first row for now
+                                                                            updatePortionCell('Breakfast', 'sugar', e.target.value);
+                                                                        }}
+                                                                    />
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* EXCHANGE GUIDE TOOLTIP */}
+                                            <div className="p-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border-2 border-blue-100 dark:border-blue-800/30">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-2xl text-blue-600 dark:text-blue-400">
+                                                        <Info size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-black text-blue-800 dark:text-blue-300 uppercase tracking-[0.2em] text-xs mb-2">Standard Exchange Guide</h4>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Vegetables</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup cooked OR 1 cup raw</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Rice & Carbs</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup rice OR 1.5 slices bread</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Milk</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 cup (250 mL) low fat milk</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Meat/Protein</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 30-40g (Size of a matchbox)</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fruit</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 medium pc OR 1 slice (40-60g)</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fat & Oil</span>
+                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 tsp (5 mL) vegetable oil</p>
                                                             </div>
                                                         </div>
-                                                    ))
-                                                )}
-                                                {generatingPlan && (
-                                                    <div className="text-center py-12 text-gray-500">
-                                                        Processing... building the perfect schedule logic.
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -2968,6 +3519,70 @@ export default function ClientDetails() {
                     <div className="flex gap-3 pt-4">
                         <Button variant="outline" className="flex-1" onClick={() => setIsGrowthModalOpen(false)}>Cancel</Button>
                         <Button type="submit" className="flex-1">Update Growth</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* EDIT GROWTH MODAL */}
+            <Modal
+                isOpen={isEditGrowthModalOpen}
+                onClose={() => setIsEditGrowthModalOpen(false)}
+                title="Edit Growth Record"
+            >
+                <form onSubmit={handleUpdateGrowthLog} className="space-y-6">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30 flex gap-3">
+                        <Info className="text-blue-500 shrink-0" size={20} />
+                        <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
+                            Correcting historical data will automatically recalculate clinical percentiles and Z-scores for this date.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2 px-1">Recorded Date</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
+                                <input
+                                    type="date"
+                                    required
+                                    value={editGrowthForm.logged_at}
+                                    onChange={(e) => setEditGrowthForm({ ...editGrowthForm, logged_at: e.target.value })}
+                                    className="w-full pl-12 pr-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2 px-1">Height (cm)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    required
+                                    placeholder="e.g. 110.5"
+                                    value={editGrowthForm.height_cm}
+                                    onChange={(e) => setEditGrowthForm({ ...editGrowthForm, height_cm: e.target.value })}
+                                    className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2 px-1">Weight (kg)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    required
+                                    placeholder="e.g. 18.2"
+                                    value={editGrowthForm.weight_kg}
+                                    onChange={(e) => setEditGrowthForm({ ...editGrowthForm, weight_kg: e.target.value })}
+                                    className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <Button variant="outline" className="flex-1" onClick={() => setIsEditGrowthModalOpen(false)}>Cancel</Button>
+                        <Button type="submit" className="flex-1 bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20">Save Changes</Button>
                     </div>
                 </form>
             </Modal>
@@ -3187,5 +3802,6 @@ export default function ClientDetails() {
                 }}
             />
         </div>
+    </div>
     );
 }

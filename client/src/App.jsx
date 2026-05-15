@@ -14,6 +14,7 @@ import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ForceChangePassword from './pages/ForceChangePassword';
 
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
@@ -42,6 +43,13 @@ function AppContent() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* Force Password Reset - Dedicated Top Level Route */}
+        <Route path="/force-password-reset" element={
+          <ProtectedRoute>
+            <ForceChangePassword />
+          </ProtectedRoute>
+        } />
 
         {/* Protected Routes - Wrapped in Layout and ProtectedRoute */}
         <Route path="/*" element={

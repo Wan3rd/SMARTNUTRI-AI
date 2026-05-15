@@ -28,7 +28,7 @@ async function analyzeImage(imageBase64) {
     2. For each edible item, provide a flat JSON object with:
        - 'name': Dish or item name.
        - 'cooking_method': Determine the cooking method specifically for this item. Must be one of: "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", or "Unknown".
-       - 'measure_qty': Number indicating quantity (e.g. if there are 2 hotdogs, output 2. If it's a bowl of soup, output 1).
+       - 'measure_qty': Number indicating quantity (e.g. if there are 2 hotdogs, output 2. If it's a bowl of soup, output 1). IMPORTANT FOR RICE: Use plate diameter and utensils as a visual scale. 1 Cup of rice is roughly the size of a small clenched fist. If the rice is spread thin, do not overestimate. Be conservative (standard small bowl = 1 Cup).
        - 'serving_unit': Common measure (must be exactly one of: 'Cup', 'Spoon', 'Sandok', 'Bowl', 'Slice', 'Piece', 'Plate', or 'Serving'). If the item is Rice, it MUST be 'Cup'.
        - 'serving_weight_g': Estimated weight in grams.
        - 'calories': Estimated calories as an integer.
@@ -191,10 +191,10 @@ router.post('/', verifyToken, async (req, res) => {
         // Ownership Check
         const profile = await prisma.profiles.findUnique({ where: { id: profile_id } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
-        
-        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
-            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
-                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot log meals for this profile' });
@@ -300,10 +300,10 @@ router.get('/profile/:id', verifyToken, async (req, res) => {
         // Ownership Check
         const profile = await prisma.profiles.findUnique({ where: { id } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
-        
-        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
-            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
-                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to meal history' });
@@ -337,7 +337,7 @@ router.delete('/bulk/day/:profileId/:date', verifyToken, async (req, res) => {
         // Ownership Check
         const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
-        
+
         // Only Parents or Admins can bulk delete (Nutritionists shouldn't delete logs normally)
         const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin';
 

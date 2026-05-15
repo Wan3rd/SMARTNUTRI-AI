@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary } from '../lib/cloudinary.js';
+import { getGrowthStatus } from '../utils/growth.js';
 
 const router = express.Router();
 
@@ -144,7 +145,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// GET /:id/growth - Get growth logs for a profile
+// GET /:id/growth - Get growth logs for a profile with Clinical Analysis (Z-Scores/Percentiles)
 router.get('/:id/growth', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -164,7 +165,36 @@ router.get('/:id/growth', verifyToken, async (req, res) => {
             where: { profile_id: id },
             orderBy: { logged_at: 'asc' }
         });
-        res.json(growthLogs);
+
+        // Calculate Clinical Status for each log with Trend Analysis
+        const clinicalLogs = growthLogs.map((log, index) => {
+            const ageMonths = Math.floor((new Date(log.logged_at) - new Date(profile.date_of_birth)) / (1000 * 60 * 60 * 24 * 30.44));
+            const status = getGrowthStatus(ageMonths, profile.gender, log.weight_kg, log.height_cm);
+            
+            // Trend Analysis
+            if (index > 0) {
+                const prevLog = growthLogs[index - 1];
+                const prevAgeMonths = Math.floor((new Date(prevLog.logged_at) - new Date(profile.date_of_birth)) / (1000 * 60 * 60 * 24 * 30.44));
+                const prevStatus = getGrowthStatus(prevAgeMonths, profile.gender, prevLog.weight_kg, prevLog.height_cm);
+                
+                const weightDiff = status.weight.percentile - prevStatus.weight.percentile;
+                const heightDiff = status.height.percentile - prevStatus.height.percentile;
+                
+                status.trends = {
+                    weight_change: weightDiff,
+                    height_change: heightDiff,
+                    is_crossing_percentiles: Math.abs(weightDiff) >= 20 || Math.abs(heightDiff) >= 20,
+                    clinical_warning: Math.abs(weightDiff) >= 20 ? (weightDiff < 0 ? "Growth Faltering Detected" : "Rapid Weight Gain Detected") : null
+                };
+            }
+
+            return {
+                ...log,
+                clinical_analysis: status
+            };
+        });
+
+        res.json(clinicalLogs);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -211,6 +241,110 @@ router.post('/:id/growth', verifyToken, async (req, res) => {
     }
 });
 
+// PATCH /growth-record/:logId - Update a growth log
+router.patch('/growth-record/:logId', verifyToken, async (req, res) => {
+    const { logId } = req.params;
+    const { height_cm, weight_kg, logged_at } = req.body;
+    try {
+        const log = await prisma.growth_logs.findUnique({ 
+            where: { id: logId },
+            include: { profiles: true }
+        });
+        
+        if (!log) return res.status(404).json({ message: 'Growth log not found' });
+
+        // Ownership Check
+        const isAuthorized = log.profiles.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: log.profiles.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized' });
+
+        const updatedLog = await prisma.growth_logs.update({
+            where: { id: logId },
+            data: {
+                height_cm: height_cm ? parseFloat(height_cm) : undefined,
+                weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
+                logged_at: logged_at ? new Date(logged_at) : undefined
+            }
+        });
+
+        // If this was the latest log, update the profile biometrics too
+        const latestLog = await prisma.growth_logs.findFirst({
+            where: { profile_id: log.profile_id },
+            orderBy: { logged_at: 'desc' }
+        });
+
+        if (latestLog && latestLog.id === logId) {
+            await prisma.profiles.update({
+                where: { id: log.profile_id },
+                data: {
+                    height_cm: updatedLog.height_cm,
+                    weight_kg: updatedLog.weight_kg
+                }
+            });
+        }
+
+        res.json(updatedLog);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /growth-record/:logId - Delete a growth log
+router.delete('/growth-record/:logId', verifyToken, async (req, res) => {
+    const { logId } = req.params;
+    console.log(`[DELETE] Request to delete growth log: ${logId}`);
+    try {
+        const log = await prisma.growth_logs.findUnique({ 
+            where: { id: logId },
+            include: { profiles: true }
+        });
+        
+        if (!log) {
+            console.error(`[DELETE] Log ${logId} not found in database`);
+            return res.status(404).json({ message: 'Growth log not found' });
+        }
+
+        // Ownership Check
+        const isAuthorized = log.profiles.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: log.profiles.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot delete this record' });
+
+        await prisma.growth_logs.delete({ where: { id: logId } });
+        console.log(`[DELETE] Successfully deleted log record ${logId}`);
+
+        // Update profile with the next latest available log
+        const latestLog = await prisma.growth_logs.findFirst({
+            where: { profile_id: log.profile_id },
+            orderBy: { logged_at: 'desc' }
+        });
+
+        if (latestLog) {
+            console.log(`[DELETE] Updating profile ${log.profile_id} biometrics from next latest log`);
+            await prisma.profiles.update({
+                where: { id: log.profile_id },
+                data: {
+                    height_cm: latestLog.height_cm,
+                    weight_kg: latestLog.weight_kg
+                }
+            });
+        } else {
+            console.log(`[DELETE] No remaining logs for profile ${log.profile_id}. Biometrics remain as they are.`);
+        }
+
+        res.json({ message: 'Growth record deleted successfully' });
+    } catch (err) {
+        console.error("[DELETE] ERROR during growth log deletion:", err);
+        res.status(500).json({ message: 'Server Error', error: err.message });
+    }
+});
+
 // Vaccination Routes
 // GET /vaccination-types - Get all available vaccination types
 router.get('/vaccination-types', verifyToken, async (req, res) => {
@@ -219,6 +353,31 @@ router.get('/vaccination-types', verifyToken, async (req, res) => {
             orderBy: { name: 'asc' }
         });
         res.json(types);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /:id - Get a single profile
+router.get('/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const profile = await prisma.profiles.findUnique({
+            where: { id }
+        });
+
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        // Authorization check
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized' });
+
+        res.json(profile);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

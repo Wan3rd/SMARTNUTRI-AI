@@ -93,7 +93,8 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                     email: parent_email.toLowerCase(),
                     password_hash: defaultPasswordHash,
                     full_name: parent_name,
-                    role: 'parent'
+                    role: 'parent',
+                    force_password_reset: true
                 }
             });
 
@@ -169,54 +170,141 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
 // GET /clients - List all parents linked to this nutritionist
 router.get('/clients', verifyToken, isNutritionist, async (req, res) => {
     try {
+        const { status } = req.query; // 'active' or 'archived'
+        const whereClause = { nutritionist_id: req.user.id };
+        if (status) {
+            whereClause.status = status;
+        }
+
         const clientLinks = await prisma.nutritionist_clients.findMany({
-            where: { nutritionist_id: req.user.id },
+            where: whereClause,
             include: {
                 parent: {
                     select: {
                         id: true,
                         email: true,
-                        full_name: true
+                        full_name: true,
+                        deleted_at: true,
+                        deactivation_reason: true
                     }
                 }
             }
         });
 
-        const formattedClients = clientLinks.map(link => ({
-            id: link.parent.id,
-            email: link.parent.email,
-            full_name: link.parent.full_name,
-            status: link.status,
-            created_at: link.created_at
-        }));
+        // Safety check: Filter out any links where the parent record might be missing
+        const formattedClients = clientLinks
+            .filter(link => link.parent)
+            .map(link => ({
+                id: link.parent.id,
+                email: link.parent.email,
+                full_name: link.parent.full_name,
+                status: link.status || 'active',
+                deleted_at: link.parent.deleted_at,
+                deactivation_reason: link.parent.deactivation_reason,
+                created_at: link.created_at
+            }));
 
         res.json(formattedClients);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("CRITICAL: Failed to fetch clinical clients:", err);
+        res.status(500).json({ 
+            message: 'Internal Server Error', 
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+        });
     }
 });
 
 // GET /clients/:id - Get specific client details
 router.get('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
+        // SECURITY: Verify that this client is linked to the requesting nutritionist (regardless of status)
+        const isLinked = await prisma.nutritionist_clients.findFirst({
+            where: { nutritionist_id: req.user.id, parent_id: req.params.id }
+        });
+        if (!isLinked && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Client not linked to your account' });
+        }
+
         const client = await prisma.users.findUnique({
             where: { id: req.params.id },
-            select: { id: true, email: true, full_name: true }
+            select: { 
+                id: true, 
+                email: true, 
+                full_name: true, 
+                deleted_at: true, 
+                deactivation_reason: true,
+                status: true
+            }
         });
         if (!client) {
             return res.status(404).json({ message: 'Client not found' });
         }
         res.json(client);
     } catch (err) {
+        console.error("CRITICAL: Failed to fetch client details:", err);
+        res.status(500).json({ 
+            message: 'Internal Server Error', 
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+        });
+    }
+});
+
+// PATCH /clients/:id/restore - Restore a deactivated client
+router.patch('/clients/:id/restore', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        const link = await prisma.nutritionist_clients.findUnique({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: req.user.id,
+                    parent_id: req.params.id
+                }
+            }
+        });
+
+        if (!link) {
+            return res.status(404).json({ message: 'Client link not found' });
+        }
+
+        await prisma.$transaction([
+            // Restore User
+            prisma.users.update({
+                where: { id: req.params.id },
+                data: {
+                    deleted_at: null,
+                    deactivation_reason: null,
+                    status: 'active'
+                }
+            }),
+            // Update Link Status
+            prisma.nutritionist_clients.update({
+                where: {
+                    nutritionist_id_parent_id: {
+                        nutritionist_id: req.user.id,
+                        parent_id: req.params.id
+                    }
+                },
+                data: { status: 'active' }
+            })
+        ]);
+
+        res.json({ success: true, message: 'Client account restored successfully' });
+    } catch (err) {
         console.error(err);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Failed to restore client account' });
     }
 });
 
 // GET /clients/:parentId/profiles - Get children profiles for a client
 router.get('/clients/:parentId/profiles', verifyToken, isNutritionist, async (req, res) => {
     try {
+        // SECURITY: Verify Link
+        const isLinked = await prisma.nutritionist_clients.findFirst({
+            where: { nutritionist_id: req.user.id, parent_id: req.params.parentId }
+        });
+        if (!isLinked && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Unauthorized access to client profiles' });
+        }
+
         const profiles = await prisma.profiles.findMany({
             where: { user_id: req.params.parentId }
         });
@@ -244,6 +332,11 @@ router.post('/rules', verifyToken, isNutritionist, async (req, res) => {
                 is_standard: is_standard || false
             }
         });
+
+        // Trigger background re-validation
+        const { revalidateProfileLogs } = await import('../utils/compliance.js');
+        await revalidateProfileLogs(prisma, profile_id);
+
         res.status(201).json(newRule);
     } catch (err) {
         console.error(err);
@@ -254,8 +347,21 @@ router.post('/rules', verifyToken, isNutritionist, async (req, res) => {
 // GET /rules/:profileId - Get rules for a profile
 router.get('/rules/:profileId', verifyToken, async (req, res) => {
     try {
+        const { profileId } = req.params;
+
+        // SECURITY: Check if nutritionist owns this profile's parent client
+        const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to rules' });
+
         const rules = await prisma.nutrition_rules.findMany({
-            where: { profile_id: req.params.profileId },
+            where: { profile_id: profileId },
             orderBy: { created_at: 'desc' }
         });
         res.json(rules);
@@ -268,16 +374,16 @@ router.get('/rules/:profileId', verifyToken, async (req, res) => {
 // DELETE /rules/:id - Delete a nutrition rule
 router.delete('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
-        const deletedRule = await prisma.nutrition_rules.deleteMany({
-            where: { 
-                id: req.params.id, 
-                nutritionist_id: req.user.id 
-            }
+        const rule = await prisma.nutrition_rules.findUnique({ where: { id: req.params.id } });
+        if (!rule) return res.status(404).json({ message: 'Rule not found' });
+
+        await prisma.nutrition_rules.delete({
+            where: { id: req.params.id }
         });
 
-        if (deletedRule.count === 0) {
-            return res.status(404).json({ message: 'Rule not found or unauthorized' });
-        }
+        // Trigger background re-validation
+        const { revalidateProfileLogs } = await import('../utils/compliance.js');
+        await revalidateProfileLogs(prisma, rule.profile_id);
 
         res.json({ message: 'Rule deleted successfully' });
     } catch (err) {
@@ -302,6 +408,11 @@ router.patch('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
                 category
             }
         });
+
+        // Trigger background re-validation
+        const { revalidateProfileLogs } = await import('../utils/compliance.js');
+        await revalidateProfileLogs(prisma, updatedRule.profile_id);
+
         res.json(updatedRule);
     } catch (err) {
         console.error(err);
@@ -553,6 +664,17 @@ router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res)
 // GET /plan/:profileId - Get active meal plan for a profile
 router.get('/plan/:profileId', verifyToken, isNutritionist, async (req, res) => {
     try {
+        // SECURITY: Link check
+        const profile = await prisma.profiles.findUnique({ where: { id: req.params.profileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to meal plans' });
+
         const plans = await prisma.meal_plans.findMany({
             where: { profile_id: req.params.profileId },
             orderBy: { date: 'asc' }
@@ -762,6 +884,17 @@ router.delete('/plan/all/:profileId', verifyToken, isNutritionist, async (req, r
 // GET /adime-notes/:profileId - Get clinical notes for a profile
 router.get('/adime-notes/:profileId', verifyToken, async (req, res) => {
     try {
+        // SECURITY: Verify clinical link
+        const profile = await prisma.profiles.findUnique({ where: { id: req.params.profileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to clinical notes' });
+
         const notes = await prisma.adime_notes.findMany({
             where: { profile_id: req.params.profileId },
             orderBy: { created_at: 'desc' }
@@ -880,6 +1013,133 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
         });
 
         res.json(updated);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// --- Meal Planning Routes ---
+
+// GET /plan/:profileId - Get meal plans for a profile
+router.get('/plan/:profileId', verifyToken, async (req, res) => {
+    try {
+        const plans = await prisma.meal_plans.findMany({
+            where: { profile_id: req.params.profileId },
+            orderBy: { date: 'asc' }
+        });
+        res.json(plans);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /plan/meal - Add a meal to the plan
+router.post('/plan/meal', verifyToken, isNutritionist, async (req, res) => {
+    const { profile_id, date, meal_type, recipe_name, calories, protein_g, carbs_g, fats_g } = req.body;
+    try {
+        const newMeal = await prisma.meal_plans.create({
+            data: {
+                profile_id,
+                date: new Date(date),
+                meal_type,
+                recipe_name,
+                calories: calories ? parseInt(calories) : null,
+                protein_g: protein_g ? parseInt(protein_g) : null,
+                carbs_g: carbs_g ? parseInt(carbs_g) : null,
+                fats_g: fats_g ? parseInt(fats_g) : null,
+                nutritionist_id: req.user.id
+            }
+        });
+        res.status(201).json(newMeal);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /plan/meal/:mealId - Remove a meal from the plan
+router.delete('/plan/meal/:mealId', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        await prisma.meal_plans.delete({
+            where: { id: req.params.mealId }
+        });
+        res.json({ message: 'Meal removed from plan' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /plan/:profileId - Clear all plans for a profile
+router.delete('/plan/:profileId', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        await prisma.meal_plans.deleteMany({
+            where: { profile_id: req.params.profileId }
+        });
+        res.json({ message: 'Meal plan cleared' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// --- Portion Planning Routes ---
+
+// GET /portion-plan/:profileId - Get the portion exchange matrix for a profile
+router.get('/portion-plan/:profileId', verifyToken, async (req, res) => {
+    try {
+        const plans = await prisma.portion_plans.findMany({
+            where: { profile_id: req.params.profileId }
+        });
+        res.json(plans);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /portion-plan - Save/Update the entire portion matrix
+router.post('/portion-plan', verifyToken, isNutritionist, async (req, res) => {
+    const { profile_id, matrix } = req.body; // matrix: [{ meal_type, vegetables, ... }]
+    try {
+        // We use a transaction to ensure all or nothing
+        const operations = matrix.map(row => 
+            prisma.portion_plans.upsert({
+                where: { 
+                    profile_id_meal_type: { 
+                        profile_id, 
+                        meal_type: row.meal_type 
+                    } 
+                },
+                update: {
+                    vegetables: parseFloat(row.vegetables) || 0,
+                    fruit: parseFloat(row.fruit) || 0,
+                    milk: parseFloat(row.milk) || 0,
+                    rice: parseFloat(row.rice) || 0,
+                    meat: parseFloat(row.meat) || 0,
+                    fat: parseFloat(row.fat) || 0,
+                    sugar: row.sugar,
+                    updated_at: new Date()
+                },
+                create: {
+                    profile_id,
+                    nutritionist_id: req.user.id,
+                    meal_type: row.meal_type,
+                    vegetables: parseFloat(row.vegetables) || 0,
+                    fruit: parseFloat(row.fruit) || 0,
+                    milk: parseFloat(row.milk) || 0,
+                    rice: parseFloat(row.rice) || 0,
+                    meat: parseFloat(row.meat) || 0,
+                    fat: parseFloat(row.fat) || 0,
+                    sugar: row.sugar
+                }
+            })
+        );
+
+        await prisma.$transaction(operations);
+        res.json({ message: 'Portion plan updated successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

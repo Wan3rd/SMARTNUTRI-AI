@@ -271,7 +271,7 @@ router.post('/generate', verifyToken, async (req, res) => {
 
         // 5. Generate 7 Days
         console.log("Saving to database...");
-        
+
         const today = new Date();
         const startStr = new Date(today);
         const endStr = new Date(today);

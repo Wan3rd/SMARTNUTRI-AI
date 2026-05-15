@@ -25,7 +25,10 @@ export const AuthProvider = ({ children }) => {
                 } catch (err) {
                     console.error("Session sync failed", err);
                     // If account is suspended (403) or token is dead (401), force logout
-                    if (err.response?.status === 401 || err.response?.status === 403) {
+                    // BUT: Don't logout if it's just a FORCE_RESET_REQUIRED (which is also a 403)
+                    const isForceReset = err.response?.data?.message === 'FORCE_RESET_REQUIRED';
+                    
+                    if (err.response?.status === 401 || (err.response?.status === 403 && !isForceReset)) {
                         logout();
                     } else {
                         // For generic network errors, try falling back to local data to keep UI stable

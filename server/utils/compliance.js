@@ -244,3 +244,65 @@ function evaluateLegacyRule(rule, analysis, dailyTotals, violations, xaiMessages
         }
     }
 }
+/**
+ * Re-validates all meal logs for a profile against the current rules.
+ * This should be called when rules are updated/deleted.
+ */
+export const revalidateProfileLogs = async (prisma, profileId) => {
+    const rules = await prisma.nutrition_rules.findMany({
+        where: { profile_id: profileId }
+    });
+
+    const logs = await prisma.meal_logs.findMany({
+        where: { profile_id: profileId },
+        orderBy: { logged_at: 'asc' }
+    });
+
+    // Group logs by date to calculate daily totals
+    const logsByDate = {};
+    logs.forEach(log => {
+        const dateStr = new Date(log.logged_at).toISOString().split('T')[0];
+        if (!logsByDate[dateStr]) logsByDate[dateStr] = [];
+        logsByDate[dateStr].push(log);
+    });
+
+    const updates = [];
+
+    for (const date in logsByDate) {
+        let dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 };
+        const dayLogs = logsByDate[date];
+
+        for (const log of dayLogs) {
+            const result = checkCompliance(log, rules, dailyTotals);
+            
+            // Collect the update
+            updates.push(prisma.meal_logs.update({
+                where: { id: log.id },
+                data: {
+                    compliance_status: result.status,
+                    compliance_score: result.compliance_score,
+                    violation_details: result.details,
+                    total_calories: log.total_calories || result.total_calories || 0 // Keep existing or use calc
+                }
+            }));
+
+            // Update daily totals for the NEXT log of the same day
+            const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
+            if (analysis) {
+                dailyTotals.calories += (log.total_calories || 0);
+                dailyTotals.protein += (log.total_protein_g || 0);
+                dailyTotals.carbs += (log.total_carbs_g || 0);
+                dailyTotals.fat += (log.total_fat_g || 0);
+                dailyTotals.sugar += (log.total_sugar_g || 0);
+                dailyTotals.sodium += (log.total_sodium_mg || 0);
+            }
+        }
+    }
+
+    // Run all updates in a transaction for efficiency
+    if (updates.length > 0) {
+        await prisma.$transaction(updates);
+    }
+    
+    return updates.length;
+};

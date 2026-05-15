@@ -11,7 +11,7 @@ export const ProfileProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const refreshProfiles = async () => {
-        if (!user || user.role !== 'parent') {
+        if (!user || user.role !== 'parent' || user.force_password_reset) {
             setProfiles([]);
             setSelectedProfile(null);
             setLoading(false);

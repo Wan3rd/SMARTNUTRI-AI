@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw } from 'lucide-react';
+import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 import api from '../lib/api';
 import ConfirmDialog from './common/ConfirmDialog';
 import Notification from './common/Notification';
@@ -26,6 +27,39 @@ const getDefaultMealCategory = () => {
     if (phHour >= 14 && phHour < 17) return 'PM Snack';
     if (phHour >= 17 && phHour < 21) return 'Dinner';
     return 'Other';
+};
+
+const getCroppedImg = async (imageSrc, pixelCrop) => {
+    const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.addEventListener('load', () => resolve(img));
+        img.addEventListener('error', (error) => reject(error));
+        img.src = imageSrc;
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            resolve(blob);
+        }, 'image/jpeg');
+    });
 };
 
 export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
@@ -54,6 +88,14 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
+    // Cropping States
+    const [cropImage, setCropImage] = useState(null);
+    const [cropType, setCropType] = useState(null); // 'before' or 'after'
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    const [isCropping, setIsCropping] = useState(false);
+
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
     };
@@ -63,16 +105,38 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     const handleFileChange = (e, type = 'before') => {
         const selected = e.target.files[0];
         if (selected) {
-            if (type === 'before') {
-                setFile(selected);
-                setPreview(URL.createObjectURL(selected));
+            const url = URL.createObjectURL(selected);
+            setCropImage(url);
+            setCropType(type);
+            setIsCropping(true);
+        }
+    };
+
+    const handleCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleConfirmCrop = async () => {
+        try {
+            const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
+            const croppedFile = new File([croppedBlob], `meal_${cropType}.jpg`, { type: 'image/jpeg' });
+            const croppedUrl = URL.createObjectURL(croppedBlob);
+
+            if (cropType === 'before') {
+                setFile(croppedFile);
+                setPreview(croppedUrl);
                 setStatus('idle');
                 setAnalysisResult(null);
                 setVerifiedItems([]);
             } else {
-                setFileAfter(selected);
-                setPreviewAfter(URL.createObjectURL(selected));
+                setFileAfter(croppedFile);
+                setPreviewAfter(croppedUrl);
             }
+            setIsCropping(false);
+            setCropImage(null);
+        } catch (e) {
+            console.error(e);
+            showNotif("Failed to crop image", "error");
         }
     };
 
@@ -796,7 +860,70 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         </div>
                     )}
                 </div>
+
+                {/* CROP MODAL */}
+                {isCropping && (
+                    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-10">
+                        <div className="relative w-full h-full max-w-4xl bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col">
+                            <div className="p-6 bg-zinc-900 border-b border-white/10 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/20 rounded-xl text-blue-500">
+                                        <Crop size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-black uppercase tracking-widest text-sm">Focus on the Meal</h3>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Pinch or scroll to zoom. Drag to move.</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsCropping(false)}
+                                    className="p-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 relative bg-black">
+                                <Cropper
+                                    image={cropImage}
+                                    crop={crop}
+                                    zoom={zoom}
+                                    aspect={1}
+                                    onCropChange={setCrop}
+                                    onCropComplete={handleCropComplete}
+                                    onZoomChange={setZoom}
+                                />
+                            </div>
+
+                            <div className="p-8 bg-zinc-900 border-t border-white/10 flex flex-col sm:flex-row items-center gap-6">
+                                <div className="flex-1 w-full space-y-2">
+                                    <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase">
+                                        <span>Zoom Level</span>
+                                        <span>{Math.round(zoom * 100)}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        value={zoom}
+                                        min={1}
+                                        max={3}
+                                        step={0.1}
+                                        aria-labelledby="Zoom"
+                                        onChange={(e) => setZoom(e.target.value)}
+                                        className="w-full h-2 accent-blue-500 cursor-pointer bg-zinc-800 rounded-full"
+                                    />
+                                </div>
+                                <Button 
+                                    onClick={handleConfirmCrop}
+                                    className="w-full sm:w-auto px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                                >
+                                    Finish Cropping
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </CardContent>
+
 
             <ConfirmDialog 
                 isOpen={isConfirmDeleteOpen}

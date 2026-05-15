@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { cn, formatValue } from '../lib/utils';
 import api from '../lib/api';
 
-export default function MealDetailModal({ log, onClose, onDelete }) {
+export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) {
     const { user } = useAuth();
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -50,7 +50,23 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
         }
     };
 
-    const getComplianceBadge = (status) => {
+    const getComplianceBadge = (log, rules) => {
+        let status = log.compliance_status || 'pending';
+        
+        // DYNAMIC OVERRIDE: If it was flagged, check if it now complies with updated rules
+        if (status === 'flagged' && rules.length > 0) {
+            const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
+            if (analysis) {
+                const totalKcal = analysis.nutrition?.calories || analysis.total_calories_est || 0;
+                const kcalRule = rules.find(r => r.category?.toLowerCase() === 'calories' && r.rule_type === 'max');
+                
+                if (kcalRule && totalKcal <= parseFloat(kcalRule.rule_value)) {
+                    // It was flagged, but the new rule is higher than the meal's kcal!
+                    status = 'compliant';
+                }
+            }
+        }
+
         const badges = {
             compliant: { color: 'bg-green-600 text-white dark:bg-green-500 dark:text-black shadow-md border-2 border-green-700/20', icon: CheckCircle2, label: 'Compliant' },
             flagged: { color: 'bg-red-600 text-white dark:bg-red-500 dark:text-black shadow-md border-2 border-red-700/20', icon: AlertCircle, label: 'Flagged' },
@@ -59,14 +75,14 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
         return badges[status] || badges.pending;
     };
 
-    const complianceBadge = getComplianceBadge(log.compliance_status);
+    const complianceBadge = getComplianceBadge(log, rules);
     const ComplianceIcon = complianceBadge.icon;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="bg-[var(--color-bg-card)] rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="sticky top-0 bg-[var(--color-bg-card)] border-b border-[var(--color-divider)] p-6 flex justify-between items-start z-10">
+                <div className="sticky top-0 bg-[var(--color-bg-card)] border-b border-[var(--color-divider)] p-5 flex justify-between items-start z-10">
                     <div>
                         <h2 className="text-2xl font-bold text-[var(--color-secondary)]">Meal Details</h2>
                         <p className="text-sm text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
@@ -87,7 +103,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-8">
+                <div className="p-5 space-y-5">
                     {/* Meal Comparison View */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -156,7 +172,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                     </div>
 
                     {/* Additional Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {log.hidden_ingredients && (
                             <div className="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
                                 <h4 className="text-[10px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2">Hidden Add-ons</h4>
@@ -199,7 +215,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                         </span>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
+                                <CardContent className="space-y-4">
                                     {/* Food Items */}
                                     {items.length > 0 && (
                                         <div>
@@ -231,8 +247,8 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
 
                                     {/* Summary Totals */}
                                     <div className="pt-2 border-t border-[var(--color-divider)] border-dashed">
-                                        <h4 className="font-black text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mb-4">Nutritional Summation</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <h4 className="font-black text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mb-3">Nutritional Summation</h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                             {[
                                                 { val: nutrition.calories || displayAnalysis.total_calories_est, label: "Kcal", col: "var(--color-primary)" },
                                                 { val: nutrition.protein || nutrition.protein_g, label: "Protein", col: "#2563eb" },
@@ -272,7 +288,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                     Verified Record
                                 </span>
                             </div>
-                            <CardContent className="p-6 space-y-5">
+                            <CardContent className="p-5 space-y-4">
                                 <div className="flex items-center gap-4">
                                     <div className="h-14 w-14 rounded-2xl border-2 border-white dark:border-emerald-900/50 overflow-hidden bg-white flex-shrink-0 shadow-md">
                                         {nutritionist?.profile_image_url ? (
@@ -322,8 +338,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                     <AlertCircle size={18} /> Rule Violations
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
+                            <CardContent className="p-4 space-y-3">
                                     {/* XAI Clinical Reasoning */}
                                     {log.violation_details.xai_feedback && (
                                         <div className="bg-white dark:bg-white/5 p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
@@ -354,7 +369,6 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -378,7 +392,7 @@ export default function MealDetailModal({ log, onClose, onDelete }) {
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] p-6 flex justify-between items-center">
+                <div className="sticky bottom-0 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] p-5 flex justify-between items-center">
                     <Button
                         variant="outline"
                         className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm"

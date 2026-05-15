@@ -1,5 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
+import config from '../../env_config.js';
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ const initializeSendGrid = () => {
 initializeSendGrid();
 
 const FROM_EMAIL = process.env.FROM_EMAIL?.trim() || 'noreply@smartnutri-ai.com';
-const APP_URL = process.env.APP_URL?.trim() || 'http://localhost:5173';
+const APP_URL = config.client.url; 
 
 export const sendResetPasswordEmail = async (email, token, fullName) => {
     const resetUrl = `${APP_URL}/reset-password?token=${token}`;
