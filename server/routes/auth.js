@@ -422,6 +422,21 @@ router.put('/preferences', verifyToken, async (req, res) => {
     }
 });
 
+// UPDATE THEME PREFERENCE
+router.put('/theme', verifyToken, async (req, res) => {
+    const { theme } = req.body;
+    try {
+        await prisma.users.update({
+            where: { id: req.user.id },
+            data: { theme_preference: theme }
+        });
+        res.json({ success: true, message: 'Theme preference updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update theme' });
+    }
+});
+
 // Rate limiter for sensitive auth routes
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
