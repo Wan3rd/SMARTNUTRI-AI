@@ -79,25 +79,25 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
     const ComplianceIcon = complianceBadge.icon;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-[var(--color-bg-card)] rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in transition-all duration-300">
+            <div className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500">
                 {/* Header */}
-                <div className="sticky top-0 bg-[var(--color-bg-card)] border-b border-[var(--color-divider)] p-5 flex justify-between items-start z-10">
+                <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-6 flex justify-between items-start z-10">
                     <div>
-                        <h2 className="text-2xl font-bold text-[var(--color-secondary)]">Meal Details</h2>
-                        <p className="text-sm text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
-                            <Calendar size={14} />
+                        <h2 className="text-xl sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
+                        <p className="text-[10px] sm:text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-1 flex items-center gap-2 opacity-70">
+                            <Calendar size={12} className="text-[var(--color-primary)]" />
                             {new Date(log.logged_at).toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                                day: 'numeric'
                             })}
+                            <span className="opacity-30">|</span>
+                            {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-10 w-10">
                         <X size={20} />
                     </Button>
                 </div>
@@ -105,17 +105,17 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
                 {/* Content */}
                 <div className="p-5 space-y-5">
                     {/* Meal Comparison View */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest pl-1">Before Meal</p>
                             <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group">
                                 <img
                                     src={log.image_url}
                                     alt="Before"
-                                    className="w-full h-64 object-cover transition-transform group-hover:scale-105 duration-700"
+                                    className="w-full h-48 sm:h-64 object-cover transition-transform group-hover:scale-105 duration-700"
                                 />
                                 <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                                    <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${complianceBadge.color} flex items-center gap-1.5 shadow-lg`}>
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${complianceBadge.color} flex items-center gap-1.5 shadow-lg`}>
                                         <ComplianceIcon size={12} />
                                         {complianceBadge.label}
                                     </span>
@@ -125,7 +125,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
 
                         <div className="space-y-2">
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest pl-1">After Meal / Leftovers</p>
-                            <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group h-64 flex items-center justify-center">
+                            <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group h-48 sm:h-64 flex items-center justify-center">
                                 {log.image_after_url ? (
                                     <img
                                         src={log.image_after_url}
@@ -134,7 +134,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
                                     />
                                 ) : (
                                     <div className="text-center p-6">
-                                        <div className="h-12 w-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3 text-gray-400">
+                                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3 text-gray-400">
                                             <Activity size={20} />
                                         </div>
                                         <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tight">No After-Meal Photo</p>
@@ -248,18 +248,18 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
                                     {/* Summary Totals */}
                                     <div className="pt-2 border-t border-[var(--color-divider)] border-dashed">
                                         <h4 className="font-black text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mb-3">Nutritional Summation</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                             {[
                                                 { val: nutrition.calories || displayAnalysis.total_calories_est, label: "Kcal", col: "var(--color-primary)" },
                                                 { val: nutrition.protein || nutrition.protein_g, label: "Protein", col: "#2563eb" },
                                                 { val: nutrition.carbs || nutrition.carbs_g, label: "Carbs", col: "#059669" },
                                                 { val: nutrition.fat || nutrition.fat_g, label: "Fat", col: "#ea580c" }
                                             ].map((stat, si) => (
-                                                <div key={si} className="bg-[var(--color-bg-page)] p-4 rounded-2xl text-center border border-[var(--color-divider)] shadow-sm">
-                                                    <p className="text-2xl font-black tabular-nums leading-none mb-1 uppercase" style={{ color: stat.col }}>
+                                                <div key={si} className="bg-[var(--color-bg-page)] p-3.5 sm:p-4 rounded-2xl text-center border border-[var(--color-divider)] shadow-sm">
+                                                    <p className="text-xl sm:text-2xl font-black tabular-nums leading-none mb-1 uppercase" style={{ color: stat.col }}>
                                                         {formatValue(stat.val, user?.nutrient_precision)}{si > 0 ? 'g' : ''}
                                                     </p>
-                                                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">{stat.label}</p>
+                                                    <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">{stat.label}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -392,21 +392,21 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] p-5 flex justify-between items-center">
+                <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-6 flex flex-col sm:flex-row gap-3 sm:justify-between items-center z-10">
                     <Button
                         variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm"
+                        className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm font-black uppercase tracking-widest text-[10px]"
                         onClick={() => setShowConfirm(true)}
                         disabled={isDeleting}
                     >
-                        {isDeleting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Trash2 size={16} className="mr-2" />}
+                        {isDeleting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Trash2 size={14} className="mr-2" />}
                         Delete Meal
                     </Button>
                     <Button
-                        className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-8"
+                        className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-10 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20"
                         onClick={onClose}
                     >
-                        Close
+                        Close Details
                     </Button>
                 </div>
             </div>

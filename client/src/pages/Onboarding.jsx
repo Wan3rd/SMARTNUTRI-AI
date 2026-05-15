@@ -124,13 +124,13 @@ export default function Onboarding() {
     if (isInitialSync) return null;
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
-            <Card className="w-full max-w-2xl shadow-lg border-0 dark:border dark:border-[var(--color-divider)]">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl text-[var(--color-secondary)]">Let's setup your profile 📝</CardTitle>
-                    <p className="text-[var(--color-text-muted)]">We need a few details to create the perfect nutrition plan for your child.</p>
+        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 sm:p-6 transition-colors duration-300 py-10">
+            <Card className="w-full max-w-2xl shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden">
+                <CardHeader className="text-center pt-8 sm:pt-12 px-6">
+                    <CardTitle className="text-2xl sm:text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-tight">Let's setup your profile 📝</CardTitle>
+                    <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-black uppercase tracking-[0.2em] mt-2 opacity-70">Create the perfect nutrition plan</p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6 sm:p-10">
                     {error && <div className="mb-4 text-red-500 text-sm text-center">{error}</div>}
 
                     <form onSubmit={handleSubmit} className="space-y-6">

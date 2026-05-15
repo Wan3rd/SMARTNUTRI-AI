@@ -25,6 +25,13 @@ export default function ParentDashboard() {
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
     const [isInitialSync, setIsInitialSync] = useState(true);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 640);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         fetchAssignedNutritionist();
@@ -108,16 +115,16 @@ export default function ParentDashboard() {
         const isOver = current > goal;
 
         return (
-            <div className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
-                    <span className="font-bold text-[var(--color-secondary)]">{label}</span>
-                    <span className={cn("font-bold", isOver ? 'text-red-500' : 'text-[var(--color-primary)]')}>
-                        {formatValue(current, user?.nutrient_precision)} / {formatValue(goal, user?.nutrient_precision)} {unit}
+            <div className="mb-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 mb-2">
+                    <span className="text-[10px] sm:text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest">{label}</span>
+                    <span className={cn("text-xs sm:text-sm font-black tabular-nums", isOver ? 'text-red-500' : 'text-[var(--color-primary)]')}>
+                        {formatValue(current, user?.nutrient_precision)} <span className="opacity-50 text-[10px]">/</span> {formatValue(goal, user?.nutrient_precision)} <span className="text-[10px] opacity-70 uppercase">{unit}</span>
                     </span>
                 </div>
-                <div className="h-2 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
                     <div
-                        className={`h-full transition-all duration-1000 ${isOver ? 'bg-red-500' : 'bg-green-500'}`}
+                        className={`h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)] ${isOver ? 'bg-red-500' : 'bg-gradient-to-r from-emerald-500 to-green-400'}`}
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
@@ -187,54 +194,44 @@ export default function ParentDashboard() {
                                     <BadgeCheck size={12} className="text-white" />
                                 </div>
                             </div>
-                            <div className="p-5 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
+                             <div className="p-4 sm:p-5 flex flex-row items-center gap-4">
                                 <div className="relative flex-shrink-0">
-                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
+                                    <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
                                         {assignedNutritionist?.profile_image_url ? (
                                             <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
                                         ) : (
-                                            <User size={28} className="text-gray-300" />
+                                            <User size={24} className="text-gray-300" />
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 bg-emerald-500 rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
-                                        <div className="h-1.5 w-1.5 bg-white rounded-full animate-pulse" />
+                                    <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 sm:h-5 sm:w-5 bg-emerald-500 rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
+                                        <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 bg-white rounded-full animate-pulse" />
                                     </div>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-1">Clinician</p>
-                                    <h4 className={cn("text-base sm:text-lg lg:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-none", user?.privacy_mode && "privacy-blur")}>
+                                    <p className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-0.5">Clinician</p>
+                                    <h4 className={cn("text-sm sm:text-lg lg:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-tight", user?.privacy_mode && "privacy-blur")}>
                                         {assignedNutritionist?.full_name || 'Dr. Expert'}
                                     </h4>
-                                    <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight mt-1 opacity-80">
+                                    <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight opacity-80 truncate">
                                         {assignedNutritionist?.specialization || 'Clinical Nutritionist'}
                                     </p>
                                 </div>
                             </div>
                             
-                            <div className="px-5 pb-5 space-y-2.5">
-                                <div className="grid grid-cols-1 gap-2">
-                                    <div className="flex items-center gap-3 p-2.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] transition-colors hover:bg-gray-100 dark:hover:bg-white/5">
-                                        <div className="h-8 w-8 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <BadgeCheck size={14} className="text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-1 opacity-70">License</p>
-                                            <p className="text-xs font-black text-[var(--color-text-main)] uppercase truncate">
-                                                {assignedNutritionist?.license_no || 'Pending Verification'}
-                                            </p>
-                                        </div>
+                            <div className="px-5 pb-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                                    <div className="flex items-center gap-2.5 p-2 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)]">
+                                        <BadgeCheck size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                                        <p className="text-[10px] font-black text-[var(--color-text-main)] uppercase truncate">
+                                            {assignedNutritionist?.license_no || 'Pending Verif.'}
+                                        </p>
                                     </div>
 
-                                    <div className="flex items-center gap-3 p-2.5 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] transition-colors hover:bg-gray-100 dark:hover:bg-white/5">
-                                        <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Phone size={14} className="text-emerald-600 dark:text-emerald-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none mb-1 opacity-70">Contact</p>
-                                            <p className="text-xs font-black text-[var(--color-text-main)] uppercase truncate">
-                                                {assignedNutritionist?.phone || 'No contact set'}
-                                            </p>
-                                        </div>
+                                    <div className="flex items-center gap-2.5 p-2 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)]">
+                                        <Phone size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                        <p className="text-[10px] font-black text-[var(--color-text-main)] uppercase truncate">
+                                            {assignedNutritionist?.phone || 'No contact'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -244,20 +241,21 @@ export default function ParentDashboard() {
                     {/* Tab Switcher */}
                     <div className="flex p-1.5 bg-[var(--color-divider)] dark:bg-white/5 rounded-[22px] border border-[var(--color-divider)] shadow-inner">
                         {[
-                            { id: 'status', label: 'Daily Status', icon: <Activity size={14} /> },
-                            { id: 'reviews', label: 'Expert Reviews', icon: <MessageSquare size={14} /> }
+                            { id: 'status', label: 'Daily Status', icon: <Activity size={18} /> },
+                            { id: 'reviews', label: 'Expert Reviews', icon: <MessageSquare size={18} /> }
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 flex items-center justify-center gap-2.5 py-4 rounded-[18px] text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${activeTab === tab.id
+                                className={`flex-1 flex items-center justify-center gap-3 h-12 rounded-[18px] text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${activeTab === tab.id
                                     ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-lg shadow-emerald-500/10 border-b-2 border-[var(--color-primary)]'
                                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-card)]/50'}`}
                             >
-                                <span className={cn(activeTab === tab.id ? 'text-[var(--color-primary)]' : 'opacity-60', "shrink-0")}>
+                                <span className={cn(activeTab === tab.id ? 'text-[var(--color-primary)]' : 'opacity-50', "shrink-0")}>
                                     {tab.icon}
                                 </span>
-                                <span className="truncate">{tab.label}</span>
+                                <span className={cn("truncate", isMobile ? "hidden xs:inline" : "inline")}>{tab.label}</span>
+                                {isMobile && <span className="sr-only">{tab.label}</span>}
                             </button>
                         ))}
                     </div>

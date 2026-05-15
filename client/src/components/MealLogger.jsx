@@ -489,7 +489,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
                         {/* Before Photo */}
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Before Meal</span>
@@ -579,11 +579,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Category</label>
+                                        <label className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Category</label>
                                         <select 
                                             value={suppData.mealCategory}
                                             onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
-                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            className="w-full p-3.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-base font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value="Breakfast">Breakfast</option>
                                             <option value="AM Snack">AM Snack</option>
@@ -594,11 +594,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</label>
+                                        <label className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</label>
                                         <select 
                                             value={suppData.plateWaste}
                                             onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
-                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-sm font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            className="w-full p-3.5 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-base font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value={100}>Finished (100%)</option>
                                             <option value={75}>Mostly (75%)</option>
@@ -624,7 +624,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                         value={item.name} 
                                                         onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                                                         placeholder="Food name..."
-                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                        className="w-full p-3.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-base font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                     />
                                                 </div>
                                                 <button 
@@ -639,7 +639,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 <select 
                                                     value={item.cooking_method || ''} 
                                                     onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
-                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[10px] font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="">Method...</option>
                                                     {COOKING_METHODS.map(method => (
@@ -649,7 +649,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 <select
                                                     value={item.serving_unit || 'Serving'}
                                                     onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
-                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[10px] font-black uppercase focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="Serving">Serving</option>
                                                     <option value="Cup">Cup</option>
@@ -662,43 +662,97 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 </select>
                                             </div>
 
-                                            <div className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-[var(--color-divider)] space-y-2">
+                                            <div className="bg-[var(--color-bg-page)] p-3.5 rounded-xl border border-[var(--color-divider)] space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Portion Quantity</span>
-                                                    <span className="text-sm font-black text-[var(--color-primary)] tabular-nums">
+                                                    <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Portion Quantity</span>
+                                                    <span className="text-base font-black text-[var(--color-primary)] tabular-nums">
                                                         {item.measure_qty || 1}x
                                                     </span>
                                                 </div>
-                                                <input
-                                                    type="range"
-                                                    min="0.25"
-                                                    max="5"
-                                                    step="0.25"
-                                                    value={item.measure_qty || 1}
-                                                    onChange={(e) => {
-                                                        const qty = parseFloat(e.target.value) || 0;
-                                                        setVerifiedItems(prev => {
-                                                            const next = [...prev];
-                                                            const base = next[idx];
-                                                            next[idx] = {
-                                                                ...base,
-                                                                measure_qty: qty,
-                                                                weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
-                                                                protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
-                                                                carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
-                                                                fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
-                                                            };
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className="w-full h-2 accent-[var(--color-primary)] cursor-pointer"
-                                                />
+                                                
+                                                <div className="flex items-center gap-3">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newQty = Math.max(0.25, (item.measure_qty || 1) - 0.25);
+                                                            handleItemChange(idx, 'measure_qty', newQty);
+                                                            // Also trigger the macro update logic
+                                                            setVerifiedItems(prev => {
+                                                                const next = [...prev];
+                                                                const base = next[idx];
+                                                                next[idx] = {
+                                                                    ...base,
+                                                                    measure_qty: newQty,
+                                                                    weight_g: Math.round(newQty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * newQty),
+                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * newQty * 10) / 10,
+                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * newQty * 10) / 10,
+                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * newQty * 10) / 10,
+                                                                };
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                    >
+                                                        <span className="text-xl font-bold">−</span>
+                                                    </button>
+                                                    
+                                                    <div className="flex-1 px-1">
+                                                        <input
+                                                            type="range"
+                                                            min="0.25"
+                                                            max="5"
+                                                            step="0.25"
+                                                            value={item.measure_qty || 1}
+                                                            onChange={(e) => {
+                                                                const qty = parseFloat(e.target.value) || 0;
+                                                                setVerifiedItems(prev => {
+                                                                    const next = [...prev];
+                                                                    const base = next[idx];
+                                                                    next[idx] = {
+                                                                        ...base,
+                                                                        measure_qty: qty,
+                                                                        weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                        calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
+                                                                        protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
+                                                                        carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
+                                                                        fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
+                                                                    };
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                            className="w-full h-2 accent-[var(--color-primary)] cursor-pointer"
+                                                        />
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newQty = Math.min(5, (item.measure_qty || 1) + 0.25);
+                                                            handleItemChange(idx, 'measure_qty', newQty);
+                                                            setVerifiedItems(prev => {
+                                                                const next = [...prev];
+                                                                const base = next[idx];
+                                                                next[idx] = {
+                                                                    ...base,
+                                                                    measure_qty: newQty,
+                                                                    weight_g: Math.round(newQty * (base._base_weight_g || base.serving_weight_g || 100)),
+                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * newQty),
+                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * newQty * 10) / 10,
+                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * newQty * 10) / 10,
+                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * newQty * 10) / 10,
+                                                                };
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                    >
+                                                        <span className="text-xl font-bold">+</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className={`flex flex-wrap items-center gap-3 text-[10px] mt-1 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                        <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-xs mt-1 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
+                                            <div className="flex flex-wrap gap-x-5 gap-y-1">
                                                 <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
                                                 <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
                                                 <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>

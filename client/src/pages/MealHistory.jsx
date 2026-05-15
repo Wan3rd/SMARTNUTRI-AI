@@ -294,7 +294,7 @@ export default function MealHistory() {
                     <Card className="border border-[var(--color-divider)]">
                         <CardContent className="p-4">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block mb-4">Select Date</label>
-                            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0">
+                            <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-3 md:pb-0 snap-x">
                                 {Object.keys(filteredLogs.reduce((acc, log) => {
                                     const date = new Date(log.logged_at).toLocaleDateString();
                                     acc[date] = true;
@@ -306,9 +306,9 @@ export default function MealHistory() {
                                         <button
                                             key={date}
                                             onClick={() => setSelectedHistoryDate(date)}
-                                            className={`flex-shrink-0 flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left ${
+                                            className={`flex-shrink-0 snap-start flex items-center justify-between p-3 md:p-4 rounded-2xl border-2 transition-all text-left min-w-[140px] md:min-w-0 ${
                                                 isSelected 
-                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] z-10' 
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg md:scale-[1.02] z-10 shadow-emerald-500/20' 
                                                 : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
                                             }`}
                                         >

@@ -38,12 +38,14 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
-            <Card className="w-full max-w-md shadow-lg border-0 dark:border dark:border-[var(--color-divider)]">
-                <CardHeader className="text-center space-y-2 pb-6">
-                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="mx-auto h-28 w-28 object-contain rounded-full mb-4 bg-transparent border-0" />
-                    <CardTitle className="text-2xl text-[var(--color-secondary)]">Welcome Back</CardTitle>
-                    <p className="text-[var(--color-text-muted)]">Sign in to SmartNutri-AI</p>
+        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
+            <Card className="w-full max-w-md shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden">
+                <CardHeader className="text-center space-y-1 pb-4 pt-8">
+                    <div className="relative mx-auto h-20 w-20 sm:h-28 sm:w-28 mb-4">
+                        <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-full w-full object-contain rounded-full bg-white shadow-sm border border-[var(--color-divider)]" />
+                    </div>
+                    <CardTitle className="text-2xl sm:text-3xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Welcome Back</CardTitle>
+                    <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-[0.2em] opacity-70">Sign in to SmartNutri-AI</p>
                 </CardHeader>
                 <CardContent>
                     {error && (

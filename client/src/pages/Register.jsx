@@ -67,14 +67,14 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
-            <Card className="w-full max-w-2xl shadow-xl border-0 dark:border dark:border-[var(--color-divider)] rounded-3xl overflow-hidden">
-                <CardHeader className="text-center space-y-2 pt-8 pb-4">
-                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="mx-auto h-16 w-16 object-contain rounded-full mb-2" />
-                    <CardTitle className="text-2xl text-[var(--color-secondary)]">Join SmartNutri</CardTitle>
-                    <p className="text-[var(--color-text-muted)] text-sm">Create your account to get started.</p>
+        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 sm:p-6 transition-colors duration-300 py-10 sm:py-20">
+            <Card className="w-full max-w-2xl shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden">
+                <CardHeader className="text-center space-y-2 pt-10 pb-4 px-6 sm:px-10">
+                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full mb-2 bg-white shadow-sm border border-[var(--color-divider)]" />
+                    <CardTitle className="text-2xl sm:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Join SmartNutri</CardTitle>
+                    <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-[0.2em] opacity-70">Create your expert account</p>
                 </CardHeader>
-                <CardContent className="px-8 pb-10">
+                <CardContent className="px-6 sm:px-10 pb-10">
                     {error && (
                         <div className="mb-6 p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm text-center">
                             {error}

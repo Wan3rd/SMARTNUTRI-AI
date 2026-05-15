@@ -195,7 +195,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="w-full max-w-6xl relative h-[90vh] flex shadow-2xl rounded-3xl overflow-hidden border-2 border-white/10"
+                    className="w-full max-w-6xl relative h-full sm:h-[90vh] flex shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transition-all duration-500"
                 >
                     {/* Left Side: Images & Profile (Dark Theme) */}
                     <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide shrink-0">
@@ -261,36 +261,54 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                         </motion.button>
 
                         <div className="flex-1 overflow-y-auto p-0 lg:p-12 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
-                            {/* MOBILE ONLY: Hero Image & Profile Header */}
-                            <div className="flex lg:hidden relative w-full h-[40vh] shrink-0">
-                                <img onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20 flex flex-col justify-end p-5 pointer-events-none">
-                                    <div className="flex justify-between items-end w-full relative z-10 pointer-events-auto">
-                                        <div className="flex-1 pr-4">
-                                            <div className="flex gap-2 mb-1.5 flex-wrap">
-                                                <span className="text-[9px] bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
-                                                    {log.profile?.gender || 'N/A'} • {log.profile?.date_of_birth ? `${new Date().getFullYear() - new Date(log.profile.date_of_birth).getFullYear()}Y` : 'N/A'}
-                                                </span>
-                                                <span className="text-[9px] bg-white/20 backdrop-blur-md text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-white/10">
-                                                    {log.meal_category === 'Other' ? 'Dietary' : log.meal_category || 'Meal'}
-                                                </span>
-                                            </div>
-                                            <h2 className="text-2xl font-black text-white leading-tight drop-shadow-md line-clamp-1">{log.child_name || 'Anonymous Patient'}</h2>
-                                            <p className="text-[10px] text-white/80 font-bold mt-1 line-clamp-1 drop-shadow-md">Allergies: {log.profile?.allergies?.join(', ') || 'None'}</p>
+                            {/* MOBILE ONLY: Compact Horizontal Image Swipe (Before & After) */}
+                            <div className="flex lg:hidden flex-col w-full shrink-0 bg-zinc-950/5 border-b border-[var(--color-divider)]">
+                                <div className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20 backdrop-blur-sm">
+                                    <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl snap-center transition-all active:scale-95">
+                                        <img onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
+                                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">Before</div>
+                                        <button onClick={onClose} className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white p-2 rounded-full border border-white/20 z-50 shadow-2xl">
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                    
+                                    {log.image_after_url && (
+                                        <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl snap-center transition-all active:scale-95">
+                                            <img onClick={() => setPreviewImage(log.image_after_url)} src={log.image_after_url} alt="After" className="w-full h-full object-cover cursor-zoom-in" />
+                                            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">After / Leftovers</div>
+                                            <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                                         </div>
-                                        {log.image_after_url && (
-                                            <div onClick={() => setPreviewImage(log.image_after_url)} className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-white/20 overflow-hidden shadow-2xl relative cursor-zoom-in shrink-0">
-                                                 <img src={log.image_after_url} className="w-full h-full object-cover" />
-                                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
-                                                     <span className="text-[8px] font-black text-white uppercase tracking-widest text-center shadow-black drop-shadow-md">View<br/>After</span>
-                                                 </div>
-                                            </div>
-                                        )}
+                                    )}
+                                    
+                                    {/* Swipe Indicator (Visible only if there's an after image) */}
+                                    {log.image_after_url && (
+                                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 pointer-events-none">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-sm" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 shadow-sm" />
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Patient Quick Bar (Mobile) */}
+                                <div className="px-5 py-4 bg-[var(--color-bg-card)]">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <h2 className="text-xl font-black text-[var(--color-secondary)] leading-tight uppercase tracking-tight">{log.child_name || 'Patient'}</h2>
+                                        <div className="flex gap-1">
+                                            <span className="text-[9px] bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-[var(--color-primary)]/20">
+                                                {log.profile?.gender?.[0] || 'N/A'} • {log.profile?.date_of_birth ? `${new Date().getFullYear() - new Date(log.profile.date_of_birth).getFullYear()}Y` : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] text-[var(--color-text-muted)] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                            <Activity size={10} className="text-[var(--color-primary)]" /> 
+                                            Allergies: <span className="text-red-500 truncate max-w-[120px]">{log.profile?.allergies?.join(', ') || 'None'}</span>
+                                        </p>
+                                        <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-tighter bg-[var(--color-primary)]/5 px-2 py-0.5 rounded-lg">
+                                            {log.meal_category}
+                                        </p>
                                     </div>
                                 </div>
-                                <button onClick={onClose} className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-2 rounded-full border border-white/20 z-50">
-                                    <X size={20} />
-                                </button>
                             </div>
 
                             <div className="px-5 py-6 lg:px-0 lg:py-0 space-y-6 sm:space-y-8">
@@ -451,16 +469,19 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 />
                             </motion.div>
 
-                            {/* Actions */}
-                            <motion.div variants={itemVariants} className="flex flex-col-reverse sm:flex-row gap-4 pt-4 pb-8">
+                            {/* Actions (Sticky Bar on Mobile) */}
+                             <motion.div 
+                                variants={itemVariants} 
+                                className="sticky bottom-0 lg:static bg-[var(--color-bg-card)]/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none -mx-5 px-5 py-6 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] flex flex-col-reverse sm:flex-row gap-4 z-40"
+                             >
                                 <div className="flex flex-1 gap-2">
-                                    <Button type="button" variant="outline" className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
+                                    <Button type="button" variant="outline" className="flex-1 h-12 lg:h-auto rounded-2xl font-black uppercase tracking-widest text-[10px] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
                                         Dismiss
                                     </Button>
                                     <Button 
                                         type="button" 
                                         variant="outline" 
-                                        className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-orange-600 border-orange-500/20 dark:border-orange-500/40 hover:bg-orange-500/10 transition-all" 
+                                        className="flex-1 h-12 lg:h-auto rounded-2xl font-black uppercase tracking-widest text-[10px] text-red-500 border-red-500/20 dark:border-red-500/40 hover:bg-red-500/10 transition-all" 
                                         onClick={handleReject}
                                         disabled={loading}
                                     >
@@ -470,17 +491,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 <div className="flex-[2] flex gap-2">
                                     <Button
                                         onClick={handleSaveDraft}
-                                        className="flex-1 py-4 rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest shadow-xl transition-all border-none"
+                                        className="flex-1 h-12 lg:h-auto rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl transition-all border-none"
                                         disabled={loading}
                                     >
-                                        Save Progress
+                                        Draft
                                     </Button>
                                     <Button
                                         onClick={handleApprove}
-                                        className="flex-[1.5] py-4 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-xl shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none"
+                                        className="flex-[1.5] h-12 lg:h-auto rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none animate-pulse-slow"
                                         disabled={loading}
                                     >
-                                        {loading ? 'Processing...' : 'Approve & Finalize'}
+                                        {loading ? 'Processing...' : 'Verify Meal'}
                                     </Button>
                                 </div>
                             </motion.div>

@@ -61,16 +61,16 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] dark:from-[#0f172a] dark:to-[#020617]">
-            <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
-                <div className="text-center mb-10 flex flex-col items-center">
-                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-24 w-24 object-contain rounded-full mb-4 shadow-xl shadow-[var(--color-primary)]/10" />
-                    <h1 className="text-4xl font-black text-[var(--color-primary)] uppercase tracking-tighter mb-1">SmartNutri-AI</h1>
-                    <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[0.2em] text-[10px]">Clinical Recovery System</p>
+        <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] dark:from-[#0f172a] dark:to-[#020617] transition-all duration-500">
+            <div className="w-full max-w-md animate-in fade-in zoom-in duration-700">
+                <div className="text-center mb-8 flex flex-col items-center">
+                    <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-20 w-20 sm:h-24 sm:w-24 object-contain rounded-full mb-4 shadow-xl shadow-[var(--color-primary)]/20 bg-white" />
+                    <h1 className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] uppercase tracking-tighter mb-1 leading-none">SmartNutri-AI</h1>
+                    <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] opacity-70">Clinical Recovery System</p>
                 </div>
 
-                <Card className="border-2 border-[var(--color-divider)] rounded-[32px] overflow-hidden shadow-2xl shadow-[var(--color-primary)]/5">
-                    <CardContent className="p-10">
+                <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-[var(--color-primary)]/10">
+                    <CardContent className="p-8 sm:p-10">
                         {submitted ? (
                             <div className="text-center space-y-6">
                                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-2">
