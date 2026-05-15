@@ -45,6 +45,24 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Health Check Endpoint
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({ status: 'online', database: 'connected', timestamp: new Date() });
+    } catch (err) {
+        res.status(503).json({ status: 'degraded', database: 'disconnected', error: err.message });
+    }
+});
+
+// Global Maintenance Middleware
+app.use((req, res, next) => {
+    if (process.env.MAINTENANCE_MODE === 'true') {
+        return res.status(503).json({ message: 'Server is currently under maintenance. Please try again later.' });
+    }
+    next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);

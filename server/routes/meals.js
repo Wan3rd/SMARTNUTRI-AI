@@ -5,6 +5,9 @@ import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const EDAMAM_API_URL = 'https://api.edamam.com/api/recipes/v2';
+
+
 // Helper: Fetch recipes from Edamam
 async function fetchEdamamRecipes(query, options = {}, edamamUser) {
     try {
@@ -130,8 +133,6 @@ router.get('/plans', verifyToken, async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 });
-
-const EDAMAM_API_URL = 'https://api.edamam.com/api/recipes/v2';
 
 // GET /:id (Recipe Details)
 router.get('/:id', verifyToken, async (req, res) => {

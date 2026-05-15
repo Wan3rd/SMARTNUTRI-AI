@@ -30,8 +30,15 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersList from './pages/AdminUsersList';
 import AdminAuditLogs from './pages/AdminAuditLogs';
 
+import config from '../../env_config';
+import Maintenance from './pages/Maintenance';
+
 function AppContent() {
   const { user } = useAuth();
+
+  if (config.maintenanceMode) {
+    return <Maintenance />;
+  }
 
   return (
     <Router>

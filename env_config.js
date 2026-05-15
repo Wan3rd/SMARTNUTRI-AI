@@ -6,6 +6,8 @@ export const IS_PRODUCTION = true;
 
 export const config = {
     isProduction: IS_PRODUCTION,
+    maintenanceMode: false,
+
     client: {
         // Your production frontend URL 
         url: IS_PRODUCTION
