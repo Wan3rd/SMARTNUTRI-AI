@@ -15,10 +15,10 @@ export const config = {
     server: {
         // Your production backend URL (e.g., Heroku, Railway, Render)
         url: IS_PRODUCTION
-            ? "https://smartnutri-api.herokuapp.com"
+            ? "https://smartnutri-ai-ir4p.onrender.com"
             : "http://localhost:5000",
         apiUrl: IS_PRODUCTION
-            ? "https://smartnutri-api.herokuapp.com/api"
+            ? "https://smartnutri-ai-ir4p.onrender.com/api"
             : "http://localhost:5000/api",
     },
     db: {
