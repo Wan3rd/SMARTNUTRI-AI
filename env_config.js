@@ -9,7 +9,7 @@ export const config = {
     client: {
         // Your production frontend URL 
         url: IS_PRODUCTION
-            ? "https://smartnutri-ai.vercel.app"
+            ? "https://smartnutri-ai-xmn9.vercel.app"
             : "http://localhost:5173",
     },
     server: {

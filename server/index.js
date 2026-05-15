@@ -61,4 +61,20 @@ app.get('/api/health', async (req, res) => {
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
+    // KEEP-ALIVE: Self-ping every 14 minutes to prevent Render spin-down
+    if (config.isProduction) {
+        const pingInterval = 14 * 60 * 1000; // 14 minutes in milliseconds
+        setInterval(async () => {
+            try {
+                const healthUrl = `${config.server.url}/api/health`;
+                console.log(`[Keep-Alive] Pinging health check at: ${healthUrl}`);
+                const response = await fetch(healthUrl);
+                const data = await response.json();
+                console.log(`[Keep-Alive] Status: ${data.status}`);
+            } catch (err) {
+                console.error(`[Keep-Alive] Failed to ping server:`, err.message);
+            }
+        }, pingInterval);
+    }
 });
