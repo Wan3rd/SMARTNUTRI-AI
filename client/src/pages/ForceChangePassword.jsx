@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/common/C
 import { Button } from '../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, ShieldAlert, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, Lock, ArrowRight, CheckCircle2, Activity } from 'lucide-react';
 import api from '../lib/api';
 
 export default function ForceChangePassword() {
