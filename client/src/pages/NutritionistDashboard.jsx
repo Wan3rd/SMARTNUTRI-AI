@@ -290,10 +290,14 @@ export default function NutritionistDashboard() {
                                     >
                                         <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
                                             <div className={cn(
-                                                "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0",
+                                                "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0 overflow-hidden",
                                                 isArchived ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                                             )}>
-                                                <Users size={20} className="sm:w-6 sm:h-6" />
+                                                {client.profile_image_url ? (
+                                                    <img src={client.profile_image_url} alt={client.full_name} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <Users size={20} className="sm:w-6 sm:h-6" />
+                                                )}
                                                 {!isArchived && clientPendingCount > 0 && (
                                                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
                                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>

@@ -184,6 +184,7 @@ router.get('/clients', verifyToken, isNutritionist, async (req, res) => {
                         id: true,
                         email: true,
                         full_name: true,
+                        profile_image_url: true,
                         deleted_at: true,
                         deactivation_reason: true
                     }
@@ -198,6 +199,7 @@ router.get('/clients', verifyToken, isNutritionist, async (req, res) => {
                 id: link.parent.id,
                 email: link.parent.email,
                 full_name: link.parent.full_name,
+                profile_image_url: link.parent.profile_image_url,
                 status: link.status || 'active',
                 deleted_at: link.parent.deleted_at,
                 deactivation_reason: link.parent.deactivation_reason,
