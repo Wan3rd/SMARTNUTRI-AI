@@ -1222,8 +1222,17 @@ export default function ClientDetails() {
     const fetchProfiles = async () => {
         try {
             const res = await api.get(`/nutritionist/clients/${clientId}/profiles`);
-            setProfiles(res.data);
-            if (res.data.length > 0) setSelectedProfile(res.data[0]);
+            const data = res.data;
+            setProfiles(data);
+            
+            if (data.length > 0) {
+                setSelectedProfile(prev => {
+                    // Maintain current selection if it still exists in the refreshed list
+                    const currentId = prev?.id;
+                    const matched = data.find(p => p.id === currentId);
+                    return matched || data[0];
+                });
+            }
         } catch (err) {
             console.error("Failed to fetch profiles", err);
         }
@@ -2972,7 +2981,17 @@ export default function ClientDetails() {
                                                                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Category</label>
                                                                                 <select
                                                                                     value={editRuleForm.category}
-                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, category: e.target.value })}
+                                                                                    onChange={(e) => {
+                                                                                        const cat = e.target.value;
+                                                                                        let unit = editRuleForm.rule_unit;
+                                                                                        if (cat === 'Calories') unit = 'kcal';
+                                                                                        else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
+                                                                                        else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                                        else if (cat === 'Fluid/Water') unit = 'ml';
+                                                                                        else if (cat === 'Vitamin D') unit = 'mcg';
+
+                                                                                        setEditRuleForm({ ...editRuleForm, category: cat, rule_unit: unit });
+                                                                                    }}
                                                                                     className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
                                                                                 >
                                                                                     {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
@@ -3013,8 +3032,12 @@ export default function ClientDetails() {
                                                                                         type="text"
                                                                                         value={editRuleForm.rule_unit}
                                                                                         onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_unit: e.target.value })}
-                                                                                        className="w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center"
+                                                                                        className={cn(
+                                                                                            "w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center",
+                                                                                            ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category) ? "opacity-50" : ""
+                                                                                        )}
                                                                                         placeholder="Unit"
+                                                                                        disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category)}
                                                                                     />
                                                                                 </div>
                                                                             </div>
@@ -3095,10 +3118,13 @@ export default function ClientDetails() {
                                                                 onChange={(e) => {
                                                                     const cat = e.target.value;
                                                                     let unit = 'g';
+                                                                    // Standard Clinical Units
                                                                     if (cat === 'Calories') unit = 'kcal';
-                                                                    if (cat === 'Sodium' || cat === 'Iron' || cat === 'Calcium' || cat === 'Potassium') unit = 'mg';
-                                                                    if (cat === 'Fluid/Water') unit = 'ml';
-                                                                    if (cat === 'Vitamin D') unit = 'mcg';
+                                                                    else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
+                                                                    else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                    else if (cat === 'Fluid/Water') unit = 'ml';
+                                                                    else if (cat === 'Vitamin D') unit = 'mcg';
+                                                                    
                                                                     setNewRule({ ...newRule, category: cat, rule_unit: unit });
                                                                 }}
                                                             >
@@ -3151,9 +3177,13 @@ export default function ClientDetails() {
                                                                     required
                                                                 />
                                                                 <select
-                                                                    className="w-24 p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-main)] cursor-pointer"
+                                                                    className={cn(
+                                                                        "w-24 p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-main)]",
+                                                                        ['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                                                    )}
                                                                     value={newRule.rule_unit}
                                                                     onChange={(e) => setNewRule({ ...newRule, rule_unit: e.target.value })}
+                                                                    disabled={['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category)}
                                                                 >
                                                                     <option>kcal</option>
                                                                     <option>g</option>

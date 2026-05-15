@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
@@ -164,6 +164,35 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     const macros = editedAnalysis?.macros_est || {};
 
+    const allergies = log.profile?.allergies || [];
+    const detectedAllergens = React.useMemo(() => {
+        if (!allergies || allergies.length === 0 || !editedAnalysis?.items) return [];
+        const found = [];
+        editedAnalysis.items.forEach(item => {
+            const itemName = (item.name || "").toLowerCase().trim();
+            if (!itemName) return;
+
+            allergies.forEach(allergy => {
+                const allergen = (allergy || "").toLowerCase().trim();
+                if (!allergen || allergen === 'none') return;
+
+                const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
+                    ? allergen.slice(0, -1) 
+                    : allergen;
+
+                const isMatch = itemName.includes(allergen) || 
+                               itemName.includes(allergenSingular) || 
+                               allergen.includes(itemName) ||
+                               allergenSingular.includes(itemName);
+
+                if (isMatch) {
+                    found.push({ item: item.name, allergen: allergy });
+                }
+            });
+        });
+        return found;
+    }, [editedAnalysis?.items, allergies]);
+
     // Animation Variants
     const containerVariants = {
         hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -312,6 +341,23 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </div>
 
                             <div className="px-5 py-6 lg:px-0 lg:py-0 space-y-6 sm:space-y-8">
+                                {/* Allergen Warning Banner (Clinician View) */}
+                                {detectedAllergens.length > 0 && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className="bg-red-600 text-white p-4 rounded-3xl shadow-xl flex items-center gap-4 mb-4"
+                                    >
+                                        <AlertTriangle size={24} className="animate-pulse text-red-200" />
+                                        <div>
+                                            <p className="font-black uppercase tracking-[0.2em] text-[9px] opacity-80">Clinical Allergen Alert</p>
+                                            <p className="text-sm font-black uppercase tracking-tight">
+                                                Matches Patient Allergies: {detectedAllergens.map(a => a.allergen).join(', ')}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 <motion.div variants={itemVariants} className="flex justify-between items-start">
                                 <div>
                                     <h2 className="text-xl sm:text-3xl font-black text-[var(--color-secondary)] tracking-tight mb-2 uppercase">
@@ -387,11 +433,30 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         >
                                             <div className="flex flex-col">
                                                 <span className="text-sm sm:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
-                                                    {item.cooking_method && (
-                                                        <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-primary)] px-2 py-1 rounded-md border border-[var(--color-primary)]/20 uppercase tracking-tight flex items-center gap-1.5 whitespace-normal break-words">
-                                                            <ChefHat size={12} className="shrink-0" /> {item.cooking_method}
-                                                        </span>
-                                                    )}
+                                                {allergies.some(a => {
+                                                    const allergen = (a || "").toLowerCase().trim();
+                                                    if (!allergen || allergen === 'none') return false;
+                                                    const itemName = (item.name || "").toLowerCase().trim();
+                                                    if (!itemName) return false;
+                                                    
+                                                    const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
+                                                        ? allergen.slice(0, -1) 
+                                                        : allergen;
+
+                                                    return itemName.includes(allergen) || 
+                                                           itemName.includes(allergenSingular) || 
+                                                           allergen.includes(itemName) ||
+                                                           allergenSingular.includes(itemName);
+                                                }) && (
+                                                    <span className="text-[8px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                                                        <ShieldAlert size={10} /> Potential Allergen
+                                                    </span>
+                                                )}
+                                                {item.cooking_method && (
+                                                    <span className="text-[10px] font-black bg-[var(--color-bg-page)] text-[var(--color-primary)] px-2 py-1 rounded-md border border-[var(--color-primary)]/20 uppercase tracking-tight flex items-center gap-1.5 whitespace-normal break-words mt-1">
+                                                        <ChefHat size={12} className="shrink-0" /> {item.cooking_method}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className={`flex gap-3 sm:gap-6 px-3 sm:px-4 py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 bg-white shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
                                                 {[

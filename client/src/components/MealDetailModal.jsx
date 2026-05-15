@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -8,12 +8,69 @@ import { useAuth } from '../context/AuthContext';
 import { cn, formatValue } from '../lib/utils';
 import api from '../lib/api';
 
-export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) {
+export default function MealDetailModal({ log, onClose, onDelete, rules = [], allergies = [] }) {
     const { user } = useAuth();
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [nutritionist, setNutritionist] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
+
+    // Robust normalization of allergies (handle strings from DB, arrays, or null)
+    const allergyList = React.useMemo(() => {
+        const sourceAllergies = (allergies && allergies.length > 0) ? allergies : (log.profile?.allergies || []);
+        
+        if (Array.isArray(sourceAllergies)) return sourceAllergies;
+        if (typeof sourceAllergies === 'string' && sourceAllergies.length > 0) {
+            if (sourceAllergies.startsWith('[') && sourceAllergies.endsWith(']')) {
+                try { return JSON.parse(sourceAllergies); } catch (e) { return sourceAllergies.split(',').map(s => s.trim()); }
+            }
+            return sourceAllergies.split(',').map(s => s.trim());
+        }
+        return [];
+    }, [allergies, log.profile?.allergies]);
+
+    // --- Allergen Detection Logic ---
+    const detectedAllergens = React.useMemo(() => {
+        if (allergyList.length === 0 || (allergyList.length === 1 && allergyList[0].toLowerCase() === 'none')) return [];
+        
+        // Ensure analysis is an object
+        let analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
+        if (typeof analysis === 'string') {
+            try { analysis = JSON.parse(analysis); } catch (e) { analysis = {}; }
+        }
+        
+        const items = analysis?.items || [];
+        const found = [];
+
+        items.forEach(item => {
+            const itemName = (item.name || "").toLowerCase().trim();
+            if (!itemName) return;
+
+            allergyList.forEach(allergy => {
+                const allergen = (allergy || "").toLowerCase().trim();
+                if (!allergen || allergen === 'none') return;
+
+                // Create a singular version for better matching (e.g., "Peanuts" -> "Peanut")
+                const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
+                    ? allergen.slice(0, -1) 
+                    : allergen;
+
+                // Robust matching:
+                // 1. Exact or substring match (item: "Peanut butter", allergy: "Peanut")
+                // 2. Singular match (item: "Peanut butter", allergy: "Peanuts" -> checks "Peanut")
+                // 3. Reversed match (item: "Peanut", allergy: "Peanuts")
+                const isMatch = itemName.includes(allergen) || 
+                               itemName.includes(allergenSingular) || 
+                               allergen.includes(itemName) ||
+                               allergenSingular.includes(itemName);
+
+                if (isMatch) {
+                    found.push({ item: item.name, allergen: allergy });
+                }
+            });
+        });
+        return found;
+    }, [log, allergyList]);
 
     React.useEffect(() => {
         const handleKeyDown = (e) => {
@@ -104,6 +161,19 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
 
                 {/* Content */}
                 <div className="p-5 space-y-5">
+                    {/* Allergen Warning Banner */}
+                    {detectedAllergens.length > 0 && (
+                        <div className="bg-red-600 text-white p-4 rounded-3xl shadow-xl flex items-center gap-4 animate-pulse">
+                            <ShieldAlert size={28} className="text-red-200" />
+                            <div>
+                                <p className="font-black uppercase tracking-widest text-[10px] opacity-80">Safety Alert</p>
+                                <p className="text-sm font-black uppercase tracking-tight">
+                                    Contains Potential Allergen: {detectedAllergens.map(a => a.allergen).join(', ')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Meal Comparison View */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -223,14 +293,33 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [] }) 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {items.map((item, idx) => (
                                                     <div key={idx} className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                        <div className="flex justify-between items-start">
-                                                            <p className="font-black text-sm text-[var(--color-secondary)] uppercase tracking-tight">
-                                                                {item.name}
-                                                            </p>
+                                                            <div className="flex flex-col">
+                                                                <p className="font-black text-sm text-[var(--color-secondary)] uppercase tracking-tight">
+                                                                    {item.name}
+                                                                </p>
+                                                                {allergyList.some(a => {
+                                                                    const allergen = (a || "").toLowerCase().trim();
+                                                                    if (!allergen || allergen === 'none') return false;
+                                                                    const itemName = (item.name || "").toLowerCase().trim();
+                                                                    if (!itemName) return false;
+                                                                    
+                                                                    const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
+                                                                        ? allergen.slice(0, -1) 
+                                                                        : allergen;
+
+                                                                    return itemName.includes(allergen) || 
+                                                                           itemName.includes(allergenSingular) || 
+                                                                           allergen.includes(itemName) ||
+                                                                           allergenSingular.includes(itemName);
+                                                                }) && (
+                                                                    <span className="text-[8px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                                                                        <AlertTriangle size={10} /> Allergen Alert
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <span className="text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums uppercase">
                                                                 {formatValue(item.calories, user?.nutrient_precision)} KCAL
                                                             </span>
-                                                        </div>
                                                         <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 uppercase">
                                                             {item.measure_qty || 1} {item.serving_unit || 'Serving'}
                                                         </p>

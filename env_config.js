@@ -2,7 +2,7 @@
  * Production Switch Configuration
  * Toggle IS_PRODUCTION to true before pushing to GitHub/Production.
  */
-export const IS_PRODUCTION = true;
+export const IS_PRODUCTION = false;
 
 export const config = {
     isProduction: IS_PRODUCTION,

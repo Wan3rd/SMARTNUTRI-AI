@@ -4,6 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import dotenv from 'dotenv';
+import { analyzeMealImage } from '../services/gemini.js';
 
 dotenv.config();
 
@@ -22,56 +23,27 @@ cloudinary.config({
 
 // Helper: Call Gemini Vision
 async function analyzeImage(imageBase64) {
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    const prompt = `Analyze this meal photo. 
-    1. Identify the dish/food items.
-    2. For each edible item, provide a flat JSON object with:
+    const prompt = `Analyze this meal photo using these steps:
+    STEP A: Identify the plate/container size and its diameter.
+    STEP B: Identify reference objects (utensils like a spoon or fork) to establish a 3D scale.
+    STEP C: Compare the food volume to the reference objects (e.g., "The rice mound is roughly 2.5 spoon-widths wide").
+    STEP D: Calculate the final quantity based on these observations.
+
+    For each edible item, provide a flat JSON object with:
+       - 'visual_reasoning': A short sentence describing the Step A-C analysis for this item (e.g. "Small bowl roughly fist-sized compared to spoon, suggesting 1 cup").
        - 'name': Dish or item name.
-       - 'cooking_method': Determine the cooking method specifically for this item. Must be one of: "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", or "Unknown".
-       - 'measure_qty': Number indicating quantity (e.g. if there are 2 hotdogs, output 2. If it's a bowl of soup, output 1). IMPORTANT FOR RICE: Use plate diameter and utensils as a visual scale. 1 Cup of rice is roughly the size of a small clenched fist. If the rice is spread thin, do not overestimate. Be conservative (standard small bowl = 1 Cup).
-       - 'serving_unit': Common measure (must be exactly one of: 'Cup', 'Spoon', 'Sandok', 'Bowl', 'Slice', 'Piece', 'Plate', or 'Serving'). If the item is Rice, it MUST be 'Cup'.
-       - 'serving_weight_g': Estimated weight in grams.
-       - 'calories': Estimated calories as an integer.
-       - 'protein_g': Estimated protein in grams as an integer.
-       - 'carbs_g': Estimated carbs in grams as an integer.
-       - 'fat_g': Estimated fat in grams as an integer.
-    3. Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method' string (for the primary dish), and a top-level 'nutrition' object summarizing total 'calories', 'protein', 'carbs', and 'fat'. 
-    Strictly ignore utensils and plates. Output ONLY valid JSON without markdown formatting.`;
+       - 'cooking_method': Determine the method (Raw, Baked, Fried, etc.).
+       - 'measure_qty': Number indicating quantity. 
+         RICE/BOWLS: If the food is in a standard small bowl (fist-sized), it is EXACTLY 1.0 Cup. Do not estimate 1.5 unless the bowl is visibly deep or oversized. Be conservative.
+       - 'serving_unit': Must be one of: 'Cup', 'Spoon', 'Sandok', 'Bowl', 'Slice', 'Piece', 'Plate', or 'Serving'. Rice MUST be 'Cup'.
+       - 'serving_weight_g': Estimated weight.
+       - 'calories', 'protein_g', 'carbs_g', 'fat_g': Estimated macros.
+    
+    Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method', and a 'nutrition' summary.
+    Output ONLY valid JSON without markdown formatting.`;
 
     try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
-                        ]
-                    }],
-                }),
-            }
-        );
-
-        const data = await response.json();
-
-        if (data.error) {
-            console.error("Gemini API Error details:", data.error);
-            return { error: `AI API Error: ${data.error.message}` };
-        }
-
-        const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!textOutput) {
-            console.error("Gemini API returned no text output. Data:", JSON.stringify(data));
-            return { error: "AI returned no analysis" };
-        }
-
-        // Extract JSON from markdown code block if present
-        const jsonMatch = textOutput.match(/\{[\s\S]*\}/);
-        return jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Failed to parse AI output", raw: textOutput };
+        return await analyzeMealImage(imageBase64, prompt);
     } catch (err) {
         console.error("Gemini Vision Error:", err);
         return { error: "AI Analysis Failed: " + err.message };

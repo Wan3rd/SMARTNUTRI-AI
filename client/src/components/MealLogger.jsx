@@ -1,15 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X } from 'lucide-react';
+import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import api from '../lib/api';
 import ConfirmDialog from './common/ConfirmDialog';
 import Notification from './common/Notification';
+import { cn } from '../lib/utils';
 
 const COOKING_METHODS = [
-    "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", 
-    "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", 
+    "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed",
+    "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached",
     "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", "Unknown"
 ];
 
@@ -21,8 +22,8 @@ const getLocalISOTime = () => {
 const getDefaultMealCategory = () => {
     // Use PH time (UTC+8)
     const phHour = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })).getHours();
-    if (phHour >= 5  && phHour < 9)  return 'Breakfast';
-    if (phHour >= 9  && phHour < 11) return 'AM Snack';
+    if (phHour >= 5 && phHour < 9) return 'Breakfast';
+    if (phHour >= 9 && phHour < 11) return 'AM Snack';
     if (phHour >= 11 && phHour < 14) return 'Lunch';
     if (phHour >= 14 && phHour < 17) return 'PM Snack';
     if (phHour >= 17 && phHour < 21) return 'Dinner';
@@ -62,7 +63,21 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
     });
 };
 
-export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
+// Normalization Helper: Ensures base values are ALWAYS "per 1 unit"
+const normalizeItem = (item) => {
+    const qty = parseFloat(item.measure_qty) || 1;
+    return {
+        ...item,
+        _base_calories:  (item.calories || 0) / qty,
+        _base_protein_g: (item.protein_g || 0) / qty,
+        _base_carbs_g:   (item.carbs_g || 0) / qty,
+        _base_fat_g:     (item.fat_g || 0) / qty,
+        _base_weight_g:  (item.serving_weight_g || 100) / qty,
+    };
+};
+
+export default function MealLogger({ profileId, onLogged, recentLogs = [], allergies = [] }) {
+    const { useMemo } = React;
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [fileAfter, setFileAfter] = useState(null);
@@ -95,10 +110,25 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [isCropping, setIsCropping] = useState(false);
+    const [aspect, setAspect] = useState(4 / 3);
 
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
     };
+
+    // Clinical Allergy Awareness Logic
+    const allergyWarnings = useMemo(() => {
+        if (!allergies || allergies.length === 0 || !verifiedItems || verifiedItems.length === 0) return [];
+
+        return verifiedItems.filter(item => {
+            const itemName = item.name?.toLowerCase() || '';
+            return allergies.some(allergy => {
+                const allergen = allergy.toLowerCase().trim();
+                if (!allergen || allergen.length < 2) return false; // Avoid matching single letters
+                return itemName.includes(allergen);
+            });
+        });
+    }, [verifiedItems, allergies]);
     const fileInputRef = useRef(null);
     const fileAfterInputRef = useRef(null);
 
@@ -153,27 +183,21 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             const res = await api.post('/logs/analyze', formData);
             setAnalysisResult(res.data);
             if (res.data.ai_analysis?.items) {
-                // Snapshot base macros per unit so qty changes can scale them proportionally
-                const itemsWithBase = res.data.ai_analysis.items.map(item => ({
-                    ...item,
-                    _base_calories: item.calories || 0,
-                    _base_protein_g: item.protein_g || 0,
-                    _base_carbs_g: item.carbs_g || 0,
-                    _base_fat_g: item.fat_g || 0,
-                    _base_weight_g: item.serving_weight_g || 100,
-                }));
-                setVerifiedItems(itemsWithBase);
+                const normalized = res.data.ai_analysis.items.map(normalizeItem);
+                setVerifiedItems(normalized);
             } else {
                 setVerifiedItems([]);
             }
-            setSuppData(prev => ({ 
-                ...prev, 
-                cookingMethod: res.data.detected_cooking_method || '' 
+            setSuppData(prev => ({
+                ...prev,
+                cookingMethod: res.data.detected_cooking_method || ''
             }));
             setStatus('verify');
         } catch (err) {
-            console.error(err);
-            setStatus('error');
+            console.error("Analysis failed:", err);
+            setStatus('idle');
+            const errorMsg = err.response?.data?.message || "AI is currently busy. Please try clicking Analyze again in a moment.";
+            showNotif(errorMsg, "error");
         } finally {
             setLoading(false);
         }
@@ -181,7 +205,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
     const updateItemMacros = async (index, name, unit, method) => {
         if (!name || name.length < 2) return;
-        
+
         setVerifiedItems(prev => {
             const next = [...prev];
             if (next[index]) next[index] = { ...next[index], isUpdating: true, isStale: false };
@@ -189,20 +213,20 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         });
 
         try {
-            const res = await api.post('/logs/analyze-item', { 
-                name, 
+            const res = await api.post('/logs/analyze-item', {
+                name,
                 serving_unit: unit,
                 cooking_method: method
             });
             const data = res.data;
-            
+
             setVerifiedItems(prev => {
                 const next = [...prev];
                 const item = next[index];
                 if (!item) return prev;
 
                 const qty = item.measure_qty || 1;
-                
+
                 next[index] = {
                     ...item,
                     _base_calories: data.calories || 0,
@@ -231,6 +255,26 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         }
     };
 
+    const updateItemQuantity = (index, newQty) => {
+        setVerifiedItems(prev => {
+            const next = [...prev];
+            const base = next[index];
+            if (!base) return prev;
+
+            const qty = parseFloat(newQty) || 0;
+            next[index] = {
+                ...base,
+                measure_qty: qty,
+                weight_g: Math.round(qty * (base._base_weight_g || 100)),
+                calories:  Math.round((base._base_calories  || 0) * qty),
+                protein_g: Math.round((base._base_protein_g || 0) * qty * 10) / 10,
+                carbs_g:   Math.round((base._base_carbs_g   || 0) * qty * 10) / 10,
+                fat_g:     Math.round((base._base_fat_g     || 0) * qty * 10) / 10,
+            };
+            return next;
+        });
+    };
+
     const handleItemChange = (index, field, value) => {
         const item = verifiedItems[index];
         if (!item) return;
@@ -244,8 +288,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         setVerifiedItems(prev => {
             const newItems = [...prev];
             if (newItems[index]) {
-                newItems[index] = { 
-                    ...newItems[index], 
+                newItems[index] = {
+                    ...newItems[index],
                     [field]: value,
                     isStale: isMacroField ? true : newItems[index].isStale
                 };
@@ -341,10 +385,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                 meal_category: suppData.mealCategory,
                 logged_at: suppData.loggedAt
             });
-            
+
             setStatus('done');
             if (onLogged) onLogged();
-            
+
             // Explicitly clear file inputs
             if (fileInputRef.current) fileInputRef.current.value = "";
             if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
@@ -368,10 +412,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
         setPreviewAfter(null);
         setAnalysisResult(null);
         setVerifiedItems([]);
-        setSuppData({ 
-            waterMl: '', 
-            supplements: '', 
-            physicalActivity: '', 
+        setSuppData({
+            waterMl: '',
+            supplements: '',
+            physicalActivity: '',
             servingSpoonUsed: false,
             cookingMethod: '',
             hiddenIngredients: '',
@@ -388,24 +432,17 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
     const handleQuickLog = (log) => {
         setPreview(log.image_url);
         if (log.image_after_url) setPreviewAfter(log.image_after_url);
-        
+
         const baseAnalysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
-        
-        setAnalysisResult({ 
-            image_url: log.image_url, 
-            ai_analysis: baseAnalysis 
+
+        setAnalysisResult({
+            image_url: log.image_url,
+            ai_analysis: baseAnalysis
         });
-        
-        const itemsWithBase = (baseAnalysis?.items || []).map(item => ({
-            ...item,
-            _base_calories: item.calories || 0,
-            _base_protein_g: item.protein_g || 0,
-            _base_carbs_g: item.carbs_g || 0,
-            _base_fat_g: item.fat_g || 0,
-            _base_weight_g: item.serving_weight_g || 100,
-        }));
-        setVerifiedItems(itemsWithBase);
-        
+
+        const normalized = (baseAnalysis?.items || []).map(normalizeItem);
+        setVerifiedItems(normalized);
+
         setSuppData({
             ...suppData,
             cookingMethod: log.cooking_method || '',
@@ -417,7 +454,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             plateWaste: log.ai_analysis?.plate_waste ?? 100,
             loggedAt: getLocalISOTime() // Set to now!
         });
-        
+
         setStatus('verify');
     };
 
@@ -441,8 +478,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         </p>
                         <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
                             {recentLogs.map(log => (
-                                <div 
-                                    key={log.id} 
+                                <div
+                                    key={log.id}
                                     onClick={() => handleQuickLog(log)}
                                     className="flex-shrink-0 w-24 rounded-lg overflow-hidden border border-[var(--color-divider)] cursor-pointer hover:border-[var(--color-primary)] transition-all snap-start relative group"
                                 >
@@ -464,9 +501,9 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                         <div className="w-full grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Meal Category</label>
-                                <select 
+                                <select
                                     value={suppData.mealCategory}
-                                    onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
+                                    onChange={(e) => setSuppData({ ...suppData, mealCategory: e.target.value })}
                                     className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                 >
                                     <option value="Breakfast">Breakfast</option>
@@ -479,10 +516,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Date & Time</label>
-                                <input 
+                                <input
                                     type="datetime-local"
                                     value={suppData.loggedAt}
-                                    onChange={(e) => setSuppData({...suppData, loggedAt: e.target.value})}
+                                    onChange={(e) => setSuppData({ ...suppData, loggedAt: e.target.value })}
                                     className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                 />
                             </div>
@@ -521,13 +558,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     )}
                                 </div>
                             ) : (
-                                <div 
-                                    onClick={() => status !== 'uploading' && fileAfterInputRef.current?.click()} 
-                                    className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all relative ${
-                                        status === 'uploading'
-                                            ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60'
-                                            : 'border-gray-200 dark:border-white/10 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] group'
-                                    }`}
+                                <div
+                                    onClick={() => status !== 'uploading' && fileAfterInputRef.current?.click()}
+                                    className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all relative ${status === 'uploading'
+                                        ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60'
+                                        : 'border-gray-200 dark:border-white/10 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] group'
+                                        }`}
                                 >
                                     {status === 'uploading' ? (
                                         <>
@@ -551,9 +587,9 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                     <input type="file" ref={fileAfterInputRef} onChange={(e) => handleFileChange(e, 'after')} className="hidden" accept="image/*" capture="environment" />
 
                     {(status === 'idle' || status === 'uploading') && preview && (
-                        <Button 
-                            className={`w-full py-4 text-sm font-bold shadow-lg transition-all ${loading ? '!bg-[var(--color-bg-card,#ffffff)] !text-[var(--color-text-main,#1f2937)] border border-blue-500 opacity-100' : ''}`} 
-                            onClick={handleAnalyze} 
+                        <Button
+                            className={`w-full py-4 text-sm font-bold shadow-lg transition-all ${loading ? '!bg-[var(--color-bg-card,#ffffff)] !text-[var(--color-text-main,#1f2937)] border border-blue-500 opacity-100' : ''}`}
+                            onClick={handleAnalyze}
                             disabled={loading}
                         >
                             {loading ? (
@@ -580,10 +616,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Category</label>
-                                        <select 
+                                        <select
                                             value={suppData.mealCategory}
-                                            onChange={(e) => setSuppData({...suppData, mealCategory: e.target.value})}
-                                            className="w-full p-3.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-base font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            onChange={(e) => setSuppData({ ...suppData, mealCategory: e.target.value })}
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm font-bold focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value="Breakfast">Breakfast</option>
                                             <option value="AM Snack">AM Snack</option>
@@ -595,10 +631,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</label>
-                                        <select 
+                                        <select
                                             value={suppData.plateWaste}
-                                            onChange={(e) => setSuppData({...suppData, plateWaste: parseInt(e.target.value)})}
-                                            className="w-full p-3.5 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-base font-black focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
+                                            onChange={(e) => setSuppData({ ...suppData, plateWaste: parseInt(e.target.value) })}
+                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-sm font-bold focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
                                         >
                                             <option value={100}>Finished (100%)</option>
                                             <option value={75}>Mostly (75%)</option>
@@ -612,22 +648,22 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
 
                             <div className="space-y-4">
                                 {verifiedItems.map((item, idx) => (
-                                    <div 
-                                        key={idx} 
+                                    <div
+                                        key={idx}
                                         onBlur={(e) => handleRowBlur(e, idx)}
                                         className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.98]' : 'hover:border-[var(--color-primary)]/30'}`}
                                     >
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 relative">
-                                                    <input 
-                                                        value={item.name} 
+                                                    <input
+                                                        value={item.name}
                                                         onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                                                         placeholder="Food name..."
-                                                        className="w-full p-3.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-base font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm font-bold uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                     />
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => handleDeleteItem(idx)}
                                                     className="p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-all active:scale-90"
                                                 >
@@ -636,8 +672,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-2">
-                                                <select 
-                                                    value={item.cooking_method || ''} 
+                                                <select
+                                                    value={item.cooking_method || ''}
                                                     onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
                                                     className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
@@ -661,41 +697,25 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                     <option value="Plate">Plate</option>
                                                 </select>
                                             </div>
-
-                                            <div className="bg-[var(--color-bg-page)] p-3.5 rounded-xl border border-[var(--color-divider)] space-y-3">
+                                            <div className="bg-[var(--color-bg-page)] p-2.5 rounded-xl border border-[var(--color-divider)] space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Portion Quantity</span>
-                                                    <span className="text-base font-black text-[var(--color-primary)] tabular-nums">
+                                                    <span className="text-sm font-bold text-[var(--color-primary)] tabular-nums">
                                                         {item.measure_qty || 1}x
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center gap-3">
                                                     <button 
                                                         onClick={() => {
                                                             const newQty = Math.max(0.25, (item.measure_qty || 1) - 0.25);
-                                                            handleItemChange(idx, 'measure_qty', newQty);
-                                                            // Also trigger the macro update logic
-                                                            setVerifiedItems(prev => {
-                                                                const next = [...prev];
-                                                                const base = next[idx];
-                                                                next[idx] = {
-                                                                    ...base,
-                                                                    measure_qty: newQty,
-                                                                    weight_g: Math.round(newQty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * newQty),
-                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * newQty * 10) / 10,
-                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * newQty * 10) / 10,
-                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * newQty * 10) / 10,
-                                                                };
-                                                                return next;
-                                                            });
+                                                            updateItemQuantity(idx, newQty);
                                                         }}
-                                                        className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                        className="h-8 w-8 rounded-lg bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
                                                     >
                                                         <span className="text-xl font-bold">−</span>
                                                     </button>
-                                                    
+
                                                     <div className="flex-1 px-1">
                                                         <input
                                                             type="range"
@@ -703,47 +723,17 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                             max="5"
                                                             step="0.25"
                                                             value={item.measure_qty || 1}
-                                                            onChange={(e) => {
-                                                                const qty = parseFloat(e.target.value) || 0;
-                                                                setVerifiedItems(prev => {
-                                                                    const next = [...prev];
-                                                                    const base = next[idx];
-                                                                    next[idx] = {
-                                                                        ...base,
-                                                                        measure_qty: qty,
-                                                                        weight_g: Math.round(qty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                        calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * qty),
-                                                                        protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * qty * 10) / 10,
-                                                                        carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * qty * 10) / 10,
-                                                                        fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * qty * 10) / 10,
-                                                                    };
-                                                                    return next;
-                                                                });
-                                                            }}
+                                                            onChange={(e) => updateItemQuantity(idx, e.target.value)}
                                                             className="w-full h-2 accent-[var(--color-primary)] cursor-pointer"
                                                         />
                                                     </div>
 
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
                                                             const newQty = Math.min(5, (item.measure_qty || 1) + 0.25);
-                                                            handleItemChange(idx, 'measure_qty', newQty);
-                                                            setVerifiedItems(prev => {
-                                                                const next = [...prev];
-                                                                const base = next[idx];
-                                                                next[idx] = {
-                                                                    ...base,
-                                                                    measure_qty: newQty,
-                                                                    weight_g: Math.round(newQty * (base._base_weight_g || base.serving_weight_g || 100)),
-                                                                    calories:  Math.round((base._base_calories  || base.macros_per_serving?.calories  || 0) * newQty),
-                                                                    protein_g: Math.round((base._base_protein_g || base.macros_per_serving?.protein_g || 0) * newQty * 10) / 10,
-                                                                    carbs_g:   Math.round((base._base_carbs_g   || base.macros_per_serving?.carbs_g   || 0) * newQty * 10) / 10,
-                                                                    fat_g:     Math.round((base._base_fat_g     || base.macros_per_serving?.fat_g     || 0) * newQty * 10) / 10,
-                                                                };
-                                                                return next;
-                                                            });
+                                                            updateItemQuantity(idx, newQty);
                                                         }}
-                                                        className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                        className="h-8 w-8 rounded-lg bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
                                                     >
                                                         <span className="text-xl font-bold">+</span>
                                                     </button>
@@ -756,10 +746,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                                 <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
                                                 <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
                                                 <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>
+                                                <span className="text-indigo-600 dark:text-indigo-400">{item.fat_g || 0}g fat</span>
                                             </div>
 
                                             {item.isStale && !item.isUpdating && (
-                                                <button 
+                                                <button
                                                     onClick={() => updateItemMacros(idx, item.name, item.serving_unit, item.cooking_method)}
                                                     className="ml-auto flex items-center gap-1 px-3 py-1 bg-[var(--color-primary)] text-white rounded-lg shadow-sm active:scale-95 transition-all"
                                                 >
@@ -771,7 +762,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             <button
                                 onClick={handleAddMissingItem}
                                 className="w-full py-2.5 rounded-lg border border-dashed border-[var(--color-primary)] text-[var(--color-primary)] font-bold text-xs hover:bg-[var(--color-primary)]/5 transition-colors flex items-center justify-center gap-2"
@@ -783,11 +774,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                             <div className="space-y-3 pt-2 border-t border-[var(--color-divider)]">
                                 <div className="w-full">
                                     <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Hidden Add-ons</label>
-                                    <input 
+                                    <input
                                         type="text"
                                         placeholder="Oil, sugar, butter..."
                                         value={suppData.hiddenIngredients}
-                                        onChange={(e) => setSuppData({...suppData, hiddenIngredients: e.target.value})}
+                                        onChange={(e) => setSuppData({ ...suppData, hiddenIngredients: e.target.value })}
                                         className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                     />
                                 </div>
@@ -795,20 +786,20 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Meal Time</label>
-                                        <input 
+                                        <input
                                             type="datetime-local"
                                             value={suppData.loggedAt}
-                                            onChange={(e) => setSuppData({...suppData, loggedAt: e.target.value})}
+                                            onChange={(e) => setSuppData({ ...suppData, loggedAt: e.target.value })}
                                             className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Vitamins/Supplements</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             placeholder="e.g. Vitamin C, Ceelin"
                                             value={suppData.supplements}
-                                            onChange={(e) => setSuppData({...suppData, supplements: e.target.value})}
+                                            onChange={(e) => setSuppData({ ...suppData, supplements: e.target.value })}
                                             className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
@@ -819,7 +810,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">💧 Glasses of Water</label>
                                         <select
                                             value={suppData.waterMl}
-                                            onChange={(e) => setSuppData({...suppData, waterMl: e.target.value})}
+                                            onChange={(e) => setSuppData({ ...suppData, waterMl: e.target.value })}
                                             className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         >
                                             <option value="">None</option>
@@ -835,29 +826,43 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Activity (min)</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             placeholder="e.g. 30 min play"
                                             value={suppData.physicalActivity}
-                                            onChange={(e) => setSuppData({...suppData, physicalActivity: e.target.value})}
+                                            onChange={(e) => setSuppData({ ...suppData, physicalActivity: e.target.value })}
                                             className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         />
                                     </div>
                                 </div>
 
                                 <label className="flex items-center gap-2 p-2 bg-[var(--color-primary)]/5 rounded-lg border border-[var(--color-primary)]/20 cursor-pointer">
-                                    <input 
+                                    <input
                                         type="checkbox"
                                         checked={suppData.isParentVerified}
-                                        onChange={(e) => setSuppData({...suppData, isParentVerified: e.target.checked})}
+                                        onChange={(e) => setSuppData({ ...suppData, isParentVerified: e.target.checked })}
                                         className="w-4 h-4 rounded text-[var(--color-primary)]"
                                     />
                                     <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase">I have confirmed this meal data is correct</span>
                                 </label>
+
+                                {allergyWarnings.length > 0 && (
+                                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border-2 border-red-200 dark:border-red-900/40 flex items-start gap-3 animate-pulse shadow-sm">
+                                        <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-200">
+                                            <AlertCircle size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-red-800 dark:text-red-200 uppercase tracking-tight">Clinical Allergy Warning!</p>
+                                            <p className="text-xs font-bold text-red-700 dark:text-red-300/80 mt-0.5 leading-relaxed">
+                                                The AI detected items that may contain allergens: <span className="underline decoration-red-400 decoration-2">{allergyWarnings.map(i => i.name).join(', ')}</span>. Please review carefully.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-3 pt-2">
-                                <Button 
+                                <Button
                                     variant="outline"
                                     className="w-1/3 py-4 font-bold rounded-xl text-red-500 border-red-200 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
                                     onClick={() => {
@@ -870,18 +875,17 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         setStatus('idle');
                                         if (fileInputRef.current) fileInputRef.current.value = "";
                                         if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
-                                    }} 
+                                    }}
                                     disabled={loading}
                                 >
                                     Restart
                                 </Button>
-                                <Button 
-                                    className={`w-2/3 py-4 font-bold rounded-xl shadow-lg transition-all ${
-                                        loading ? '!bg-[var(--color-bg-card)] !text-[var(--color-text-main)] border border-green-500 shadow-none opacity-100'
+                                <Button
+                                    className={`w-2/3 py-4 font-bold rounded-xl shadow-lg transition-all ${loading ? '!bg-[var(--color-bg-card)] !text-[var(--color-text-main)] border border-green-500 shadow-none opacity-100'
                                         : !suppData.isParentVerified ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
-                                        : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'
-                                    }`} 
-                                    onClick={handleSaveVerified} 
+                                            : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'
+                                        }`}
+                                    onClick={handleSaveVerified}
                                     disabled={loading || !suppData.isParentVerified}
                                     title={!suppData.isParentVerified ? 'Please confirm the meal data first' : ''}
                                 >
@@ -904,7 +908,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                 <h4 className="text-2xl font-black text-[var(--color-secondary)] uppercase italic">Log Saved Successfully!</h4>
                                 <p className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">The nutritionist has been notified of the new meal.</p>
                             </div>
-                            <Button 
+                            <Button
                                 onClick={resetForm}
                                 className="px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 group"
                             >
@@ -926,10 +930,27 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     </div>
                                     <div>
                                         <h3 className="text-white font-black uppercase tracking-widest text-sm">Focus on the Meal</h3>
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Pinch or scroll to zoom. Drag to move.</p>
+                                        <div className="flex gap-2 mt-1">
+                                            {[
+                                                { label: '1:1', val: 1 },
+                                                { label: '4:3', val: 4 / 3 },
+                                                { label: '16:9', val: 16 / 9 }
+                                            ].map((r) => (
+                                                <button
+                                                    key={r.label}
+                                                    onClick={() => setAspect(r.val)}
+                                                    className={cn(
+                                                        "px-2 py-0.5 rounded text-[8px] font-black uppercase transition-all",
+                                                        aspect === r.val ? "bg-blue-600 text-white" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                                                    )}
+                                                >
+                                                    {r.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setIsCropping(false)}
                                     className="p-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
                                 >
@@ -942,10 +963,15 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                     image={cropImage}
                                     crop={crop}
                                     zoom={zoom}
-                                    aspect={1}
+                                    aspect={aspect}
                                     onCropChange={setCrop}
                                     onCropComplete={handleCropComplete}
                                     onZoomChange={setZoom}
+                                    onMediaLoaded={(mediaSize) => {
+                                        if (mediaSize.width && mediaSize.height) {
+                                            setAspect(mediaSize.width / mediaSize.height);
+                                        }
+                                    }}
                                 />
                             </div>
 
@@ -966,7 +992,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
                                         className="w-full h-2 accent-blue-500 cursor-pointer bg-zinc-800 rounded-full"
                                     />
                                 </div>
-                                <Button 
+                                <Button
                                     onClick={handleConfirmCrop}
                                     className="w-full sm:w-auto px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
                                 >
@@ -979,7 +1005,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [] }) {
             </CardContent>
 
 
-            <ConfirmDialog 
+            <ConfirmDialog
                 isOpen={isConfirmDeleteOpen}
                 onClose={() => setIsConfirmDeleteOpen(false)}
                 onConfirm={confirmDeleteItem}

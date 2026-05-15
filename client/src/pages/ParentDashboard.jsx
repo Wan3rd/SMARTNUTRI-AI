@@ -97,8 +97,11 @@ export default function ParentDashboard() {
     // Calculate Today's Intake vs Goals
     const todayLogs = allLogs.filter(log => new Date(log.logged_at).toDateString() === new Date().toDateString());
 
-    let todayIntake = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 };
+    let todayIntake = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 };
     todayLogs.forEach(log => {
+        // Hydration from water_ml field
+        todayIntake.water += log.water_ml || 0;
+
         const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
         if (analysis) {
             todayIntake.calories += analysis.nutrition?.calories || analysis.total_calories_est || 0;
@@ -111,29 +114,49 @@ export default function ParentDashboard() {
     });
 
     const getGoalForCategory = (category) => {
-        const rule = rules.find(r => r.category?.toLowerCase() === category.toLowerCase() && r.rule_type?.toLowerCase() === 'max');
+        // Find rules that match the category or aliases (e.g., 'water' matches 'Fluid/Water')
+        const matches = rules.filter(r => {
+            const cat = r.category?.toLowerCase();
+            const target = category.toLowerCase();
+            return cat === target || (target === 'water' && cat === 'fluid/water');
+        });
+
+        if (matches.length === 0) return null;
+
+        // Prioritize 'max' rules for limit-based visualization, but accept any (min/max) as the target
+        const rule = matches.find(r => r.rule_type?.toLowerCase() === 'max') || matches[0];
         return rule ? parseFloat(rule.rule_value) : null;
     };
 
     const latestMeal = recentLogs[0];
     const suggestions = latestMeal?.violation_details?.suggestions || [];
 
-    const renderProgressBar = (label, current, goal, unit) => {
+    const renderProgressBar = (label, current, goal, unit, color = 'green') => {
         if (!goal) return null;
         const percentage = Math.min((current / goal) * 100, 100);
         const isOver = current > goal;
+        
+        // Colors mapping
+        const colors = {
+            green: isOver ? 'bg-red-500' : 'bg-gradient-to-r from-emerald-500 to-green-400',
+            blue: 'bg-gradient-to-r from-blue-500 to-cyan-400',
+            orange: 'bg-gradient-to-r from-orange-500 to-amber-400'
+        };
 
         return (
             <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1 mb-2">
                     <span className="text-[10px] sm:text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest">{label}</span>
-                    <span className={cn("text-xs sm:text-sm font-black tabular-nums", isOver ? 'text-red-500' : 'text-[var(--color-primary)]')}>
+                    <span className={cn("text-xs sm:text-sm font-black tabular-nums", 
+                        (color === 'green' && isOver) ? 'text-red-500' : 
+                        (color === 'blue') ? 'text-[var(--color-info)]' : 'text-[var(--color-primary)]'
+                    )}>
                         {formatValue(current, user?.nutrient_precision)} <span className="opacity-50 text-[10px]">/</span> {formatValue(goal, user?.nutrient_precision)} <span className="text-[10px] opacity-70 uppercase">{unit}</span>
                     </span>
                 </div>
                 <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
                     <div
-                        className={`h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)] ${isOver ? 'bg-red-500' : 'bg-gradient-to-r from-emerald-500 to-green-400'}`}
+                        className={cn("h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)]", colors[color] || colors.green)}
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
@@ -167,6 +190,7 @@ export default function ParentDashboard() {
                             profileId={selectedProfile.id} 
                             onLogged={fetchLogs} 
                             recentLogs={recentLogs} 
+                            allergies={selectedProfile.allergies || []}
                         />
                     )}
 
@@ -179,9 +203,11 @@ export default function ParentDashboard() {
                             {rules.length > 0 ? (
                                 <div className="space-y-5">
                                     {renderProgressBar('Calories', todayIntake.calories, getGoalForCategory('calories'), 'kcal')}
+                                    {renderProgressBar('Hydration', todayIntake.water, getGoalForCategory('water') || 1500, 'ml', 'blue')}
                                     {renderProgressBar('Protein', todayIntake.protein, getGoalForCategory('protein'), 'g')}
                                     {renderProgressBar('Sodium', todayIntake.sodium, getGoalForCategory('sodium'), 'mg')}
                                     {renderProgressBar('Sugar', todayIntake.sugar, getGoalForCategory('sugar'), 'g')}
+                                    {renderProgressBar('Fats', todayIntake.fat, getGoalForCategory('fats'), 'g')}
                                 </div>
                             ) : (
                                 <div className="p-8 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
@@ -425,6 +451,7 @@ export default function ParentDashboard() {
                 <MealDetailModal
                     log={selectedLog}
                     rules={rules}
+                    allergies={selectedProfile?.allergies || []}
                     onClose={() => setSelectedLog(null)}
                     onDelete={(deletedId) => {
                         setSelectedLog(null);
