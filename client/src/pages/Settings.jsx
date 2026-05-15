@@ -28,16 +28,24 @@ export default function Settings() {
         }
     }, [location]);
 
+    const [isUpdating, setIsUpdating] = useState(false);
+
     const handlePreferenceChange = async (key, value, customMessage) => {
-        const res = await updatePreferences({ [key]: value });
-        if (res.success) {
-            setMessage({ type: 'success', text: customMessage || 'Preference updated and saved' });
-        } else {
-            setMessage({ type: 'error', text: 'Failed to sync preference with server' });
+        setIsUpdating(true);
+        try {
+            const res = await updatePreferences({ [key]: value });
+            if (res.success) {
+                setMessage({ type: 'success', text: customMessage || 'Preference updated and saved' });
+            } else {
+                setMessage({ type: 'error', text: 'Failed to sync preference with server' });
+            }
+        } finally {
+            setIsUpdating(false);
         }
     };
 
     const handleThemeChange = async (newTheme) => {
+        if (isUpdating || theme === newTheme) return;
         setTheme(newTheme);
         await handlePreferenceChange('theme', newTheme, `Theme changed to ${newTheme} mode`);
     };
@@ -51,17 +59,19 @@ export default function Settings() {
                     label: "Dark Mode",
                     desc: "Switch between light and dark themes",
                     action: (
-                        <div className="flex bg-gray-100 dark:bg-zinc-800 rounded-full p-1 border border-gray-200 dark:border-zinc-700">
+                        <div className={`flex bg-gray-100 dark:bg-zinc-800 rounded-full p-1 border border-gray-200 dark:border-zinc-700 transition-opacity duration-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}>
                             <button
                                 onClick={() => handleThemeChange('light')}
-                                className={`p-2 rounded-full transition-all duration-300 transform hover:scale-110 focus:outline-none ${theme === 'light' ? 'bg-white shadow text-yellow-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                                disabled={isUpdating}
+                                className={`p-2 rounded-full transition-all duration-300 transform active:scale-95 focus:outline-none ${theme === 'light' ? 'bg-white shadow text-yellow-500 scale-110' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-105'}`}
                                 aria-label="Light Mode"
                             >
                                 <Sun size={18} />
                             </button>
                             <button
                                 onClick={() => handleThemeChange('dark')}
-                                className={`p-2 rounded-full transition-all duration-300 transform hover:scale-110 focus:outline-none ${theme === 'dark' ? 'bg-zinc-600 shadow text-blue-300' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                                disabled={isUpdating}
+                                className={`p-2 rounded-full transition-all duration-300 transform active:scale-95 focus:outline-none ${theme === 'dark' ? 'bg-zinc-600 shadow text-blue-300 scale-110' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-105'}`}
                                 aria-label="Dark Mode"
                             >
                                 <Moon size={18} />

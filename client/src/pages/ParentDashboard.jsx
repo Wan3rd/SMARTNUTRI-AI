@@ -13,6 +13,8 @@ import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { DashboardSkeleton } from '../components/SkeletonShell';
 
+import Notification from '../components/common/Notification';
+
 export default function ParentDashboard() {
     const { user } = useAuth();
     const { selectedProfile, loading: profileLoading } = useProfile();
@@ -26,11 +28,15 @@ export default function ParentDashboard() {
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+    const [showWelcome, setShowWelcome] = useState(false);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 640);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // Show welcome notification once on first arrival
+        const hasSeenWelcome = sessionStorage.getItem('hasSeenWelcome');
+        if (!hasSeenWelcome) {
+            setShowWelcome(true);
+            sessionStorage.setItem('hasSeenWelcome', 'true');
+        }
     }, []);
 
     useEffect(() => {
@@ -81,7 +87,10 @@ export default function ParentDashboard() {
             const res = await api.get('/auth/my-nutritionist');
             setAssignedNutritionist(res.data);
         } catch (err) {
-            console.error("Error fetching nutritionist", err);
+            // Ignore 404 as it just means no nutritionist is assigned yet
+            if (err.response?.status !== 404) {
+                console.error("Error fetching nutritionist", err);
+            }
         }
     };
 
@@ -200,7 +209,9 @@ export default function ParentDashboard() {
                                         {assignedNutritionist?.profile_image_url ? (
                                             <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
                                         ) : (
-                                            <User size={24} className="text-gray-300" />
+                                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-950/20 dark:to-blue-950/20">
+                                                {assignedNutritionist ? <User size={24} className="text-gray-300" /> : <Activity size={24} className="text-[var(--color-primary)] animate-pulse" />}
+                                            </div>
                                         )}
                                     </div>
                                     <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 sm:h-5 sm:w-5 bg-emerald-500 rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
@@ -208,12 +219,14 @@ export default function ParentDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-0.5">Clinician</p>
+                                    <p className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest mb-0.5">
+                                        {assignedNutritionist ? 'Clinician' : 'Clinical Intelligence'}
+                                    </p>
                                     <h4 className={cn("text-sm sm:text-lg lg:text-xl font-black text-[var(--color-text-main)] truncate uppercase leading-tight", user?.privacy_mode && "privacy-blur")}>
-                                        {assignedNutritionist?.full_name || 'Dr. Expert'}
+                                        {assignedNutritionist?.full_name || 'SmartNutri AI'}
                                     </h4>
                                     <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight opacity-80 truncate">
-                                        {assignedNutritionist?.specialization || 'Clinical Nutritionist'}
+                                        {assignedNutritionist?.specialization || 'Clinical AI Monitor'}
                                     </p>
                                 </div>
                             </div>
@@ -223,14 +236,14 @@ export default function ParentDashboard() {
                                     <div className="flex items-center gap-2.5 p-2 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)]">
                                         <BadgeCheck size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
                                         <p className="text-[10px] font-black text-[var(--color-text-main)] uppercase truncate">
-                                            {assignedNutritionist?.license_no || 'Pending Verif.'}
+                                            {assignedNutritionist?.license_no || 'Active Monitoring'}
                                         </p>
                                     </div>
 
                                     <div className="flex items-center gap-2.5 p-2 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)]">
                                         <Phone size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                                         <p className="text-[10px] font-black text-[var(--color-text-main)] uppercase truncate">
-                                            {assignedNutritionist?.phone || 'No contact'}
+                                            {assignedNutritionist?.phone || 'Always Online'}
                                         </p>
                                     </div>
                                 </div>
@@ -420,6 +433,13 @@ export default function ParentDashboard() {
                     }}
                 />
             )}
+            <Notification
+                show={showWelcome}
+                type="success"
+                message={`Welcome, ${user?.full_name}! You can personalize your theme and clinical units in the Settings page.`}
+                onClose={() => setShowWelcome(false)}
+                duration={5000}
+            />
         </div>
     );
 }

@@ -4,6 +4,9 @@ import { Button } from '../components/common/Button';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, FileUp, ShieldCheck } from 'lucide-react';
+import TermsModal from '../components/common/TermsModal';
+
+import api from '../lib/api';
 
 export default function Register() {
     const { register } = useAuth();
@@ -11,6 +14,7 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -47,6 +51,28 @@ export default function Register() {
 
         if (!formData.termsAccepted) {
             setError("You must accept the Terms & Conditions");
+            setLoading(false);
+            return;
+        }
+
+        // Check if email is already registered before proceeding to onboarding
+        try {
+            const checkRes = await api.get(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
+            if (!checkRes.data.available) {
+                setError("This email is already registered. Please use a different email or log in.");
+                setLoading(false);
+                return;
+            }
+        } catch (err) {
+            console.error("Email check failed:", err);
+            setError("Unable to verify email availability. Please check your connection and try again.");
+            setLoading(false);
+            return;
+        }
+
+        // If parent, delay registration until onboarding is finished to prevent ghost accounts
+        if (formData.role === 'parent') {
+            navigate('/onboarding', { state: { registrationData: formData } });
             setLoading(false);
             return;
         }
@@ -241,10 +267,10 @@ export default function Register() {
                                     id="terms"
                                     checked={formData.termsAccepted}
                                     onChange={handleChange}
-                                    className="w-4 h-4 text-[var(--color-primary)] rounded focus:ring-[var(--color-primary)]"
+                                    className="w-4 h-4 text-[var(--color-primary)] rounded focus:ring-[var(--color-primary)] cursor-pointer"
                                 />
                                 <label htmlFor="terms" className="text-sm text-[var(--color-text-muted)]">
-                                    I agree to the <span className="text-[var(--color-primary)] hover:underline cursor-pointer">Terms & Conditions</span>
+                                    I agree to the <button type="button" onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-primary)] font-bold hover:underline cursor-pointer">Terms & Conditions</button>
                                 </label>
                             </div>
 
@@ -259,6 +285,11 @@ export default function Register() {
                     </div>
                 </CardContent>
             </Card>
+
+            <TermsModal 
+                isOpen={isTermsModalOpen} 
+                onClose={() => setIsTermsModalOpen(false)} 
+            />
         </div>
     );
 }

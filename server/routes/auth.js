@@ -10,6 +10,22 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
+// CHECK EMAIL AVAILABILITY
+router.get('/check-email', async (req, res) => {
+    const email = req.query.email?.toLowerCase();
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    try {
+        const user = await prisma.users.findUnique({
+            where: { email }
+        });
+        res.json({ available: !user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // REGISTER
 router.post('/register', upload.single('license'), async (req, res) => {
     const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
