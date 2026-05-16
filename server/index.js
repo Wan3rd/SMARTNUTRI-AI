@@ -48,9 +48,15 @@ app.use(cookieParser());
 // Health Check Endpoint
 app.get('/api/health', async (req, res) => {
     try {
-        await prisma.$queryRaw`SELECT 1`;
-        res.json({ status: 'online', database: 'connected', timestamp: new Date() });
+        const dbCheck = await prisma.$queryRaw`SELECT NOW()`;
+        res.json({ 
+            status: 'online', 
+            database: 'connected', 
+            timestamp: new Date(),
+            dbTime: dbCheck[0].now
+        });
     } catch (err) {
+        console.error('[Health Check Error]:', err.message);
         res.status(503).json({ status: 'degraded', database: 'disconnected', error: err.message });
     }
 });
@@ -78,16 +84,6 @@ app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
     res.send('SmartNutri-AI API is running...');
-});
-
-app.get('/api/health', async (req, res) => {
-    try {
-        const result = await prisma.$queryRaw`SELECT NOW()`;
-        res.json({ status: 'ok', time: result[0].now });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ status: 'error', message: 'Database connection failed' });
-    }
 });
 
 // Start Server
