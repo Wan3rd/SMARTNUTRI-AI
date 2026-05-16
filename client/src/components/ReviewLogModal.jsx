@@ -68,6 +68,37 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         }
     }, [log]);
 
+    const macros = editedAnalysis?.macros_est || {};
+    const allergies = log?.profile?.allergies || [];
+
+    const detectedAllergens = React.useMemo(() => {
+        if (!log || !allergies || allergies.length === 0 || !editedAnalysis?.items) return [];
+        const found = [];
+        editedAnalysis.items.forEach(item => {
+            const itemName = (item.name || "").toLowerCase().trim();
+            if (!itemName) return;
+
+            allergies.forEach(allergy => {
+                const allergen = (allergy || "").toLowerCase().trim();
+                if (!allergen || allergen === 'none') return;
+
+                const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
+                    ? allergen.slice(0, -1) 
+                    : allergen;
+
+                const isMatch = itemName.includes(allergen) || 
+                               itemName.includes(allergenSingular) || 
+                               allergen.includes(itemName) ||
+                               allergenSingular.includes(itemName);
+
+                if (isMatch) {
+                    found.push({ item: item.name, allergen: allergy });
+                }
+            });
+        });
+        return found;
+    }, [editedAnalysis?.items, allergies, log]);
+
     if (!isOpen || !log) return null;
 
     const handleApprove = async () => {
@@ -162,36 +193,6 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         }));
     };
 
-    const macros = editedAnalysis?.macros_est || {};
-
-    const allergies = log.profile?.allergies || [];
-    const detectedAllergens = React.useMemo(() => {
-        if (!allergies || allergies.length === 0 || !editedAnalysis?.items) return [];
-        const found = [];
-        editedAnalysis.items.forEach(item => {
-            const itemName = (item.name || "").toLowerCase().trim();
-            if (!itemName) return;
-
-            allergies.forEach(allergy => {
-                const allergen = (allergy || "").toLowerCase().trim();
-                if (!allergen || allergen === 'none') return;
-
-                const allergenSingular = (allergen.length > 3 && allergen.endsWith('s')) 
-                    ? allergen.slice(0, -1) 
-                    : allergen;
-
-                const isMatch = itemName.includes(allergen) || 
-                               itemName.includes(allergenSingular) || 
-                               allergen.includes(itemName) ||
-                               allergenSingular.includes(itemName);
-
-                if (isMatch) {
-                    found.push({ item: item.name, allergen: allergy });
-                }
-            });
-        });
-        return found;
-    }, [editedAnalysis?.items, allergies]);
 
     // Animation Variants
     const containerVariants = {

@@ -1479,44 +1479,102 @@ export default function ClientDetails() {
                                         <CardTitle>Profile: {selectedProfile.child_name}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        {/* Tabs Navigation */}
-                                        <div className="flex gap-4 sm:gap-6 border-b border-[var(--color-divider)] mb-6 overflow-x-auto scrollbar-hide">
-                                            {[
-                                                { id: 'overview', label: 'Overview' },
-                                                { id: 'history', label: 'Log History' },
-                                                { id: 'insights', label: 'Insights' },
-                                                { id: 'adime', label: 'Clinical (ADIME)' },
-                                                { id: 'notes', label: 'Notes' },
-                                                { id: 'rules', label: 'Rules Engine' },
-                                                { id: 'portions', label: 'Portion Exchange' },
-                                                { id: 'plan', label: 'Meal Planner' }
-                                            ].map(tab => {
-                                                const pendingCount = tab.id === 'review' ? logs.filter(l => l.status === 'pending').length : 0;
-                                                const isHistoryPending = tab.id === 'history' && allClientPendingLogs.filter(l => l.profile_id === selectedProfile?.id).length > 0;
-                                                
-                                                return (
-                                                    <button
-                                                        key={tab.id}
-                                                        className={cn(
-                                                            "pb-3 px-1 font-black text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap transition-all relative flex items-center gap-2",
-                                                            activeTab === tab.id
-                                                                ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
-                                                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border-b-2 border-transparent'
-                                                        )}
-                                                        onClick={() => setActiveTab(tab.id)}
-                                                    >
-                                                        {tab.label}
-                                                        {pendingCount > 0 && (
-                                                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[8px] text-white animate-pulse">
-                                                                {pendingCount}
-                                                            </span>
-                                                        )}
-                                                        {isHistoryPending && !pendingCount && (
-                                                            <span className="flex h-2 w-2 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50" />
-                                                        )}
-                                                    </button>
-                                                );
-                                            })}
+                                        {/* --- Grouped Clinical Modules (Pillars) --- */}
+                                        <div className="flex flex-col gap-6 mb-8">
+                                            {/* Pillar Switcher */}
+                                            <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[2rem] border-2 border-[var(--color-divider)] flex items-center justify-between shadow-inner">
+                                                {[
+                                                    { id: 'assessment', label: 'Assessment', icon: Activity, tabs: ['overview', 'history', 'insights'] },
+                                                    { id: 'clinical', label: 'Clinical Care', icon: ShieldAlert, tabs: ['adime', 'rules', 'notes'] },
+                                                    { id: 'planning', label: 'Dietary Design', icon: ChefHat, tabs: ['portions', 'plan'] }
+                                                ].map(group => {
+                                                    const isGroupActive = group.tabs.includes(activeTab);
+                                                    const GroupIcon = group.icon;
+                                                    
+                                                    // Count pending logs in this group for the badge
+                                                    let groupBadge = 0;
+                                                    if (group.id === 'assessment') {
+                                                        groupBadge = allClientPendingLogs.filter(l => l.profile_id === selectedProfile?.id).length;
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            key={group.id}
+                                                            onClick={() => setActiveTab(group.tabs[0])}
+                                                            className={cn(
+                                                                "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-widest text-[9px] sm:text-[10px]",
+                                                                isGroupActive 
+                                                                    ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10" 
+                                                                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                                            )}
+                                                        >
+                                                            <GroupIcon size={14} className={isGroupActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"} />
+                                                            <span className="hidden sm:inline">{group.label}</span>
+                                                            <span className="sm:hidden">{group.label.split(' ')[0]}</span>
+                                                            
+                                                            {groupBadge > 0 && (
+                                                                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[7px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--color-bg-page)] animate-pulse shadow-md">
+                                                                    {groupBadge}
+                                                                </span>
+                                                            )}
+                                                            
+                                                            {isGroupActive && (
+                                                                <motion.div 
+                                                                    layoutId="pillar-bg"
+                                                                    className="absolute inset-0 bg-[var(--color-primary)]/5 rounded-[1.5rem] z-[-1]"
+                                                                />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Sub-Navigation Pills */}
+                                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1">
+                                                {(() => {
+                                                    const currentGroup = [
+                                                        { id: 'assessment', label: 'Assessment', tabs: [
+                                                            { id: 'overview', label: 'Overview', icon: Eye },
+                                                            { id: 'history', label: 'Log History', icon: Clock },
+                                                            { id: 'insights', label: 'Insights', icon: TrendingUp }
+                                                        ]},
+                                                        { id: 'clinical', label: 'Clinical Care', tabs: [
+                                                            { id: 'adime', label: 'ADIME Charting', icon: Stethoscope },
+                                                            { id: 'rules', label: 'Rules Engine', icon: ShieldAlert },
+                                                            { id: 'notes', label: 'Progress Notes', icon: StickyNote }
+                                                        ]},
+                                                        { id: 'planning', label: 'Dietary Design', tabs: [
+                                                            { id: 'portions', label: 'Portion Exchange', icon: PieChart },
+                                                            { id: 'plan', label: 'Meal Planner', icon: Calendar }
+                                                        ]}
+                                                    ].find(g => g.tabs.some(t => t.id === activeTab));
+
+                                                    return currentGroup?.tabs.map(tab => {
+                                                        const isTabActive = activeTab === tab.id;
+                                                        const TabIcon = tab.icon;
+                                                        const isPending = tab.id === 'history' && allClientPendingLogs.filter(l => l.profile_id === selectedProfile?.id).length > 0;
+
+                                                        return (
+                                                            <button
+                                                                key={tab.id}
+                                                                onClick={() => setActiveTab(tab.id)}
+                                                                className={cn(
+                                                                    "px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-sm",
+                                                                    isTabActive
+                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-emerald-500/20"
+                                                                        : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50"
+                                                                )}
+                                                            >
+                                                                <TabIcon size={12} />
+                                                                {tab.label}
+                                                                {isPending && (
+                                                                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(251,146,60,0.8)]" />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
                                         </div>
 
                                         {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
