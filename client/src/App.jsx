@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/common/ScrollToTop';
 import { Layout } from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
 import AIKitchen from './pages/AIKitchen';
 import Calendar from './pages/Calendar';
 import DailyPlan from './pages/DailyPlan';

@@ -15,6 +15,7 @@ import CreatePatientModal from '../components/CreatePatientModal';
 import ReviewLogModal from '../components/ReviewLogModal';
 import Notification from '../components/common/Notification';
 import { DashboardSkeleton, SkeletonLoader } from '../components/SkeletonShell';
+import AnimatedNumber from '../components/common/AnimatedNumber';
 
 
 
@@ -189,7 +190,7 @@ export default function NutritionistDashboard() {
                         </div>
                         <div className="min-w-0 flex items-center gap-1 sm:block">
                             <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter sm:tracking-widest truncate">Clients:</p>
-                            <h2 className="text-[10px] sm:text-3xl font-black text-[var(--color-text-main)] leading-none sm:mt-0.5">{stats.clients}</h2>
+                            <h2 className="text-[10px] sm:text-3xl font-black text-[var(--color-text-main)] leading-none sm:mt-0.5"><AnimatedNumber value={stats.clients} /></h2>
                         </div>
                     </CardContent>
                 </Card>
@@ -201,7 +202,7 @@ export default function NutritionistDashboard() {
                         </div>
                         <div className="min-w-0 flex items-center gap-1 sm:block">
                             <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter sm:tracking-widest truncate">Pending:</p>
-                            <h2 className="text-[10px] sm:text-3xl font-black text-[var(--color-text-main)] leading-none sm:mt-0.5">{stats.pending}</h2>
+                            <h2 className="text-[10px] sm:text-3xl font-black text-[var(--color-text-main)] leading-none sm:mt-0.5"><AnimatedNumber value={stats.pending} /></h2>
                         </div>
                     </CardContent>
                 </Card>
@@ -270,7 +271,7 @@ export default function NutritionistDashboard() {
                                 client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                 client.email?.toLowerCase().includes(searchQuery.toLowerCase())
                             )
-                            .map(client => {
+                            .map((client, index) => {
                             const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
                             const isArchived = client.status === 'archived';
                             return (
@@ -278,6 +279,7 @@ export default function NutritionistDashboard() {
                                     key={client.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
@@ -332,10 +334,63 @@ export default function NutritionistDashboard() {
                             );
                         })
                     )}
-                    {!isLoading && clients.filter(c => c.status === viewStatus).length === 0 && (
-                        <p className="col-span-full text-center py-12 text-[var(--color-text-muted)] font-bold bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                            {viewStatus === 'active' ? "No active clients linked yet." : "No archived clients found."}
-                        </p>
+                    {!isLoading && clients
+                        .filter(c => c.status === viewStatus)
+                        .filter(c =>
+                            c.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            c.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length === 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className="col-span-full flex flex-col items-center justify-center py-16 px-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-dashed border-[var(--color-divider)] text-center gap-5"
+                        >
+                            {/* Animated SVG Illustration */}
+                            <motion.div
+                                animate={{ rotate: [0, -8, 8, -8, 0] }}
+                                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+                                className="relative"
+                            >
+                                <div className="w-20 h-20 rounded-3xl bg-[var(--color-primary)]/10 flex items-center justify-center shadow-xl shadow-[var(--color-primary)]/10">
+                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="17" cy="17" r="11" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round"/>
+                                        <line x1="25.5" y1="25.5" x2="35" y2="35" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round"/>
+                                        <line x1="13" y1="17" x2="21" y2="17" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round"/>
+                                        <line x1="17" y1="13" x2="17" y2="21" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round"/>
+                                    </svg>
+                                </div>
+                                <motion.div
+                                    animate={{ scale: [1, 1.15, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 rounded-full border-2 border-white dark:border-zinc-900 flex items-center justify-center"
+                                >
+                                    <span className="text-white text-[8px] font-black">0</span>
+                                </motion.div>
+                            </motion.div>
+
+                            <div className="space-y-1.5">
+                                <h3 className="text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                    {viewStatus === 'active' ? 'No Patients Found' : 'No Archived Patients'}
+                                </h3>
+                                <p className="text-xs text-[var(--color-text-muted)] font-medium max-w-xs mx-auto leading-relaxed">
+                                    {searchQuery
+                                        ? `No results for "${searchQuery}". Try a different name or email.`
+                                        : viewStatus === 'active'
+                                            ? 'Link a parent account or create a new patient profile to get started.'
+                                            : 'Archived clients will appear here once deactivated.'}
+                                </p>
+                            </div>
+
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="px-5 py-2 rounded-full bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-[var(--color-primary)]/30"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                        </motion.div>
                     )}
                 </div>
             </section>

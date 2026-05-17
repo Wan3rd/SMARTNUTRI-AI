@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
@@ -16,6 +16,16 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [zoomScale, setZoomScale] = useState(1);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+    const [isScrolled, setIsScrolled] = useState(false);
+    const scrollRef = useRef(null);
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const handleScroll = () => setIsScrolled(el.scrollTop > 80);
+        el.addEventListener('scroll', handleScroll, { passive: true });
+        return () => el.removeEventListener('scroll', handleScroll);
+    }, [isOpen]);
 
     const isDirty = () => {
         if (!log) return false;
@@ -302,7 +312,36 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             <X size={20} />
                         </motion.button>
 
-                        <div className="flex-1 overflow-y-auto p-0 lg:p-12 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
+                        {/* #6: Sticky Glassmorphic Patient Header */}
+                        <AnimatePresence>
+                            {isScrolled && log && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -16 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -16 }}
+                                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                                    className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+                                >
+                                    <div className="flex items-center gap-2.5 bg-[var(--color-bg-card)]/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-[var(--color-divider)] shadow-xl shadow-black/10 px-4 py-2 rounded-full">
+                                        <div className="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse shrink-0" />
+                                        <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                            {log.child_name || 'Patient'}
+                                        </span>
+                                        <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase">
+                                            {log.profile?.date_of_birth
+                                                ? `${new Date().getFullYear() - new Date(log.profile.date_of_birth).getFullYear()}Y`
+                                                : ''}
+                                        </span>
+                                        <div className="w-px h-3 bg-[var(--color-divider)]" />
+                                        <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">
+                                            {log.meal_category}
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-0 lg:p-12 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
                             {/* MOBILE ONLY: Compact Horizontal Image Swipe (Before & After) */}
                             <div className="flex lg:hidden flex-col w-full shrink-0 bg-zinc-950/5 border-b border-[var(--color-divider)]">
                                 <div className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20 backdrop-blur-sm">
@@ -389,33 +428,70 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </motion.div>
 
                             {/* Metrics Grid */}
-                            <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {/* #4: Plate Waste Donut Ring Card */}
+                            <motion.div variants={itemVariants} className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] shadow-lg shadow-black/5 flex items-center gap-4">
+                                {/* Animated SVG Donut */}
+                                <div className="relative shrink-0 w-16 h-16">
+                                    <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+                                        {/* Background track */}
+                                        <circle cx="18" cy="18" r="14" fill="none" strokeWidth="3.5" className="stroke-[var(--color-divider)]" />
+                                        {/* Animated fill */}
+                                        <motion.circle
+                                            cx="18" cy="18" r="14"
+                                            fill="none"
+                                            strokeWidth="3.5"
+                                            stroke="var(--color-primary)"
+                                            strokeLinecap="round"
+                                            strokeDasharray="87.96"
+                                            initial={{ strokeDashoffset: 87.96 }}
+                                            animate={{ strokeDashoffset: 87.96 - (87.96 * ((editedAnalysis?.plate_waste ?? 100) / 100)) }}
+                                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                                        />
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className="text-sm font-black text-[var(--color-primary)] leading-none">{editedAnalysis?.plate_waste ?? 100}%</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-black uppercase text-[var(--color-primary)] mb-1 flex items-center gap-1.5">
+                                        <PieChart size={12} /> Consumption
+                                    </p>
+                                    {isEditing ? (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {[100, 75, 50, 25, 0].map(pct => (
+                                                <button
+                                                    key={pct}
+                                                    type="button"
+                                                    onClick={() => setEditedAnalysis(prev => ({ ...prev, plate_waste: pct }))}
+                                                    className={`px-2 py-0.5 rounded-lg text-[10px] font-black border-2 transition-all ${
+                                                        (editedAnalysis?.plate_waste ?? 100) === pct
+                                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                                                            : 'bg-transparent text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
+                                                    }`}
+                                                >
+                                                    {pct}%
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm font-black text-[var(--color-text-main)] uppercase">
+                                            {(editedAnalysis?.plate_waste ?? 100) === 100 ? 'Finished' :
+                                             (editedAnalysis?.plate_waste ?? 100) >= 75 ? 'Mostly Eaten' :
+                                             (editedAnalysis?.plate_waste ?? 100) >= 50 ? 'Half Eaten' :
+                                             (editedAnalysis?.plate_waste ?? 100) >= 25 ? 'Little Eaten' : 'Not Eaten'}
+                                        </p>
+                                    )}
+                                </div>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4">
                                 {[
-                                    { icon: <ChefHat size={16} />, label: "Method", value: log.cooking_method || 'Standard', color: "#0d9488" },
-                                    { 
-                                        icon: <PieChart size={16} />, 
-                                        label: "Consumption", 
-                                        value: isEditing ? (
-                                            <select 
-                                                value={editedAnalysis?.plate_waste ?? 100}
-                                                onChange={(e) => setEditedAnalysis(prev => ({ ...prev, plate_waste: parseInt(e.target.value) }))}
-                                                className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer text-[var(--color-primary)]"
-                                            >
-                                                <option value={100}>100% (Finished)</option>
-                                                <option value={75}>75% (Mostly)</option>
-                                                <option value={50}>50% (Half)</option>
-                                                <option value={25}>25% (Little)</option>
-                                                <option value={0}>0% (None)</option>
-                                            </select>
-                                        ) : `${editedAnalysis?.plate_waste ?? 100}%`, 
-                                        color: "var(--color-primary)" 
-                                    },
                                     { icon: <Droplets size={16} />, label: "Water", value: log.water_ml ? `${log.water_ml}ml` : 'None', color: "#3b82f6" },
                                     { icon: <Info size={16} />, label: "Tools", value: log.serving_spoon_used ? 'Standard Spoon' : 'Estimated', color: "#6366f1" },
                                     { icon: <Activity size={16} />, label: "Exercise", value: log.physical_activity || 'None', color: "#f59e0b" }
                                 ].map((stat, i) => (
-                                    <div key={i} className={`bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 transition-all shadow-lg shadow-black/5 ${isEditing && stat.label === "Consumption" ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl'}`}>
-                                        <p className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
+                                    <div key={i} className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl transition-all shadow-lg shadow-black/5">
+                                        <p className="text-xs font-black uppercase mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
                                             {stat.icon} {stat.label}
                                         </p>
                                         <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">{stat.value}</div>
@@ -442,7 +518,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.2 + (idx * 0.05) }}
-                                            className={`bg-[var(--color-bg-card)] p-4 rounded-2xl border-2 border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all border-l-4 shadow-md shadow-black/5 hover:shadow-lg ${isEditing ? 'border-l-orange-500 bg-orange-50/5' : 'border-l-[var(--color-primary)]'}`}
+                                            className={`bg-[var(--color-bg-card)] p-4 rounded-2xl border-2 border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all border-l-4 shadow-md shadow-black/5 hover:shadow-lg ${isEditing ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-l-[var(--color-primary)]'}`}
                                         >
                                             <div className="flex flex-col">
                                                 <span className="text-sm sm:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
@@ -471,7 +547,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className={`flex gap-3 sm:gap-6 px-3 sm:px-4 py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 bg-white shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
+                                            <div className={`grid grid-cols-2 sm:flex sm:gap-6 gap-x-2 gap-y-3 w-full sm:w-auto px-3 sm:px-4 py-3 sm:py-2 rounded-xl border-2 transition-all ${isEditing ? 'border-orange-200 dark:border-orange-900/50 bg-white dark:bg-orange-950/40 shadow-md' : 'border-[var(--color-divider)] bg-[var(--color-bg-page)] shadow-inner'}`}>
                                                 {[
                                                     { key: 'calories', label: "Kcal", col: "#e11d48" },
                                                     { key: 'protein_g', label: "Pro", col: "#4f46e5" },
@@ -480,13 +556,29 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                 ].map((macro, mi) => (
                                                     <div key={mi} className="flex flex-col items-center">
                                                         {isEditing ? (
-                                                            <input
-                                                                type="number"
-                                                                value={item[macro.key]}
-                                                                onChange={(e) => handleItemChange(idx, macro.key, e.target.value)}
-                                                                className="w-10 bg-transparent text-xs font-black text-center focus:outline-none"
-                                                                style={{ color: macro.col }}
-                                                            />
+                                                            <div className="flex items-center gap-0.5 sm:gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleItemChange(idx, macro.key, Math.max(0, parseFloat(item[macro.key] || 0) - (macro.key === 'calories' ? 10 : 1)))}
+                                                                    className="w-4 h-4 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 dark:text-slate-300 transition-colors shrink-0"
+                                                                >
+                                                                    <Minus size={10} strokeWidth={4} />
+                                                                </button>
+                                                                <input
+                                                                    type="number"
+                                                                    value={item[macro.key]}
+                                                                    onChange={(e) => handleItemChange(idx, macro.key, e.target.value)}
+                                                                    className="w-7 sm:w-10 bg-transparent text-xs font-black text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    style={{ color: macro.col }}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleItemChange(idx, macro.key, parseFloat(item[macro.key] || 0) + (macro.key === 'calories' ? 10 : 1))}
+                                                                    className="w-4 h-4 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 dark:text-slate-300 transition-colors shrink-0"
+                                                                >
+                                                                    <Plus size={10} strokeWidth={4} />
+                                                                </button>
+                                                            </div>
                                                         ) : (
                                                             <span className="text-xs font-black" style={{ color: macro.col }}>
                                                                 {parseFloat(Number(item[macro.key] || 0).toFixed(1))}
@@ -553,13 +645,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 className="sticky bottom-0 lg:static bg-[var(--color-bg-card)]/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none -mx-5 px-5 py-6 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] flex flex-col-reverse sm:flex-row gap-4 z-40"
                              >
                                 <div className="flex flex-1 gap-2">
-                                    <Button type="button" variant="outline" className="flex-1 h-12 lg:h-auto rounded-2xl font-black uppercase tracking-widest text-[10px] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
+                                    <Button type="button" variant="outline" className="flex-1 h-12 lg:h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
                                         Dismiss
                                     </Button>
                                     <Button 
                                         type="button" 
                                         variant="outline" 
-                                        className="flex-1 h-12 lg:h-auto rounded-2xl font-black uppercase tracking-widest text-[10px] text-red-500 border-red-500/20 dark:border-red-500/40 hover:bg-red-500/10 transition-all" 
+                                        className="flex-1 h-12 lg:h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-red-500 border-red-500/20 dark:border-red-500/40 hover:bg-red-500/10 transition-all" 
                                         onClick={handleReject}
                                         disabled={loading}
                                     >
@@ -569,14 +661,14 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 <div className="flex-[2] flex gap-2">
                                     <Button
                                         onClick={handleSaveDraft}
-                                        className="flex-1 h-12 lg:h-auto rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl transition-all border-none"
+                                        className="flex-1 h-12 lg:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-xl transition-all border-none"
                                         disabled={loading}
                                     >
                                         Draft
                                     </Button>
                                     <Button
                                         onClick={handleApprove}
-                                        className="flex-[1.5] h-12 lg:h-auto rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none animate-pulse-slow"
+                                        className="flex-[1.5] h-12 lg:h-14 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none animate-pulse-slow"
                                         disabled={loading}
                                     >
                                         {loading ? 'Processing...' : 'Verify Meal'}
@@ -602,14 +694,19 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             setZoomScale(s => Math.min(Math.max(0.5, s + zoomDelta), 4));
                         }}
                     >
+                        {/* Hint pill */}
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/15 px-4 py-1.5 rounded-full z-[110] pointer-events-none">
+                            <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Flick up or down to dismiss</p>
+                        </div>
+
                         {/* Zoom Controls */}
                         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-2xl flex items-center gap-4 z-[110]">
                             <button onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
-                                <Activity size={20} className="rotate-180" /> {/* Zoom Out Mockup */}
+                                <Minus size={18} />
                             </button>
                             <span className="text-white font-black text-xs min-w-[60px] text-center">{Math.round(zoomScale * 100)}%</span>
                             <button onClick={() => setZoomScale(s => Math.min(3, s + 0.25))} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
-                                <Activity size={20} /> {/* Zoom In Mockup */}
+                                <Plus size={18} />
                             </button>
                             <div className="w-[1px] h-6 bg-white/20 mx-2" />
                             <button onClick={() => { setZoomScale(1); setPreviewImage(null); }} className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors">
@@ -617,16 +714,26 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </button>
                         </div>
 
+                        {/* #3: Draggable image — flick up/down to dismiss */}
                         <motion.div
                             drag
-                            dragConstraints={{ left: -500, right: 500, top: -500, bottom: 500 }}
+                            dragConstraints={{ left: -400, right: 400, top: -400, bottom: 400 }}
+                            dragElastic={0.2}
                             style={{ scale: zoomScale }}
                             className="relative cursor-grab active:cursor-grabbing"
+                            onDragEnd={(_, info) => {
+                                const { velocity, offset } = info;
+                                // Dismiss if flicked fast enough OR dragged far enough vertically
+                                if (Math.abs(velocity.y) > 500 || Math.abs(offset.y) > 160) {
+                                    setZoomScale(1);
+                                    setPreviewImage(null);
+                                }
+                            }}
                         >
                             <img
                                 src={previewImage}
                                 alt="Preview"
-                                className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none"
+                                className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none select-none"
                             />
                         </motion.div>
                     </motion.div>

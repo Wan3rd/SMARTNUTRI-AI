@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation, useSearchParams } from 'react-rout
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -139,9 +139,9 @@ const Sparkline = ({ data, color, dataKey }) => (
 
 const AutocompleteMatrixCell = ({ value, onChange, item }) => {
     const [isFocused, setIsFocused] = useState(false);
-    
+
     const baseSuggestions = {
-        'vegetables': ['1/2 cup', '1 cup', '1 exchange'],   
+        'vegetables': ['1/2 cup', '1 cup', '1 exchange'],
         'fruit': ['1 pc', '1 slice', '1 exchange', '1/2 cup'],
         'milk': ['1 cup', '1/2 cup', '1 exchange', '8 oz'],
         'rice': ['1/2 cup', '1 cup', '1 exchange', '1 slice'],
@@ -152,8 +152,8 @@ const AutocompleteMatrixCell = ({ value, onChange, item }) => {
 
     // Convert value and suggestions to lowercase to safely compare
     const val = value || '';
-    const suggestions = val 
-        ? defaultSuggestions.filter(s => s.toLowerCase().includes(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase()) 
+    const suggestions = val
+        ? defaultSuggestions.filter(s => s.toLowerCase().includes(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase())
         : defaultSuggestions;
 
     return (
@@ -170,7 +170,7 @@ const AutocompleteMatrixCell = ({ value, onChange, item }) => {
             {isFocused && suggestions.length > 0 && (
                 <div className="absolute top-[80%] left-0 right-0 flex flex-wrap justify-center gap-1 mt-1 z-20 pointer-events-auto bg-white/90 dark:bg-black/90 p-1 rounded-lg shadow-xl border border-[var(--color-divider)] backdrop-blur-sm">
                     {suggestions.map(s => (
-                        <div 
+                        <div
                             key={s}
                             onMouseDown={(e) => { e.preventDefault(); onChange(s); setIsFocused(false); }}
                             className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase rounded-md cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-800/60 shadow-sm"
@@ -252,11 +252,11 @@ export default function ClientDetails() {
             const current = prev.assessment || '';
             // Check if current content is effectively empty
             const isEmpty = !current || current === '<p><br></p>' || current === '<p></p>' || current.trim() === '';
-            
+
             return {
                 ...prev,
-                assessment: isEmpty 
-                    ? templateContent 
+                assessment: isEmpty
+                    ? templateContent
                     : current + '<br/>' + templateContent
             };
         });
@@ -421,6 +421,18 @@ export default function ClientDetails() {
     const [searchParams, setSearchParams] = useSearchParams();
     const tabFromUrl = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(tabFromUrl);
+    const prevTabRef = useRef(activeTab);
+    const [tabDirection, setTabDirection] = useState(1);
+
+    const TAB_ORDER = ['overview', 'history', 'insights', 'adime', 'rules', 'notes', 'portions', 'plan'];
+
+    const setTab = (newTab) => {
+        const prevIdx = TAB_ORDER.indexOf(prevTabRef.current);
+        const newIdx = TAB_ORDER.indexOf(newTab);
+        setTabDirection(newIdx >= prevIdx ? 1 : -1);
+        prevTabRef.current = newTab;
+        setActiveTab(newTab);
+    };
 
     useEffect(() => {
         setSearchParams({ tab: activeTab }, { replace: true });
@@ -476,12 +488,12 @@ export default function ClientDetails() {
         // template.matrix is an array of objects
         // We need to merge it carefully with the current portionMatrix state
         if (!template.matrix) return;
-        
+
         const newMatrix = portionMatrix.map(row => {
             const savedRow = template.matrix.find(r => r.meal_type === row.meal_type);
             return savedRow ? { ...row, ...savedRow } : row;
         });
-        
+
         setPortionMatrix(newMatrix);
         showNotif(`Applied template: ${template.template_name}`);
     };
@@ -1714,14 +1726,14 @@ export default function ClientDetails() {
                 </div>
             )}
 
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-500">
                 <header className="flex items-center gap-4">
                     <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
                         <ArrowLeft size={24} />
                     </Button>
                     <div>
-                        <h1 className={cn("text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
-                        <p className="text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
+                        <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
+                        <p className="text-xs sm:text-base text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
                     </div>
                 </header>
 
@@ -1732,24 +1744,24 @@ export default function ClientDetails() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                    <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start w-full max-w-full">
                         {/* Left Sidebar: Profiles (Command Center) */}
-                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full", isSidebarMinimized ? "lg:w-[72px]" : "lg:w-72")}>
-                            <div className="sticky top-[72px] lg:top-8 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
+                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full", isSidebarMinimized ? "lg:w-[72px]" : "lg:w-72")}>
+                            <div className="sticky top-[72px] lg:top-8 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-2 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={cn("font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] flex items-center gap-2 transition-opacity duration-200", isSidebarMinimized ? "lg:opacity-0 lg:w-0 lg:overflow-hidden lg:m-0" : "opacity-100 w-auto")}>
                                         <Users size={14} className="text-[var(--color-primary)] shrink-0" />
                                         <span>Family Profiles</span>
                                     </h3>
-                                    <button 
-                                        onClick={() => setIsSidebarMinimized(!isSidebarMinimized)} 
+                                    <button
+                                        onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
                                         className="hidden lg:flex p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg transition-colors shrink-0"
                                         title={isSidebarMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
                                     >
                                         {isSidebarMinimized ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
                                     </button>
                                 </div>
-                                <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-hide snap-x">
+                                <div className="flex lg:flex-col gap-2 sm:gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-hide snap-x">
                                     {profiles.map(profile => {
                                         const pendingCount = allClientPendingLogs.filter(l => l.profile_id === profile.id).length;
                                         const isSelected = selectedProfile?.id === profile.id;
@@ -1758,11 +1770,12 @@ export default function ClientDetails() {
                                                 key={profile.id}
                                                 onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
                                                 className={cn(
-                                                    "h-[52px] rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 w-[200px] snap-start flex items-center gap-2.5",
+                                                    "h-[52px] rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 snap-start flex items-center",
                                                     isSelected
                                                         ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20'
                                                         : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50',
-                                                    isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center" : "lg:w-full px-3"
+                                                    "w-[52px] sm:w-[200px] justify-center sm:justify-start px-0 sm:px-3 gap-0 sm:gap-2.5",
+                                                    isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center lg:gap-0" : "lg:w-full"
                                                 )}
                                                 title={isSidebarMinimized ? profile.child_name : undefined}
                                             >
@@ -1789,7 +1802,7 @@ export default function ClientDetails() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className={cn("min-w-0 flex-1 flex flex-col justify-center", isSidebarMinimized && "lg:hidden")}>
+                                                <div className={cn("min-w-0 flex-1 flex-col justify-center hidden sm:flex", isSidebarMinimized && "lg:hidden")}>
                                                     <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
                                                         {profile.child_name}
                                                     </div>
@@ -1808,32 +1821,33 @@ export default function ClientDetails() {
                                     <button
                                         onClick={() => setIsAddProfileOpen(true)}
                                         className={cn(
-                                            "shrink-0 h-[52px] rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex items-center justify-center gap-3 snap-start",
-                                            isSidebarMinimized ? "w-[52px] lg:px-0" : "w-12 lg:w-full"
+                                            "shrink-0 h-[52px] rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex items-center justify-center snap-start",
+                                            "w-[52px] sm:w-[200px] gap-0 sm:gap-3",
+                                            isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:gap-0" : "lg:w-full"
                                         )}
                                         title={isSidebarMinimized ? "Add New Profile" : undefined}
                                     >
                                         <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform shrink-0">
                                             <Plus size={16} strokeWidth={3} />
                                         </div>
-                                        <span className={cn("text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]", isSidebarMinimized ? "hidden" : "hidden lg:block")}>Add New</span>
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] hidden sm:block", isSidebarMinimized && "lg:hidden")}>Add New</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Main Content */}
-                        <div className="flex-1 min-w-0 space-y-6">
+                        <div className="flex-1 min-w-0 w-full max-w-full space-y-6">
                             {selectedProfile && (
-                                <Card>
+                                <Card className="w-[calc(100%+2rem)] sm:w-full -mx-4 sm:mx-0 rounded-none sm:rounded-2xl border-x-0 sm:border-x overflow-hidden">
                                     <CardHeader>
-                                        <CardTitle>Profile: {selectedProfile.child_name}</CardTitle>
+                                        <CardTitle className="truncate">Profile: {selectedProfile.child_name}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         {/* --- Grouped Clinical Modules (Pillars) --- */}
                                         <div className="flex flex-col gap-6 mb-8">
                                             {/* Pillar Switcher */}
-                                            <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[2rem] border-2 border-[var(--color-divider)] flex items-center justify-between shadow-inner">
+                                            <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-[var(--color-divider)] flex flex-wrap items-center justify-center gap-1 sm:justify-between shadow-inner">
                                                 {[
                                                     { id: 'assessment', label: 'Assessment', icon: Activity, tabs: ['overview', 'history', 'insights'] },
                                                     { id: 'clinical', label: 'Clinical Care', icon: ShieldAlert, tabs: ['adime', 'rules', 'notes'] },
@@ -1851,9 +1865,9 @@ export default function ClientDetails() {
                                                     return (
                                                         <button
                                                             key={group.id}
-                                                            onClick={() => setActiveTab(group.tabs[0])}
+                                                            onClick={() => setTab(group.tabs[0])}
                                                             className={cn(
-                                                                "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-widest text-[9px] sm:text-[10px]",
+                                                                "flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-tight sm:tracking-widest text-[9px] sm:text-[10px]",
                                                                 isGroupActive
                                                                     ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10"
                                                                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
@@ -1881,7 +1895,7 @@ export default function ClientDetails() {
                                             </div>
 
                                             {/* Sub-Navigation Pills */}
-                                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1">
+                                            <div className="flex flex-wrap items-center gap-2 px-1">
                                                 {(() => {
                                                     const currentGroup = [
                                                         {
@@ -1914,7 +1928,7 @@ export default function ClientDetails() {
                                                         return (
                                                             <button
                                                                 key={tab.id}
-                                                                onClick={() => setActiveTab(tab.id)}
+                                                                onClick={() => setTab(tab.id)}
                                                                 className={cn(
                                                                     "px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-sm",
                                                                     isTabActive
@@ -1933,6 +1947,18 @@ export default function ClientDetails() {
                                                 })()}
                                             </div>
                                         </div>
+
+                                        {/* TAB SLIDE CONTAINER */}
+                                        <div className="relative overflow-hidden">
+                                        <AnimatePresence mode="wait" custom={tabDirection}>
+                                        <motion.div
+                                            key={activeTab}
+                                            custom={tabDirection}
+                                            initial={{ opacity: 0, x: tabDirection * 32 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: tabDirection * -32 }}
+                                            transition={{ duration: 0.22, ease: 'easeInOut' }}
+                                        >
 
                                         {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
                                         {(activeTab === 'adime' || activeTab === 'notes') && (
@@ -2024,7 +2050,7 @@ export default function ClientDetails() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 relative z-10">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 relative z-10">
                                                         {/* Weight Card */}
                                                         <motion.div
                                                             whileHover={{ scale: 1.02, y: -5 }}
@@ -2159,7 +2185,7 @@ export default function ClientDetails() {
                                                         {/* Allergies Card */}
                                                         <motion.div
                                                             whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="col-span-2 lg:col-span-1 p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
+                                                            className="col-span-1 sm:col-span-2 lg:col-span-1 p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
                                                         >
                                                             <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
                                                             <div className="flex flex-wrap gap-1 mt-2">
@@ -3916,80 +3942,137 @@ export default function ClientDetails() {
                                                     </div>
                                                 </div>
 
-                                                {/* PORTION GRID */}
-                                                <div className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full border-collapse min-w-[900px]">
-                                                            <thead>
-                                                                <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
-                                                                    <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                        <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
-                                                                    </th>
-
-                                                                    {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                        <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
-                                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                {/* PORTION GRID / MOBILE CARDS */}
+                                                <div className="w-full">
+                                                    {/* DESKTOP MATRIX */}
+                                                    <div className="hidden lg:block bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full border-collapse min-w-[900px]">
+                                                                <thead>
+                                                                    <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
+                                                                        <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                            <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
                                                                         </th>
+                                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                            <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
+                                                                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                                            </th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {[
+                                                                        { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
+                                                                        { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
+                                                                        { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
+                                                                        { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
+                                                                        { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
+                                                                        { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
+                                                                    ].map(item => (
+                                                                        <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
+                                                                            <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                                                                        {item.icon}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
+                                                                                        <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                            {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                                <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
+                                                                                    <AutocompleteMatrixCell
+                                                                                        value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
+                                                                                        onChange={(val) => updatePortionCell(meal, item.id, val)}
+                                                                                        item={item}
+                                                                                    />
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
                                                                     ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {[
-                                                                    { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
-                                                                    { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
-                                                                    { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
-                                                                    { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
-                                                                    { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
-                                                                    { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
-                                                                ].map(item => (
-                                                                    <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
+                                                                    {/* Special Row for Sugar */}
+                                                                    <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
                                                                         <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
                                                                             <div className="flex items-center gap-3">
-                                                                                <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
-                                                                                    {item.icon}
+                                                                                <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
+                                                                                    <AlertCircle size={14} />
                                                                                 </div>
-                                                                                <div>
-                                                                                    <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
-                                                                                    <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
-                                                                                </div>
+                                                                                <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
                                                                             </div>
                                                                         </td>
-                                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                            <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
-                                                                                <AutocompleteMatrixCell 
+                                                                        <td colSpan="5" className="p-3">
+                                                                            <textarea
+                                                                                rows={2}
+                                                                                className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
+                                                                                placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
+                                                                                value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
+                                                                                onChange={(e) => {
+                                                                                    updatePortionCell('Breakfast', 'sugar', e.target.value);
+                                                                                }}
+                                                                            />
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* MOBILE MEAL CARDS */}
+                                                    <div className="block lg:hidden space-y-4">
+                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                            <div key={meal} className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                                <div className="bg-[var(--color-bg-page)] p-3 border-b-2 border-[var(--color-divider)] text-center shadow-inner">
+                                                                    <span className="font-black text-[var(--color-primary)] uppercase tracking-widest text-[11px]">{meal}</span>
+                                                                </div>
+                                                                <div className="divide-y-2 divide-[var(--color-divider)]">
+                                                                    {[
+                                                                        { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
+                                                                        { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
+                                                                        { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
+                                                                        { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
+                                                                        { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
+                                                                        { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
+                                                                    ].map(item => (
+                                                                        <div key={item.id} className="flex items-stretch bg-white dark:bg-[#1a1a1a]">
+                                                                            <div className="flex items-center gap-2 p-3 w-1/2 border-r-2 border-[var(--color-divider)]">
+                                                                                <div className="p-1.5 bg-[var(--color-bg-page)] rounded-lg text-[var(--color-primary)] shrink-0">
+                                                                                    {item.icon}
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <div className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-tight truncate">{item.label}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="w-1/2 relative bg-[var(--color-bg-page)]/30">
+                                                                                <AutocompleteMatrixCell
                                                                                     value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
                                                                                     onChange={(val) => updatePortionCell(meal, item.id, val)}
                                                                                     item={item}
                                                                                 />
-                                                                            </td>
-                                                                        ))}
-                                                                    </tr>
-                                                                ))}
-                                                                {/* Special Row for Sugar */}
-                                                                <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
-                                                                    <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
-                                                                                <AlertCircle size={14} />
                                                                             </div>
-                                                                            <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
                                                                         </div>
-                                                                    </td>
-                                                                    <td colSpan="5" className="p-3">
-                                                                        <textarea
-                                                                            rows={2}
-                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
-                                                                            placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
-                                                                            value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
-                                                                            onChange={(e) => {
-                                                                                // For sugar, we just save it in the first row for now
-                                                                                updatePortionCell('Breakfast', 'sugar', e.target.value);
-                                                                            }}
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {/* Mobile Sugar / Limits Card */}
+                                                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[1.5rem] border-2 border-amber-200 dark:border-amber-800/30 overflow-hidden shadow-sm">
+                                                            <div className="p-3 border-b-2 border-amber-200 dark:border-amber-800/30 flex items-center justify-center gap-2">
+                                                                <AlertCircle size={14} className="text-amber-500" />
+                                                                <h4 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-[11px] text-center">Sugar / Limits</h4>
+                                                            </div>
+                                                            <div className="p-1">
+                                                                <textarea
+                                                                    rows={2}
+                                                                    className="w-full bg-transparent border-0 p-3 text-sm font-bold text-amber-900 dark:text-amber-100 focus:ring-0 outline-none placeholder:text-amber-700/40 resize-none"
+                                                                    placeholder="e.g. Limit intake of sugar, sugary products..."
+                                                                    value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
+                                                                    onChange={(e) => updatePortionCell('Breakfast', 'sugar', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -4034,6 +4117,9 @@ export default function ClientDetails() {
                                         )}
 
                                         {/* Final Closing of Tab Content Container */}
+                                        </motion.div>
+                                        </AnimatePresence>
+                                        </div>
 
                                     </CardContent>
                                 </Card>
@@ -4362,7 +4448,7 @@ export default function ClientDetails() {
                     <div className="space-y-6">
                         <div>
                             <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Template Name</label>
-                            <input 
+                            <input
                                 type="text"
                                 className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)]"
                                 placeholder="e.g. 1500 kcal Diabetic Plan"

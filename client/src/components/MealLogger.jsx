@@ -246,7 +246,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         });
 
         try {
-            const res = await api.post('/logs/analyze-item', {
+            const res = await api.post('/ai/analyze-item', {
                 name,
                 serving_unit: unit,
                 cooking_method: method
