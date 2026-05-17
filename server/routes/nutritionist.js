@@ -1087,6 +1087,53 @@ router.delete('/plan/:profileId', verifyToken, isNutritionist, async (req, res) 
     }
 });
 
+// --- Portion Templates Routes ---
+
+// GET /portion-templates - Get all templates for the nutritionist
+router.get('/portion-templates', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        const templates = await prisma.portion_templates.findMany({
+            where: { nutritionist_id: req.user.id },
+            orderBy: { created_at: 'desc' }
+        });
+        res.json(templates);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /portion-templates - Save a new template
+router.post('/portion-templates', verifyToken, isNutritionist, async (req, res) => {
+    const { template_name, matrix } = req.body;
+    try {
+        const newTemplate = await prisma.portion_templates.create({
+            data: {
+                nutritionist_id: req.user.id,
+                template_name,
+                matrix
+            }
+        });
+        res.json(newTemplate);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /portion-templates/:id - Delete a template
+router.delete('/portion-templates/:id', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        await prisma.portion_templates.delete({
+            where: { id: req.params.id }
+        });
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // --- Portion Planning Routes ---
 
 // GET /portion-plan/:profileId - Get the portion exchange matrix for a profile
@@ -1095,7 +1142,19 @@ router.get('/portion-plan/:profileId', verifyToken, async (req, res) => {
         const plans = await prisma.portion_plans.findMany({
             where: { profile_id: req.params.profileId }
         });
-        res.json(plans);
+        
+        // Clean up legacy "0" values from before the text migration
+        const cleanedPlans = plans.map(plan => {
+            const cleanPlan = { ...plan };
+            ['vegetables', 'fruit', 'milk', 'rice', 'meat', 'fat', 'sugar'].forEach(key => {
+                if (cleanPlan[key] === "0") {
+                    cleanPlan[key] = "";
+                }
+            });
+            return cleanPlan;
+        });
+
+        res.json(cleanedPlans);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -1116,32 +1175,85 @@ router.post('/portion-plan', verifyToken, isNutritionist, async (req, res) => {
                     } 
                 },
                 update: {
-                    vegetables: parseFloat(row.vegetables) || 0,
-                    fruit: parseFloat(row.fruit) || 0,
-                    milk: parseFloat(row.milk) || 0,
-                    rice: parseFloat(row.rice) || 0,
-                    meat: parseFloat(row.meat) || 0,
-                    fat: parseFloat(row.fat) || 0,
-                    sugar: row.sugar,
+                    vegetables: row.vegetables || '',
+                    fruit: row.fruit || '',
+                    milk: row.milk || '',
+                    rice: row.rice || '',
+                    meat: row.meat || '',
+                    fat: row.fat || '',
+                    sugar: row.sugar || '',
                     updated_at: new Date()
                 },
                 create: {
                     profile_id,
                     nutritionist_id: req.user.id,
                     meal_type: row.meal_type,
-                    vegetables: parseFloat(row.vegetables) || 0,
-                    fruit: parseFloat(row.fruit) || 0,
-                    milk: parseFloat(row.milk) || 0,
-                    rice: parseFloat(row.rice) || 0,
-                    meat: parseFloat(row.meat) || 0,
-                    fat: parseFloat(row.fat) || 0,
-                    sugar: row.sugar
+                    vegetables: row.vegetables || '',
+                    fruit: row.fruit || '',
+                    milk: row.milk || '',
+                    rice: row.rice || '',
+                    meat: row.meat || '',
+                    fat: row.fat || '',
+                    sugar: row.sugar || ''
                 }
             })
         );
 
         await prisma.$transaction(operations);
         res.json({ message: 'Portion plan updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// --- Adherence Tracking Routes ---
+
+// GET /adherence/:profileId - Get adherence logs for a profile on a specific date
+router.get('/adherence/:profileId', verifyToken, async (req, res) => {
+    const { date } = req.query; // format: YYYY-MM-DD
+    try {
+        if (!date) return res.status(400).json({ message: 'Date is required' });
+
+        const logs = await prisma.daily_adherence_logs.findMany({
+            where: {
+                profile_id: req.params.profileId,
+                date: new Date(date)
+            }
+        });
+        res.json(logs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /adherence/:profileId - Toggle adherence for a specific meal and category
+router.post('/adherence/:profileId', verifyToken, async (req, res) => {
+    const { date, meal_type, category, completed } = req.body;
+    try {
+        const log = await prisma.daily_adherence_logs.upsert({
+            where: {
+                profile_id_date_meal_type_category: {
+                    profile_id: req.params.profileId,
+                    date: new Date(date),
+                    meal_type,
+                    category
+                }
+            },
+            update: {
+                completed,
+                updated_at: new Date()
+            },
+            create: {
+                profile_id: req.params.profileId,
+                date: new Date(date),
+                meal_type,
+                category,
+                completed
+            }
+        });
+        res.json(log);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });

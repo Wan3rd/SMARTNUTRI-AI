@@ -44,6 +44,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     const parentNavItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: Calendar, label: 'Calendar', path: '/calendar' },
+        { icon: Utensils, label: 'Daily Plan', path: '/daily-plan' },
         { icon: History, label: 'Meal History', path: '/meal-history' },
         { icon: ChefHat, label: 'AI Kitchen', path: '/ai-kitchen' },
         { icon: Utensils, label: 'Meals', path: '/meals' },

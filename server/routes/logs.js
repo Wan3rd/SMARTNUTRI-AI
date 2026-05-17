@@ -23,7 +23,10 @@ cloudinary.config({
 
 // Helper: Call Gemini Vision
 async function analyzeImage(imageBase64) {
-    const prompt = `Analyze this meal photo using these steps:
+    const prompt = `Analyze this image.
+    IMPORTANT: First, determine if there is actually food or beverages in this image. If there is NO food or beverage (e.g., it is a photo of a dog, a car, or an empty room), return exactly this JSON: { "error": "NO_FOOD_DETECTED" } and nothing else.
+    
+    If there IS food, use these steps:
     STEP A: Identify the plate/container size and its diameter.
     STEP B: Identify reference objects (utensils like a spoon or fork) to establish a 3D scale.
     STEP C: Compare the food volume to the reference objects (e.g., "The rice mound is roughly 2.5 spoon-widths wide").
@@ -32,14 +35,14 @@ async function analyzeImage(imageBase64) {
     For each edible item, provide a flat JSON object with:
        - 'visual_reasoning': A short sentence describing the Step A-C analysis for this item (e.g. "Small bowl roughly fist-sized compared to spoon, suggesting 1 cup").
        - 'name': Dish or item name.
-       - 'cooking_method': Determine the method (Raw, Baked, Fried, etc.).
+       - 'cooking_method': Determine the method. You MUST choose exactly one from this strict list: ["Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Broiled", "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached", "Roasted", "Sautéed / Stir-fried", "Seared", "Simmered", "Smoked", "Sous Vide", "Steamed", "Unknown"]. If inapplicable, use "Unknown".
        - 'measure_qty': Number indicating quantity. 
          RICE/BOWLS: If the food is in a standard small bowl (fist-sized), it is EXACTLY 1.0 Cup. Do not estimate 1.5 unless the bowl is visibly deep or oversized. Be conservative.
        - 'serving_unit': Must be one of: 'Cup', 'Spoon', 'Sandok', 'Bowl', 'Slice', 'Piece', 'Plate', or 'Serving'. Rice MUST be 'Cup'.
        - 'serving_weight_g': Estimated weight.
        - 'calories', 'protein_g', 'carbs_g', 'fat_g': Estimated macros.
     
-    Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method', and a 'nutrition' summary.
+    Return a master JSON object with an 'items' array, a top-level 'detected_cooking_method', a 'nutrition' summary, and a 'food_exchanges' object mapping to these keys: 'vegetables', 'fruit', 'milk', 'rice', 'meat', 'fat' (values must be numbers representing the number of clinical exchanges/servings consumed based on the items).
     Output ONLY valid JSON without markdown formatting.`;
 
     try {
@@ -91,6 +94,12 @@ router.post('/analyze', verifyToken, upload.single('image'), async (req, res) =>
         const analysis = await analyzeImage(base64Image);
 
         if (analysis.error) {
+            if (analysis.error === "NO_FOOD_DETECTED") {
+                return res.status(400).json({
+                    message: "No food detected in the image. Please upload a clear photo of a meal.",
+                    error: 'NO_FOOD_DETECTED'
+                });
+            }
             return res.status(500).json({
                 message: 'Food analysis failed. Please check your AI API key.',
                 error: 'AI_ANALYSIS_FAILED'
@@ -179,6 +188,7 @@ router.post('/', verifyToken, async (req, res) => {
         // 2. Recalculate using DOST-FNRI Local FCT mappings
         const { recalculateMealTotals } = await import('../utils/fct.js');
         const finalizedAnalysis = recalculateMealTotals(allItems, ai_analysis.plate_waste);
+        finalizedAnalysis.food_exchanges = ai_analysis.food_exchanges;
 
         // 2. Fetch today's existing meal logs to calculate `dailyTotals`
         const logDateStr = (logged_at ? new Date(logged_at) : new Date()).toISOString().split('T')[0];
@@ -252,6 +262,49 @@ router.post('/', verifyToken, async (req, res) => {
                 logged_at: logged_at ? new Date(logged_at) : new Date()
             }
         });
+
+        // 5. Auto-fulfill Adherence Logs based on AI Food Exchanges
+        if (finalizedAnalysis.food_exchanges && meal_category) {
+            let mappedMealType = 'Breakfast';
+            const logHour = logged_at ? new Date(logged_at).getHours() : new Date().getHours();
+            
+            if (meal_category.toLowerCase() === 'breakfast') mappedMealType = 'Breakfast';
+            else if (meal_category.toLowerCase() === 'lunch') mappedMealType = 'Lunch';
+            else if (meal_category.toLowerCase() === 'dinner') mappedMealType = 'Dinner';
+            else if (meal_category.toLowerCase().includes('snack')) {
+                mappedMealType = logHour < 14 ? 'AM Snack' : 'PM Snack';
+            }
+
+            const logDate = (logged_at ? new Date(logged_at) : new Date()).toISOString().split('T')[0];
+
+            const adherenceOperations = [];
+            for (const cat of ['vegetables', 'fruit', 'milk', 'rice', 'meat', 'fat']) {
+                if (finalizedAnalysis.food_exchanges[cat] > 0) {
+                    adherenceOperations.push(prisma.daily_adherence_logs.upsert({
+                        where: {
+                            profile_id_date_meal_type_category: {
+                                profile_id: profile_id,
+                                date: new Date(logDate),
+                                meal_type: mappedMealType,
+                                category: cat
+                            }
+                        },
+                        update: { completed: true, updated_at: new Date() },
+                        create: {
+                            profile_id: profile_id,
+                            date: new Date(logDate),
+                            meal_type: mappedMealType,
+                            category: cat,
+                            completed: true
+                        }
+                    }));
+                }
+            }
+            if (adherenceOperations.length > 0) {
+                // Execute without blocking the log creation return
+                Promise.all(adherenceOperations).catch(e => console.error("Auto-fulfill error:", e));
+            }
+        }
 
         res.status(201).json(newLog);
 

@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, 
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets } from 'lucide-react';
+import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -28,15 +28,39 @@ const quillStyles = `
     display: flex !important;
     align-items: center !important;
   }
+  .ql-snow .ql-picker {
+    color: var(--color-text-main) !important;
+  }
+  .ql-snow .ql-picker-options {
+    background-color: var(--color-bg-card) !important;
+    border: 1px solid var(--color-divider) !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    z-index: 100 !important;
+  }
+  .ql-snow .ql-picker-item {
+    color: var(--color-text-main) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+  }
+  .ql-snow .ql-picker-item:hover {
+    background-color: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+  }
+  .ql-snow .ql-picker-label {
+    color: var(--color-text-main) !important;
+    font-weight: 700 !important;
+  }
+  .ql-snow .ql-picker-label:hover {
+    color: var(--color-primary) !important;
+  }
   .ql-snow .ql-stroke {
     stroke: var(--color-text-main) !important;
     stroke-width: 2.5px !important;
   }
   .ql-snow .ql-fill {
     fill: var(--color-text-main) !important;
-  }
-  .ql-snow .ql-picker {
-    color: var(--color-text-main) !important;
   }
   .ql-snow.ql-toolbar button:hover .ql-stroke {
     stroke: var(--color-primary) !important;
@@ -67,6 +91,15 @@ const quillStyles = `
   }
   .quill-dark .ql-editor.ql-blank::before {
     color: rgba(255,255,255,0.4) !important;
+  }
+  
+  /* Reset margins for all elements to avoid gaps, especially at the top */
+  .ql-editor > * {
+    margin-top: 0 !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .ql-editor > *:last-child {
+    margin-bottom: 0 !important;
   }
 `;
 
@@ -104,6 +137,53 @@ const Sparkline = ({ data, color, dataKey }) => (
     </div>
 );
 
+const AutocompleteMatrixCell = ({ value, onChange, item }) => {
+    const [isFocused, setIsFocused] = useState(false);
+    
+    const baseSuggestions = {
+        'vegetables': ['1/2 cup', '1 cup', '1 exchange'],   
+        'fruit': ['1 pc', '1 slice', '1 exchange', '1/2 cup'],
+        'milk': ['1 cup', '1/2 cup', '1 exchange', '8 oz'],
+        'rice': ['1/2 cup', '1 cup', '1 exchange', '1 slice'],
+        'meat': ['30g', '40g', '1 exchange', '1 oz'],
+        'fat': ['1 tsp', '1 tbsp', '1 exchange']
+    };
+    const defaultSuggestions = baseSuggestions[item.id] || ['1 exchange', '1/2 cup'];
+
+    // Convert value and suggestions to lowercase to safely compare
+    const val = value || '';
+    const suggestions = val 
+        ? defaultSuggestions.filter(s => s.toLowerCase().includes(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase()) 
+        : defaultSuggestions;
+
+    return (
+        <div className="flex flex-col items-center relative w-full h-full min-h-[40px]">
+            <textarea
+                rows={2}
+                className="w-full h-full bg-transparent border-0 text-center text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-white/10 resize-none overflow-y-auto scrollbar-hide py-2"
+                placeholder="e.g. 1/2 cup"
+                value={val}
+                onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+            />
+            {isFocused && suggestions.length > 0 && (
+                <div className="absolute top-[80%] left-0 right-0 flex flex-wrap justify-center gap-1 mt-1 z-20 pointer-events-auto bg-white/90 dark:bg-black/90 p-1 rounded-lg shadow-xl border border-[var(--color-divider)] backdrop-blur-sm">
+                    {suggestions.map(s => (
+                        <div 
+                            key={s}
+                            onMouseDown={(e) => { e.preventDefault(); onChange(s); setIsFocused(false); }}
+                            className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase rounded-md cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-800/60 shadow-sm"
+                        >
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 
 export default function ClientDetails() {
@@ -117,6 +197,7 @@ export default function ClientDetails() {
 
     const [profiles, setProfiles] = useState([]);
     const [selectedProfile, setSelectedProfile] = useState(null);
+    const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
     const [focusedField, setFocusedField] = useState(null);
     const editorRefs = useRef({});
     const [rules, setRules] = useState([]);
@@ -147,6 +228,57 @@ export default function ClientDetails() {
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [showLastAdimeReference, setShowLastAdimeReference] = useState(true);
 
+    const CLINICAL_ADIME_TEMPLATES = [
+        {
+            name: "Clinical ADIME (Full)",
+            content: `<h3><strong>[A] ASSESSMENT</strong></h3><p><strong>Anthropometrics:</strong> [Ht/Length, Wt, BMI, HC]. Z-scores: [WFA, HFA, WFL/BFA]. Growth Trends: [Velocity, Pattern]</p><p><strong>Biochemical:</strong> [Labs: Albumin, Iron, Vitamin D, etc.]</p><p><strong>Clinical:</strong> [Physical Findings: Muscle/Fat Wasting, Hair/Skin/Nails]</p><p><strong>Dietary:</strong> [Current Intake: Breast/Formula/Solids. Feeding Skills. Allergies/Intolerances]</p><br/><h3><strong>[D] DIAGNOSIS (PES Statement)</strong></h3><p><strong>Problem:</strong> [Nutrition Diagnosis Term]</p><p><strong>Etiology:</strong> [Related to...]</p><p><strong>Signs & Symptoms:</strong> [As evidenced by... quantifiable Assessment data]</p><br/><h3><strong>[I] INTERVENTION</strong></h3><p><strong>Nutrition Prescription:</strong> [Kcal/kg, Protein/kg, Fluid needs]. [Texture/Modifications]</p><p><strong>Plan:</strong> [SMART Goals, Education/Counseling, Referrals]</p><br/><h3><strong>[M] MONITORING &amp; [E] EVALUATION</strong></h3><p><strong>Indicators:</strong> [Weight change, Intake volume, Lab improvements]</p><p><strong>Timeline:</strong> [Next follow-up date]</p>`
+        },
+        {
+            name: "PES Statement Only",
+            content: `<p><strong>Nutrition Diagnosis (PES):</strong> [Nutrition Problem] related to [Etiology] as evidenced by [Signs &amp; Symptoms / Quantifiable Assessment Data].</p>`
+        },
+        {
+            name: "Nutrition Prescription",
+            content: `<h3><strong>NUTRITION PRESCRIPTION</strong></h3><p><strong>Energy Goals:</strong> [Kcal/day or Kcal/kg]</p><p><strong>Protein Goals:</strong> [g/day or g/kg]</p><p><strong>Fluid Needs:</strong> [ml/day]</p><p><strong>Instructions:</strong> [Caregiver education, feeding schedule, or specific formula recipes]</p>`
+        },
+        {
+            name: "Clinical Follow-up",
+            content: `<h3><strong>PROGRESS REVIEW</strong></h3><p><strong>Monitoring:</strong> [Changes in Weight/Length Z-scores since last visit]</p><p><strong>Evaluation:</strong> [Evaluation of intake vs. prescription]</p><p><strong>Intervention Updates:</strong> [Modified goals/actions]</p><p><strong>Next Steps:</strong> [Plan for next follow-up visit]</p>`
+        }
+    ];
+
+    const handleApplyAdimeTemplate = (templateContent) => {
+        setNewAdime(prev => {
+            const current = prev.assessment || '';
+            // Check if current content is effectively empty
+            const isEmpty = !current || current === '<p><br></p>' || current === '<p></p>' || current.trim() === '';
+            
+            return {
+                ...prev,
+                assessment: isEmpty 
+                    ? templateContent 
+                    : current + '<br/>' + templateContent
+            };
+        });
+        showNotif("Clinical template applied");
+    };
+
+    const handleCopyLastAdime = () => {
+        if (adimeNotes.length === 0) {
+            showNotif("No historical records found to copy", "error");
+            return;
+        }
+        const lastNote = adimeNotes[0];
+        setNewAdime({
+            assessment: lastNote.assessment || '',
+            diagnosis: lastNote.diagnosis || '',
+            intervention: lastNote.intervention || '',
+            monitoring: lastNote.monitoring || '',
+            evaluation: lastNote.evaluation || ''
+        });
+        showNotif("Copied forward from last record");
+    };
+
     const stripHtml = (html) => {
         const tmp = document.createElement("DIV");
         tmp.innerHTML = html;
@@ -171,6 +303,15 @@ export default function ClientDetails() {
     // --- Notes State ---
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
+    const [adimeNotes, setAdimeNotes] = useState([]);
+    const [savingAdime, setSavingAdime] = useState(false);
+    const [newAdime, setNewAdime] = useState({
+        assessment: '',
+        diagnosis: '',
+        intervention: '',
+        monitoring: '',
+        evaluation: ''
+    });
 
     const [editingRuleId, setEditingRuleId] = useState(null);
     const [editRuleForm, setEditRuleForm] = useState({
@@ -206,6 +347,76 @@ export default function ClientDetails() {
         isDestructive: true
     });
 
+    // --- Auto-Save & Optimistic UI State ---
+    const [syncStatus, setSyncStatus] = useState({ type: 'idle', lastSaved: null }); // idle, saving, saved, error
+    const [isRestored, setIsRestored] = useState({ adime: false, note: false });
+
+    // Helper: Local Storage Persistence
+    const saveDraft = (key, data) => {
+        if (!selectedProfile) return;
+        localStorage.setItem(`draft_${key}_${selectedProfile.id}`, JSON.stringify(data));
+        setSyncStatus({ type: 'saved', lastSaved: new Date() });
+    };
+
+    const loadDraft = (key) => {
+        if (!selectedProfile) return null;
+        const saved = localStorage.getItem(`draft_${key}_${selectedProfile.id}`);
+        return saved ? JSON.parse(saved) : null;
+    };
+
+    const clearDraft = (key) => {
+        if (!selectedProfile) return;
+        localStorage.removeItem(`draft_${key}_${selectedProfile.id}`);
+    };
+
+    // Auto-Save Effect for ADIME
+    useEffect(() => {
+        if (!selectedProfile || isInitialSync) return;
+
+        const hasContent = Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0);
+        if (!hasContent) return;
+
+        setSyncStatus({ type: 'saving', lastSaved: null });
+        const timer = setTimeout(() => {
+            saveDraft('adime', newAdime);
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [newAdime]);
+
+    // Auto-Save Effect for Progress Notes
+    useEffect(() => {
+        if (!selectedProfile || isInitialSync) return;
+        if (!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0) return;
+
+        setSyncStatus({ type: 'saving', lastSaved: null });
+        const timer = setTimeout(() => {
+            saveDraft('note', newNote);
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [newNote]);
+
+    // Restore Drafts on Profile Change
+    useEffect(() => {
+        if (selectedProfile) {
+            const adimeDraft = loadDraft('adime');
+            const noteDraft = loadDraft('note');
+
+            if (adimeDraft && !isRestored.adime) {
+                setNewAdime(adimeDraft);
+                setIsRestored(prev => ({ ...prev, adime: true }));
+            }
+            if (noteDraft && !isRestored.note) {
+                setNewNote(noteDraft);
+                setIsRestored(prev => ({ ...prev, note: true }));
+            }
+
+            // Reset restoration flags if switching profiles (optional, but keep it for now)
+            setIsRestored({ adime: !!adimeDraft, note: !!noteDraft });
+        }
+    }, [selectedProfile?.id]);
+
     // --- Meal Planner & Tab State ---
     const [searchParams, setSearchParams] = useSearchParams();
     const tabFromUrl = searchParams.get('tab') || 'overview';
@@ -216,13 +427,78 @@ export default function ClientDetails() {
     }, [activeTab, setSearchParams]);
     const [mealPlan, setMealPlan] = useState([]);
     const [portionMatrix, setPortionMatrix] = useState([
-        { meal_type: 'Breakfast', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-        { meal_type: 'AM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-        { meal_type: 'Lunch', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-        { meal_type: 'PM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-        { meal_type: 'Dinner', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+        { meal_type: 'Breakfast', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+        { meal_type: 'AM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+        { meal_type: 'Lunch', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+        { meal_type: 'PM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+        { meal_type: 'Dinner', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
     ]);
     const [isSavingPortions, setIsSavingPortions] = useState(false);
+    const [portionTemplates, setPortionTemplates] = useState([]);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState("");
+    const [templateToDelete, setTemplateToDelete] = useState(null);
+
+    useEffect(() => {
+        fetchPortionTemplates();
+    }, []);
+
+    const fetchPortionTemplates = async () => {
+        try {
+            const res = await api.get('/nutritionist/portion-templates');
+            setPortionTemplates(res.data);
+        } catch (err) {
+            console.error("Failed to fetch portion templates", err);
+        }
+    };
+
+    const handleSaveTemplate = async () => {
+        if (!newTemplateName.trim()) {
+            showNotif("Please enter a template name", "error");
+            return;
+        }
+        try {
+            const res = await api.post('/nutritionist/portion-templates', {
+                template_name: newTemplateName,
+                matrix: portionMatrix
+            });
+            setPortionTemplates([res.data, ...portionTemplates]);
+            setIsTemplateModalOpen(false);
+            setNewTemplateName("");
+            showNotif("Template saved successfully");
+        } catch (err) {
+            console.error(err);
+            showNotif("Failed to save template", "error");
+        }
+    };
+
+    const applyPortionTemplate = (template) => {
+        // template.matrix is an array of objects
+        // We need to merge it carefully with the current portionMatrix state
+        if (!template.matrix) return;
+        
+        const newMatrix = portionMatrix.map(row => {
+            const savedRow = template.matrix.find(r => r.meal_type === row.meal_type);
+            return savedRow ? { ...row, ...savedRow } : row;
+        });
+        
+        setPortionMatrix(newMatrix);
+        showNotif(`Applied template: ${template.template_name}`);
+    };
+
+    const executeDeleteTemplate = async () => {
+        if (!templateToDelete) return;
+        try {
+            await api.delete(`/nutritionist/portion-templates/${templateToDelete.id}`);
+            setPortionTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
+            showNotif("Template deleted");
+        } catch (err) {
+            console.error(err);
+            showNotif("Failed to delete template", "error");
+        } finally {
+            setTemplateToDelete(null);
+        }
+    };
 
     useEffect(() => {
         if (selectedProfile) {
@@ -243,11 +519,11 @@ export default function ClientDetails() {
             } else {
                 // Reset to default if no plan exists
                 setPortionMatrix([
-                    { meal_type: 'Breakfast', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-                    { meal_type: 'AM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-                    { meal_type: 'Lunch', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-                    { meal_type: 'PM Snack', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
-                    { meal_type: 'Dinner', vegetables: 0, fruit: 0, milk: 0, rice: 0, meat: 0, fat: 0, sugar: '' },
+                    { meal_type: 'Breakfast', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+                    { meal_type: 'AM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+                    { meal_type: 'Lunch', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+                    { meal_type: 'PM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+                    { meal_type: 'Dinner', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
                 ]);
             }
         } catch (err) {
@@ -298,17 +574,6 @@ export default function ClientDetails() {
     const handlePrevWeek = () => setCurrentWeekStart(prev => subWeeks(prev, 1));
     const handleNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1));
     const handleThisWeek = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
-
-    // --- ADIME Notes State ---
-    const [adimeNotes, setAdimeNotes] = useState([]);
-    const [newAdime, setNewAdime] = useState({
-        assessment: '',
-        diagnosis: '',
-        intervention: '',
-        monitoring: '',
-        evaluation: ''
-    });
-    const [savingAdime, setSavingAdime] = useState(false);
 
     // --- Growth State ---
     const [growthLogs, setGrowthLogs] = useState([]);
@@ -855,23 +1120,45 @@ export default function ClientDetails() {
         }
 
         setSavingAdime(true);
+
+        // Truly Optimistic: Create temp note and clear inputs immediately
+        const tempId = `temp-${Date.now()}`;
+        const tempNote = {
+            id: tempId,
+            ...newAdime,
+            created_at: new Date().toISOString(),
+            is_optimistic: true
+        };
+
+        setAdimeNotes(prev => [tempNote, ...prev]);
+        const backupData = { ...newAdime };
+
+        setNewAdime({
+            assessment: '',
+            diagnosis: '',
+            intervention: '',
+            monitoring: '',
+            evaluation: ''
+        });
+        clearDraft('adime');
+
         try {
-            await api.post('/nutritionist/adime-notes', {
+            const res = await api.post('/nutritionist/adime-notes', {
                 profile_id: selectedProfile.id,
-                ...newAdime
+                ...backupData
             });
-            fetchAdimeNotes(selectedProfile.id);
-            setNewAdime({
-                assessment: '',
-                diagnosis: '',
-                intervention: '',
-                monitoring: '',
-                evaluation: ''
-            });
+
+            // Replace temporary note with real server response
+            setAdimeNotes(prev => prev.map(n => n.id === tempId ? res.data : n));
             showNotif("Clinical note saved!");
+            setSyncStatus({ type: 'idle', lastSaved: null });
         } catch (err) {
             console.error("Failed to add clinical note", err);
             showNotif("Failed to save note", "error");
+            // Rollback
+            setAdimeNotes(prev => prev.filter(n => n.id !== tempId));
+            setNewAdime(backupData);
+            setSyncStatus({ type: 'error', lastSaved: null });
         } finally {
             setSavingAdime(false);
         }
@@ -898,46 +1185,70 @@ export default function ClientDetails() {
     }, [profiles]);
 
     const handleGenerateParentGuide = () => {
+        const latestNote = adimeNotes[0];
+        if (!latestNote) {
+            showNotif("No clinical record found to generate report", "error");
+            return;
+        }
+
         const printWindow = window.open('', '_blank');
         const content = `
             <html>
                 <head>
                     <title>SmartNutri-AI Clinical Report - ${selectedProfile.child_name}</title>
                     <style>
-                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
-                        .header { border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 40px; }
-                        .title { font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
-                        .meta { margin-top: 10px; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-                        .section { margin-bottom: 30px; }
-                        .section-title { font-size: 14px; font-weight: 900; color: #4f46e5; text-transform: uppercase; margin-bottom: 15px; border-left: 4px solid #4f46e5; padding-left: 10px; }
-                        .card { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
-                        .advice { font-size: 14px; line-height: 1.6; color: #334155; }
-                        .footer { margin-top: 50px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; background: #fff; }
+                        .header { border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+                        .title { font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #1e293b; }
+                        .meta { margin-top: 10px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+                        .section { margin-bottom: 40px; }
+                        .section-title { font-size: 14px; font-weight: 900; color: #4f46e5; text-transform: uppercase; margin-bottom: 15px; border-left: 5px solid #4f46e5; padding-left: 15px; letter-spacing: 1px; }
+                        .card { background: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+                        .clinical-content { font-size: 15px; line-height: 1.7; color: #334155; }
+                        .clinical-content h3 { font-size: 16px; font-weight: 900; color: #1e293b; margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+                        .clinical-content p { margin-bottom: 12px; }
+                        .footer { margin-top: 60px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 25px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; }
+                        .legacy-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-top: 20px; }
+                        .legacy-item { background: #fff; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1; }
+                        .legacy-label { font-size: 10px; font-weight: 900; color: #4f46e5; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.5px; }
                     </style>
                 </head>
                 <body>
                     <div class="header">
-                        <div class="title">Clinical Nutrition Report</div>
-                        <div class="meta">Patient: ${selectedProfile.child_name} | Date: ${new Date().toLocaleDateString()} | Provider ID: ${user.id}</div>
+                        <div>
+                            <div class="title">Clinical Nutrition Report</div>
+                            <div class="meta">Patient: ${selectedProfile.child_name} | Age: ${new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} yrs | ${selectedProfile.gender}</div>
+                        </div>
+                        <div class="meta" style="text-align: right;">Generated: ${new Date().toLocaleDateString()}</div>
                     </div>
                     
                     <div class="section">
-                        <div class="section-title">Current Intervention Plan</div>
-                        <div class="card advice">
-                            <strong>Diagnosis:</strong> ${adimeNotes[0]?.diagnosis || 'Stable'} <br><br>
-                            <strong>Plan:</strong> ${adimeNotes[0]?.intervention || 'Maintain current diet.'}
+                        <div class="section-title">Professional Clinical Documentation</div>
+                        <div class="card clinical-content">
+                            ${latestNote.assessment || '<em style="color: #94a3b8">No clinical assessment recorded.</em>'}
+                            
+                            ${(latestNote.diagnosis || latestNote.intervention || latestNote.monitoring || latestNote.evaluation) ? `
+                                <div class="legacy-grid">
+                                    ${latestNote.diagnosis ? `<div class="legacy-item"><span class="legacy-label">Diagnosis</span>${latestNote.diagnosis}</div>` : ''}
+                                    ${latestNote.intervention ? `<div class="legacy-item"><span class="legacy-label">Intervention</span>${latestNote.intervention}</div>` : ''}
+                                    ${latestNote.monitoring ? `<div class="legacy-item"><span class="legacy-label">Monitoring</span>${latestNote.monitoring}</div>` : ''}
+                                    ${latestNote.evaluation ? `<div class="legacy-item"><span class="legacy-label">Evaluation</span>${latestNote.evaluation}</div>` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
-                    <div class="section">
-                        <div class="section-title">Risk Pattern Summary</div>
-                        <div class="card advice">
-                            ${clinicalPatterns.map(p => `• ${p.title}: ${p.desc}`).join('<br>')}
+                    ${clinicalPatterns.length > 0 ? `
+                        <div class="section">
+                            <div class="section-title">Clinical Risk Patterns & Insights</div>
+                            <div class="card clinical-content">
+                                ${clinicalPatterns.map(p => `<div style="margin-bottom: 15px;"><strong>• ${p.title}:</strong> ${p.desc}</div>`).join('')}
+                            </div>
                         </div>
-                    </div>
+                    ` : ''}
 
                     <div class="footer">
-                        Generated by SmartNutri-AI Command Center v2.0. This is a clinical guide intended for caregiver reference.
+                        Official Clinical Documentation • SmartNutri-AI Platform v2.0 • HIPAA Compliant Data Sync
                     </div>
                     <script>window.print();</script>
                 </body>
@@ -1023,18 +1334,43 @@ export default function ClientDetails() {
         e.preventDefault();
         if (!newNote.trim()) return;
 
+        setSavingNote(true);
+
+        // Optimistic UI: Create temporary note
+        const tempNote = {
+            id: Date.now(),
+            content: newNote,
+            created_at: new Date().toISOString(),
+            nutritionist_id: user.id,
+            client_id: selectedProfile.id,
+            is_optimistic: true
+        };
+
+        setNotes(prev => [tempNote, ...prev]);
+        const originalContent = newNote;
+        setNewNote('');
+        clearDraft('note');
+
         try {
-            await api.post('/notes', {
+            const res = await api.post('/notes', {
                 nutritionist_id: user.id,
                 client_id: selectedProfile.id,
-                content: newNote
+                content: originalContent
             });
-            setNewNote('');
-            fetchNotes(selectedProfile.id);
-            showNotif("Clinical observation added successfully", "success");
+
+            // Replace optimistic note with real one
+            setNotes(prev => prev.map(n => n.id === tempNote.id ? res.data : n));
+            showNotif("Progress note added");
+            setSyncStatus({ type: 'idle', lastSaved: null });
         } catch (err) {
-            console.error("Error adding note", err);
-            showNotif("Failed to save observation note", "error");
+            console.error("Failed to add note", err);
+            showNotif("Failed to save note", "error");
+            // Rollback optimistic update
+            setNotes(prev => prev.filter(n => n.id !== tempNote.id));
+            setNewNote(originalContent);
+            setSyncStatus({ type: 'error', lastSaved: null });
+        } finally {
+            setSavingNote(false);
         }
     };
 
@@ -1224,7 +1560,7 @@ export default function ClientDetails() {
             const res = await api.get(`/nutritionist/clients/${clientId}/profiles`);
             const data = res.data;
             setProfiles(data);
-            
+
             if (data.length > 0) {
                 setSelectedProfile(prev => {
                     // Maintain current selection if it still exists in the refreshed list
@@ -1396,14 +1732,23 @@ export default function ClientDetails() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <div className="flex flex-col lg:flex-row gap-8 items-start">
                         {/* Left Sidebar: Profiles (Command Center) */}
-                        <div className="lg:col-span-1">
+                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full", isSidebarMinimized ? "lg:w-[72px]" : "lg:w-72")}>
                             <div className="sticky top-[72px] lg:top-8 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
-                                <h3 className="font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] mb-4 flex items-center gap-2">
-                                    <Users size={14} className="text-[var(--color-primary)]" />
-                                    Family Profiles
-                                </h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={cn("font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] flex items-center gap-2 transition-opacity duration-200", isSidebarMinimized ? "lg:opacity-0 lg:w-0 lg:overflow-hidden lg:m-0" : "opacity-100 w-auto")}>
+                                        <Users size={14} className="text-[var(--color-primary)] shrink-0" />
+                                        <span>Family Profiles</span>
+                                    </h3>
+                                    <button 
+                                        onClick={() => setIsSidebarMinimized(!isSidebarMinimized)} 
+                                        className="hidden lg:flex p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg transition-colors shrink-0"
+                                        title={isSidebarMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
+                                    >
+                                        {isSidebarMinimized ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                                    </button>
+                                </div>
                                 <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-hide snap-x">
                                     {profiles.map(profile => {
                                         const pendingCount = allClientPendingLogs.filter(l => l.profile_id === profile.id).length;
@@ -1413,11 +1758,13 @@ export default function ClientDetails() {
                                                 key={profile.id}
                                                 onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
                                                 className={cn(
-                                                    "h-[52px] px-3 rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 w-[200px] lg:w-full snap-start flex items-center gap-2.5",
+                                                    "h-[52px] rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 w-[200px] snap-start flex items-center gap-2.5",
                                                     isSelected
                                                         ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20'
-                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50'
+                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50',
+                                                    isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center" : "lg:w-full px-3"
                                                 )}
+                                                title={isSidebarMinimized ? profile.child_name : undefined}
                                             >
                                                 {pendingCount > 0 && (
                                                     <div className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
@@ -1442,7 +1789,7 @@ export default function ClientDetails() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                                <div className={cn("min-w-0 flex-1 flex flex-col justify-center", isSidebarMinimized && "lg:hidden")}>
                                                     <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
                                                         {profile.child_name}
                                                     </div>
@@ -1460,19 +1807,23 @@ export default function ClientDetails() {
                                     })}
                                     <button
                                         onClick={() => setIsAddProfileOpen(true)}
-                                        className="shrink-0 w-12 lg:w-full h-[52px] rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex items-center justify-center gap-3 snap-start"
+                                        className={cn(
+                                            "shrink-0 h-[52px] rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex items-center justify-center gap-3 snap-start",
+                                            isSidebarMinimized ? "w-[52px] lg:px-0" : "w-12 lg:w-full"
+                                        )}
+                                        title={isSidebarMinimized ? "Add New Profile" : undefined}
                                     >
-                                        <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                        <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform shrink-0">
                                             <Plus size={16} strokeWidth={3} />
                                         </div>
-                                        <span className="hidden lg:block text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]">Add New</span>
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)]", isSidebarMinimized ? "hidden" : "hidden lg:block")}>Add New</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Main Content */}
-                        <div className="lg:col-span-3 space-y-6">
+                        <div className="flex-1 min-w-0 space-y-6">
                             {selectedProfile && (
                                 <Card>
                                     <CardHeader>
@@ -1490,7 +1841,7 @@ export default function ClientDetails() {
                                                 ].map(group => {
                                                     const isGroupActive = group.tabs.includes(activeTab);
                                                     const GroupIcon = group.icon;
-                                                    
+
                                                     // Count pending logs in this group for the badge
                                                     let groupBadge = 0;
                                                     if (group.id === 'assessment') {
@@ -1503,23 +1854,23 @@ export default function ClientDetails() {
                                                             onClick={() => setActiveTab(group.tabs[0])}
                                                             className={cn(
                                                                 "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-widest text-[9px] sm:text-[10px]",
-                                                                isGroupActive 
-                                                                    ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10" 
+                                                                isGroupActive
+                                                                    ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10"
                                                                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                                                             )}
                                                         >
                                                             <GroupIcon size={14} className={isGroupActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"} />
                                                             <span className="hidden sm:inline">{group.label}</span>
                                                             <span className="sm:hidden">{group.label.split(' ')[0]}</span>
-                                                            
+
                                                             {groupBadge > 0 && (
                                                                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[7px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--color-bg-page)] animate-pulse shadow-md">
                                                                     {groupBadge}
                                                                 </span>
                                                             )}
-                                                            
+
                                                             {isGroupActive && (
-                                                                <motion.div 
+                                                                <motion.div
                                                                     layoutId="pillar-bg"
                                                                     className="absolute inset-0 bg-[var(--color-primary)]/5 rounded-[1.5rem] z-[-1]"
                                                                 />
@@ -1533,20 +1884,26 @@ export default function ClientDetails() {
                                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1">
                                                 {(() => {
                                                     const currentGroup = [
-                                                        { id: 'assessment', label: 'Assessment', tabs: [
-                                                            { id: 'overview', label: 'Overview', icon: Eye },
-                                                            { id: 'history', label: 'Log History', icon: Clock },
-                                                            { id: 'insights', label: 'Insights', icon: TrendingUp }
-                                                        ]},
-                                                        { id: 'clinical', label: 'Clinical Care', tabs: [
-                                                            { id: 'adime', label: 'ADIME Charting', icon: Stethoscope },
-                                                            { id: 'rules', label: 'Rules Engine', icon: ShieldAlert },
-                                                            { id: 'notes', label: 'Progress Notes', icon: StickyNote }
-                                                        ]},
-                                                        { id: 'planning', label: 'Dietary Design', tabs: [
-                                                            { id: 'portions', label: 'Portion Exchange', icon: PieChart },
-                                                            { id: 'plan', label: 'Meal Planner', icon: Calendar }
-                                                        ]}
+                                                        {
+                                                            id: 'assessment', label: 'Assessment', tabs: [
+                                                                { id: 'overview', label: 'Overview', icon: Eye },
+                                                                { id: 'history', label: 'Log History', icon: Clock },
+                                                                { id: 'insights', label: 'Insights', icon: TrendingUp }
+                                                            ]
+                                                        },
+                                                        {
+                                                            id: 'clinical', label: 'Clinical Care', tabs: [
+                                                                { id: 'adime', label: 'ADIME Charting', icon: Stethoscope },
+                                                                { id: 'rules', label: 'Rules Engine', icon: ShieldAlert },
+                                                                { id: 'notes', label: 'Progress Notes', icon: StickyNote }
+                                                            ]
+                                                        },
+                                                        {
+                                                            id: 'planning', label: 'Dietary Design', tabs: [
+                                                                { id: 'portions', label: 'Portion Exchange', icon: PieChart },
+                                                                { id: 'plan', label: 'Meal Planner', icon: Calendar }
+                                                            ]
+                                                        }
                                                     ].find(g => g.tabs.some(t => t.id === activeTab));
 
                                                     return currentGroup?.tabs.map(tab => {
@@ -1890,9 +2247,9 @@ export default function ClientDetails() {
                                                         </div>
                                                         <div className="flex gap-2 w-full sm:w-auto">
                                                             {isClinicalEditing && (
-                                                                <Button 
+                                                                <Button
                                                                     type="button"
-                                                                    variant="ghost" 
+                                                                    variant="ghost"
                                                                     onClick={() => {
                                                                         setIsClinicalEditing(false);
                                                                         setClinicalForm({
@@ -1902,7 +2259,7 @@ export default function ClientDetails() {
                                                                             activity_level: selectedProfile?.activity_level || '',
                                                                             allergies: selectedProfile?.allergies || []
                                                                         });
-                                                                    }} 
+                                                                    }}
                                                                     className="flex-1 sm:flex-none text-xs font-black uppercase"
                                                                 >
                                                                     Cancel
@@ -2695,37 +3052,68 @@ export default function ClientDetails() {
                                             </div>
                                         )}
 
-                                        {/* TAB: ADIME */}
                                         {activeTab === 'adime' && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
+                                            <>
                                                 <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)] mb-4 flex items-center gap-2">
-                                                        <MessageSquare size={20} className="text-blue-600" /> Professional Clinical Note (ADIME)
-                                                    </h3>
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
+                                                            <MessageSquare size={20} className="text-blue-600" /> Professional Clinical Note (ADIME)
+                                                        </h3>
+
+                                                        <div className="flex items-center gap-3">
+                                                            {/* Sync Status Indicator */}
+                                                            <div className="flex items-center gap-2 px-3 py-1 bg-white/50 dark:bg-white/5 rounded-full border border-[var(--color-divider)]">
+                                                                <div className={cn(
+                                                                    "w-1.5 h-1.5 rounded-full animate-pulse",
+                                                                    syncStatus.type === 'saving' ? 'bg-amber-500' :
+                                                                        syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-gray-300'
+                                                                )} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                                                                    {syncStatus.type === 'saving' ? 'Syncing...' :
+                                                                        syncStatus.type === 'saved' ? `Saved ${syncStatus.lastSaved ? format(syncStatus.lastSaved, 'HH:mm') : ''}` :
+                                                                            'Draft Idle'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-2 mb-6">
+                                                        <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest self-center mr-2">Quick Templates:</span>
+                                                        {CLINICAL_ADIME_TEMPLATES.map(t => (
+                                                            <button
+                                                                key={t.name}
+                                                                type="button"
+                                                                onClick={() => handleApplyAdimeTemplate(t.content)}
+                                                                className="px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-600 text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                            >
+                                                                + {t.name}
+                                                            </button>
+                                                        ))}
+                                                        {adimeNotes.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCopyLastAdime}
+                                                                className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-white text-emerald-600 text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
+                                                            >
+                                                                <ArrowLeft size={10} className="rotate-90" /> Copy Forward
+                                                            </button>
+                                                        )}
+                                                    </div>
 
                                                     <form onSubmit={handleAddAdimeNote} className="space-y-6">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            {[
-                                                                { key: 'assessment', label: 'Assessment' },
-                                                                { key: 'diagnosis', label: 'Diagnosis' },
-                                                                { key: 'intervention', label: 'Intervention' },
-                                                                { key: 'monitoring', label: 'Monitoring & Evaluation' }
-                                                            ].map((field, idx) => (
-                                                                <div key={idx} className="space-y-1">
-                                                                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">{field.label}</label>
-                                                                    <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === field.key ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
-                                                                        <ReactQuill
-                                                                            ref={el => editorRefs.current[field.key] = el}
-                                                                            theme="snow"
-                                                                            value={newAdime[field.key]}
-                                                                            onChange={(val) => setNewAdime({ ...newAdime, [field.key]: val })}
-                                                                            onFocus={() => setFocusedField(field.key)}
-                                                                            modules={{ toolbar: false }}
-                                                                            placeholder={`Enter ${field.label.toLowerCase()}...`}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                        <div className="space-y-1">
+                                                            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">Clinical ADIME Note</label>
+                                                            <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'assessment' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
+                                                                <ReactQuill
+                                                                    ref={el => editorRefs.current['assessment'] = el}
+                                                                    theme="snow"
+                                                                    value={newAdime.assessment}
+                                                                    onChange={(val) => setNewAdime({ ...newAdime, assessment: val })}
+                                                                    onFocus={() => setFocusedField('assessment')}
+                                                                    modules={{ toolbar: true }}
+                                                                    placeholder="Enter full clinical ADIME documentation here..."
+                                                                />
+                                                            </div>
                                                         </div>
                                                         <div className="flex justify-end">
                                                             <Button
@@ -2754,9 +3142,17 @@ export default function ClientDetails() {
                                                         <p className="text-center py-8 text-gray-500 italic">No historical ADIME records found.</p>
                                                     ) : (
                                                         adimeNotes.map(note => (
-                                                            <div key={note.id} className="p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group">
+                                                            <div key={note.id} className={cn(
+                                                                "p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group transition-all",
+                                                                note.is_optimistic && "opacity-50 grayscale pointer-events-none"
+                                                            )}>
                                                                 <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 mb-2">
-                                                                    <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
+                                                                        {note.is_optimistic && (
+                                                                            <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">Syncing...</span>
+                                                                        )}
+                                                                    </div>
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-xs text-gray-400">{new Date(note.created_at).toLocaleString()}</span>
                                                                         <div className="flex gap-1">
@@ -2785,25 +3181,16 @@ export default function ClientDetails() {
 
                                                                 {editingAdimeId === note.id ? (
                                                                     <form onSubmit={handleUpdateAdime} className="space-y-4">
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                            {[
-                                                                                { key: 'assessment', label: 'Assessment' },
-                                                                                { key: 'diagnosis', label: 'Diagnosis' },
-                                                                                { key: 'intervention', label: 'Intervention' },
-                                                                                { key: 'monitoring', label: 'Monitoring/Eval' }
-                                                                            ].map((field, idx) => (
-                                                                                <div key={idx} className="space-y-1">
-                                                                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{field.label}</label>
-                                                                                    <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
-                                                                                        <ReactQuill
-                                                                                            theme="snow"
-                                                                                            value={editAdimeForm[field.key]}
-                                                                                            onChange={(val) => setEditAdimeForm({ ...editAdimeForm, [field.key]: val })}
-                                                                                            modules={{ toolbar: false }}
-                                                                                        />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Note</label>
+                                                                            <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
+                                                                                <ReactQuill
+                                                                                    theme="snow"
+                                                                                    value={editAdimeForm.assessment}
+                                                                                    onChange={(val) => setEditAdimeForm({ ...editAdimeForm, assessment: val })}
+                                                                                    modules={{ toolbar: true }}
+                                                                                />
+                                                                            </div>
                                                                         </div>
                                                                         <div className="flex justify-end gap-2 pt-2">
                                                                             <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
@@ -2811,37 +3198,61 @@ export default function ClientDetails() {
                                                                         </div>
                                                                     </form>
                                                                 ) : (
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                        {[
-                                                                            { key: 'assessment', label: 'Assessment' },
-                                                                            { key: 'diagnosis', label: 'Diagnosis' },
-                                                                            { key: 'intervention', label: 'Intervention' },
-                                                                            { key: 'monitoring', label: 'Monitoring/Eval' }
-                                                                        ].map((field, idx) => (
-                                                                            <div key={idx} className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                                <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-2 tracking-widest">{field.label}</p>
+                                                                    <div className="space-y-4">
+                                                                        <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-inner">
+                                                                            <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-3 tracking-widest border-b border-[var(--color-divider)] pb-2">Unified ADIME Documentation</p>
+                                                                            <div className="ql-snow">
                                                                                 <div
-                                                                                    className="text-sm prose prose-sm dark:prose-invert max-w-none"
-                                                                                    dangerouslySetInnerHTML={{ __html: note[field.key] || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
+                                                                                    className="ql-editor !p-0 !min-h-0 text-sm clinical-content"
+                                                                                    dangerouslySetInnerHTML={{ __html: note.assessment || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
                                                                                 />
                                                                             </div>
-                                                                        ))}
+                                                                            {(note.diagnosis || note.intervention || note.monitoring || note.evaluation) && (
+                                                                                <div className="mt-4 pt-4 border-t border-dashed border-[var(--color-divider)] opacity-60">
+                                                                                    <p className="text-[9px] font-bold uppercase text-[var(--color-text-muted)] mb-2">Legacy Multi-field Data Detected</p>
+                                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                                        {['diagnosis', 'intervention', 'monitoring', 'evaluation'].map(f => note[f] && (
+                                                                                            <div key={f} className="text-[10px] p-2 bg-white/50 dark:bg-black/20 rounded-lg">
+                                                                                                <span className="font-black uppercase text-[var(--color-primary)] mr-1 block mb-1">{f}:</span>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0" dangerouslySetInnerHTML={{ __html: note[f] }} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ))
                                                     )}
                                                 </div>
-                                            </div>
+                                            </>
                                         )}
 
                                         {/* TAB: NOTES */}
                                         {activeTab === 'notes' && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
+                                            <>
                                                 <div className="bg-green-50 dark:bg-green-900/10 p-6 rounded-xl border border-green-100 dark:border-green-800/30">
-                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)] mb-4 flex items-center gap-2">
-                                                        <StickyNote size={20} className="text-[var(--color-primary)]" /> Client Observation Notes
-                                                    </h3>
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
+                                                            <StickyNote size={20} className="text-[var(--color-primary)]" /> Client Observation Notes
+                                                        </h3>
+
+                                                        {/* Sync Status Indicator (Mini) */}
+                                                        <div className="flex items-center gap-1.5 opacity-60">
+                                                            <div className={cn(
+                                                                "w-1 h-1 rounded-full",
+                                                                syncStatus.type === 'saving' ? 'bg-amber-500 animate-pulse' :
+                                                                    syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-transparent'
+                                                            )} />
+                                                            <span className="text-[8px] font-bold uppercase tracking-tighter text-[var(--color-text-muted)]">
+                                                                {syncStatus.type === 'saving' ? 'Saving' : syncStatus.type === 'saved' ? 'Draft' : ''}
+                                                            </span>
+                                                        </div>
+                                                    </div>
 
 
                                                     <form onSubmit={handleAddNote} className="space-y-3">
@@ -2870,8 +3281,16 @@ export default function ClientDetails() {
                                                         <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">No clinical observations recorded for this profile yet.</p>
                                                     ) : (
                                                         notes.map(note => (
-                                                            <div key={note.id} className={`p-5 border rounded-xl relative group hover:shadow-md transition-all ${note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]'}`}>
-                                                                {note.is_pinned && <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>}
+                                                            <div key={note.id} className={cn(
+                                                                "p-5 border rounded-xl relative group hover:shadow-md transition-all",
+                                                                note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
+                                                                note.is_optimistic && "opacity-50 grayscale pointer-events-none"
+                                                            )}>
+                                                                {note.is_optimistic ? (
+                                                                    <span className="absolute top-2 right-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 animate-pulse">Syncing...</span>
+                                                                ) : note.is_pinned && (
+                                                                    <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>
+                                                                )}
 
                                                                 {editingNoteId === note.id ? (
                                                                     <form onSubmit={handleUpdateNote} className="space-y-3">
@@ -2933,7 +3352,7 @@ export default function ClientDetails() {
                                                         ))
                                                     )}
                                                 </div>
-                                            </div>
+                                            </>
                                         )}
 
 
@@ -3182,7 +3601,7 @@ export default function ClientDetails() {
                                                                     else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
                                                                     else if (cat === 'Fluid/Water') unit = 'ml';
                                                                     else if (cat === 'Vitamin D') unit = 'mcg';
-                                                                    
+
                                                                     setNewRule({ ...newRule, category: cat, rule_unit: unit });
                                                                 }}
                                                             >
@@ -3444,40 +3863,72 @@ export default function ClientDetails() {
                                         {/* TAB: PORTION EXCHANGE */}
                                         {activeTab === 'portions' && (
                                             <div className="space-y-6 animate-in fade-in duration-500">
-                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border-2 border-[var(--color-divider)] shadow-sm">
+                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-white/5 p-5 rounded-[1.5rem] border-2 border-[var(--color-divider)] shadow-sm">
                                                     <div>
-                                                        <h3 className="font-black text-2xl text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-3">
-                                                            <Table className="text-[var(--color-primary)]" size={28} />
+                                                        <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-2">
+                                                            <Table className="text-[var(--color-primary)]" size={20} />
                                                             Portion Exchange Matrix
                                                         </h3>
                                                         <p className="text-xs font-bold text-[var(--color-text-muted)] mt-2 uppercase tracking-widest opacity-70">
                                                             Medical Grade Portion Distribution Plan
                                                         </p>
                                                     </div>
-                                                    <Button
-                                                        onClick={handleSavePortions}
-                                                        disabled={isSavingPortions}
-                                                        className="w-full md:w-auto px-10 py-4 bg-[var(--color-primary)] text-white shadow-xl shadow-blue-500/20 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
-                                                    >
-                                                        {isSavingPortions ? 'Saving...' : <><Save size={18} /> Update Matrix</>}
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        {portionTemplates.length > 0 && (
+                                                            <div className="relative group/template">
+                                                                <Button variant="outline" className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent">
+                                                                    <ListFilter size={14} /> Load Template
+                                                                </Button>
+                                                                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-xl shadow-xl opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50 overflow-hidden">
+                                                                    <div className="p-2 bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                                        Your Templates
+                                                                    </div>
+                                                                    <div className="max-h-60 overflow-y-auto">
+                                                                        {portionTemplates.map(t => (
+                                                                            <div key={t.id} className="flex items-center justify-between p-2.5 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors" onClick={() => applyPortionTemplate(t)}>
+                                                                                <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
+                                                                                <button onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }} className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md">
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <Button
+                                                            onClick={() => setIsTemplateModalOpen(true)}
+                                                            variant="outline"
+                                                            className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent"
+                                                            title="Save current matrix as a template"
+                                                        >
+                                                            <BookmarkPlus size={14} /> Save Template
+                                                        </Button>
+
+                                                        <Button
+                                                            onClick={handleSavePortions}
+                                                            disabled={isSavingPortions}
+                                                            className="h-9 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                                                        >
+                                                            {isSavingPortions ? 'Saving...' : <><Save size={14} /> Update Matrix</>}
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
                                                 {/* PORTION GRID */}
-                                                <div className="bg-white dark:bg-white/5 rounded-[2.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                <div className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
                                                     <div className="overflow-x-auto">
-                                                        <table className="w-full border-collapse min-w-[1000px]">
+                                                        <table className="w-full border-collapse min-w-[900px]">
                                                             <thead>
                                                                 <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
-                                                                    <th className="p-6 text-left w-48 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                        <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
+                                                                    <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                        <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
                                                                     </th>
-                                                                    <th className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/50 dark:bg-blue-900/10">
-                                                                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em]">Total Daily</span>
-                                                                    </th>
+
                                                                     {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                        <th key={meal} className="p-6 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
-                                                                            <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                                        <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
+                                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
                                                                         </th>
                                                                     ))}
                                                                 </tr>
@@ -3492,7 +3943,7 @@ export default function ClientDetails() {
                                                                     { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
                                                                 ].map(item => (
                                                                     <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
-                                                                        <td className="p-6 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                        <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
                                                                             <div className="flex items-center gap-3">
                                                                                 <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
                                                                                     {item.icon}
@@ -3503,21 +3954,12 @@ export default function ClientDetails() {
                                                                                 </div>
                                                                             </div>
                                                                         </td>
-                                                                        <td className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/20 dark:bg-blue-900/5">
-                                                                            <div className="text-lg font-black text-blue-600 dark:text-blue-400">
-                                                                                {portionMatrix.reduce((sum, row) => sum + (parseFloat(row[item.id]) || 0), 0)}
-                                                                            </div>
-                                                                        </td>
                                                                         {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                            <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    step="0.5"
-                                                                                    min="0"
-                                                                                    className="w-full bg-transparent border-0 text-center font-black text-[var(--color-text-main)] focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-white/10"
-                                                                                    placeholder="0"
-                                                                                    value={portionMatrix.find(r => r.meal_type === meal)?.[item.id] || ''}
-                                                                                    onChange={(e) => updatePortionCell(meal, item.id, e.target.value)}
+                                                                            <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
+                                                                                <AutocompleteMatrixCell 
+                                                                                    value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
+                                                                                    onChange={(val) => updatePortionCell(meal, item.id, val)}
+                                                                                    item={item}
                                                                                 />
                                                                             </td>
                                                                         ))}
@@ -3525,7 +3967,7 @@ export default function ClientDetails() {
                                                                 ))}
                                                                 {/* Special Row for Sugar */}
                                                                 <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
-                                                                    <td className="p-6 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                    <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
                                                                                 <AlertCircle size={14} />
@@ -3533,11 +3975,10 @@ export default function ClientDetails() {
                                                                             <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
                                                                         </div>
                                                                     </td>
-                                                                    <td className="p-6 text-center border-r-2 border-[var(--color-divider)] bg-blue-50/20 dark:bg-blue-900/5">-</td>
-                                                                    <td colSpan="5" className="p-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic"
+                                                                    <td colSpan="5" className="p-3">
+                                                                        <textarea
+                                                                            rows={2}
+                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
                                                                             placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
                                                                             value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
                                                                             onChange={(e) => {
@@ -3916,6 +4357,33 @@ export default function ClientDetails() {
                     </div>
                 </Modal>
 
+
+                <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} title="Save Portion Template">
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Template Name</label>
+                            <input 
+                                type="text"
+                                className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)]"
+                                placeholder="e.g. 1500 kcal Diabetic Plan"
+                                value={newTemplateName}
+                                onChange={(e) => setNewTemplateName(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <Button variant="outline" className="flex-1" onClick={() => setIsTemplateModalOpen(false)}>Cancel</Button>
+                            <Button className="flex-1 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90" onClick={handleSaveTemplate}>Save Template</Button>
+                        </div>
+                    </div>
+                </Modal>
+
+                <ConfirmDialog
+                    isOpen={!!templateToDelete}
+                    title="Delete Template"
+                    message={`Are you sure you want to delete the template "${templateToDelete?.template_name}"?`}
+                    onConfirm={executeDeleteTemplate}
+                    onCancel={() => setTemplateToDelete(null)}
+                />
 
                 <CreatePatientModal
                     isOpen={isAddProfileOpen}

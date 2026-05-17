@@ -5,7 +5,7 @@ import { Button } from '../components/common/Button';
 import { Activity, User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, ShieldAlert, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock, Eye, EyeOff, FileUp, CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoading } from '../context/LoadingContext';
-import { cn, convertHeight, convertWeight } from '../lib/utils';
+import { cn, convertHeight, convertWeight, toMetricHeight, toMetricWeight } from '../lib/utils';
 import { ProfileSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -447,13 +447,16 @@ export default function Profile() {
                     age = Math.abs(new Date(diff).getUTCFullYear() - 1970).toString();
                 }
 
+                const hConv = convertHeight(profile.height_cm, user?.measurement_system);
                 setProfileData({
                     id: profile.id,
                     childName: profile.child_name || '',
                     age: age,
                     gender: profile.gender || 'Male',
                     height: profile.height_cm || '',
-                    weight: profile.weight_kg || '',
+                    heightFeet: hConv.feet || '',
+                    heightInches: hConv.inches || '',
+                    weight: user?.measurement_system === 'imperial' ? (profile.weight_kg * 2.20462).toFixed(1) : (profile.weight_kg || ''),
                     activityLevel: profile.activity_level || 'moderate',
                     allergies: profile.allergies || [],
                     // Handle if preferences comes as string or null
@@ -701,12 +704,20 @@ export default function Profile() {
             const dob = new Date();
             dob.setFullYear(dob.getFullYear() - parseInt(profileData.age || 0));
 
+            let finalHeight = parseFloat(profileData.height);
+            let finalWeight = parseFloat(profileData.weight);
+
+            if (user?.measurement_system === 'imperial') {
+                finalHeight = toMetricHeight(profileData.heightFeet || 0, profileData.heightInches || 0);
+                finalWeight = toMetricWeight(profileData.weight || 0);
+            }
+
             await api.put(`/profiles/${profileData.id}`, {
                 child_name: profileData.childName,
                 date_of_birth: dob.toISOString(),
                 gender: profileData.gender,
-                height_cm: parseFloat(profileData.height),
-                weight_kg: parseFloat(profileData.weight),
+                height_cm: finalHeight,
+                weight_kg: finalWeight,
                 activity_level: profileData.activityLevel,
                 allergies: profileData.allergies,
                 dietary_preferences: profileData.dietaryPreferences.join(', '),
@@ -1403,13 +1414,40 @@ export default function Profile() {
                                         )}
                                     </div>
                                     {isEditing ? (
-                                        <input
-                                            type="number"
-                                            name="height"
-                                            value={profileData.height}
-                                            onChange={handleChange}
-                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                        />
+                                        user?.measurement_system === 'imperial' ? (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        name="heightFeet"
+                                                        placeholder="Feet"
+                                                        value={profileData.heightFeet}
+                                                        onChange={handleChange}
+                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">FT</span>
+                                                </div>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        name="heightInches"
+                                                        placeholder="Inches"
+                                                        value={profileData.heightInches}
+                                                        onChange={handleChange}
+                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">IN</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="number"
+                                                name="height"
+                                                value={profileData.height}
+                                                onChange={handleChange}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                            />
+                                        )
                                     ) : (
                                         <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
                                             {user?.measurement_system === 'imperial' ? (
@@ -1459,10 +1497,19 @@ export default function Profile() {
                                         <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
                                         <div className="flex items-center justify-center sm:justify-start gap-3">
                                             <span className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)]">
-                                                {calculateBMI(profileData.weight, profileData.height)}
+                                                {calculateBMI(
+                                                    user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                    user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                                )}
                                             </span>
-                                            <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${getBMIStatus(calculateBMI(profileData.weight, profileData.height)).color}`}>
-                                                {getBMIStatus(calculateBMI(profileData.weight, profileData.height)).label}
+                                            <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${getBMIStatus(calculateBMI(
+                                                user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                            )).color}`}>
+                                                {getBMIStatus(calculateBMI(
+                                                    user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                    user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                                )).label}
                                             </span>
                                         </div>
                                     </div>

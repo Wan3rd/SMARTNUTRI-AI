@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
 import { useLoading } from '../context/LoadingContext';
-import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
+import { cn, formatValue, convertHeight, convertWeight, convertWater } from '../lib/utils';
 import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { DashboardSkeleton } from '../components/SkeletonShell';
@@ -203,7 +203,12 @@ export default function ParentDashboard() {
                             {rules.length > 0 ? (
                                 <div className="space-y-5">
                                     {renderProgressBar('Calories', todayIntake.calories, getGoalForCategory('calories'), 'kcal')}
-                                    {renderProgressBar('Hydration', todayIntake.water, getGoalForCategory('water') || 1500, 'ml', 'blue')}
+                                    {(() => {
+                                        const waterGoal = getGoalForCategory('water') || 1500;
+                                        const convCurrent = convertWater(todayIntake.water, user?.measurement_system);
+                                        const convGoal = convertWater(waterGoal, user?.measurement_system);
+                                        return renderProgressBar('Hydration', convCurrent.value, convGoal.value, convCurrent.unit, 'blue');
+                                    })()}
                                     {renderProgressBar('Protein', todayIntake.protein, getGoalForCategory('protein'), 'g')}
                                     {renderProgressBar('Sodium', todayIntake.sodium, getGoalForCategory('sodium'), 'mg')}
                                     {renderProgressBar('Sugar', todayIntake.sugar, getGoalForCategory('sugar'), 'g')}

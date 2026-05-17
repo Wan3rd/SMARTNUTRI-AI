@@ -5,6 +5,7 @@ import { Layout } from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import AIKitchen from './pages/AIKitchen';
 import Calendar from './pages/Calendar';
+import DailyPlan from './pages/DailyPlan';
 import Meals from './pages/Meals';
 import RecipeDetail from './pages/RecipeDetail';
 import Profile from './pages/Profile';
@@ -71,6 +72,7 @@ function AppContent() {
                 <Route path="/parent-dashboard" element={<ParentDashboard />} />
                 <Route path="/nutritionist-dashboard" element={<NutritionistDashboard />} />
                 <Route path="/calendar" element={<Calendar />} />
+                <Route path="/daily-plan" element={<DailyPlan />} />
                 <Route path="/ai-kitchen" element={<AIKitchen />} />
                 <Route path="/meals" element={<Meals />} />
                 <Route path="/meals/:id" element={<RecipeDetail />} />
@@ -111,6 +113,7 @@ function AppContent() {
 
 import { ProfileProvider } from './context/ProfileContext';
 import { LoadingProvider } from './context/LoadingContext';
+import { MealLoggerProvider } from './context/MealLoggerContext';
 
 function App() {
   return (
@@ -118,7 +121,9 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <ProfileProvider>
           <LoadingProvider>
-            <AppContent />
+            <MealLoggerProvider>
+              <AppContent />
+            </MealLoggerProvider>
           </LoadingProvider>
         </ProfileProvider>
       </ThemeProvider>

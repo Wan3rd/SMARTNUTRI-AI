@@ -155,6 +155,7 @@ model profiles {
   growth_logs         growth_logs[]
   profile_vaccinations profile_vaccinations[]
   portion_plans       portion_plans[]
+  daily_adherence_logs daily_adherence_logs[]
   users               users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
@@ -225,6 +226,7 @@ model users {
   target_audits                                                    audit_logs[]           @relation("target_audits")
   announcements                                                   announcements[]
   portion_plans                                                   portion_plans[]
+  portion_templates                                               portion_templates[]
 }
 
 model portion_plans {
@@ -233,12 +235,12 @@ model portion_plans {
   nutritionist_id String?   @db.Uuid
   meal_type       String    @db.VarChar(50) // Breakfast, AM Snack, Lunch, PM Snack, Dinner
   
-  vegetables      Float?    @default(0)
-  fruit           Float?    @default(0)
-  milk            Float?    @default(0)
-  rice            Float?    @default(0)
-  meat            Float?    @default(0)
-  fat             Float?    @default(0)
+  vegetables      String?   @db.VarChar(255)
+  fruit           String?   @db.VarChar(255)
+  milk            String?   @db.VarChar(255)
+  rice            String?   @db.VarChar(255)
+  meat            String?   @db.VarChar(255)
+  fat             String?   @db.VarChar(255)
   sugar           String?   @db.VarChar(255)
   
   created_at      DateTime? @default(now()) @db.Timestamptz(6)
@@ -248,6 +250,32 @@ model portion_plans {
   nutritionist    users?    @relation(fields: [nutritionist_id], references: [id])
 
   @@unique([profile_id, meal_type])
+}
+
+model portion_templates {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nutritionist_id String?   @db.Uuid
+  template_name   String    @db.VarChar(100)
+  matrix          Json      // Array of objects matching portion_plans schema without ids
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  users           users?    @relation(fields: [nutritionist_id], references: [id], onDelete: Cascade)
+}
+
+model daily_adherence_logs {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  profile_id      String    @db.Uuid
+  date            DateTime  @db.Date
+  meal_type       String    @db.VarChar(50)
+  category        String    @db.VarChar(50)
+  completed       Boolean   @default(false)
+  
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  profiles        profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  @@unique([profile_id, date, meal_type, category])
 }
 
 

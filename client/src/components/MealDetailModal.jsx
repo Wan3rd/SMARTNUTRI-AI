@@ -77,7 +77,14 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        
+        // Prevent background scrolling
+        document.body.style.overflow = 'hidden';
+        
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        };
     }, [onClose]);
 
     React.useEffect(() => {
@@ -136,8 +143,14 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const ComplianceIcon = complianceBadge.icon;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in transition-all duration-300">
-            <div className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in transition-all duration-300"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-6 flex justify-between items-start z-10">
                     <div>
@@ -160,7 +173,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 </div>
 
                 {/* Content */}
-                <div className="p-5 space-y-5">
+                <div className="p-4 sm:p-5 space-y-3">
                     {/* Allergen Warning Banner */}
                     {detectedAllergens.length > 0 && (
                         <div className="bg-red-600 text-white p-4 rounded-3xl shadow-xl flex items-center gap-4 animate-pulse">
@@ -285,7 +298,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                         </span>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-3">
                                     {/* Food Items */}
                                     {items.length > 0 && (
                                         <div>

@@ -3,15 +3,21 @@ import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+import Webcam from 'react-webcam';
+import imageCompression from 'browser-image-compression';
+import { useMealLoggerStore } from '../context/MealLoggerContext';
+import SmartTimePicker from './common/SmartTimePicker';
 import api from '../lib/api';
 import ConfirmDialog from './common/ConfirmDialog';
 import Notification from './common/Notification';
-import { cn } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
+import { cn, convertWater } from '../lib/utils';
 
 const COOKING_METHODS = [
-    "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed",
+    "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Broiled",
     "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached",
-    "Roasted", "Sautéed / Stir-fried", "Smoked", "Steamed", "Unknown"
+    "Roasted", "Sautéed / Stir-fried", "Seared", "Simmered", "Smoked", 
+    "Sous Vide", "Steamed", "Unknown"
 ];
 
 const getLocalISOTime = () => {
@@ -77,27 +83,20 @@ const normalizeItem = (item) => {
 };
 
 export default function MealLogger({ profileId, onLogged, recentLogs = [], allergies = [] }) {
+    const { user } = useAuth();
     const { useMemo } = React;
-    const [file, setFile] = useState(null);
-    const [preview, setPreview] = useState(null);
-    const [fileAfter, setFileAfter] = useState(null);
-    const [previewAfter, setPreviewAfter] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [verifiedItems, setVerifiedItems] = useState([]);
-    const [status, setStatus] = useState('idle');
-    const [suppData, setSuppData] = useState({
-        waterMl: '',
-        supplements: '',
-        physicalActivity: '',
-        servingSpoonUsed: false,
-        cookingMethod: '',
-        hiddenIngredients: '',
-        isParentVerified: false,
-        mealCategory: getDefaultMealCategory(),
-        plateWaste: 100,
-        loggedAt: getLocalISOTime()
-    });
+    const { 
+        file, setFile, 
+        preview, setPreview, 
+        fileAfter, setFileAfter, 
+        previewAfter, setPreviewAfter, 
+        loading, setLoading, 
+        analysisResult, setAnalysisResult, 
+        verifiedItems, setVerifiedItems, 
+        status, setStatus, 
+        suppData, setSuppData,
+        resetLogger
+    } = useMealLoggerStore();
     const debounceTimers = useRef({});
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
@@ -111,6 +110,26 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [isCropping, setIsCropping] = useState(false);
     const [aspect, setAspect] = useState(4 / 3);
+    
+    // Webcam States
+    const [isWebcamOpen, setIsWebcamOpen] = useState(false);
+    const [webcamType, setWebcamType] = useState('before');
+    const webcamRef = useRef(null);
+
+    const handleWebcamCapture = () => {
+        const imageSrc = webcamRef.current?.getScreenshot();
+        if (imageSrc) {
+            setCropImage(imageSrc);
+            setCropType(webcamType);
+            setIsCropping(true);
+            setIsWebcamOpen(false);
+        }
+    };
+
+    const openWebcam = (type = 'before') => {
+        setWebcamType(type);
+        setIsWebcamOpen(true);
+    };
 
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
@@ -149,8 +168,22 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const handleConfirmCrop = async () => {
         try {
             const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
-            const croppedFile = new File([croppedBlob], `meal_${cropType}.jpg`, { type: 'image/jpeg' });
-            const croppedUrl = URL.createObjectURL(croppedBlob);
+            let croppedFile = new File([croppedBlob], `meal_${cropType}.jpg`, { type: 'image/jpeg' });
+            
+            // Compress image to ~500kb to save bandwidth and storage
+            try {
+                const options = {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1200,
+                    useWebWorker: true,
+                    initialQuality: 0.8
+                };
+                croppedFile = await imageCompression(croppedFile, options);
+            } catch (compressErr) {
+                console.warn("Image compression failed, using original", compressErr);
+            }
+
+            const croppedUrl = URL.createObjectURL(croppedFile);
 
             if (cropType === 'before') {
                 setFile(croppedFile);
@@ -406,25 +439,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     };
 
     const resetForm = () => {
-        setFile(null);
-        setPreview(null);
-        setFileAfter(null);
-        setPreviewAfter(null);
-        setAnalysisResult(null);
-        setVerifiedItems([]);
-        setSuppData({
-            waterMl: '',
-            supplements: '',
-            physicalActivity: '',
-            servingSpoonUsed: false,
-            cookingMethod: '',
-            hiddenIngredients: '',
-            isParentVerified: false,
-            mealCategory: getDefaultMealCategory(),
-            plateWaste: 100,
-            loggedAt: getLocalISOTime()
-        });
-        setStatus('idle');
+        resetLogger();
         if (fileInputRef.current) fileInputRef.current.value = "";
         if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
     };
@@ -459,9 +474,9 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     };
 
     return (
-        <Card className="border-2 border-[var(--color-primary)]/20 overflow-hidden">
+        <Card className="border-2 border-[var(--color-primary)]/20">
             <CardContent className="p-0">
-                <div className="bg-[var(--color-primary)]/5 p-4 flex items-center justify-between border-b border-[var(--color-primary)]/10">
+                <div className="bg-[var(--color-primary)]/5 p-4 flex items-center justify-between border-b border-[var(--color-primary)]/10 rounded-t-xl">
                     <h3 className="font-bold text-[var(--color-secondary)] flex items-center gap-2">
                         <Camera size={18} className="text-[var(--color-primary)]" />
                         Log Child's Meal
@@ -504,7 +519,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                 <select
                                     value={suppData.mealCategory}
                                     onChange={(e) => setSuppData({ ...suppData, mealCategory: e.target.value })}
-                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                    className="w-full h-[42px] px-3 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                 >
                                     <option value="Breakfast">Breakfast</option>
                                     <option value="AM Snack">AM Snack</option>
@@ -516,11 +531,9 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">Date & Time</label>
-                                <input
-                                    type="datetime-local"
+                                <SmartTimePicker
                                     value={suppData.loggedAt}
-                                    onChange={(e) => setSuppData({ ...suppData, loggedAt: e.target.value })}
-                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                    onChange={(val) => setSuppData({ ...suppData, loggedAt: val })}
                                 />
                             </div>
                         </div>
@@ -538,15 +551,50 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     )}
                                 </div>
                             ) : (
-                                <div onClick={() => fileInputRef.current?.click()} className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[var(--color-primary)]/5 transition-all text-[var(--color-text-muted)] group">
-                                    <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform">
-                                        <Upload size={20} />
+                                <div className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 transition-all bg-gray-50/50 dark:bg-white/[0.02]">
+                                    <div className="flex gap-4">
+                                        <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+                                        </button>
+                                        <button onClick={() => openWebcam('before')} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
+                                        </button>
                                     </div>
-                                    <span className="text-[9px] font-black uppercase tracking-tighter">Capture Photo</span>
                                 </div>
                             )}
                         </div>
 
+                        {/* Webcam Modal */}
+            {isWebcamOpen && (
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="w-full max-w-lg bg-[var(--color-bg-card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center">
+                        <div className="flex w-full justify-between items-center p-4 border-b border-[var(--color-divider)]">
+                            <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">Capture Photo</span>
+                            <button onClick={() => setIsWebcamOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="w-full bg-black relative">
+                            <Webcam
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                videoConstraints={{ facingMode: "environment" }}
+                                className="w-full h-auto max-h-[60vh] object-contain"
+                            />
+                        </div>
+                        <div className="p-6 w-full flex justify-center">
+                            <Button onClick={handleWebcamCapture} className="w-full sm:w-auto px-12 py-3 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-[var(--color-primary)]/20 hover:scale-105 transition-transform flex gap-2 items-center">
+                                <Camera size={16} /> Capture Image
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cropper Modal */}
                         {/* After Photo */}
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">After Meal</span>
@@ -558,33 +606,31 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     )}
                                 </div>
                             ) : (
-                                <div
-                                    onClick={() => status !== 'uploading' && fileAfterInputRef.current?.click()}
-                                    className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all relative ${status === 'uploading'
-                                        ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60'
-                                        : 'border-gray-200 dark:border-white/10 cursor-pointer hover:bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] group'
-                                        }`}
-                                >
+                                <div className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${status === 'uploading' ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60' : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]'}`}>
                                     {status === 'uploading' ? (
                                         <>
                                             <Loader2 size={20} className="animate-spin text-gray-400" />
                                             <span className="text-[8px] font-black text-gray-400 text-center uppercase">AI Analyzing...</span>
                                         </>
                                     ) : (
-                                        <>
-                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform">
-                                                <Upload size={20} />
-                                            </div>
-                                            <span className="text-[9px] font-black uppercase tracking-tighter">Optional Log</span>
-                                        </>
+                                        <div className="flex gap-4">
+                                            <button onClick={() => fileAfterInputRef.current?.click()} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
+                                                <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+                                            </button>
+                                            <button onClick={() => openWebcam('after')} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
+                                                <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e, 'before')} className="hidden" accept="image/*" capture="environment" />
-                    <input type="file" ref={fileAfterInputRef} onChange={(e) => handleFileChange(e, 'after')} className="hidden" accept="image/*" capture="environment" />
+                    <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e, 'before')} className="hidden" accept="image/*" />
+                    <input type="file" ref={fileAfterInputRef} onChange={(e) => handleFileChange(e, 'after')} className="hidden" accept="image/*" />
 
                     {(status === 'idle' || status === 'uploading') && preview && (
                         <Button
@@ -807,21 +853,36 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">💧 Glasses of Water</label>
+                                        <label className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 block uppercase">💧 Water Intake ({user?.measurement_system === 'imperial' ? 'oz' : 'ml'})</label>
                                         <select
                                             value={suppData.waterMl}
                                             onChange={(e) => setSuppData({ ...suppData, waterMl: e.target.value })}
                                             className="w-full p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-bold focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
                                         >
                                             <option value="">None</option>
-                                            <option value="250">1 glass (250ml)</option>
-                                            <option value="500">2 glasses (500ml)</option>
-                                            <option value="750">3 glasses (750ml)</option>
-                                            <option value="1000">4 glasses (1L)</option>
-                                            <option value="1250">5 glasses (1.25L)</option>
-                                            <option value="1500">6 glasses (1.5L)</option>
-                                            <option value="1750">7 glasses (1.75L)</option>
-                                            <option value="2000">8 glasses (2L)</option>
+                                            {user?.measurement_system === 'imperial' ? (
+                                                <>
+                                                    <option value="237">8 oz (1 glass)</option>
+                                                    <option value="473">16 oz (2 glasses)</option>
+                                                    <option value="710">24 oz (3 glasses)</option>
+                                                    <option value="946">32 oz (4 glasses)</option>
+                                                    <option value="1183">40 oz (5 glasses)</option>
+                                                    <option value="1420">48 oz (6 glasses)</option>
+                                                    <option value="1656">56 oz (7 glasses)</option>
+                                                    <option value="1893">64 oz (8 glasses)</option>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <option value="250">1 glass (250ml)</option>
+                                                    <option value="500">2 glasses (500ml)</option>
+                                                    <option value="750">3 glasses (750ml)</option>
+                                                    <option value="1000">4 glasses (1L)</option>
+                                                    <option value="1250">5 glasses (1.25L)</option>
+                                                    <option value="1500">6 glasses (1.5L)</option>
+                                                    <option value="1750">7 glasses (1.75L)</option>
+                                                    <option value="2000">8 glasses (2L)</option>
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div>

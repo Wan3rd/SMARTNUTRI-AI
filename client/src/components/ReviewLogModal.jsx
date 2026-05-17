@@ -61,6 +61,18 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, previewImage]);
 
+    // Prevent background scrolling when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         if (log) {
             setReview(log.nutritionist_review?.comment || '');
@@ -341,7 +353,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 </div>
                             </div>
 
-                            <div className="px-5 py-6 lg:px-0 lg:py-0 space-y-6 sm:space-y-8">
+                            <div className="px-5 py-5 lg:px-0 lg:py-0 space-y-4 sm:space-y-5">
                                 {/* Allergen Warning Banner (Clinician View) */}
                                 {detectedAllergens.length > 0 && (
                                     <motion.div 
@@ -423,7 +435,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     </button>
                                 </div>
 
-                                <div className="space-y-3 mb-8">
+                                <div className="space-y-3 mb-5">
                                     {editedAnalysis?.items?.map((item, idx) => (
                                         <motion.div
                                             key={idx}
@@ -585,6 +597,10 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4"
+                        onWheel={(e) => {
+                            const zoomDelta = e.deltaY * -0.002;
+                            setZoomScale(s => Math.min(Math.max(0.5, s + zoomDelta), 4));
+                        }}
                     >
                         {/* Zoom Controls */}
                         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-2xl flex items-center gap-4 z-[110]">
