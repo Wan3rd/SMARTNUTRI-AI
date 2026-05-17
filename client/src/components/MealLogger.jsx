@@ -557,7 +557,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                             <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
                                             <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                                         </button>
-                                        <button onClick={() => openWebcam('before')} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                        <button onClick={() => openWebcam('before')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
                                             <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
                                             <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
                                         </button>
@@ -618,7 +618,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                 <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                                             </button>
-                                            <button onClick={() => openWebcam('after')} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                            <button onClick={() => openWebcam('after')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
                                                 <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
                                             </button>
