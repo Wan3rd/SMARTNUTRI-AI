@@ -61,7 +61,7 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className="min-h-[100dvh] w-full flex items-center justify-center sm:p-4 sm:p-6 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] dark:from-[#0f172a] dark:to-[#020617] transition-all duration-500">
+        <div className="min-h-[100dvh] w-full flex items-center justify-center sm:p-4 sm:p-6 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] dark:from-[#0f172a] dark:to-[#020617] transition-all duration-500 overflow-y-auto">
             <div className="w-full sm:max-w-md animate-in fade-in zoom-in duration-700">
                 <div className="text-center mb-8 flex flex-col items-center hidden sm:flex">
                     <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-20 w-20 sm:h-24 sm:w-24 object-contain rounded-full mb-4 shadow-xl shadow-[var(--color-primary)]/20 bg-white" />
@@ -69,7 +69,7 @@ export default function ForgotPassword() {
                     <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] opacity-70">Clinical Recovery System</p>
                 </div>
 
-                <Card className="border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-[var(--color-primary)]/10 min-h-[100dvh] sm:min-h-0 flex flex-col justify-center">
+                <Card className="border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-y-auto sm:overflow-hidden shadow-2xl shadow-[var(--color-primary)]/10 min-h-[100dvh] sm:min-h-0 flex flex-col justify-center">
                     <div className="text-center mb-6 flex flex-col items-center sm:hidden pt-10">
                         <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-16 w-16 object-contain rounded-full mb-3 shadow-xl shadow-[var(--color-primary)]/20 bg-white" />
                         <h1 className="text-2xl font-black text-[var(--color-primary)] uppercase tracking-tighter mb-0.5 leading-none">SmartNutri-AI</h1>

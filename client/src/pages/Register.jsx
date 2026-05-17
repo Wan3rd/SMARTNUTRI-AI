@@ -93,8 +93,8 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] sm:p-6 transition-colors duration-300 sm:py-20">
-            <Card className="w-full sm:max-w-2xl shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-hidden flex flex-col justify-center">
+        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] sm:p-6 transition-colors duration-300 sm:py-20 overflow-y-auto">
+            <Card className="w-full sm:max-w-2xl shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-y-auto sm:overflow-hidden flex flex-col justify-center">
                 <CardHeader className="text-center space-y-2 pt-8 pb-4 px-6 sm:px-10">
                     <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full mb-2 bg-white shadow-sm border border-[var(--color-divider)]" />
                     <CardTitle className="text-2xl sm:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Join SmartNutri</CardTitle>
