@@ -38,9 +38,9 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] p-4 transition-colors duration-300">
-            <Card className="w-full max-w-md shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="text-center space-y-1 pb-4 pt-8">
+        <div className="min-h-[100dvh] w-full flex items-center justify-center bg-gray-50 dark:bg-[var(--color-bg-page)] sm:p-4 transition-colors duration-300">
+            <Card className="w-full sm:max-w-md shadow-2xl border-0 dark:border dark:border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-hidden min-h-[100dvh] sm:min-h-0 flex flex-col justify-center">
+                <CardHeader className="text-center space-y-1 pb-4 pt-6 sm:pt-8">
                     <div className="relative mx-auto h-20 w-20 sm:h-28 sm:w-28 mb-4">
                         <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-full w-full object-contain rounded-full bg-white shadow-sm border border-[var(--color-divider)]" />
                     </div>

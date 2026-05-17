@@ -127,3 +127,40 @@ export const ClientDetailsSkeleton = () => (
         </div>
     </div>
 );
+
+export const DailyPlanSkeleton = () => (
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+        {/* Header */}
+        <div className="mb-8 space-y-3">
+            <SkeletonLoader className="h-9 w-56 rounded-2xl" />
+            <SkeletonLoader className="h-4 w-80 rounded-xl" />
+        </div>
+
+        {/* Progress Ring Grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
+            {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl p-3 flex flex-col items-center gap-2">
+                    <SkeletonLoader className="h-8 w-8 rounded-full" />
+                    <SkeletonLoader className="w-full h-1.5 rounded-full" />
+                    <SkeletonLoader className="h-2.5 w-12 rounded-lg" />
+                </div>
+            ))}
+        </div>
+
+        {/* Meal Card Skeletons */}
+        <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+                <Card key={i} className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden">
+                    <CardContent className="p-4 sm:p-6 flex items-center gap-4">
+                        <SkeletonLoader className="h-12 w-12 rounded-2xl shrink-0" />
+                        <div className="flex-1 space-y-2">
+                            <SkeletonLoader className="h-5 w-32 rounded-xl" />
+                            <SkeletonLoader className="h-3 w-20 rounded-lg" />
+                        </div>
+                        <SkeletonLoader className="h-5 w-5 rounded-full" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    </div>
+);

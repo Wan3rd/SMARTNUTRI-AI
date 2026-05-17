@@ -2,7 +2,7 @@ import express from 'express';
 
 import dotenv from 'dotenv';
 import { verifyToken } from '../middleware/auth.js';
-import { analyzeMealImage } from '../services/gemini.js';
+import { analyzeMealImage, callGemini } from '../services/gemini.js';
 
 dotenv.config();
 
@@ -26,6 +26,18 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
     } catch (err) {
         console.error("AI Item Analysis Error:", err);
         res.status(500).json({ error: "Failed to analyze food item" });
+    }
+});
+
+router.post('/generate', verifyToken, async (req, res) => {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+    try {
+        const output = await callGemini(prompt);
+        res.json({ output });
+    } catch (err) {
+        console.error("AI Generate Error:", err);
+        res.status(500).json({ error: err.message || "AI generation failed" });
     }
 });
 

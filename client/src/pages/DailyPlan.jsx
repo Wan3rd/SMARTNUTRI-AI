@@ -5,6 +5,8 @@ import { Button } from '../components/common/Button';
 import { Info, CheckCircle2, Circle, ChevronDown, ChevronUp, Utensils, Flame, Leaf, Wheat, Droplets, Apple, Beef } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProfile } from '../context/ProfileContext';
+import { useLoading } from '../context/LoadingContext';
+import { DailyPlanSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
 
 // Static Food Exchange Dictionary
@@ -43,20 +45,21 @@ const FEL_DICTIONARY = {
 
 export default function DailyPlan() {
     const { selectedProfile, loading: profileLoading } = useProfile();
+    const { startLoading, stopLoading } = useLoading();
     const [plan, setPlan] = useState([]);
     const [sugarLimit, setSugarLimit] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [isInitialSync, setIsInitialSync] = useState(true);
     const [expandedMeal, setExpandedMeal] = useState("Breakfast");
     const [activeSwap, setActiveSwap] = useState(null);
 
     useEffect(() => {
         const fetchPlan = async () => {
             if (!selectedProfile) {
-                if (!profileLoading) setLoading(false);
+                if (!profileLoading) setIsInitialSync(false);
                 return;
             }
             try {
-                setLoading(true);
+                startLoading('Loading Daily Plan...');
                 const currentDate = format(new Date(), 'yyyy-MM-dd');
                 
                 // Fetch matrix and adherence in parallel
@@ -129,7 +132,8 @@ export default function DailyPlan() {
             } catch (err) {
                 console.error("Failed to fetch portion plan", err);
             } finally {
-                setLoading(false);
+                stopLoading();
+                setIsInitialSync(false);
             }
         };
         fetchPlan();
@@ -188,9 +192,7 @@ export default function DailyPlan() {
 
     const progress = calculateProgress();
 
-    if (loading || profileLoading) {
-        return <div className="p-8 text-center text-[var(--color-text-muted)] animate-pulse font-bold tracking-widest uppercase">Loading Plan...</div>;
-    }
+    if (isInitialSync) return <DailyPlanSkeleton />;
 
     if (!selectedProfile) {
         return (

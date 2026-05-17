@@ -35,7 +35,7 @@ export default function AIKitchen() {
             Additional Dislikes to avoid: ${dislikes || 'None'}.
             Provide a name for the dish (keep it simple dish name but easy to understand), a short description, and key ingredients. The meal should be suitable for a child aged ${age}. Keep it healthy. Use simple words and provide only foods that area easy to do and possible. Also keep it short as possible. Give a proper layout on your prompt so that it is easy to read and understand${includeSteps ? " Also provide step-by-step cooking instructions." : ""}`;
 
-            const res = await api.post('/ai/gemini', { prompt });
+            const res = await api.post('/ai/generate', { prompt });
             setRecipe(res.data.output);
         } catch (err) {
             console.error(err);
