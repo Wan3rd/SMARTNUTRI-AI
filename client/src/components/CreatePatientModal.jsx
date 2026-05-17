@@ -630,10 +630,10 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={(e) => {
+        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
         }}>
-            <Card className="w-full max-w-2xl relative shadow-2xl overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+            <Card className="w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col">
                 {/* Header with Stepper */}
                 <div className="bg-[var(--color-divider)] p-5 sm:p-8 pb-4 shrink-0">
                     <div className="flex justify-between items-center mb-6 sm:mb-8">
@@ -673,7 +673,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8">
+                <div className="flex-1 overflow-y-auto scrollbar-hide sm:custom-scrollbar p-5 sm:p-8">
                     <Notification
                         show={notif.show}
                         type={notif.type}
@@ -734,7 +734,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 title={confirmDialog.title}
                 message={confirmDialog.message}
                 onConfirm={confirmDialog.onConfirm}
-                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
                 isDestructive={true}
             />
         </div>

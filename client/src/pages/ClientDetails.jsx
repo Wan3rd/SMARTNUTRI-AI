@@ -1907,9 +1907,9 @@ export default function ClientDetails() {
                                                         },
                                                         {
                                                             id: 'clinical', label: 'Clinical Care', tabs: [
-                                                                { id: 'adime', label: 'ADIME Charting', icon: Stethoscope },
+                                                                { id: 'adime', label: 'ADIME', icon: Stethoscope },
                                                                 { id: 'rules', label: 'Rules Engine', icon: ShieldAlert },
-                                                                { id: 'notes', label: 'Progress Notes', icon: StickyNote }
+                                                                { id: 'notes', label: 'Notes', icon: StickyNote }
                                                             ]
                                                         },
                                                         {
@@ -1950,2175 +1950,2175 @@ export default function ClientDetails() {
 
                                         {/* TAB SLIDE CONTAINER */}
                                         <div className="relative overflow-hidden">
-                                        <AnimatePresence mode="wait" custom={tabDirection}>
-                                        <motion.div
-                                            key={activeTab}
-                                            custom={tabDirection}
-                                            initial={{ opacity: 0, x: tabDirection * 32 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: tabDirection * -32 }}
-                                            transition={{ duration: 0.22, ease: 'easeInOut' }}
-                                        >
-
-                                        {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
-                                        {(activeTab === 'adime' || activeTab === 'notes') && (
-                                            <div className="space-y-6 mb-8 animate-in slide-in-from-top-4 duration-500">
-                                                {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR (Only for ADIME & Notes) */}
-                                                <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex flex-wrap items-center justify-center p-1.5 gap-1 sm:gap-2">
-                                                    <div className="flex items-center gap-2 px-2 sm:px-3 border-r border-[var(--color-divider)]">
-                                                        <div className={`w-2 h-2 rounded-full ${focusedField ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                                                        <span className="text-[9px] sm:text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-tighter sm:tracking-widest whitespace-nowrap truncate max-w-[120px] sm:max-w-none">
-                                                            {focusedField ? `Editor: ${focusedField}` : 'Click to type'}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1">
-                                                        <button type="button" onClick={() => applyFormat('bold')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bold (Ctrl+B)">
-                                                            <Bold size={18} strokeWidth={2.5} />
-                                                        </button>
-                                                        <button type="button" onClick={() => applyFormat('italic')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Italic (Ctrl+I)">
-                                                            <Italic size={18} strokeWidth={2.5} />
-                                                        </button>
-                                                        <button type="button" onClick={() => applyFormat('list', 'bullet')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bulleted List (Ctrl+Shift+8)">
-                                                            <List size={18} strokeWidth={2.5} />
-                                                        </button>
-                                                        <button type="button" onClick={() => applyFormat('list', 'ordered')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Numbered List (Ctrl+Shift+7)">
-                                                            <ListOrdered size={18} strokeWidth={2.5} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* TAB 1: OVERVIEW */}
-                                        {activeTab === 'overview' && (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                className="space-y-8"
-                                            >
-                                                {/* 1. BIOGRAPHICAL SUMMARY (Nutritionist's Quick Look) */}
+                                            <AnimatePresence mode="wait" custom={tabDirection}>
                                                 <motion.div
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="-mx-4 sm:mx-0 p-4 sm:p-6 glass mesh-emerald rounded-none sm:rounded-[2.5rem] border-y sm:border border-white/40 dark:border-white/10 shadow-2xl relative overflow-hidden"
+                                                    key={activeTab}
+                                                    custom={tabDirection}
+                                                    initial={{ opacity: 0, x: tabDirection * 32 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: tabDirection * -32 }}
+                                                    transition={{ duration: 0.22, ease: 'easeInOut' }}
                                                 >
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 sm:gap-0 relative z-10">
-                                                        <div className="flex items-center gap-3 sm:gap-5">
-                                                            <motion.div
-                                                                whileHover={{ scale: 1.05, rotate: 5 }}
-                                                                className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-white/50 dark:border-white/10 shadow-xl flex-shrink-0 backdrop-blur-xl"
-                                                            >
-                                                                {isLoading ? <SkeletonLoader /> : (
-                                                                    selectedProfile?.profile_image_url ? (
-                                                                        <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
-                                                                    ) : (
-                                                                        <User size={40} strokeWidth={2.5} className="text-[var(--color-primary)] sm:w-12 sm:h-12" />
-                                                                    )
-                                                                )}
-                                                            </motion.div>
-                                                            <div className="min-w-0">
-                                                                {isLoading ? (
-                                                                    <div className="space-y-2">
-                                                                        <SkeletonLoader className="h-8 w-48" />
-                                                                        <SkeletonLoader className="h-4 w-32" />
-                                                                    </div>
-                                                                ) : (
-                                                                    <>
-                                                                        <h2 className={cn("text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none truncate mb-1", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
-                                                                        <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex-wrap">
-                                                                            <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm">{selectedProfile.gender}</span>
-                                                                            <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                                            {!isLoading && clinicalPatterns.some(a => a.severity === 'critical' || a.severity === 'high') && (
-                                                                <div className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full animate-pulse shadow-xl shadow-red-500/30">
-                                                                    <AlertCircle size={16} />
-                                                                    <span className="text-[11px] font-black uppercase tracking-widest">{clinicalPatterns.filter(a => a.severity === 'critical' || a.severity === 'high').length} Urgent Alerts</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
-                                                                <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
-                                                                <div className="text-sm font-black text-[var(--color-secondary)]">
-                                                                    {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
 
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 relative z-10">
-                                                        {/* Weight Card */}
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
-                                                        >
-                                                            <div className="flex justify-between items-start mb-1 relative z-10">
-                                                                <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight</div>
-                                                                {!isLoading && parseFloat(growthDeltas.weight) !== 0 && (
-                                                                    <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                                        {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
-                                                                        {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-end justify-between relative z-10">
-                                                                <div className="text-lg sm:text-xl font-black text-[var(--color-primary)]">
-                                                                    {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-[10px] sm:text-xs font-bold opacity-60">kg</span></>}
-                                                                </div>
-                                                                {!isLoading && growthLogs.length > 1 && (
-                                                                    <div className="w-12 sm:w-20 opacity-60">
-                                                                        <Sparkline
-                                                                            data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)}
-                                                                            color="#10b981"
-                                                                            dataKey="weight_kg"
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {!isLoading && growthLogs.length > 1 && (
-                                                                <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
-                                                                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                                                                        <div className="flex items-center gap-1">
-                                                                            <Activity size={8} className="text-emerald-500" />
-                                                                            <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}kg/m</span></span>
-                                                                        </div>
-                                                                    </div>
-                                                                    {growthLogs[growthLogs.length - 1]?.clinical_analysis?.weight && (
-                                                                        <span className={cn(
-                                                                            "px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black uppercase tracking-tighter",
-                                                                            growthLogs[growthLogs.length - 1].clinical_analysis.weight.zScore < -2 ? "bg-red-500 text-white" : "bg-emerald-500/10 text-emerald-600"
-                                                                        )}>
-                                                                            P{growthLogs[growthLogs.length - 1].clinical_analysis.weight.percentile} Percentile
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </motion.div>
-
-                                                        {/* Height Card */}
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
-                                                        >
-                                                            <div className="flex justify-between items-start mb-1 relative z-10">
-                                                                <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height</div>
-                                                                {!isLoading && parseFloat(growthDeltas.height) !== 0 && (
-                                                                    <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                                        {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
-                                                                        {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-end justify-between relative z-10">
-                                                                <div className="flex flex-col">
-                                                                    <div className="text-lg sm:text-xl font-black text-[var(--color-secondary)]">
-                                                                        {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-[10px] sm:text-xs font-bold opacity-60">cm</span></>}
-                                                                    </div>
-                                                                    <div className="text-[7px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5 whitespace-nowrap">
-                                                                        {isLoading ? <SkeletonLoader className="h-3 w-12" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imp</>}
-                                                                    </div>
-                                                                </div>
-                                                                {!isLoading && growthLogs.length > 1 && (
-                                                                    <div className="w-12 sm:w-20 opacity-60">
-                                                                        <Sparkline
-                                                                            data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)}
-                                                                            color="#3b82f6"
-                                                                            dataKey="height_cm"
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {!isLoading && growthLogs.length > 1 && (
-                                                                <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
-                                                                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                                                                        <div className="flex items-center gap-1">
-                                                                            <Activity size={8} className="text-blue-500" />
-                                                                            <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}cm/m</span></span>
-                                                                        </div>
-                                                                    </div>
-                                                                    {growthLogs[growthLogs.length - 1]?.clinical_analysis?.height && (
-                                                                        <span className={cn(
-                                                                            "px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black uppercase tracking-tighter",
-                                                                            growthLogs[growthLogs.length - 1].clinical_analysis.height.zScore < -2 ? "bg-red-500 text-white" : "bg-blue-500/10 text-blue-600"
-                                                                        )}>
-                                                                            P{growthLogs[growthLogs.length - 1].clinical_analysis.height.percentile} Percentile
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </motion.div>
-
-                                                        {/* BMI Card */}
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 flex flex-col justify-between shadow-lg backdrop-blur-md"
-                                                        >
-                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Status</div>
-                                                            {bmiData ? (
-                                                                <div className="space-y-1.5">
-                                                                    <div className="text-lg sm:text-xl font-black text-[var(--color-text-main)]">{isLoading ? <SkeletonLoader className="h-7 w-12" /> : bmiData.bmi}</div>
-                                                                    <div className={cn(
-                                                                        "inline-flex items-center px-2 py-0.5 rounded-lg border backdrop-blur-md text-[7px] sm:text-[9px] font-black uppercase tracking-tight",
-                                                                        isLoading ? "skeleton h-4 w-16" : `${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color}`
-                                                                    )}>
-                                                                        {bmiData.status}
-                                                                    </div>
-                                                                </div>
-                                                            ) : <div className="text-[10px] font-black text-[var(--color-text-muted)] italic">No data</div>}
-                                                        </motion.div>
-
-                                                        {/* Activity Card */}
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
-                                                        >
-                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
-                                                            <div className="text-xs sm:text-sm font-black text-[var(--color-text-main)] capitalize mt-2 truncate">
-                                                                {isLoading ? <SkeletonLoader className="h-5 w-20" /> : (selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A')}
-                                                            </div>
-                                                        </motion.div>
-
-                                                        {/* Allergies Card */}
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.02, y: -5 }}
-                                                            className="col-span-1 sm:col-span-2 lg:col-span-1 p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
-                                                        >
-                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
-                                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                                {isLoading ? (
-                                                                    <SkeletonLoader className="h-5 w-24" />
-                                                                ) : (
-                                                                    selectedProfile.allergies?.length > 0 ? (
-                                                                        selectedProfile.allergies.map(allergy => (
-                                                                            <span key={allergy} className="px-2 py-1 bg-red-500/10 text-red-600 border border-red-500/20 rounded-lg text-[7px] sm:text-[8px] font-black uppercase whitespace-nowrap backdrop-blur-md shadow-sm">
-                                                                                {allergy}
-                                                                            </span>
-                                                                        ))
-                                                                    ) : (
-                                                                        <span className="text-[10px] font-black text-emerald-500 italic">None Reported</span>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </motion.div>
-                                                    </div>
-                                                </motion.div>
-
-                                                {/* Clinical Intelligence Dashboard */}
-                                                <motion.div
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className="mt-6 pt-6 border-t border-[var(--color-divider)]"
-                                                >
-                                                    <div className="flex items-center gap-2 mb-4">
-                                                        <Activity size={14} className="text-[var(--color-primary)]" />
-                                                        <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-widest">Clinical Intelligence</h3>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                                        {clinicalPatterns.map((alert, idx) => (
-                                                            <motion.div
-                                                                key={idx}
-                                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                                animate={{ opacity: 1, scale: 1 }}
-                                                                transition={{ delay: idx * 0.1 }}
-                                                                className={cn(
-                                                                    "p-3 rounded-xl border flex flex-col gap-2 transition-all",
-                                                                    alert.severity === 'critical' ? "bg-red-50/30 dark:bg-red-900/5 border-red-100 dark:border-red-900/10" :
-                                                                        alert.severity === 'high' ? "bg-orange-50/30 dark:bg-orange-900/5 border-orange-100 dark:border-orange-900/10" :
-                                                                            alert.severity === 'med' ? "bg-amber-50/30 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/10" :
-                                                                                "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-100 dark:border-emerald-900/10"
-                                                                )}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <alert.icon size={14} className={cn(
-                                                                        alert.severity === 'critical' ? "text-red-500" :
-                                                                            alert.severity === 'high' ? "text-orange-600" :
-                                                                                alert.severity === 'med' ? "text-amber-500" :
-                                                                                    "text-emerald-500"
-                                                                    )} />
-                                                                    <span className={cn(
-                                                                        "text-[8px] font-black uppercase tracking-tighter",
-                                                                        alert.severity === 'critical' ? "text-red-600" :
-                                                                            alert.severity === 'high' ? "text-orange-600" :
-                                                                                alert.severity === 'med' ? "text-amber-600" :
-                                                                                    "text-emerald-600"
-                                                                    )}>
-                                                                        {alert.severity}
+                                                    {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
+                                                    {(activeTab === 'adime' || activeTab === 'notes') && (
+                                                        <div className="space-y-6 mb-8 animate-in slide-in-from-top-4 duration-500">
+                                                            {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR (Only for ADIME & Notes) */}
+                                                            <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex flex-wrap items-center justify-center p-1.5 gap-1 sm:gap-2">
+                                                                <div className="flex items-center gap-2 px-2 sm:px-3 border-r border-[var(--color-divider)]">
+                                                                    <div className={`w-2 h-2 rounded-full ${focusedField ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                                                                    <span className="text-[9px] sm:text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-tighter sm:tracking-widest whitespace-nowrap truncate max-w-[120px] sm:max-w-none">
+                                                                        {focusedField ? `Editor: ${focusedField}` : 'Click to type'}
                                                                     </span>
                                                                 </div>
-                                                                <div>
-                                                                    <div className="text-[10px] font-black uppercase tracking-tight text-[var(--color-text-main)] mb-0.5">
-                                                                        {alert.title}
-                                                                    </div>
 
-                                                                    <p className="text-[9px] font-bold text-[var(--color-text-muted)] leading-tight">
-                                                                        {alert.desc}
-                                                                    </p>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button type="button" onClick={() => applyFormat('bold')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bold (Ctrl+B)">
+                                                                        <Bold size={18} strokeWidth={2.5} />
+                                                                    </button>
+                                                                    <button type="button" onClick={() => applyFormat('italic')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Italic (Ctrl+I)">
+                                                                        <Italic size={18} strokeWidth={2.5} />
+                                                                    </button>
+                                                                    <button type="button" onClick={() => applyFormat('list', 'bullet')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bulleted List (Ctrl+Shift+8)">
+                                                                        <List size={18} strokeWidth={2.5} />
+                                                                    </button>
+                                                                    <button type="button" onClick={() => applyFormat('list', 'ordered')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Numbered List (Ctrl+Shift+7)">
+                                                                        <ListOrdered size={18} strokeWidth={2.5} />
+                                                                    </button>
                                                                 </div>
-                                                            </motion.div>
-                                                        ))}
-                                                    </div>
-                                                </motion.div>
-
-                                                {/* 2. CLINICAL & MEDICAL RECORDS */}
-                                                <div className="space-y-6">
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
-                                                        <div>
-                                                            <h3 className="font-black text-lg md:text-xl text-[var(--color-secondary)] uppercase tracking-tight">Clinical & Medical Records</h3>
-                                                            <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive medical history and current status</p>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex gap-2 w-full sm:w-auto">
-                                                            {isClinicalEditing && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    onClick={() => {
-                                                                        setIsClinicalEditing(false);
-                                                                        setClinicalForm({
-                                                                            child_name: selectedProfile?.child_name || '',
-                                                                            gender: selectedProfile?.gender || '',
-                                                                            date_of_birth: selectedProfile?.date_of_birth?.split('T')[0] || '',
-                                                                            activity_level: selectedProfile?.activity_level || '',
-                                                                            allergies: selectedProfile?.allergies || []
-                                                                        });
-                                                                    }}
-                                                                    className="flex-1 sm:flex-none text-xs font-black uppercase"
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                variant={isClinicalEditing ? "primary" : "outline"}
-                                                                onClick={() => isClinicalEditing ? handleClinicalSave() : setIsClinicalEditing(true)}
-                                                                className="flex-1 sm:flex-none flex items-center justify-center gap-2"
+                                                    )}
+
+                                                    {/* TAB 1: OVERVIEW */}
+                                                    {activeTab === 'overview' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            className="space-y-8"
+                                                        >
+                                                            {/* 1. BIOGRAPHICAL SUMMARY (Nutritionist's Quick Look) */}
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: 20 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                className="sm:-mx-0 p-4 sm:p-6 glass mesh-emerald rounded-2xl sm:rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl relative overflow-hidden"
                                                             >
-                                                                {isClinicalEditing ? <Save size={16} /> : <Edit2 size={16} />}
-                                                                <span className="text-xs sm:text-sm font-black uppercase tracking-widest">{isClinicalEditing ? "Save" : "Edit"}</span>
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Edit Form for Bio Info if in edit mode */}
-                                                    {isClinicalEditing && (
-                                                        <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={clinicalForm.child_name}
-                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, child_name: e.target.value })}
-                                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Gender</label>
-                                                                <select
-                                                                    value={clinicalForm.gender}
-                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, gender: e.target.value })}
-                                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
-                                                                >
-                                                                    <option value="Male" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Male</option>
-                                                                    <option value="Female" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Female</option>
-                                                                </select>
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Date of Birth</label>
-                                                                <input
-                                                                    type="date"
-                                                                    value={clinicalForm.date_of_birth}
-                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, date_of_birth: e.target.value })}
-                                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                        <div className="space-y-6">
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-2">
-                                                                    <Stethoscope size={14} /> Medical & Surgical History
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-[var(--color-primary)] outline-none min-h-[150px]"
-                                                                        value={clinicalForm.medical_history}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, medical_history: e.target.value })}
-                                                                        placeholder="Enter detailed medical and surgical history..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed whitespace-pre-wrap">
-                                                                        {typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : "No medical history recorded."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Link2 size={14} /> Current Medications
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-blue-500 outline-none min-h-[100px]"
-                                                                        value={clinicalForm.medications}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, medications: e.target.value })}
-                                                                        placeholder="List current medications and dosages..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
-                                                                        {selectedProfile.medications || "No active medications."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Activity size={14} /> Family Medical History
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-emerald-500 outline-none min-h-[100px]"
-                                                                        value={clinicalForm.family_history}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, family_history: e.target.value })}
-                                                                        placeholder="History of diabetes, hypertension, allergies in the family..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
-                                                                        {selectedProfile.family_history || "No family history recorded."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-6">
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <AlertTriangle size={14} /> Allergies & Food Intolerances
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <div className="space-y-4">
-                                                                        <div className="flex flex-wrap gap-2">
-                                                                            {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
-                                                                                <button
-                                                                                    key={allergy}
-                                                                                    onClick={() => {
-                                                                                        const current = clinicalForm.allergies || [];
-                                                                                        const updated = current.includes(allergy)
-                                                                                            ? current.filter(a => a !== allergy)
-                                                                                            : [...current, allergy];
-                                                                                        setClinicalForm({ ...clinicalForm, allergies: updated });
-                                                                                    }}
-                                                                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${(clinicalForm.allergies || []).includes(allergy)
-                                                                                        ? 'bg-red-500 text-white border-red-500'
-                                                                                        : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
-                                                                                        }`}
-                                                                                >
-                                                                                    {allergy}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                        <textarea
-                                                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-red-500 outline-none min-h-[80px]"
-                                                                            value={clinicalForm.food_intolerances}
-                                                                            onChange={(e) => setClinicalForm({ ...clinicalForm, food_intolerances: e.target.value })}
-                                                                            placeholder="Specific food intolerances or digestive triggers..."
-                                                                        />
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="space-y-3">
-                                                                        <div className="flex flex-wrap gap-2">
-                                                                            {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
-                                                                                <span key={a} className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-black uppercase border border-red-100 dark:border-red-800/30">{a}</span>
-                                                                            )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
-                                                                        </div>
-                                                                        {selectedProfile.food_intolerances && (
-                                                                            <p className="text-sm text-[var(--color-text-main)] font-medium italic border-l-4 border-red-200 pl-3">
-                                                                                {selectedProfile.food_intolerances}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Activity size={14} /> Clinical Symptoms & Observations
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-orange-500 outline-none min-h-[80px]"
-                                                                        value={clinicalForm.symptoms}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, symptoms: e.target.value })}
-                                                                        placeholder="Current symptoms: bloating, fatigue, skin issues..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium">
-                                                                        {selectedProfile.symptoms || "No active symptoms reported."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-purple-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Activity size={14} /> Lifestyle & Environmental Factors
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-purple-500 outline-none min-h-[80px]"
-                                                                        value={clinicalForm.lifestyle_factors}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, lifestyle_factors: e.target.value })}
-                                                                        placeholder="Sleep quality, screen time, physical activity environment..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium">
-                                                                        {selectedProfile.lifestyle_factors || "Standard lifestyle patterns."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Activity size={14} /> Bristol Stool Scale (Baseline)
-                                                                </h4>
-                                                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                                                                    {BRISTOL_TYPES.map(type => {
-                                                                        const currentVal = isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale;
-                                                                        const isSelected = currentVal === type.type;
-                                                                        return (
-                                                                            <button
-                                                                                key={type.type}
-                                                                                type="button"
-                                                                                disabled={!isClinicalEditing}
-                                                                                onClick={() => isClinicalEditing && setClinicalForm({ ...clinicalForm, bristol_stool_scale: type.type })}
-                                                                                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${isSelected
-                                                                                    ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                                                                    : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-amber-400 disabled:opacity-50'
-                                                                                    } ${!isClinicalEditing ? 'cursor-default' : 'cursor-pointer'}`}
-                                                                            >
-                                                                                <span className="text-xl">
-                                                                                    {type.type === 1 && '🥜'}
-                                                                                    {type.type === 2 && '🍇'}
-                                                                                    {type.type === 3 && '🥖'}
-                                                                                    {type.type === 4 && '🐍'}
-                                                                                    {type.type === 5 && '💧'}
-                                                                                    {type.type === 6 && '☁️'}
-                                                                                    {type.type === 7 && '🌊'}
-                                                                                </span>
-                                                                                <div className="text-center">
-                                                                                    <p className="text-[10px] font-black uppercase tracking-tight">{type.label}</p>
-                                                                                    <p className={`text-[8px] font-bold uppercase leading-tight ${isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
-                                                                                        {type.desc}
-                                                                                    </p>
-                                                                                </div>
-                                                                            </button>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                                <p className="text-[9px] text-[var(--color-text-muted)] font-medium bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-[var(--color-divider)]">
-                                                                    <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === (isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale))?.detail}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
-                                                                <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <Activity size={14} /> Weigh-in Conditions
-                                                                </h4>
-                                                                {isClinicalEditing ? (
-                                                                    <textarea
-                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-indigo-500 outline-none min-h-[80px]"
-                                                                        value={clinicalForm.weigh_in_conditions}
-                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, weigh_in_conditions: e.target.value })}
-                                                                        placeholder="e.g. Early morning, before breakfast, same clothes..."
-                                                                    />
-                                                                ) : (
-                                                                    <div className="text-sm text-[var(--color-text-main)] font-medium">
-                                                                        {selectedProfile.weigh_in_conditions || "Standard conditions."}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* 3. VACCINATION HISTORY & MANAGEMENT */}
-                                                <div className="mt-8 space-y-6">
-                                                    <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
-                                                        <div>
-                                                            <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Structured Vaccination History</h3>
-                                                            <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive immunization record and tracking</p>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            {isClinicalEditing && !isAddingVaccine && (
-                                                                <Button
-                                                                    variant="primary"
-                                                                    onClick={() => setIsAddingVaccine(true)}
-                                                                    className="flex gap-2 text-xs font-black uppercase"
-                                                                >
-                                                                    <Plus size={16} />
-                                                                    Add Vaccine Record
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {isAddingVaccine && (
-                                                        <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
-                                                                    <select
-                                                                        value={newVaccine.typeId}
-                                                                        onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
-                                                                    >
-                                                                        <option value="" className="bg-[var(--color-bg-card)]">Select vaccine...</option>
-                                                                        {vaccinationTypes.map(t => (
-                                                                            <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={newVaccine.date}
-                                                                        onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1.5">
-                                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Batch # / Notes</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={newVaccine.notes}
-                                                                        onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
-                                                                        placeholder="e.g. Batch #7721-A"
-                                                                        className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex justify-end gap-3">
-                                                                <Button variant="ghost" onClick={() => setIsAddingVaccine(false)} className="text-xs font-black uppercase">
-                                                                    Cancel
-                                                                </Button>
-                                                                <Button onClick={handleAddVaccine} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6">
-                                                                    Save Record
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {childVaccinations.length === 0 ? (
-                                                        <div className="p-12 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                                                            <Stethoscope size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
-                                                            <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">No Immunization Records</p>
-                                                            <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                            {childVaccinations.map(v => (
-                                                                <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
-                                                                    <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                                                                        <Check size={16} strokeWidth={3} />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
-                                                                            {v.vaccination_types?.name}
-                                                                        </h4>
-                                                                        <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
-                                                                            <Calendar size={10} />
-                                                                            {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                                                                        </div>
-                                                                        {v.notes && (
-                                                                            <p className="mt-1 text-[9px] text-[var(--color-text-muted)] italic font-bold uppercase tracking-tight leading-tight opacity-70">
-                                                                                {v.notes}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                    {isClinicalEditing && (
-                                                                        <button
-                                                                            onClick={() => handleDeleteVaccine(v.id)}
-                                                                            className="p-1 text-red-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
-                                                                            title="Delete Record"
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 sm:gap-0 relative z-10">
+                                                                    <div className="flex items-center gap-3 sm:gap-5">
+                                                                        <motion.div
+                                                                            whileHover={{ scale: 1.05, rotate: 5 }}
+                                                                            className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-white/50 dark:border-white/10 shadow-xl flex-shrink-0 backdrop-blur-xl"
                                                                         >
-                                                                            <Trash2 size={12} />
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 4. GROWTH TRACKING (Moved to bottom) */}
-                                                <div className="space-y-6 pt-4">
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
-                                                        <div>
-                                                            <h3 className="font-black text-lg md:text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
-                                                            <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
-                                                        </div>
-                                                        <div className="w-full sm:w-auto">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="w-full sm:w-auto h-10 sm:h-8 text-xs sm:text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest flex items-center justify-center"
-                                                                onClick={() => setIsGrowthModalOpen(true)}
-                                                            >
-                                                                <Plus size={14} className="mr-2" /> Log New Growth Data
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                                        <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
-                                                            <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
-                                                                <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
-                                                                    <TrendingUp size={14} className="text-[var(--color-secondary)]" /> Height Tracking (cm)
-                                                                </CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent className="p-6">
-                                                                <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
-                                                                    {growthLogs.length > 0 ? (
-                                                                        <ResponsiveContainer width="99%" height={250} minWidth={0} debounce={50}>
-                                                                            <LineChart data={growthLogs}>
-                                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                                <XAxis
-                                                                                    dataKey="logged_at"
-                                                                                    tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                                    fontSize={10}
-                                                                                    tick={{ fill: 'var(--color-text-muted)' }}
-                                                                                />
-                                                                                <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
-                                                                                <Tooltip
-                                                                                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                                    contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
-                                                                                />
-                                                                                <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-secondary)' }} activeDot={{ r: 6 }} />
-                                                                            </LineChart>
-                                                                        </ResponsiveContainer>
-                                                                    ) : (
-                                                                        <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
-                                                                    )}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-
-                                                        <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
-                                                            <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
-                                                                <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
-                                                                    <TrendingUp size={14} className="text-[var(--color-primary)]" /> Weight Tracking (kg)
-                                                                </CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent className="p-6">
-                                                                <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
-                                                                    {growthLogs.length > 0 ? (
-                                                                        <ResponsiveContainer width="99%" height={250} minWidth={0} debounce={50}>
-                                                                            <LineChart data={growthLogs}>
-                                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                                                                <XAxis
-                                                                                    dataKey="logged_at"
-                                                                                    tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                                                                                    fontSize={10}
-                                                                                    tick={{ fill: 'var(--color-text-muted)' }}
-                                                                                />
-                                                                                <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
-                                                                                <Tooltip
-                                                                                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                                                                                    contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
-                                                                                />
-                                                                                <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />
-                                                                            </LineChart>
-                                                                        </ResponsiveContainer>
-                                                                    ) : (
-                                                                        <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
-                                                                    )}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </div>
-                                                </div>
-
-                                                {/* GROWTH HISTORY LIST (DELETABLE) */}
-                                                <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden mb-6">
-                                                    <div className="px-6 py-4 border-b border-[var(--color-divider)] bg-[var(--color-bg-page)] flex justify-between items-center">
-                                                        <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
-                                                            <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
-                                                        </h4>
-                                                        <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
-                                                    </div>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-left">
-                                                            <thead>
-                                                                <tr className="border-b border-[var(--color-divider)] bg-gray-50/50 dark:bg-white/5">
-                                                                    <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Recorded</th>
-                                                                    <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height (cm)</th>
-                                                                    <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight (kg)</th>
-                                                                    <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Status</th>
-                                                                    <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-[var(--color-divider)]">
-                                                                {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
-                                                                    <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            <span className="text-xs font-bold text-[var(--color-text-main)]">
-                                                                                {new Date(log.logged_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            <span className="text-xs font-black text-[var(--color-secondary)]">{log.height_cm} cm</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            <span className="text-xs font-black text-[var(--color-primary)]">{log.weight_kg} kg</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            {log.clinical_analysis && (
-                                                                                <div className="flex gap-1">
-                                                                                    <span className={cn(
-                                                                                        "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
-                                                                                        log.clinical_analysis.weight.status === 'Normal' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                                                                                    )}>
-                                                                                        W: {log.clinical_analysis.weight.status}
-                                                                                    </span>
-                                                                                    <span className={cn(
-                                                                                        "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
-                                                                                        log.clinical_analysis.height.status === 'Normal' ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
-                                                                                    )}>
-                                                                                        H: {log.clinical_analysis.height.status}
-                                                                                    </span>
-                                                                                </div>
+                                                                            {isLoading ? <SkeletonLoader /> : (
+                                                                                selectedProfile?.profile_image_url ? (
+                                                                                    <img src={selectedProfile.profile_image_url} alt={selectedProfile.child_name} className="h-full w-full object-cover" />
+                                                                                ) : (
+                                                                                    <User size={40} strokeWidth={2.5} className="text-[var(--color-primary)] sm:w-12 sm:h-12" />
+                                                                                )
                                                                             )}
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={() => {
-                                                                                    setEditingGrowthLog(log.id);
-                                                                                    setEditGrowthForm({
-                                                                                        height_cm: log.height_cm,
-                                                                                        weight_kg: log.weight_kg,
-                                                                                        logged_at: new Date(log.logged_at).toISOString().split('T')[0]
-                                                                                    });
-                                                                                    setIsEditGrowthModalOpen(true);
-                                                                                }}
-                                                                                className="h-8 w-8 p-0 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
-                                                                            >
-                                                                                <Edit2 size={14} />
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={() => handleDeleteGrowthLog(log.id)}
-                                                                                className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                                                                            >
-                                                                                <Trash2 size={14} />
-                                                                            </Button>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                {growthLogs.length === 0 && (
-                                                                    <tr>
-                                                                        <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
-                                                                            No growth history logs recorded yet.
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-6 bg-green-50 dark:bg-green-900/10 rounded-3xl border-2 border-green-100 dark:border-green-800/30">
-                                                    <h4 className="font-black text-green-800 dark:text-green-300 uppercase tracking-widest text-xs mb-2">Clinical Insights Summary</h4>
-                                                    <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">
-                                                        Currently tracking <strong>{rules.length} active nutrition rules</strong> for this profile. All clinical parameters and growth metrics are up to date as of {new Date().toLocaleDateString()}.
-                                                    </p>
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {/* TAB: LOG HISTORY (Date-Grouped) */}
-                                        {activeTab === 'history' && (
-                                            <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
-                                                {/* LEFT SIDEBAR: DATE SELECTION (Timeline) */}
-                                                <div className="w-full md:w-72 flex-shrink-0 space-y-4">
-                                                    <div className="sticky top-[140px] lg:top-8 z-20 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
-                                                        <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] px-2 mb-3 hidden md:block">Clinical Timeline</h3>
-                                                        <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0 snap-x">
-                                                            {Object.keys(logs.reduce((acc, log) => {
-                                                                const date = new Date(log.logged_at).toLocaleDateString();
-                                                                acc[date] = true;
-                                                                return acc;
-                                                            }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
-                                                                const isSelected = selectedHistoryDate === date;
-                                                                const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
-                                                                return (
-                                                                    <button
-                                                                        key={date}
-                                                                        onClick={() => setSelectedHistoryDate(date)}
-                                                                        className={cn(
-                                                                            "flex-shrink-0 snap-start flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left min-w-[160px] md:min-w-0 shadow-sm",
-                                                                            isSelected
-                                                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] md:scale-100'
-                                                                                : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
-                                                                        )}
-                                                                    >
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className={cn(
-                                                                                "w-3 h-3 rounded-full border-2 shadow-sm transition-colors",
-                                                                                isSelected ? "border-white/50" : "border-white dark:border-zinc-800",
-                                                                                dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                    dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                        dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                            'bg-gray-300'
-                                                                            )} />
-                                                                            <div className="text-left">
-                                                                                <div className={cn("text-xs md:text-sm font-black tracking-tight", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>{date}</div>
-                                                                                <div className={cn("text-[9px] font-bold uppercase tracking-tighter mt-0.5", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
-                                                                                    {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                                        </motion.div>
+                                                                        <div className="min-w-0">
+                                                                            {isLoading ? (
+                                                                                <div className="space-y-2">
+                                                                                    <SkeletonLoader className="h-8 w-48" />
+                                                                                    <SkeletonLoader className="h-4 w-32" />
                                                                                 </div>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <h2 className={cn("text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none truncate mb-1", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
+                                                                                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex-wrap">
+                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm">{selectedProfile.gender}</span>
+                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                                                        {!isLoading && clinicalPatterns.some(a => a.severity === 'critical' || a.severity === 'high') && (
+                                                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full animate-pulse shadow-xl shadow-red-500/30">
+                                                                                <AlertCircle size={16} />
+                                                                                <span className="text-[11px] font-black uppercase tracking-widest">{clinicalPatterns.filter(a => a.severity === 'critical' || a.severity === 'high').length} Urgent Alerts</span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
+                                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
+                                                                            <div className="text-sm font-black text-[var(--color-secondary)]">
+                                                                                {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
                                                                             </div>
                                                                         </div>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                            {logs.length === 0 && (
-                                                                <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* RIGHT CONTENT: DAILY LOGS */}
-                                                <div className="flex-grow space-y-8">
-                                                    {selectedHistoryDate && (
-                                                        <>
-                                                            {/* DAILY SUMMARY CARD */}
-                                                            <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
-                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                                                    <div>
-                                                                        <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
-                                                                        <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
                                                                     </div>
-                                                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                                                        <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
-                                                                            <Activity size={12} />
-                                                                            <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 relative z-10">
+                                                                    {/* Weight Card */}
+                                                                    <motion.div
+                                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
+                                                                    >
+                                                                        <div className="flex justify-between items-start mb-1 relative z-10">
+                                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight</div>
+                                                                            {!isLoading && parseFloat(growthDeltas.weight) !== 0 && (
+                                                                                <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                                    {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                                    {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                        {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
+                                                                        <div className="flex items-end justify-between relative z-10">
+                                                                            <div className="text-lg sm:text-xl font-black text-[var(--color-primary)]">
+                                                                                {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-[10px] sm:text-xs font-bold opacity-60">kg</span></>}
+                                                                            </div>
+                                                                            {!isLoading && growthLogs.length > 1 && (
+                                                                                <div className="w-12 sm:w-20 opacity-60">
+                                                                                    <Sparkline
+                                                                                        data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)}
+                                                                                        color="#10b981"
+                                                                                        dataKey="weight_kg"
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        {!isLoading && growthLogs.length > 1 && (
+                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
+                                                                                <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <Activity size={8} className="text-emerald-500" />
+                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}kg/m</span></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {growthLogs[growthLogs.length - 1]?.clinical_analysis?.weight && (
+                                                                                    <span className={cn(
+                                                                                        "px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black uppercase tracking-tighter",
+                                                                                        growthLogs[growthLogs.length - 1].clinical_analysis.weight.zScore < -2 ? "bg-red-500 text-white" : "bg-emerald-500/10 text-emerald-600"
+                                                                                    )}>
+                                                                                        P{growthLogs[growthLogs.length - 1].clinical_analysis.weight.percentile} Percentile
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </motion.div>
+
+                                                                    {/* Height Card */}
+                                                                    <motion.div
+                                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
+                                                                    >
+                                                                        <div className="flex justify-between items-start mb-1 relative z-10">
+                                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height</div>
+                                                                            {!isLoading && parseFloat(growthDeltas.height) !== 0 && (
+                                                                                <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                                    {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                                    {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-end justify-between relative z-10">
+                                                                            <div className="flex flex-col">
+                                                                                <div className="text-lg sm:text-xl font-black text-[var(--color-secondary)]">
+                                                                                    {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-[10px] sm:text-xs font-bold opacity-60">cm</span></>}
+                                                                                </div>
+                                                                                <div className="text-[7px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5 whitespace-nowrap">
+                                                                                    {isLoading ? <SkeletonLoader className="h-3 w-12" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imp</>}
+                                                                                </div>
+                                                                            </div>
+                                                                            {!isLoading && growthLogs.length > 1 && (
+                                                                                <div className="w-12 sm:w-20 opacity-60">
+                                                                                    <Sparkline
+                                                                                        data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).slice(-10)}
+                                                                                        color="#3b82f6"
+                                                                                        dataKey="height_cm"
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        {!isLoading && growthLogs.length > 1 && (
+                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
+                                                                                <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <Activity size={8} className="text-blue-500" />
+                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}cm/m</span></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {growthLogs[growthLogs.length - 1]?.clinical_analysis?.height && (
+                                                                                    <span className={cn(
+                                                                                        "px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black uppercase tracking-tighter",
+                                                                                        growthLogs[growthLogs.length - 1].clinical_analysis.height.zScore < -2 ? "bg-red-500 text-white" : "bg-blue-500/10 text-blue-600"
+                                                                                    )}>
+                                                                                        P{growthLogs[growthLogs.length - 1].clinical_analysis.height.percentile} Percentile
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </motion.div>
+
+                                                                    {/* BMI Card */}
+                                                                    <motion.div
+                                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 flex flex-col justify-between shadow-lg backdrop-blur-md"
+                                                                    >
+                                                                        <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Status</div>
+                                                                        {bmiData ? (
+                                                                            <div className="space-y-1.5">
+                                                                                <div className="text-lg sm:text-xl font-black text-[var(--color-text-main)]">{isLoading ? <SkeletonLoader className="h-7 w-12" /> : bmiData.bmi}</div>
+                                                                                <div className={cn(
+                                                                                    "inline-flex items-center px-2 py-0.5 rounded-lg border backdrop-blur-md text-[7px] sm:text-[9px] font-black uppercase tracking-tight",
+                                                                                    isLoading ? "skeleton h-4 w-16" : `${bmiData.borderColor} ${bmiData.bgColor} ${bmiData.color}`
+                                                                                )}>
+                                                                                    {bmiData.status}
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : <div className="text-[10px] font-black text-[var(--color-text-muted)] italic">No data</div>}
+                                                                    </motion.div>
+
+                                                                    {/* Activity Card */}
+                                                                    <motion.div
+                                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
+                                                                    >
+                                                                        <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
+                                                                        <div className="text-xs sm:text-sm font-black text-[var(--color-text-main)] capitalize mt-2 truncate">
+                                                                            {isLoading ? <SkeletonLoader className="h-5 w-20" /> : (selectedProfile.activity_level?.replace(/_/g, ' ') || 'N/A')}
+                                                                        </div>
+                                                                    </motion.div>
+
+                                                                    {/* Allergies Card */}
+                                                                    <motion.div
+                                                                        whileHover={{ scale: 1.02, y: -5 }}
+                                                                        className="col-span-1 sm:col-span-2 lg:col-span-1 p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
+                                                                    >
+                                                                        <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
+                                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                                            {isLoading ? (
+                                                                                <SkeletonLoader className="h-5 w-24" />
+                                                                            ) : (
+                                                                                selectedProfile.allergies?.length > 0 ? (
+                                                                                    selectedProfile.allergies.map(allergy => (
+                                                                                        <span key={allergy} className="px-2 py-1 bg-red-500/10 text-red-600 border border-red-500/20 rounded-lg text-[7px] sm:text-[8px] font-black uppercase whitespace-nowrap backdrop-blur-md shadow-sm">
+                                                                                            {allergy}
+                                                                                        </span>
+                                                                                    ))
+                                                                                ) : (
+                                                                                    <span className="text-[10px] font-black text-emerald-500 italic">None Reported</span>
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                    </motion.div>
+                                                                </div>
+                                                            </motion.div>
+
+                                                            {/* Clinical Intelligence Dashboard */}
+                                                            <motion.div
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                                className="mt-6 pt-6 border-t border-[var(--color-divider)]"
+                                                            >
+                                                                <div className="flex items-center gap-2 mb-4">
+                                                                    <Activity size={14} className="text-[var(--color-primary)]" />
+                                                                    <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-widest">Clinical Intelligence</h3>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                                    {clinicalPatterns.map((alert, idx) => (
+                                                                        <motion.div
+                                                                            key={idx}
+                                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                                            animate={{ opacity: 1, scale: 1 }}
+                                                                            transition={{ delay: idx * 0.1 }}
+                                                                            className={cn(
+                                                                                "p-3 rounded-xl border flex flex-col gap-2 transition-all",
+                                                                                alert.severity === 'critical' ? "bg-red-50/30 dark:bg-red-900/5 border-red-100 dark:border-red-900/10" :
+                                                                                    alert.severity === 'high' ? "bg-orange-50/30 dark:bg-orange-900/5 border-orange-100 dark:border-orange-900/10" :
+                                                                                        alert.severity === 'med' ? "bg-amber-50/30 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/10" :
+                                                                                            "bg-emerald-50/30 dark:bg-emerald-900/5 border-emerald-100 dark:border-emerald-900/10"
+                                                                            )}
+                                                                        >
+                                                                            <div className="flex items-center justify-between">
+                                                                                <alert.icon size={14} className={cn(
+                                                                                    alert.severity === 'critical' ? "text-red-500" :
+                                                                                        alert.severity === 'high' ? "text-orange-600" :
+                                                                                            alert.severity === 'med' ? "text-amber-500" :
+                                                                                                "text-emerald-500"
+                                                                                )} />
+                                                                                <span className={cn(
+                                                                                    "text-[8px] font-black uppercase tracking-tighter",
+                                                                                    alert.severity === 'critical' ? "text-red-600" :
+                                                                                        alert.severity === 'high' ? "text-orange-600" :
+                                                                                            alert.severity === 'med' ? "text-amber-600" :
+                                                                                                "text-emerald-600"
+                                                                                )}>
+                                                                                    {alert.severity}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-tight text-[var(--color-text-main)] mb-0.5">
+                                                                                    {alert.title}
+                                                                                </div>
+
+                                                                                <p className="text-[9px] font-bold text-[var(--color-text-muted)] leading-tight">
+                                                                                    {alert.desc}
+                                                                                </p>
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+
+                                                            {/* 2. CLINICAL & MEDICAL RECORDS */}
+                                                            <div className="space-y-6">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
+                                                                    <div>
+                                                                        <h3 className="font-black text-lg md:text-xl text-[var(--color-secondary)] uppercase tracking-tight">Clinical & Medical Records</h3>
+                                                                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive medical history and current status</p>
+                                                                    </div>
+                                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                                        {isClinicalEditing && (
                                                                             <Button
+                                                                                type="button"
                                                                                 variant="ghost"
-                                                                                onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
-                                                                                className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                onClick={() => {
+                                                                                    setIsClinicalEditing(false);
+                                                                                    setClinicalForm({
+                                                                                        child_name: selectedProfile?.child_name || '',
+                                                                                        gender: selectedProfile?.gender || '',
+                                                                                        date_of_birth: selectedProfile?.date_of_birth?.split('T')[0] || '',
+                                                                                        activity_level: selectedProfile?.activity_level || '',
+                                                                                        allergies: selectedProfile?.allergies || []
+                                                                                    });
+                                                                                }}
+                                                                                className="flex-1 sm:flex-none text-xs font-black uppercase"
                                                                             >
-                                                                                <Check size={12} className="mr-1" />
-                                                                                Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                                Cancel
                                                                             </Button>
                                                                         )}
                                                                         <Button
-                                                                            variant="ghost"
-                                                                            onClick={() => handleClearLogsForDay(selectedHistoryDate)}
-                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                            variant={isClinicalEditing ? "primary" : "outline"}
+                                                                            onClick={() => isClinicalEditing ? handleClinicalSave() : setIsClinicalEditing(true)}
+                                                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2"
                                                                         >
-                                                                            <Trash2 size={12} className="mr-1 group-hover:scale-110" />
-                                                                            Clear Day
+                                                                            {isClinicalEditing ? <Save size={16} /> : <Edit2 size={16} />}
+                                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-widest">{isClinicalEditing ? "Save" : "Edit"}</span>
                                                                         </Button>
                                                                     </div>
                                                                 </div>
 
-                                                                {/* VIOLATIONS ALERT PANEL */}
-                                                                {dailyViolations.length > 0 && (
-                                                                    <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
-                                                                        <div className="flex items-center gap-2 mb-1 px-1">
-                                                                            <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                                                                            <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
+                                                                {/* Edit Form for Bio Info if in edit mode */}
+                                                                {isClinicalEditing && (
+                                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={clinicalForm.child_name}
+                                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, child_name: e.target.value })}
+                                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                                            />
                                                                         </div>
-                                                                        <div className="flex flex-wrap gap-2 px-1">
-                                                                            {dailyViolations.map((v, i) => (
-                                                                                <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                                    <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
-                                                                                    <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
-                                                                                    <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
-                                                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
-                                                                                </div>
-                                                                            ))}
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Gender</label>
+                                                                            <select
+                                                                                value={clinicalForm.gender}
+                                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, gender: e.target.value })}
+                                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                                                                            >
+                                                                                <option value="Male" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Male</option>
+                                                                                <option value="Female" className="bg-[var(--color-bg-page)] text-[var(--color-text-main)]">Female</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Date of Birth</label>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={clinicalForm.date_of_birth}
+                                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, date_of_birth: e.target.value })}
+                                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                                            />
                                                                         </div>
                                                                     </div>
                                                                 )}
 
-                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                                    {[
-                                                                        { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
-                                                                        { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
-                                                                        { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
-                                                                        { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
-                                                                    ].map((stat, idx) => (
-                                                                        <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
-                                                                            <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* MEAL LIST */}
-                                                            <div className="space-y-4">
-                                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
-                                                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Sequence</h4>
-                                                                    <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">{logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured</span>
-                                                                </div>
-
-                                                                <div className="grid grid-cols-1 gap-3">
-                                                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
-                                                                        <div
-                                                                            key={log.id}
-                                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                                            className="group relative bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex h-24 md:h-40 cursor-pointer shadow-sm hover:shadow-md"
-                                                                        >
-                                                                            <div className="w-24 md:w-48 h-full relative overflow-hidden flex-shrink-0">
-                                                                                <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                                                                <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded-md text-[7px] font-black text-white uppercase tracking-widest">
-                                                                                    {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                    <div className="space-y-6">
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-2">
+                                                                                <Stethoscope size={14} /> Medical & Surgical History
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-[var(--color-primary)] outline-none min-h-[150px]"
+                                                                                    value={clinicalForm.medical_history}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, medical_history: e.target.value })}
+                                                                                    placeholder="Enter detailed medical and surgical history..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed whitespace-pre-wrap">
+                                                                                    {typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : "No medical history recorded."}
                                                                                 </div>
-                                                                            </div>
-                                                                            <div className="p-3 sm:p-6 flex-grow flex flex-col justify-between min-w-0">
-                                                                                <div>
-                                                                                    <div className="flex items-center justify-between mb-0.5 gap-2">
-                                                                                        <h5 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
-                                                                                        <div className={cn(
-                                                                                            "px-1.5 py-0.5 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
-                                                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
-                                                                                        )}>
-                                                                                            {(log.status === 'verified' || log.status === 'reviewed') ? 'Verified' : 'Pending'}
-                                                                                        </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Link2 size={14} /> Current Medications
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-blue-500 outline-none min-h-[100px]"
+                                                                                    value={clinicalForm.medications}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, medications: e.target.value })}
+                                                                                    placeholder="List current medications and dosages..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
+                                                                                    {selectedProfile.medications || "No active medications."}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Activity size={14} /> Family Medical History
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-emerald-500 outline-none min-h-[100px]"
+                                                                                    value={clinicalForm.family_history}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, family_history: e.target.value })}
+                                                                                    placeholder="History of diabetes, hypertension, allergies in the family..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
+                                                                                    {selectedProfile.family_history || "No family history recorded."}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="space-y-6">
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <AlertTriangle size={14} /> Allergies & Food Intolerances
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <div className="space-y-4">
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
+                                                                                            <button
+                                                                                                key={allergy}
+                                                                                                onClick={() => {
+                                                                                                    const current = clinicalForm.allergies || [];
+                                                                                                    const updated = current.includes(allergy)
+                                                                                                        ? current.filter(a => a !== allergy)
+                                                                                                        : [...current, allergy];
+                                                                                                    setClinicalForm({ ...clinicalForm, allergies: updated });
+                                                                                                }}
+                                                                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${(clinicalForm.allergies || []).includes(allergy)
+                                                                                                    ? 'bg-red-500 text-white border-red-500'
+                                                                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {allergy}
+                                                                                            </button>
+                                                                                        ))}
                                                                                     </div>
-                                                                                    <p className="text-[10px] sm:text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
-                                                                                        {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || "Meal Entry"}
-                                                                                    </p>
-                                                                                    <div className="flex gap-3 mt-1.5">
-                                                                                        <div className="flex flex-col">
-                                                                                            <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cals</span>
-                                                                                            <span className="text-[10px] font-black text-[var(--color-text-main)]">{log.total_calories || 0}</span>
-                                                                                        </div>
-                                                                                        <div className="flex flex-col">
-                                                                                            <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cons</span>
-                                                                                            <span className="text-[10px] font-black text-blue-600">
-                                                                                                {log.consumption_percent === 100 ? 'Full' :
-                                                                                                    log.consumption_percent === 75 ? '3/4' :
-                                                                                                        log.consumption_percent === 50 ? '1/2' :
-                                                                                                            log.consumption_percent === 25 ? '1/4' :
-                                                                                                                'None'}
+                                                                                    <textarea
+                                                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-red-500 outline-none min-h-[80px]"
+                                                                                        value={clinicalForm.food_intolerances}
+                                                                                        onChange={(e) => setClinicalForm({ ...clinicalForm, food_intolerances: e.target.value })}
+                                                                                        placeholder="Specific food intolerances or digestive triggers..."
+                                                                                    />
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="space-y-3">
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {selectedProfile.allergies?.length > 0 ? selectedProfile.allergies.map(a => (
+                                                                                            <span key={a} className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-black uppercase border border-red-100 dark:border-red-800/30">{a}</span>
+                                                                                        )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
+                                                                                    </div>
+                                                                                    {selectedProfile.food_intolerances && (
+                                                                                        <p className="text-sm text-[var(--color-text-main)] font-medium italic border-l-4 border-red-200 pl-3">
+                                                                                            {selectedProfile.food_intolerances}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Activity size={14} /> Clinical Symptoms & Observations
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-orange-500 outline-none min-h-[80px]"
+                                                                                    value={clinicalForm.symptoms}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, symptoms: e.target.value })}
+                                                                                    placeholder="Current symptoms: bloating, fatigue, skin issues..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                                    {selectedProfile.symptoms || "No active symptoms reported."}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-purple-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Activity size={14} /> Lifestyle & Environmental Factors
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-purple-500 outline-none min-h-[80px]"
+                                                                                    value={clinicalForm.lifestyle_factors}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, lifestyle_factors: e.target.value })}
+                                                                                    placeholder="Sleep quality, screen time, physical activity environment..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                                    {selectedProfile.lifestyle_factors || "Standard lifestyle patterns."}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Activity size={14} /> Bristol Stool Scale (Baseline)
+                                                                            </h4>
+                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                                                                {BRISTOL_TYPES.map(type => {
+                                                                                    const currentVal = isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale;
+                                                                                    const isSelected = currentVal === type.type;
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={type.type}
+                                                                                            type="button"
+                                                                                            disabled={!isClinicalEditing}
+                                                                                            onClick={() => isClinicalEditing && setClinicalForm({ ...clinicalForm, bristol_stool_scale: type.type })}
+                                                                                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${isSelected
+                                                                                                ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                                                                                : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-amber-400 disabled:opacity-50'
+                                                                                                } ${!isClinicalEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                                                                                        >
+                                                                                            <span className="text-xl">
+                                                                                                {type.type === 1 && '🥜'}
+                                                                                                {type.type === 2 && '🍇'}
+                                                                                                {type.type === 3 && '🥖'}
+                                                                                                {type.type === 4 && '🐍'}
+                                                                                                {type.type === 5 && '💧'}
+                                                                                                {type.type === 6 && '☁️'}
+                                                                                                {type.type === 7 && '🌊'}
                                                                                             </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
+                                                                                            <div className="text-center">
+                                                                                                <p className="text-[10px] font-black uppercase tracking-tight">{type.label}</p>
+                                                                                                <p className={`text-[8px] font-bold uppercase leading-tight ${isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                                                                    {type.desc}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
                                                                             </div>
+                                                                            <p className="text-[9px] text-[var(--color-text-muted)] font-medium bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-[var(--color-divider)]">
+                                                                                <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === (isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale))?.detail}
+                                                                            </p>
                                                                         </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
 
-                                        {/* TAB: REVIEW */}
-                                        {activeTab === 'review' && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)]">Pending Clinical Reviews</h3>
-                                                    <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                                                        {logs.filter(l => l.status === 'pending').length} Actions Required
-                                                    </span>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {logs.filter(l => l.status === 'pending').map(log => (
-                                                        <Card
-                                                            key={log.id}
-                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                            className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] overflow-hidden group"
-                                                        >
-                                                            <CardContent className="p-0">
-                                                                <div className="h-40 relative overflow-hidden">
-                                                                    <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                                                                    <div className="absolute bottom-3 left-3">
-                                                                        <p className="text-white text-[10px] font-black uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()}</p>
-                                                                        <p className="text-white font-black uppercase text-xs">{log.meal_category}</p>
+                                                                        <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-4">
+                                                                            <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                                                                <Activity size={14} /> Weigh-in Conditions
+                                                                            </h4>
+                                                                            {isClinicalEditing ? (
+                                                                                <textarea
+                                                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-indigo-500 outline-none min-h-[80px]"
+                                                                                    value={clinicalForm.weigh_in_conditions}
+                                                                                    onChange={(e) => setClinicalForm({ ...clinicalForm, weigh_in_conditions: e.target.value })}
+                                                                                    placeholder="e.g. Early morning, before breakfast, same clothes..."
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="text-sm text-[var(--color-text-main)] font-medium">
+                                                                                    {selectedProfile.weigh_in_conditions || "Standard conditions."}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <div className="p-4">
-                                                                    <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1 mb-1">
-                                                                        {log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Pending detection...'}
-                                                                    </p>
-                                                                    <div className="flex justify-between items-center">
-                                                                        <span className="text-[10px] text-[var(--color-text-muted)] font-bold">{log.ai_analysis?.total_calories_est || 0} kcal</span>
-                                                                        <span className="text-[10px] text-[var(--color-primary)] font-black uppercase tracking-widest">Review Meal →</span>
+                                                            </div>
+
+                                                            {/* 3. VACCINATION HISTORY & MANAGEMENT */}
+                                                            <div className="mt-8 space-y-6">
+                                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                                    <div>
+                                                                        <h3 className="font-black text-xl text-[var(--color-secondary)] uppercase tracking-tight">Structured Vaccination History</h3>
+                                                                        <p className="text-xs text-[var(--color-text-muted)] font-bold uppercase">Comprehensive immunization record and tracking</p>
                                                                     </div>
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
-                                                    {logs.filter(l => l.status === 'pending').length === 0 && (
-                                                        <div className="col-span-full py-20 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                                                            <ClipboardCheck size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
-                                                            <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">Profile is Up to Date</p>
-                                                            <p className="text-xs mt-1">No pending meal reviews for {selectedProfile.child_name}.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'adime' && (
-                                            <>
-                                                <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                                                    <div className="flex justify-between items-center mb-4">
-                                                        <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
-                                                            <MessageSquare size={20} className="text-blue-600" /> Professional Clinical Note (ADIME)
-                                                        </h3>
-
-                                                        <div className="flex items-center gap-3">
-                                                            {/* Sync Status Indicator */}
-                                                            <div className="flex items-center gap-2 px-3 py-1 bg-white/50 dark:bg-white/5 rounded-full border border-[var(--color-divider)]">
-                                                                <div className={cn(
-                                                                    "w-1.5 h-1.5 rounded-full animate-pulse",
-                                                                    syncStatus.type === 'saving' ? 'bg-amber-500' :
-                                                                        syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-gray-300'
-                                                                )} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                                                                    {syncStatus.type === 'saving' ? 'Syncing...' :
-                                                                        syncStatus.type === 'saved' ? `Saved ${syncStatus.lastSaved ? format(syncStatus.lastSaved, 'HH:mm') : ''}` :
-                                                                            'Draft Idle'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-2 mb-6">
-                                                        <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest self-center mr-2">Quick Templates:</span>
-                                                        {CLINICAL_ADIME_TEMPLATES.map(t => (
-                                                            <button
-                                                                key={t.name}
-                                                                type="button"
-                                                                onClick={() => handleApplyAdimeTemplate(t.content)}
-                                                                className="px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-600 text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                                            >
-                                                                + {t.name}
-                                                            </button>
-                                                        ))}
-                                                        {adimeNotes.length > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleCopyLastAdime}
-                                                                className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-white text-emerald-600 text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
-                                                            >
-                                                                <ArrowLeft size={10} className="rotate-90" /> Copy Forward
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    <form onSubmit={handleAddAdimeNote} className="space-y-6">
-                                                        <div className="space-y-1">
-                                                            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">Clinical ADIME Note</label>
-                                                            <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'assessment' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
-                                                                <ReactQuill
-                                                                    ref={el => editorRefs.current['assessment'] = el}
-                                                                    theme="snow"
-                                                                    value={newAdime.assessment}
-                                                                    onChange={(val) => setNewAdime({ ...newAdime, assessment: val })}
-                                                                    onFocus={() => setFocusedField('assessment')}
-                                                                    modules={{ toolbar: true }}
-                                                                    placeholder="Enter full clinical ADIME documentation here..."
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex justify-end">
-                                                            <Button
-                                                                type="submit"
-                                                                disabled={savingAdime || !Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0)}
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 font-black uppercase text-xs tracking-widest px-8 py-4 h-auto shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:grayscale"
-                                                            >
-                                                                {savingAdime ? (
-                                                                    <>
-                                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                                        Saving Record...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <Save size={18} /> Save ADIME Note
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider">Historical Clinical Notes</h4>
-                                                    {adimeNotes.length === 0 ? (
-                                                        <p className="text-center py-8 text-gray-500 italic">No historical ADIME records found.</p>
-                                                    ) : (
-                                                        adimeNotes.map(note => (
-                                                            <div key={note.id} className={cn(
-                                                                "p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group transition-all",
-                                                                note.is_optimistic && "opacity-50 grayscale pointer-events-none"
-                                                            )}>
-                                                                <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
-                                                                        {note.is_optimistic && (
-                                                                            <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">Syncing...</span>
+                                                                    <div className="flex gap-2">
+                                                                        {isClinicalEditing && !isAddingVaccine && (
+                                                                            <Button
+                                                                                variant="primary"
+                                                                                onClick={() => setIsAddingVaccine(true)}
+                                                                                className="flex gap-2 text-xs font-black uppercase"
+                                                                            >
+                                                                                <Plus size={16} />
+                                                                                Add Vaccine Record
+                                                                            </Button>
                                                                         )}
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-xs text-gray-400">{new Date(note.created_at).toLocaleString()}</span>
-                                                                        <div className="flex gap-1">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                onClick={() => {
-                                                                                    setEditingAdimeId(note.id);
-                                                                                    setEditAdimeForm(note);
-                                                                                }}
-                                                                                className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
-                                                                                title="Edit Record"
-                                                                            >
-                                                                                <Edit2 size={14} />
+                                                                </div>
+
+                                                                {isAddingVaccine && (
+                                                                    <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
+                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
+                                                                                <select
+                                                                                    value={newVaccine.typeId}
+                                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
+                                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
+                                                                                >
+                                                                                    <option value="" className="bg-[var(--color-bg-card)]">Select vaccine...</option>
+                                                                                    {vaccinationTypes.map(t => (
+                                                                                        <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
+                                                                                <input
+                                                                                    type="date"
+                                                                                    value={newVaccine.date}
+                                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
+                                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Batch # / Notes</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={newVaccine.notes}
+                                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
+                                                                                    placeholder="e.g. Batch #7721-A"
+                                                                                    className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex justify-end gap-3">
+                                                                            <Button variant="ghost" onClick={() => setIsAddingVaccine(false)} className="text-xs font-black uppercase">
+                                                                                Cancel
                                                                             </Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                onClick={() => handleDeleteAdimeNote(note.id)}
-                                                                                className="h-7 w-7 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                                                                                title="Delete Record"
-                                                                            >
-                                                                                <Trash2 size={14} />
+                                                                            <Button onClick={handleAddVaccine} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6">
+                                                                                Save Record
                                                                             </Button>
                                                                         </div>
                                                                     </div>
+                                                                )}
+
+                                                                {childVaccinations.length === 0 ? (
+                                                                    <div className="p-12 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                                                        <Stethoscope size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
+                                                                        <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">No Immunization Records</p>
+                                                                        <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                        {childVaccinations.map(v => (
+                                                                            <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
+                                                                                <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                                                                    <Check size={16} strokeWidth={3} />
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
+                                                                                        {v.vaccination_types?.name}
+                                                                                    </h4>
+                                                                                    <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
+                                                                                        <Calendar size={10} />
+                                                                                        {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                                    </div>
+                                                                                    {v.notes && (
+                                                                                        <p className="mt-1 text-[9px] text-[var(--color-text-muted)] italic font-bold uppercase tracking-tight leading-tight opacity-70">
+                                                                                            {v.notes}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                {isClinicalEditing && (
+                                                                                    <button
+                                                                                        onClick={() => handleDeleteVaccine(v.id)}
+                                                                                        className="p-1 text-red-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
+                                                                                        title="Delete Record"
+                                                                                    >
+                                                                                        <Trash2 size={12} />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 4. GROWTH TRACKING (Moved to bottom) */}
+                                                            <div className="space-y-6 pt-4">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[var(--color-divider)] pb-4 gap-4 sm:gap-0">
+                                                                    <div>
+                                                                        <h3 className="font-black text-lg md:text-xl text-[var(--color-primary)] uppercase tracking-tight">Growth & Development Trends</h3>
+                                                                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase">Longitudinal height and weight tracking</p>
+                                                                    </div>
+                                                                    <div className="w-full sm:w-auto">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            className="w-full sm:w-auto h-10 sm:h-8 text-xs sm:text-[10px] font-black border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white uppercase tracking-widest flex items-center justify-center"
+                                                                            onClick={() => setIsGrowthModalOpen(true)}
+                                                                        >
+                                                                            <Plus size={14} className="mr-2" /> Log New Growth Data
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
 
-                                                                {editingAdimeId === note.id ? (
-                                                                    <form onSubmit={handleUpdateAdime} className="space-y-4">
-                                                                        <div className="space-y-1">
-                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Note</label>
-                                                                            <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
-                                                                                <ReactQuill
-                                                                                    theme="snow"
-                                                                                    value={editAdimeForm.assessment}
-                                                                                    onChange={(val) => setEditAdimeForm({ ...editAdimeForm, assessment: val })}
-                                                                                    modules={{ toolbar: true }}
-                                                                                />
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
+                                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
+                                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                                <TrendingUp size={14} className="text-[var(--color-secondary)]" /> Height Tracking (cm)
+                                                                            </CardTitle>
+                                                                        </CardHeader>
+                                                                        <CardContent className="p-6">
+                                                                            <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
+                                                                                {growthLogs.length > 0 ? (
+                                                                                    <ResponsiveContainer width="99%" height={250} minWidth={0} debounce={50}>
+                                                                                        <LineChart data={growthLogs}>
+                                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                                            <XAxis
+                                                                                                dataKey="logged_at"
+                                                                                                tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                                                fontSize={10}
+                                                                                                tick={{ fill: 'var(--color-text-muted)' }}
+                                                                                            />
+                                                                                            <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
+                                                                                            <Tooltip
+                                                                                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                                                contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
+                                                                                            />
+                                                                                            <Line type="monotone" dataKey="height_cm" stroke="var(--color-secondary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-secondary)' }} activeDot={{ r: 6 }} />
+                                                                                        </LineChart>
+                                                                                    </ResponsiveContainer>
+                                                                                ) : (
+                                                                                    <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No height history logged.</div>
+                                                                                )}
                                                                             </div>
-                                                                        </div>
-                                                                        <div className="flex justify-end gap-2 pt-2">
-                                                                            <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                            <Button type="submit" className="bg-blue-600 text-white text-xs font-black uppercase px-6">Update Record</Button>
-                                                                        </div>
-                                                                    </form>
-                                                                ) : (
-                                                                    <div className="space-y-4">
-                                                                        <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-inner">
-                                                                            <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-3 tracking-widest border-b border-[var(--color-divider)] pb-2">Unified ADIME Documentation</p>
-                                                                            <div className="ql-snow">
-                                                                                <div
-                                                                                    className="ql-editor !p-0 !min-h-0 text-sm clinical-content"
-                                                                                    dangerouslySetInnerHTML={{ __html: note.assessment || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
-                                                                                />
+                                                                        </CardContent>
+                                                                    </Card>
+
+                                                                    <Card className="border-2 border-[var(--color-divider)] shadow-sm bg-[var(--color-bg-card)] rounded-3xl overflow-hidden">
+                                                                        <CardHeader className="pb-2 bg-[var(--color-bg-page)] border-b border-[var(--color-divider)]">
+                                                                            <CardTitle className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                                <TrendingUp size={14} className="text-[var(--color-primary)]" /> Weight Tracking (kg)
+                                                                            </CardTitle>
+                                                                        </CardHeader>
+                                                                        <CardContent className="p-6">
+                                                                            <div className="h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
+                                                                                {growthLogs.length > 0 ? (
+                                                                                    <ResponsiveContainer width="99%" height={250} minWidth={0} debounce={50}>
+                                                                                        <LineChart data={growthLogs}>
+                                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                                                                            <XAxis
+                                                                                                dataKey="logged_at"
+                                                                                                tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                                                                                                fontSize={10}
+                                                                                                tick={{ fill: 'var(--color-text-muted)' }}
+                                                                                            />
+                                                                                            <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)' }} domain={['auto', 'auto']} />
+                                                                                            <Tooltip
+                                                                                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                                                                                contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', color: 'var(--color-text-main)' }}
+                                                                                            />
+                                                                                            <Line type="monotone" dataKey="weight_kg" stroke="var(--color-primary)" strokeWidth={4} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />
+                                                                                        </LineChart>
+                                                                                    </ResponsiveContainer>
+                                                                                ) : (
+                                                                                    <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)] italic">No weight history logged.</div>
+                                                                                )}
                                                                             </div>
-                                                                            {(note.diagnosis || note.intervention || note.monitoring || note.evaluation) && (
-                                                                                <div className="mt-4 pt-4 border-t border-dashed border-[var(--color-divider)] opacity-60">
-                                                                                    <p className="text-[9px] font-bold uppercase text-[var(--color-text-muted)] mb-2">Legacy Multi-field Data Detected</p>
-                                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                                        {['diagnosis', 'intervention', 'monitoring', 'evaluation'].map(f => note[f] && (
-                                                                                            <div key={f} className="text-[10px] p-2 bg-white/50 dark:bg-black/20 rounded-lg">
-                                                                                                <span className="font-black uppercase text-[var(--color-primary)] mr-1 block mb-1">{f}:</span>
-                                                                                                <div className="ql-snow">
-                                                                                                    <div className="ql-editor !p-0 !min-h-0" dangerouslySetInnerHTML={{ __html: note[f] }} />
-                                                                                                </div>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* GROWTH HISTORY LIST (DELETABLE) */}
+                                                            <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden mb-6">
+                                                                <div className="px-6 py-4 border-b border-[var(--color-divider)] bg-[var(--color-bg-page)] flex justify-between items-center">
+                                                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
+                                                                        <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
+                                                                    </h4>
+                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
+                                                                </div>
+                                                                <div className="overflow-x-auto">
+                                                                    <table className="w-full text-left">
+                                                                        <thead>
+                                                                            <tr className="border-b border-[var(--color-divider)] bg-gray-50/50 dark:bg-white/5">
+                                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Recorded</th>
+                                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height (cm)</th>
+                                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight (kg)</th>
+                                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Status</th>
+                                                                                <th className="px-6 py-3 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Actions</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-[var(--color-divider)]">
+                                                                            {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
+                                                                                <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
+                                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                                        <span className="text-xs font-bold text-[var(--color-text-main)]">
+                                                                                            {new Date(log.logged_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                                        <span className="text-xs font-black text-[var(--color-secondary)]">{log.height_cm} cm</span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                                        <span className="text-xs font-black text-[var(--color-primary)]">{log.weight_kg} kg</span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                                        {log.clinical_analysis && (
+                                                                                            <div className="flex gap-1">
+                                                                                                <span className={cn(
+                                                                                                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                                                                                    log.clinical_analysis.weight.status === 'Normal' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                                                                                                )}>
+                                                                                                    W: {log.clinical_analysis.weight.status}
+                                                                                                </span>
+                                                                                                <span className={cn(
+                                                                                                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                                                                                    log.clinical_analysis.height.status === 'Normal' ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
+                                                                                                )}>
+                                                                                                    H: {log.clinical_analysis.height.status}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            onClick={() => {
+                                                                                                setEditingGrowthLog(log.id);
+                                                                                                setEditGrowthForm({
+                                                                                                    height_cm: log.height_cm,
+                                                                                                    weight_kg: log.weight_kg,
+                                                                                                    logged_at: new Date(log.logged_at).toISOString().split('T')[0]
+                                                                                                });
+                                                                                                setIsEditGrowthModalOpen(true);
+                                                                                            }}
+                                                                                            className="h-8 w-8 p-0 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
+                                                                                        >
+                                                                                            <Edit2 size={14} />
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            onClick={() => handleDeleteGrowthLog(log.id)}
+                                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                                                                        >
+                                                                                            <Trash2 size={14} />
+                                                                                        </Button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                            {growthLogs.length === 0 && (
+                                                                                <tr>
+                                                                                    <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
+                                                                                        No growth history logs recorded yet.
+                                                                                    </td>
+                                                                                </tr>
+                                                                            )}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="p-6 bg-green-50 dark:bg-green-900/10 rounded-3xl border-2 border-green-100 dark:border-green-800/30">
+                                                                <h4 className="font-black text-green-800 dark:text-green-300 uppercase tracking-widest text-xs mb-2">Clinical Insights Summary</h4>
+                                                                <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">
+                                                                    Currently tracking <strong>{rules.length} active nutrition rules</strong> for this profile. All clinical parameters and growth metrics are up to date as of {new Date().toLocaleDateString()}.
+                                                                </p>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+
+                                                    {/* TAB: LOG HISTORY (Date-Grouped) */}
+                                                    {activeTab === 'history' && (
+                                                        <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
+                                                            {/* LEFT SIDEBAR: DATE SELECTION (Timeline) */}
+                                                            <div className="w-full md:w-72 flex-shrink-0 space-y-4">
+                                                                <div className="sticky top-[140px] lg:top-8 z-20 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
+                                                                    <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] px-2 mb-3 hidden md:block">Clinical Timeline</h3>
+                                                                    <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0 snap-x">
+                                                                        {Object.keys(logs.reduce((acc, log) => {
+                                                                            const date = new Date(log.logged_at).toLocaleDateString();
+                                                                            acc[date] = true;
+                                                                            return acc;
+                                                                        }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
+                                                                            const isSelected = selectedHistoryDate === date;
+                                                                            const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                                                            return (
+                                                                                <button
+                                                                                    key={date}
+                                                                                    onClick={() => setSelectedHistoryDate(date)}
+                                                                                    className={cn(
+                                                                                        "flex-shrink-0 snap-start flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left min-w-[160px] md:min-w-0 shadow-sm",
+                                                                                        isSelected
+                                                                                            ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] md:scale-100'
+                                                                                            : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
+                                                                                    )}
+                                                                                >
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        <div className={cn(
+                                                                                            "w-3 h-3 rounded-full border-2 shadow-sm transition-colors",
+                                                                                            isSelected ? "border-white/50" : "border-white dark:border-zinc-800",
+                                                                                            dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                                                dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                    dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                        'bg-gray-300'
+                                                                                        )} />
+                                                                                        <div className="text-left">
+                                                                                            <div className={cn("text-xs md:text-sm font-black tracking-tight", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>{date}</div>
+                                                                                            <div className={cn("text-[9px] font-bold uppercase tracking-tighter mt-0.5", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
+                                                                                                {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                        {logs.length === 0 && (
+                                                                            <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* RIGHT CONTENT: DAILY LOGS */}
+                                                            <div className="flex-grow space-y-8">
+                                                                {selectedHistoryDate && (
+                                                                    <>
+                                                                        {/* DAILY SUMMARY CARD */}
+                                                                        <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                                                <div>
+                                                                                    <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
+                                                                                    <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                                                                </div>
+                                                                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                                                                    <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                                                                        <Activity size={12} />
+                                                                                        <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
+                                                                                    </div>
+                                                                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
+                                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                        >
+                                                                                            <Check size={12} className="mr-1" />
+                                                                                            Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                                        </Button>
+                                                                                    )}
+                                                                                    <Button
+                                                                                        variant="ghost"
+                                                                                        onClick={() => handleClearLogsForDay(selectedHistoryDate)}
+                                                                                        className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                    >
+                                                                                        <Trash2 size={12} className="mr-1 group-hover:scale-110" />
+                                                                                        Clear Day
+                                                                                    </Button>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* VIOLATIONS ALERT PANEL */}
+                                                                            {dailyViolations.length > 0 && (
+                                                                                <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
+                                                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                        <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
+                                                                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
+                                                                                    </div>
+                                                                                    <div className="flex flex-wrap gap-2 px-1">
+                                                                                        {dailyViolations.map((v, i) => (
+                                                                                            <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                                                <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                                                                <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
+                                                                                                <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                                                                <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
                                                                                 </div>
                                                                             )}
+
+                                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                                {[
+                                                                                    { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                                                                    { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                                                                    { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                                                                    { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                                                                ].map((stat, idx) => (
+                                                                                    <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
+                                                                                        <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
 
-                                        {/* TAB: NOTES */}
-                                        {activeTab === 'notes' && (
-                                            <>
-                                                <div className="bg-green-50 dark:bg-green-900/10 p-6 rounded-xl border border-green-100 dark:border-green-800/30">
-                                                    <div className="flex justify-between items-center mb-4">
-                                                        <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
-                                                            <StickyNote size={20} className="text-[var(--color-primary)]" /> Client Observation Notes
-                                                        </h3>
+                                                                        {/* MEAL LIST */}
+                                                                        <div className="space-y-4">
+                                                                            <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                                                <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Sequence</h4>
+                                                                                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">{logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured</span>
+                                                                            </div>
 
-                                                        {/* Sync Status Indicator (Mini) */}
-                                                        <div className="flex items-center gap-1.5 opacity-60">
-                                                            <div className={cn(
-                                                                "w-1 h-1 rounded-full",
-                                                                syncStatus.type === 'saving' ? 'bg-amber-500 animate-pulse' :
-                                                                    syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-transparent'
-                                                            )} />
-                                                            <span className="text-[8px] font-bold uppercase tracking-tighter text-[var(--color-text-muted)]">
-                                                                {syncStatus.type === 'saving' ? 'Saving' : syncStatus.type === 'saved' ? 'Draft' : ''}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-
-                                                    <form onSubmit={handleAddNote} className="space-y-3">
-                                                        <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'notes' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
-                                                            <ReactQuill
-                                                                ref={el => editorRefs.current['notes'] = el}
-                                                                theme="snow"
-                                                                value={newNote}
-                                                                onChange={setNewNote}
-                                                                onFocus={() => setFocusedField('notes')}
-                                                                modules={{ toolbar: false }}
-                                                                placeholder="Add a new observation, milestone, or follow-up note..."
-                                                            />
-                                                        </div>
-                                                        <div className="flex justify-end pt-2">
-                                                            <Button type="submit" disabled={!newNote.trim()} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
-                                                                Save Clinical Note
-                                                            </Button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider px-2">Recent Observations</h4>
-                                                    {notes.length === 0 ? (
-                                                        <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">No clinical observations recorded for this profile yet.</p>
-                                                    ) : (
-                                                        notes.map(note => (
-                                                            <div key={note.id} className={cn(
-                                                                "p-5 border rounded-xl relative group hover:shadow-md transition-all",
-                                                                note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
-                                                                note.is_optimistic && "opacity-50 grayscale pointer-events-none"
-                                                            )}>
-                                                                {note.is_optimistic ? (
-                                                                    <span className="absolute top-2 right-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 animate-pulse">Syncing...</span>
-                                                                ) : note.is_pinned && (
-                                                                    <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>
-                                                                )}
-
-                                                                {editingNoteId === note.id ? (
-                                                                    <form onSubmit={handleUpdateNote} className="space-y-3">
-                                                                        <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-primary)]">
-                                                                            <ReactQuill
-                                                                                theme="snow"
-                                                                                value={editNoteForm}
-                                                                                onChange={setEditNoteForm}
-                                                                                modules={{ toolbar: false }}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex justify-end gap-2">
-                                                                            <Button variant="ghost" type="button" onClick={() => setEditingNoteId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                            <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
-                                                                        </div>
-                                                                    </form>
-                                                                ) : (
-                                                                    <>
-                                                                        <div
-                                                                            className="prose prose-sm dark:prose-invert max-w-none mb-4"
-                                                                            dangerouslySetInnerHTML={{ __html: note.content }}
-                                                                        />
-
-                                                                        <div className="flex justify-between items-center pt-3 border-t border-[var(--color-divider)]">
-                                                                            <span className="text-xs font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleString()}</span>
-                                                                            <div className="flex gap-1">
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    onClick={() => {
-                                                                                        setEditingNoteId(note.id);
-                                                                                        setEditNoteForm(note.content);
-                                                                                    }}
-                                                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
-                                                                                    title="Edit Note"
-                                                                                >
-                                                                                    <Edit2 size={16} />
-                                                                                </Button>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    onClick={() => api.patch(`/notes/${note.id}/pin`, { is_pinned: !note.is_pinned }).then(() => fetchNotes(selectedProfile.id))}
-                                                                                    className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
-                                                                                    title={note.is_pinned ? "Unpin" : "Pin Note"}
-                                                                                >
-                                                                                    <Plus size={16} className={note.is_pinned ? "rotate-45" : ""} />
-                                                                                </Button>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    onClick={() => handleDeleteNote(note.id)}
-                                                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                                                                                    title="Delete Note"
-                                                                                >
-                                                                                    <Trash2 size={16} />
-                                                                                </Button>
+                                                                            <div className="grid grid-cols-1 gap-3">
+                                                                                {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
+                                                                                    <div
+                                                                                        key={log.id}
+                                                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                                        className="group relative bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex h-24 md:h-40 cursor-pointer shadow-sm hover:shadow-md"
+                                                                                    >
+                                                                                        <div className="w-24 md:w-48 h-full relative overflow-hidden flex-shrink-0">
+                                                                                            <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                                                            <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded-md text-[7px] font-black text-white uppercase tracking-widest">
+                                                                                                {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="p-3 sm:p-6 flex-grow flex flex-col justify-between min-w-0">
+                                                                                            <div>
+                                                                                                <div className="flex items-center justify-between mb-0.5 gap-2">
+                                                                                                    <h5 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
+                                                                                                    <div className={cn(
+                                                                                                        "px-1.5 py-0.5 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
+                                                                                                        (log.status === 'verified' || log.status === 'reviewed') ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                                                                                                    )}>
+                                                                                                        {(log.status === 'verified' || log.status === 'reviewed') ? 'Verified' : 'Pending'}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <p className="text-[10px] sm:text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
+                                                                                                    {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || "Meal Entry"}
+                                                                                                </p>
+                                                                                                <div className="flex gap-3 mt-1.5">
+                                                                                                    <div className="flex flex-col">
+                                                                                                        <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cals</span>
+                                                                                                        <span className="text-[10px] font-black text-[var(--color-text-main)]">{log.total_calories || 0}</span>
+                                                                                                    </div>
+                                                                                                    <div className="flex flex-col">
+                                                                                                        <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cons</span>
+                                                                                                        <span className="text-[10px] font-black text-blue-600">
+                                                                                                            {log.consumption_percent === 100 ? 'Full' :
+                                                                                                                log.consumption_percent === 75 ? '3/4' :
+                                                                                                                    log.consumption_percent === 50 ? '1/2' :
+                                                                                                                        log.consumption_percent === 25 ? '1/4' :
+                                                                                                                            'None'}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
                                                                             </div>
                                                                         </div>
                                                                     </>
                                                                 )}
                                                             </div>
-                                                        ))
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-
-
-
-                                        {/* TAB: INSIGHTS */}
-                                        {activeTab === 'insights' && reportData && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">Compliance Rate (30 Days)</p>
-                                                        <p className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] mt-2 tracking-tighter">{reportData.summary.complianceRate}%</p>
-                                                    </div>
-                                                    <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-secondary)] transition-colors">Total Meals Logged</p>
-                                                        <p className="text-3xl sm:text-4xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter">{reportData.summary.totalLogs}</p>
-                                                    </div>
-                                                    <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-red-500 transition-colors">Flagged Interactions</p>
-                                                        <p className="text-3xl sm:text-4xl font-black text-red-500 mt-2 tracking-tighter">{reportData.summary.flaggedCount}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-4 sm:p-8 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5">
-                                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                                                        <h3 className="font-black text-sm sm:text-base uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2">
-                                                            <Activity size={18} className="text-[var(--color-primary)]" />
-                                                            Health Score & Compliance Trend
-                                                        </h3>
-                                                        <div className="flex gap-2">
-                                                            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Compliance
-                                                            </span>
                                                         </div>
-                                                    </div>
-                                                    <div className="h-[250px] sm:h-[350px] w-full min-h-[250px] flex flex-col" style={{ minWidth: 0 }}>
-                                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
-                                                            <LineChart
-                                                                data={logs.slice().reverse()}
-                                                                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-                                                            >
-                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" opacity={0.5} />
-                                                                <XAxis
-                                                                    dataKey="logged_at"
-                                                                    stroke="var(--color-text-muted)"
-                                                                    fontSize={10}
-                                                                    tickLine={false}
-                                                                    axisLine={false}
-                                                                    interval={window.innerWidth < 640 ? 5 : 2}
-                                                                    tickFormatter={(val) => new Date(val).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                                />
-                                                                <YAxis
-                                                                    stroke="var(--color-text-muted)"
-                                                                    fontSize={10}
-                                                                    tickLine={false}
-                                                                    axisLine={false}
-                                                                    domain={[0, 100]}
-                                                                />
-                                                                <Tooltip
-                                                                    contentStyle={{
-                                                                        backgroundColor: 'var(--color-bg-card)',
-                                                                        borderColor: 'var(--color-divider)',
-                                                                        borderRadius: '12px',
-                                                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                                                                        fontSize: '11px',
-                                                                        fontWeight: 'bold'
-                                                                    }}
-                                                                />
-                                                                <Line
-                                                                    type="monotone"
-                                                                    dataKey="compliance_score"
-                                                                    name="Compliance"
-                                                                    stroke="var(--color-primary)"
-                                                                    strokeWidth={4}
-                                                                    dot={{ r: 0 }}
-                                                                    activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-primary)' }}
-                                                                />
-                                                            </LineChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                                    )}
 
-                                        {/* TAB 2: RULES */}
-                                        {activeTab === 'rules' && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
-                                                <div className="flex justify-between items-center">
-                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)]">Nutrition Rules & Compliance Goals</h3>
-                                                </div>
+                                                    {/* TAB: REVIEW */}
+                                                    {activeTab === 'review' && (
+                                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                                            <div className="flex justify-between items-center mb-4">
+                                                                <h3 className="font-bold text-lg text-[var(--color-secondary)]">Pending Clinical Reviews</h3>
+                                                                <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                                                                    {logs.filter(l => l.status === 'pending').length} Actions Required
+                                                                </span>
+                                                            </div>
 
-                                                <div className="space-y-3">
-                                                    {rules.length === 0 ? (
-                                                        <p className="text-sm text-center py-8 text-[var(--color-text-muted)] italic bg-[var(--color-bg-page)] dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">
-                                                            No custom rules set. Add one below to start automated checks.
-                                                        </p>
-                                                    ) : (
-                                                        rules.map(rule => (
-                                                            <div key={rule.id} className="p-4 border border-[var(--color-divider)] rounded-xl bg-[var(--color-bg-card)] shadow-sm hover:shadow-md transition-shadow">
-                                                                {editingRuleId === rule.id ? (
-                                                                    <form onSubmit={handleUpdateRule} className="space-y-6">
-                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Category</label>
-                                                                                <select
-                                                                                    value={editRuleForm.category}
-                                                                                    onChange={(e) => {
-                                                                                        const cat = e.target.value;
-                                                                                        let unit = editRuleForm.rule_unit;
-                                                                                        if (cat === 'Calories') unit = 'kcal';
-                                                                                        else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
-                                                                                        else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
-                                                                                        else if (cat === 'Fluid/Water') unit = 'ml';
-                                                                                        else if (cat === 'Vitamin D') unit = 'mcg';
-
-                                                                                        setEditRuleForm({ ...editRuleForm, category: cat, rule_unit: unit });
-                                                                                    }}
-                                                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
-                                                                                >
-                                                                                    {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
-                                                                                </select>
-                                                                            </div>
-                                                                            <div className="space-y-1">
-                                                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Rule Name</label>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={editRuleForm.rule_name}
-                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_name: e.target.value })}
-                                                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
-                                                                                    placeholder="e.g. Daily Limit"
-                                                                                />
-                                                                            </div>
-                                                                            <div className="space-y-1">
-                                                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Logic</label>
-                                                                                <select
-                                                                                    value={editRuleForm.rule_type}
-                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_type: e.target.value })}
-                                                                                    className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
-                                                                                >
-                                                                                    <option value="max">Maximum (Limit)</option>
-                                                                                    <option value="min">Minimum (Goal)</option>
-                                                                                </select>
-                                                                            </div>
-                                                                            <div className="space-y-1">
-                                                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Value & Unit</label>
-                                                                                <div className="flex gap-2">
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        value={editRuleForm.rule_value}
-                                                                                        onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_value: e.target.value })}
-                                                                                        className="flex-grow p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
-                                                                                        placeholder="Value"
-                                                                                    />
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        value={editRuleForm.rule_unit}
-                                                                                        onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_unit: e.target.value })}
-                                                                                        className={cn(
-                                                                                            "w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center",
-                                                                                            ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category) ? "opacity-50" : ""
-                                                                                        )}
-                                                                                        placeholder="Unit"
-                                                                                        disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category)}
-                                                                                    />
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                {logs.filter(l => l.status === 'pending').map(log => (
+                                                                    <Card
+                                                                        key={log.id}
+                                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                        className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] overflow-hidden group"
+                                                                    >
+                                                                        <CardContent className="p-0">
+                                                                            <div className="h-40 relative overflow-hidden">
+                                                                                <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                                                                <div className="absolute bottom-3 left-3">
+                                                                                    <p className="text-white text-[10px] font-black uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()}</p>
+                                                                                    <p className="text-white font-black uppercase text-xs">{log.meal_category}</p>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                        <div className="flex justify-end gap-2">
-                                                                            <Button variant="ghost" type="button" onClick={() => setEditingRuleId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                            <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Save Changes</Button>
-                                                                        </div>
-                                                                    </form>
-                                                                ) : (
-                                                                    <div className="flex justify-between items-start">
-                                                                        <div>
-                                                                            <div className="flex items-center gap-2 mb-1">
-                                                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${rule.category === 'Sugar' || rule.category === 'Added Sugars' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
-                                                                                    rule.category === 'Protein' ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
-                                                                                        'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/10 dark:text-gray-400 dark:border-white/10'
-                                                                                    }`}>
-                                                                                    {rule.category}
-                                                                                </span>
-                                                                                <span className="font-bold text-base text-[var(--color-text-main)]">{rule.rule_name}</span>
+                                                                            <div className="p-4">
+                                                                                <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1 mb-1">
+                                                                                    {log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Pending detection...'}
+                                                                                </p>
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-[10px] text-[var(--color-text-muted)] font-bold">{log.ai_analysis?.total_calories_est || 0} kcal</span>
+                                                                                    <span className="text-[10px] text-[var(--color-primary)] font-black uppercase tracking-widest">Review Meal →</span>
+                                                                                </div>
                                                                             </div>
-                                                                            <p className="text-sm text-[var(--color-text-muted)] pl-1 font-medium">
-                                                                                {rule.rule_type ? `${rule.rule_type === 'max' ? 'Maximum' : 'Minimum'} ${rule.rule_value} ${rule.rule_unit}` : rule.rule_definition}
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="flex gap-1">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                onClick={() => {
-                                                                                    setEditingRuleId(rule.id);
-                                                                                    setEditRuleForm(rule);
-                                                                                }}
-                                                                                className="h-8 w-8 p-0 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
-                                                                                title="Edit Rule"
-                                                                            >
-                                                                                <Edit2 size={14} />
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                onClick={() => confirmDeleteRule(rule)}
-                                                                                className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
-                                                                                title="Delete Rule"
-                                                                            >
-                                                                                <Trash2 size={14} />
-                                                                            </Button>
-                                                                        </div>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                ))}
+                                                                {logs.filter(l => l.status === 'pending').length === 0 && (
+                                                                    <div className="col-span-full py-20 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                                                        <ClipboardCheck size={48} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-20" />
+                                                                        <p className="text-[var(--color-text-muted)] font-black uppercase text-sm tracking-widest">Profile is Up to Date</p>
+                                                                        <p className="text-xs mt-1">No pending meal reviews for {selectedProfile.child_name}.</p>
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                        ))
+                                                        </div>
                                                     )}
-                                                </div>
 
-                                                {/* Add Rule Form */}
-                                                <div className="pt-6 mt-6 border-t border-[var(--color-divider)]">
-                                                    <div className="flex justify-between items-end mb-4">
-                                                        <h4 className="font-bold text-sm text-[var(--color-primary)] uppercase tracking-wider">Quick Standards (Templates)</h4>
-                                                    </div>
-                                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                                        {standards.map((s, i) => (
-                                                            <button
-                                                                key={i}
-                                                                onClick={() => applyTemplate(s)}
-                                                                className="px-3 py-1.5 rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] text-xs font-bold hover:bg-[var(--color-primary)] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
-                                                            >
-                                                                + {s.name}
-                                                            </button>
-                                                        ))}
-                                                    </div>
+                                                    {activeTab === 'adime' && (
+                                                        <>
+                                                            <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                                                                <div className="flex justify-between items-center mb-4">
+                                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
+                                                                        <MessageSquare size={20} className="text-blue-600" /> Professional Clinical Note (ADIME)
+                                                                    </h3>
 
-                                                    <h4 className="font-bold text-sm mb-4 text-[var(--color-primary)] uppercase tracking-wider">Custom Rule Builder</h4>
-                                                    <form onSubmit={handleAddRule} className="grid grid-cols-1 md:grid-cols-12 gap-5 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-xl border border-[var(--color-divider)] shadow-inner">
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Category</label>
-                                                            <select
-                                                                className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer"
-                                                                value={newRule.category}
-                                                                onChange={(e) => {
-                                                                    const cat = e.target.value;
-                                                                    let unit = 'g';
-                                                                    // Standard Clinical Units
-                                                                    if (cat === 'Calories') unit = 'kcal';
-                                                                    else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
-                                                                    else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
-                                                                    else if (cat === 'Fluid/Water') unit = 'ml';
-                                                                    else if (cat === 'Vitamin D') unit = 'mcg';
-
-                                                                    setNewRule({ ...newRule, category: cat, rule_unit: unit });
-                                                                }}
-                                                            >
-                                                                <option>Calories</option>
-                                                                <option>Protein</option>
-                                                                <option>Carbohydrates</option>
-                                                                <option>Total Fat</option>
-                                                                <option>Saturated Fat</option>
-                                                                <option>Total Sugar</option>
-                                                                <option>Added Sugars</option>
-                                                                <option>Fiber</option>
-                                                                <option>Sodium</option>
-                                                                <option>Fluid/Water</option>
-                                                                <option>Iron</option>
-                                                                <option>Calcium</option>
-                                                                <option>Vitamin D</option>
-                                                                <option>Potassium</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="md:col-span-4">
-                                                            <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Rule Name</label>
-                                                            <input
-                                                                className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
-                                                                placeholder="e.g. Daily Sugar Limit"
-                                                                value={newRule.rule_name}
-                                                                onChange={(e) => setNewRule({ ...newRule, rule_name: e.target.value })}
-                                                                required
-                                                            />
-                                                        </div>
-                                                        <div className="md:col-span-2">
-                                                            <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Type</label>
-                                                            <select
-                                                                className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer"
-                                                                value={newRule.rule_type}
-                                                                onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
-                                                            >
-                                                                <option value="max">Maximum</option>
-                                                                <option value="min">Minimum</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Value & Unit</label>
-                                                            <div className="flex gap-1">
-                                                                <input
-                                                                    type="number"
-                                                                    className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
-                                                                    placeholder="Value"
-                                                                    value={newRule.rule_value}
-                                                                    onChange={(e) => setNewRule({ ...newRule, rule_value: e.target.value })}
-                                                                    required
-                                                                />
-                                                                <select
-                                                                    className={cn(
-                                                                        "w-24 p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-main)]",
-                                                                        ['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                                                                    )}
-                                                                    value={newRule.rule_unit}
-                                                                    onChange={(e) => setNewRule({ ...newRule, rule_unit: e.target.value })}
-                                                                    disabled={['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category)}
-                                                                >
-                                                                    <option>kcal</option>
-                                                                    <option>g</option>
-                                                                    <option>mg</option>
-                                                                    <option>mcg</option>
-                                                                    <option>ml</option>
-                                                                    <option>L</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div className="md:col-span-12 flex justify-end pt-2 border-t border-[var(--color-divider)] mt-2">
-                                                            <Button type="submit" className="px-8 py-2 bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all">
-                                                                <Plus size={18} /> Add New Rule
-                                                            </Button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* TAB 3: PLANNER */}
-                                        {activeTab === 'plan' && (
-                                            <div className="space-y-6 animate-in fade-in duration-500">
-                                                {/* PLANNER HEADER & NAV */}
-                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                                                    <div>
-                                                        <h3 className="font-black text-xl text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-3">
-                                                            <ChefHat className="text-[var(--color-primary)]" size={24} />
-                                                            Weekly Clinical Planner
-                                                        </h3>
-                                                        <p className="text-xs font-bold text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
-                                                            Week of {format(currentWeekStart, 'MMMM d, yyyy')} — {format(addDays(currentWeekStart, 6), 'MMMM d, yyyy')}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 w-full md:w-auto">
-                                                        <div className="flex items-center bg-[var(--color-bg-card)] rounded-2xl border-2 border-[var(--color-divider)] p-1">
-                                                            <button
-                                                                onClick={handlePrevWeek}
-                                                                className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all"
-                                                            >
-                                                                <ArrowLeft size={18} />
-                                                            </button>
-                                                            <button
-                                                                onClick={handleThisWeek}
-                                                                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
-                                                            >
-                                                                Today
-                                                            </button>
-                                                            <button
-                                                                onClick={handleNextWeek}
-                                                                className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all rotate-180"
-                                                            >
-                                                                <ArrowLeft size={18} />
-                                                            </button>
-                                                        </div>
-                                                        <Button
-                                                            onClick={() => {
-                                                                setConfirmDialog({
-                                                                    isOpen: true,
-                                                                    title: 'Clear Weekly Plan',
-                                                                    message: 'Are you sure you want to clear all planned meals for this child? This cannot be undone.',
-                                                                    onConfirm: handleClearPlan
-                                                                });
-                                                            }}
-                                                            variant="ghost"
-                                                            className="flex-grow md:flex-none h-11 px-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/30"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {/* THE WEEKLY GRID */}
-                                                <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden shadow-sm relative">
-                                                    {/* Scrolling Indicator for Desktop/Mobile */}
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none md:hidden">
-                                                        <div className="bg-[var(--color-primary)] text-white p-2 rounded-full shadow-lg animate-pulse">
-                                                            <ArrowLeft size={16} className="rotate-180" />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--color-primary)]/20">
-                                                        <table className="w-full border-collapse min-w-[1400px]">
-                                                            <thead>
-                                                                <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
-                                                                    <th className="p-4 w-36 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                        <div className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">Time / Day</div>
-                                                                    </th>
-                                                                    {weekDays.map(day => (
-                                                                        <th key={day.toString()} className={cn(
-                                                                            "p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 transition-colors",
-                                                                            isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/10" : ""
-                                                                        )}>
-                                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{format(day, 'EEEE')}</div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        {/* Sync Status Indicator */}
+                                                                        <div className="flex items-center gap-2 px-3 py-1 bg-white/50 dark:bg-white/5 rounded-full border border-[var(--color-divider)]">
                                                                             <div className={cn(
-                                                                                "text-lg font-black mt-1",
-                                                                                isSameDay(day, new Date()) ? "text-[var(--color-primary)]" : "text-[var(--color-text-main)]"
-                                                                            )}>
-                                                                                {format(day, 'MMM d')}
-                                                                            </div>
-                                                                            {/* Daily Totals in Header */}
-                                                                            {(() => {
-                                                                                const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day));
-                                                                                const totalCal = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
-                                                                                return (
-                                                                                    <div className={cn(
-                                                                                        "mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all",
-                                                                                        totalCal > 0
-                                                                                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm"
-                                                                                            : "bg-white/50 dark:bg-black/20 border-[var(--color-divider)]"
-                                                                                    )}>
-                                                                                        <Activity size={12} />
-                                                                                        <span className="text-[10px] font-black uppercase tracking-tighter">{totalCal || 0} kcal</span>
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                        </th>
+                                                                                "w-1.5 h-1.5 rounded-full animate-pulse",
+                                                                                syncStatus.type === 'saving' ? 'bg-amber-500' :
+                                                                                    syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-gray-300'
+                                                                            )} />
+                                                                            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                                                                                {syncStatus.type === 'saving' ? 'Syncing...' :
+                                                                                    syncStatus.type === 'saved' ? `Saved ${syncStatus.lastSaved ? format(syncStatus.lastSaved, 'HH:mm') : ''}` :
+                                                                                        'Draft Idle'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-wrap gap-2 mb-6">
+                                                                    <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest self-center mr-2">Quick Templates:</span>
+                                                                    {CLINICAL_ADIME_TEMPLATES.map(t => (
+                                                                        <button
+                                                                            key={t.name}
+                                                                            type="button"
+                                                                            onClick={() => handleApplyAdimeTemplate(t.content)}
+                                                                            className="px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-600 text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                                        >
+                                                                            + {t.name}
+                                                                        </button>
                                                                     ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
-                                                                    <tr key={type} className="border-b-2 border-[var(--color-divider)] last:border-b-0 group">
-                                                                        <td className="p-4 border-r-2 border-[var(--color-divider)] bg-[var(--color-bg-page)]/30 group-hover:bg-[var(--color-bg-page)]/50 transition-colors sticky left-0 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                            <div className="flex flex-col items-center justify-center gap-1">
-                                                                                <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">{type}</span>
-                                                                                <div className="h-9 w-9 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] group-hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
-                                                                                    <Utensils size={16} />
+                                                                    {adimeNotes.length > 0 && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={handleCopyLastAdime}
+                                                                            className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-white text-emerald-600 text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
+                                                                        >
+                                                                            <ArrowLeft size={10} className="rotate-90" /> Copy Forward
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
+                                                                <form onSubmit={handleAddAdimeNote} className="space-y-6">
+                                                                    <div className="space-y-1">
+                                                                        <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">Clinical ADIME Note</label>
+                                                                        <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'assessment' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
+                                                                            <ReactQuill
+                                                                                ref={el => editorRefs.current['assessment'] = el}
+                                                                                theme="snow"
+                                                                                value={newAdime.assessment}
+                                                                                onChange={(val) => setNewAdime({ ...newAdime, assessment: val })}
+                                                                                onFocus={() => setFocusedField('assessment')}
+                                                                                modules={{ toolbar: true }}
+                                                                                placeholder="Enter full clinical ADIME documentation here..."
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex justify-end">
+                                                                        <Button
+                                                                            type="submit"
+                                                                            disabled={savingAdime || !Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0)}
+                                                                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 font-black uppercase text-xs tracking-widest px-8 py-4 h-auto shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:grayscale"
+                                                                        >
+                                                                            {savingAdime ? (
+                                                                                <>
+                                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                                    Saving Record...
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <Save size={18} /> Save ADIME Note
+                                                                                </>
+                                                                            )}
+                                                                        </Button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider">Historical Clinical Notes</h4>
+                                                                {adimeNotes.length === 0 ? (
+                                                                    <p className="text-center py-8 text-gray-500 italic">No historical ADIME records found.</p>
+                                                                ) : (
+                                                                    adimeNotes.map(note => (
+                                                                        <div key={note.id} className={cn(
+                                                                            "p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group transition-all",
+                                                                            note.is_optimistic && "opacity-50 grayscale pointer-events-none"
+                                                                        )}>
+                                                                            <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 mb-2">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
+                                                                                    {note.is_optimistic && (
+                                                                                        <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">Syncing...</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-xs text-gray-400">{new Date(note.created_at).toLocaleString()}</span>
+                                                                                    <div className="flex gap-1">
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            onClick={() => {
+                                                                                                setEditingAdimeId(note.id);
+                                                                                                setEditAdimeForm(note);
+                                                                                            }}
+                                                                                            className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                                                                                            title="Edit Record"
+                                                                                        >
+                                                                                            <Edit2 size={14} />
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            onClick={() => handleDeleteAdimeNote(note.id)}
+                                                                                            className="h-7 w-7 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                                            title="Delete Record"
+                                                                                        >
+                                                                                            <Trash2 size={14} />
+                                                                                        </Button>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </td>
-                                                                        {weekDays.map(day => {
-                                                                            const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day) && m.meal_type === type);
-                                                                            return (
-                                                                                <td key={day.toString()} className={cn(
-                                                                                    "p-3 border-r-2 border-[var(--color-divider)] last:border-r-0 align-top hover:bg-[var(--color-primary)]/5 transition-all relative group/slot min-h-[160px]",
-                                                                                    isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/5" : ""
-                                                                                )}>
-                                                                                    <div className="space-y-2">
-                                                                                        {dayMeals.map(meal => (
-                                                                                            <div key={meal.id} className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm hover:shadow-xl hover:border-[var(--color-primary)]/50 transition-all group/meal relative">
-                                                                                                <div className="flex justify-between items-start mb-2">
-                                                                                                    <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight leading-tight line-clamp-2">{meal.recipe_name}</div>
-                                                                                                    <button
-                                                                                                        onClick={() => handleDeleteMeal(meal.id)}
-                                                                                                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover/meal:opacity-100 transition-all"
-                                                                                                    >
-                                                                                                        <Trash2 size={14} />
-                                                                                                    </button>
-                                                                                                </div>
-                                                                                                <div className="flex flex-wrap gap-1.5 mt-2">
-                                                                                                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
-                                                                                                        {meal.calories || '--'} kcal
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
-                                                                                                        {meal.protein_g || '--'}g P
-                                                                                                    </div>
+
+                                                                            {editingAdimeId === note.id ? (
+                                                                                <form onSubmit={handleUpdateAdime} className="space-y-4">
+                                                                                    <div className="space-y-1">
+                                                                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Note</label>
+                                                                                        <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
+                                                                                            <ReactQuill
+                                                                                                theme="snow"
+                                                                                                value={editAdimeForm.assessment}
+                                                                                                onChange={(val) => setEditAdimeForm({ ...editAdimeForm, assessment: val })}
+                                                                                                modules={{ toolbar: true }}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex justify-end gap-2 pt-2">
+                                                                                        <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                                        <Button type="submit" className="bg-blue-600 text-white text-xs font-black uppercase px-6">Update Record</Button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            ) : (
+                                                                                <div className="space-y-4">
+                                                                                    <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-inner">
+                                                                                        <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-3 tracking-widest border-b border-[var(--color-divider)] pb-2">Unified ADIME Documentation</p>
+                                                                                        <div className="ql-snow">
+                                                                                            <div
+                                                                                                className="ql-editor !p-0 !min-h-0 text-sm clinical-content"
+                                                                                                dangerouslySetInnerHTML={{ __html: note.assessment || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        {(note.diagnosis || note.intervention || note.monitoring || note.evaluation) && (
+                                                                                            <div className="mt-4 pt-4 border-t border-dashed border-[var(--color-divider)] opacity-60">
+                                                                                                <p className="text-[9px] font-bold uppercase text-[var(--color-text-muted)] mb-2">Legacy Multi-field Data Detected</p>
+                                                                                                <div className="grid grid-cols-2 gap-2">
+                                                                                                    {['diagnosis', 'intervention', 'monitoring', 'evaluation'].map(f => note[f] && (
+                                                                                                        <div key={f} className="text-[10px] p-2 bg-white/50 dark:bg-black/20 rounded-lg">
+                                                                                                            <span className="font-black uppercase text-[var(--color-primary)] mr-1 block mb-1">{f}:</span>
+                                                                                                            <div className="ql-snow">
+                                                                                                                <div className="ql-editor !p-0 !min-h-0" dangerouslySetInnerHTML={{ __html: note[f] }} />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
                                                                                                 </div>
                                                                                             </div>
-                                                                                        ))}
-
-                                                                                        <button
-                                                                                            onClick={() => {
-                                                                                                setSelectedDateForMeal(format(day, 'yyyy-MM-dd'));
-                                                                                                setMealForm(prev => ({ ...prev, meal_type: type }));
-                                                                                                setIsMealModalOpen(true);
-                                                                                            }}
-                                                                                            className="w-full py-4 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all group/add flex flex-col items-center justify-center gap-1.5 min-h-[60px]"
-                                                                                        >
-                                                                                            <Plus size={16} className="group-hover/add:scale-125 transition-transform" />
-                                                                                            <span className="text-[9px] font-black uppercase tracking-widest opacity-0 group-hover/slot:opacity-100 transition-opacity">Schedule {type}</span>
-                                                                                        </button>
+                                                                                        )}
                                                                                     </div>
-                                                                                </td>
-                                                                            );
-                                                                        })}
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
 
-                                                {/* FOOTER INFO */}
-                                                <div className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border-2 border-amber-100 dark:border-amber-800/30 flex gap-4 items-start">
-                                                    <div className="p-3 bg-amber-100 dark:bg-amber-800/50 rounded-2xl text-amber-600 dark:text-amber-400">
-                                                        <AlertCircle size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest text-xs mb-1">Weekly Planning Guidelines</h4>
-                                                        <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
-                                                            Ensure the total daily calories across all slots align with the child's clinical targets. Parents will see this schedule on their dashboard in real-time. Use the <strong>"Insights"</strong> tab to verify the nutritional balance of your proposed plan.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                                    {/* TAB: NOTES */}
+                                                    {activeTab === 'notes' && (
+                                                        <>
+                                                            <div className="bg-green-50 dark:bg-green-900/10 p-6 rounded-xl border border-green-100 dark:border-green-800/30">
+                                                                <div className="flex justify-between items-center mb-4">
+                                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
+                                                                        <StickyNote size={20} className="text-[var(--color-primary)]" /> Client Observation Notes
+                                                                    </h3>
 
-                                        {/* TAB: PORTION EXCHANGE */}
-                                        {activeTab === 'portions' && (
-                                            <div className="space-y-6 animate-in fade-in duration-500">
-                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-white/5 p-5 rounded-[1.5rem] border-2 border-[var(--color-divider)] shadow-sm">
-                                                    <div>
-                                                        <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-2">
-                                                            <Table className="text-[var(--color-primary)]" size={20} />
-                                                            Portion Exchange Matrix
-                                                        </h3>
-                                                        <p className="text-xs font-bold text-[var(--color-text-muted)] mt-2 uppercase tracking-widest opacity-70">
-                                                            Medical Grade Portion Distribution Plan
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {portionTemplates.length > 0 && (
-                                                            <div className="relative group/template">
-                                                                <Button variant="outline" className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent">
-                                                                    <ListFilter size={14} /> Load Template
-                                                                </Button>
-                                                                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-xl shadow-xl opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50 overflow-hidden">
-                                                                    <div className="p-2 bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
-                                                                        Your Templates
+                                                                    {/* Sync Status Indicator (Mini) */}
+                                                                    <div className="flex items-center gap-1.5 opacity-60">
+                                                                        <div className={cn(
+                                                                            "w-1 h-1 rounded-full",
+                                                                            syncStatus.type === 'saving' ? 'bg-amber-500 animate-pulse' :
+                                                                                syncStatus.type === 'saved' ? 'bg-emerald-500' : 'bg-transparent'
+                                                                        )} />
+                                                                        <span className="text-[8px] font-bold uppercase tracking-tighter text-[var(--color-text-muted)]">
+                                                                            {syncStatus.type === 'saving' ? 'Saving' : syncStatus.type === 'saved' ? 'Draft' : ''}
+                                                                        </span>
                                                                     </div>
-                                                                    <div className="max-h-60 overflow-y-auto">
-                                                                        {portionTemplates.map(t => (
-                                                                            <div key={t.id} className="flex items-center justify-between p-2.5 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors" onClick={() => applyPortionTemplate(t)}>
-                                                                                <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
-                                                                                <button onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }} className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md">
-                                                                                    <Trash2 size={12} />
-                                                                                </button>
-                                                                            </div>
-                                                                        ))}
+                                                                </div>
+
+
+                                                                <form onSubmit={handleAddNote} className="space-y-3">
+                                                                    <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'notes' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
+                                                                        <ReactQuill
+                                                                            ref={el => editorRefs.current['notes'] = el}
+                                                                            theme="snow"
+                                                                            value={newNote}
+                                                                            onChange={setNewNote}
+                                                                            onFocus={() => setFocusedField('notes')}
+                                                                            modules={{ toolbar: false }}
+                                                                            placeholder="Add a new observation, milestone, or follow-up note..."
+                                                                        />
                                                                     </div>
+                                                                    <div className="flex justify-end pt-2">
+                                                                        <Button type="submit" disabled={!newNote.trim()} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
+                                                                            Save Clinical Note
+                                                                        </Button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider px-2">Recent Observations</h4>
+                                                                {notes.length === 0 ? (
+                                                                    <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">No clinical observations recorded for this profile yet.</p>
+                                                                ) : (
+                                                                    notes.map(note => (
+                                                                        <div key={note.id} className={cn(
+                                                                            "p-5 border rounded-xl relative group hover:shadow-md transition-all",
+                                                                            note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
+                                                                            note.is_optimistic && "opacity-50 grayscale pointer-events-none"
+                                                                        )}>
+                                                                            {note.is_optimistic ? (
+                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 animate-pulse">Syncing...</span>
+                                                                            ) : note.is_pinned && (
+                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>
+                                                                            )}
+
+                                                                            {editingNoteId === note.id ? (
+                                                                                <form onSubmit={handleUpdateNote} className="space-y-3">
+                                                                                    <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-primary)]">
+                                                                                        <ReactQuill
+                                                                                            theme="snow"
+                                                                                            value={editNoteForm}
+                                                                                            onChange={setEditNoteForm}
+                                                                                            modules={{ toolbar: false }}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="flex justify-end gap-2">
+                                                                                        <Button variant="ghost" type="button" onClick={() => setEditingNoteId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                                        <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <div
+                                                                                        className="prose prose-sm dark:prose-invert max-w-none mb-4"
+                                                                                        dangerouslySetInnerHTML={{ __html: note.content }}
+                                                                                    />
+
+                                                                                    <div className="flex justify-between items-center pt-3 border-t border-[var(--color-divider)]">
+                                                                                        <span className="text-xs font-medium text-[var(--color-text-muted)]">{new Date(note.created_at).toLocaleString()}</span>
+                                                                                        <div className="flex gap-1">
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                onClick={() => {
+                                                                                                    setEditingNoteId(note.id);
+                                                                                                    setEditNoteForm(note.content);
+                                                                                                }}
+                                                                                                className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                                                                                                title="Edit Note"
+                                                                                            >
+                                                                                                <Edit2 size={16} />
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                onClick={() => api.patch(`/notes/${note.id}/pin`, { is_pinned: !note.is_pinned }).then(() => fetchNotes(selectedProfile.id))}
+                                                                                                className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
+                                                                                                title={note.is_pinned ? "Unpin" : "Pin Note"}
+                                                                                            >
+                                                                                                <Plus size={16} className={note.is_pinned ? "rotate-45" : ""} />
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                                                title="Delete Note"
+                                                                                            >
+                                                                                                <Trash2 size={16} />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+
+
+
+                                                    {/* TAB: INSIGHTS */}
+                                                    {activeTab === 'insights' && reportData && (
+                                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">Compliance Rate (30 Days)</p>
+                                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] mt-2 tracking-tighter">{reportData.summary.complianceRate}%</p>
+                                                                </div>
+                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-secondary)] transition-colors">Total Meals Logged</p>
+                                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter">{reportData.summary.totalLogs}</p>
+                                                                </div>
+                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-red-500 transition-colors">Flagged Interactions</p>
+                                                                    <p className="text-3xl sm:text-4xl font-black text-red-500 mt-2 tracking-tighter">{reportData.summary.flaggedCount}</p>
                                                                 </div>
                                                             </div>
-                                                        )}
 
-                                                        <Button
-                                                            onClick={() => setIsTemplateModalOpen(true)}
-                                                            variant="outline"
-                                                            className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent"
-                                                            title="Save current matrix as a template"
-                                                        >
-                                                            <BookmarkPlus size={14} /> Save Template
-                                                        </Button>
-
-                                                        <Button
-                                                            onClick={handleSavePortions}
-                                                            disabled={isSavingPortions}
-                                                            className="h-9 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
-                                                        >
-                                                            {isSavingPortions ? 'Saving...' : <><Save size={14} /> Update Matrix</>}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {/* PORTION GRID / MOBILE CARDS */}
-                                                <div className="w-full">
-                                                    {/* DESKTOP MATRIX */}
-                                                    <div className="hidden lg:block bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
-                                                        <div className="overflow-x-auto">
-                                                            <table className="w-full border-collapse min-w-[900px]">
-                                                                <thead>
-                                                                    <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
-                                                                        <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                            <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
-                                                                        </th>
-                                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                            <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
-                                                                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
-                                                                            </th>
-                                                                        ))}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {[
-                                                                        { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
-                                                                        { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
-                                                                        { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
-                                                                        { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
-                                                                        { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
-                                                                        { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
-                                                                    ].map(item => (
-                                                                        <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
-                                                                            <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
-                                                                                        {item.icon}
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
-                                                                                        <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </td>
-                                                                            {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                                <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
-                                                                                    <AutocompleteMatrixCell
-                                                                                        value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
-                                                                                        onChange={(val) => updatePortionCell(meal, item.id, val)}
-                                                                                        item={item}
-                                                                                    />
-                                                                                </td>
-                                                                            ))}
-                                                                        </tr>
-                                                                    ))}
-                                                                    {/* Special Row for Sugar */}
-                                                                    <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
-                                                                        <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
-                                                                                    <AlertCircle size={14} />
-                                                                                </div>
-                                                                                <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td colSpan="5" className="p-3">
-                                                                            <textarea
-                                                                                rows={2}
-                                                                                className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
-                                                                                placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
-                                                                                value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
-                                                                                onChange={(e) => {
-                                                                                    updatePortionCell('Breakfast', 'sugar', e.target.value);
+                                                            <div className="p-4 sm:p-8 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5">
+                                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                                                                    <h3 className="font-black text-sm sm:text-base uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2">
+                                                                        <Activity size={18} className="text-[var(--color-primary)]" />
+                                                                        Health Score & Compliance Trend
+                                                                    </h3>
+                                                                    <div className="flex gap-2">
+                                                                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Compliance
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="h-[250px] sm:h-[350px] w-full min-h-[250px] flex flex-col" style={{ minWidth: 0 }}>
+                                                                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+                                                                        <LineChart
+                                                                            data={logs.slice().reverse()}
+                                                                            margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+                                                                        >
+                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" opacity={0.5} />
+                                                                            <XAxis
+                                                                                dataKey="logged_at"
+                                                                                stroke="var(--color-text-muted)"
+                                                                                fontSize={10}
+                                                                                tickLine={false}
+                                                                                axisLine={false}
+                                                                                interval={window.innerWidth < 640 ? 5 : 2}
+                                                                                tickFormatter={(val) => new Date(val).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                                            />
+                                                                            <YAxis
+                                                                                stroke="var(--color-text-muted)"
+                                                                                fontSize={10}
+                                                                                tickLine={false}
+                                                                                axisLine={false}
+                                                                                domain={[0, 100]}
+                                                                            />
+                                                                            <Tooltip
+                                                                                contentStyle={{
+                                                                                    backgroundColor: 'var(--color-bg-card)',
+                                                                                    borderColor: 'var(--color-divider)',
+                                                                                    borderRadius: '12px',
+                                                                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                                                                    fontSize: '11px',
+                                                                                    fontWeight: 'bold'
                                                                                 }}
                                                                             />
-                                                                        </td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* MOBILE MEAL CARDS */}
-                                                    <div className="block lg:hidden space-y-4">
-                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                            <div key={meal} className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
-                                                                <div className="bg-[var(--color-bg-page)] p-3 border-b-2 border-[var(--color-divider)] text-center shadow-inner">
-                                                                    <span className="font-black text-[var(--color-primary)] uppercase tracking-widest text-[11px]">{meal}</span>
+                                                                            <Line
+                                                                                type="monotone"
+                                                                                dataKey="compliance_score"
+                                                                                name="Compliance"
+                                                                                stroke="var(--color-primary)"
+                                                                                strokeWidth={4}
+                                                                                dot={{ r: 0 }}
+                                                                                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-primary)' }}
+                                                                            />
+                                                                        </LineChart>
+                                                                    </ResponsiveContainer>
                                                                 </div>
-                                                                <div className="divide-y-2 divide-[var(--color-divider)]">
-                                                                    {[
-                                                                        { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
-                                                                        { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
-                                                                        { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
-                                                                        { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
-                                                                        { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
-                                                                        { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
-                                                                    ].map(item => (
-                                                                        <div key={item.id} className="flex items-stretch bg-white dark:bg-[#1a1a1a]">
-                                                                            <div className="flex items-center gap-2 p-3 w-1/2 border-r-2 border-[var(--color-divider)]">
-                                                                                <div className="p-1.5 bg-[var(--color-bg-page)] rounded-lg text-[var(--color-primary)] shrink-0">
-                                                                                    {item.icon}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* TAB 2: RULES */}
+                                                    {activeTab === 'rules' && (
+                                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                                            <div className="flex justify-between items-center">
+                                                                <h3 className="font-bold text-lg text-[var(--color-secondary)]">Nutrition Rules & Compliance Goals</h3>
+                                                            </div>
+
+                                                            <div className="space-y-3">
+                                                                {rules.length === 0 ? (
+                                                                    <p className="text-sm text-center py-8 text-[var(--color-text-muted)] italic bg-[var(--color-bg-page)] dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">
+                                                                        No custom rules set. Add one below to start automated checks.
+                                                                    </p>
+                                                                ) : (
+                                                                    rules.map(rule => (
+                                                                        <div key={rule.id} className="p-4 border border-[var(--color-divider)] rounded-xl bg-[var(--color-bg-card)] shadow-sm hover:shadow-md transition-shadow">
+                                                                            {editingRuleId === rule.id ? (
+                                                                                <form onSubmit={handleUpdateRule} className="space-y-6">
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                                                                        <div className="space-y-1.5">
+                                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Category</label>
+                                                                                            <select
+                                                                                                value={editRuleForm.category}
+                                                                                                onChange={(e) => {
+                                                                                                    const cat = e.target.value;
+                                                                                                    let unit = editRuleForm.rule_unit;
+                                                                                                    if (cat === 'Calories') unit = 'kcal';
+                                                                                                    else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
+                                                                                                    else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                                                    else if (cat === 'Fluid/Water') unit = 'ml';
+                                                                                                    else if (cat === 'Vitamin D') unit = 'mcg';
+
+                                                                                                    setEditRuleForm({ ...editRuleForm, category: cat, rule_unit: unit });
+                                                                                                }}
+                                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                                            >
+                                                                                                {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        <div className="space-y-1">
+                                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Rule Name</label>
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                value={editRuleForm.rule_name}
+                                                                                                onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_name: e.target.value })}
+                                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
+                                                                                                placeholder="e.g. Daily Limit"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="space-y-1">
+                                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Logic</label>
+                                                                                            <select
+                                                                                                value={editRuleForm.rule_type}
+                                                                                                onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_type: e.target.value })}
+                                                                                                className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                                            >
+                                                                                                <option value="max">Maximum (Limit)</option>
+                                                                                                <option value="min">Minimum (Goal)</option>
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        <div className="space-y-1">
+                                                                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Value & Unit</label>
+                                                                                            <div className="flex gap-2">
+                                                                                                <input
+                                                                                                    type="number"
+                                                                                                    value={editRuleForm.rule_value}
+                                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_value: e.target.value })}
+                                                                                                    className="flex-grow p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)]"
+                                                                                                    placeholder="Value"
+                                                                                                />
+                                                                                                <input
+                                                                                                    type="text"
+                                                                                                    value={editRuleForm.rule_unit}
+                                                                                                    onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_unit: e.target.value })}
+                                                                                                    className={cn(
+                                                                                                        "w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center",
+                                                                                                        ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category) ? "opacity-50" : ""
+                                                                                                    )}
+                                                                                                    placeholder="Unit"
+                                                                                                    disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category)}
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex justify-end gap-2">
+                                                                                        <Button variant="ghost" type="button" onClick={() => setEditingRuleId(null)} className="text-xs font-black uppercase">Cancel</Button>
+                                                                                        <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Save Changes</Button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            ) : (
+                                                                                <div className="flex justify-between items-start">
+                                                                                    <div>
+                                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${rule.category === 'Sugar' || rule.category === 'Added Sugars' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                                                                                                rule.category === 'Protein' ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
+                                                                                                    'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/10 dark:text-gray-400 dark:border-white/10'
+                                                                                                }`}>
+                                                                                                {rule.category}
+                                                                                            </span>
+                                                                                            <span className="font-bold text-base text-[var(--color-text-main)]">{rule.rule_name}</span>
+                                                                                        </div>
+                                                                                        <p className="text-sm text-[var(--color-text-muted)] pl-1 font-medium">
+                                                                                            {rule.rule_type ? `${rule.rule_type === 'max' ? 'Maximum' : 'Minimum'} ${rule.rule_value} ${rule.rule_unit}` : rule.rule_definition}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div className="flex gap-1">
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            onClick={() => {
+                                                                                                setEditingRuleId(rule.id);
+                                                                                                setEditRuleForm(rule);
+                                                                                            }}
+                                                                                            className="h-8 w-8 p-0 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
+                                                                                            title="Edit Rule"
+                                                                                        >
+                                                                                            <Edit2 size={14} />
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            onClick={() => confirmDeleteRule(rule)}
+                                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
+                                                                                            title="Delete Rule"
+                                                                                        >
+                                                                                            <Trash2 size={14} />
+                                                                                        </Button>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div className="min-w-0">
-                                                                                    <div className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-tight truncate">{item.label}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+
+                                                            {/* Add Rule Form */}
+                                                            <div className="pt-6 mt-6 border-t border-[var(--color-divider)]">
+                                                                <div className="flex justify-between items-end mb-4">
+                                                                    <h4 className="font-bold text-sm text-[var(--color-primary)] uppercase tracking-wider">Quick Standards (Templates)</h4>
+                                                                </div>
+                                                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                                                    {standards.map((s, i) => (
+                                                                        <button
+                                                                            key={i}
+                                                                            onClick={() => applyTemplate(s)}
+                                                                            className="px-3 py-1.5 rounded-full border border-[var(--color-primary)] text-[var(--color-primary)] text-xs font-bold hover:bg-[var(--color-primary)] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+                                                                        >
+                                                                            + {s.name}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+
+                                                                <h4 className="font-bold text-sm mb-4 text-[var(--color-primary)] uppercase tracking-wider">Custom Rule Builder</h4>
+                                                                <form onSubmit={handleAddRule} className="grid grid-cols-1 md:grid-cols-12 gap-5 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-xl border border-[var(--color-divider)] shadow-inner">
+                                                                    <div className="md:col-span-3">
+                                                                        <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Category</label>
+                                                                        <select
+                                                                            className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer"
+                                                                            value={newRule.category}
+                                                                            onChange={(e) => {
+                                                                                const cat = e.target.value;
+                                                                                let unit = 'g';
+                                                                                // Standard Clinical Units
+                                                                                if (cat === 'Calories') unit = 'kcal';
+                                                                                else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
+                                                                                else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                                else if (cat === 'Fluid/Water') unit = 'ml';
+                                                                                else if (cat === 'Vitamin D') unit = 'mcg';
+
+                                                                                setNewRule({ ...newRule, category: cat, rule_unit: unit });
+                                                                            }}
+                                                                        >
+                                                                            <option>Calories</option>
+                                                                            <option>Protein</option>
+                                                                            <option>Carbohydrates</option>
+                                                                            <option>Total Fat</option>
+                                                                            <option>Saturated Fat</option>
+                                                                            <option>Total Sugar</option>
+                                                                            <option>Added Sugars</option>
+                                                                            <option>Fiber</option>
+                                                                            <option>Sodium</option>
+                                                                            <option>Fluid/Water</option>
+                                                                            <option>Iron</option>
+                                                                            <option>Calcium</option>
+                                                                            <option>Vitamin D</option>
+                                                                            <option>Potassium</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="md:col-span-4">
+                                                                        <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Rule Name</label>
+                                                                        <input
+                                                                            className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
+                                                                            placeholder="e.g. Daily Sugar Limit"
+                                                                            value={newRule.rule_name}
+                                                                            onChange={(e) => setNewRule({ ...newRule, rule_name: e.target.value })}
+                                                                            required
+                                                                        />
+                                                                    </div>
+                                                                    <div className="md:col-span-2">
+                                                                        <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Type</label>
+                                                                        <select
+                                                                            className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer"
+                                                                            value={newRule.rule_type}
+                                                                            onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
+                                                                        >
+                                                                            <option value="max">Maximum</option>
+                                                                            <option value="min">Minimum</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="md:col-span-3">
+                                                                        <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Value & Unit</label>
+                                                                        <div className="flex gap-1">
+                                                                            <input
+                                                                                type="number"
+                                                                                className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
+                                                                                placeholder="Value"
+                                                                                value={newRule.rule_value}
+                                                                                onChange={(e) => setNewRule({ ...newRule, rule_value: e.target.value })}
+                                                                                required
+                                                                            />
+                                                                            <select
+                                                                                className={cn(
+                                                                                    "w-24 p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-main)]",
+                                                                                    ['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                                                                )}
+                                                                                value={newRule.rule_unit}
+                                                                                onChange={(e) => setNewRule({ ...newRule, rule_unit: e.target.value })}
+                                                                                disabled={['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category)}
+                                                                            >
+                                                                                <option>kcal</option>
+                                                                                <option>g</option>
+                                                                                <option>mg</option>
+                                                                                <option>mcg</option>
+                                                                                <option>ml</option>
+                                                                                <option>L</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="md:col-span-12 flex justify-end pt-2 border-t border-[var(--color-divider)] mt-2">
+                                                                        <Button type="submit" className="px-8 py-2 bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all">
+                                                                            <Plus size={18} /> Add New Rule
+                                                                        </Button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* TAB 3: PLANNER */}
+                                                    {activeTab === 'plan' && (
+                                                        <div className="space-y-6 animate-in fade-in duration-500">
+                                                            {/* PLANNER HEADER & NAV */}
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                                <div>
+                                                                    <h3 className="font-black text-xl text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-3">
+                                                                        <ChefHat className="text-[var(--color-primary)]" size={24} />
+                                                                        Weekly Clinical Planner
+                                                                    </h3>
+                                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
+                                                                        Week of {format(currentWeekStart, 'MMMM d, yyyy')} — {format(addDays(currentWeekStart, 6), 'MMMM d, yyyy')}
+                                                                    </p>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                                                    <div className="flex items-center bg-[var(--color-bg-card)] rounded-2xl border-2 border-[var(--color-divider)] p-1">
+                                                                        <button
+                                                                            onClick={handlePrevWeek}
+                                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all"
+                                                                        >
+                                                                            <ArrowLeft size={18} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={handleThisWeek}
+                                                                            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
+                                                                        >
+                                                                            Today
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={handleNextWeek}
+                                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all rotate-180"
+                                                                        >
+                                                                            <ArrowLeft size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                    <Button
+                                                                        onClick={() => {
+                                                                            setConfirmDialog({
+                                                                                isOpen: true,
+                                                                                title: 'Clear Weekly Plan',
+                                                                                message: 'Are you sure you want to clear all planned meals for this child? This cannot be undone.',
+                                                                                onConfirm: handleClearPlan
+                                                                            });
+                                                                        }}
+                                                                        variant="ghost"
+                                                                        className="flex-grow md:flex-none h-11 px-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/30"
+                                                                    >
+                                                                        <Trash2 size={18} />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* THE WEEKLY GRID */}
+                                                            <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden shadow-sm relative">
+                                                                {/* Scrolling Indicator for Desktop/Mobile */}
+                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none md:hidden">
+                                                                    <div className="bg-[var(--color-primary)] text-white p-2 rounded-full shadow-lg animate-pulse">
+                                                                        <ArrowLeft size={16} className="rotate-180" />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--color-primary)]/20">
+                                                                    <table className="w-full border-collapse min-w-[1400px]">
+                                                                        <thead>
+                                                                            <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
+                                                                                <th className="p-4 w-36 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                    <div className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">Time / Day</div>
+                                                                                </th>
+                                                                                {weekDays.map(day => (
+                                                                                    <th key={day.toString()} className={cn(
+                                                                                        "p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 transition-colors",
+                                                                                        isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/10" : ""
+                                                                                    )}>
+                                                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{format(day, 'EEEE')}</div>
+                                                                                        <div className={cn(
+                                                                                            "text-lg font-black mt-1",
+                                                                                            isSameDay(day, new Date()) ? "text-[var(--color-primary)]" : "text-[var(--color-text-main)]"
+                                                                                        )}>
+                                                                                            {format(day, 'MMM d')}
+                                                                                        </div>
+                                                                                        {/* Daily Totals in Header */}
+                                                                                        {(() => {
+                                                                                            const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day));
+                                                                                            const totalCal = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+                                                                                            return (
+                                                                                                <div className={cn(
+                                                                                                    "mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all",
+                                                                                                    totalCal > 0
+                                                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm"
+                                                                                                        : "bg-white/50 dark:bg-black/20 border-[var(--color-divider)]"
+                                                                                                )}>
+                                                                                                    <Activity size={12} />
+                                                                                                    <span className="text-[10px] font-black uppercase tracking-tighter">{totalCal || 0} kcal</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })()}
+                                                                                    </th>
+                                                                                ))}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
+                                                                                <tr key={type} className="border-b-2 border-[var(--color-divider)] last:border-b-0 group">
+                                                                                    <td className="p-4 border-r-2 border-[var(--color-divider)] bg-[var(--color-bg-page)]/30 group-hover:bg-[var(--color-bg-page)]/50 transition-colors sticky left-0 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                        <div className="flex flex-col items-center justify-center gap-1">
+                                                                                            <span className="text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-widest">{type}</span>
+                                                                                            <div className="h-9 w-9 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] group-hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
+                                                                                                <Utensils size={16} />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    {weekDays.map(day => {
+                                                                                        const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day) && m.meal_type === type);
+                                                                                        return (
+                                                                                            <td key={day.toString()} className={cn(
+                                                                                                "p-3 border-r-2 border-[var(--color-divider)] last:border-r-0 align-top hover:bg-[var(--color-primary)]/5 transition-all relative group/slot min-h-[160px]",
+                                                                                                isSameDay(day, new Date()) ? "bg-[var(--color-primary)]/5" : ""
+                                                                                            )}>
+                                                                                                <div className="space-y-2">
+                                                                                                    {dayMeals.map(meal => (
+                                                                                                        <div key={meal.id} className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm hover:shadow-xl hover:border-[var(--color-primary)]/50 transition-all group/meal relative">
+                                                                                                            <div className="flex justify-between items-start mb-2">
+                                                                                                                <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight leading-tight line-clamp-2">{meal.recipe_name}</div>
+                                                                                                                <button
+                                                                                                                    onClick={() => handleDeleteMeal(meal.id)}
+                                                                                                                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover/meal:opacity-100 transition-all"
+                                                                                                                >
+                                                                                                                    <Trash2 size={14} />
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                                                                                                    {meal.calories || '--'} kcal
+                                                                                                                </div>
+                                                                                                                <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
+                                                                                                                    {meal.protein_g || '--'}g P
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+
+                                                                                                    <button
+                                                                                                        onClick={() => {
+                                                                                                            setSelectedDateForMeal(format(day, 'yyyy-MM-dd'));
+                                                                                                            setMealForm(prev => ({ ...prev, meal_type: type }));
+                                                                                                            setIsMealModalOpen(true);
+                                                                                                        }}
+                                                                                                        className="w-full py-4 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all group/add flex flex-col items-center justify-center gap-1.5 min-h-[60px]"
+                                                                                                    >
+                                                                                                        <Plus size={16} className="group-hover/add:scale-125 transition-transform" />
+                                                                                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-0 group-hover/slot:opacity-100 transition-opacity">Schedule {type}</span>
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </td>
+                                                                                        );
+                                                                                    })}
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* FOOTER INFO */}
+                                                            <div className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border-2 border-amber-100 dark:border-amber-800/30 flex gap-4 items-start">
+                                                                <div className="p-3 bg-amber-100 dark:bg-amber-800/50 rounded-2xl text-amber-600 dark:text-amber-400">
+                                                                    <AlertCircle size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest text-xs mb-1">Weekly Planning Guidelines</h4>
+                                                                    <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
+                                                                        Ensure the total daily calories across all slots align with the child's clinical targets. Parents will see this schedule on their dashboard in real-time. Use the <strong>"Insights"</strong> tab to verify the nutritional balance of your proposed plan.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* TAB: PORTION EXCHANGE */}
+                                                    {activeTab === 'portions' && (
+                                                        <div className="space-y-6 animate-in fade-in duration-500">
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-white/5 p-5 rounded-[1.5rem] border-2 border-[var(--color-divider)] shadow-sm">
+                                                                <div>
+                                                                    <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-2">
+                                                                        <Table className="text-[var(--color-primary)]" size={20} />
+                                                                        Portion Exchange Matrix
+                                                                    </h3>
+                                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-2 uppercase tracking-widest opacity-70">
+                                                                        Medical Grade Portion Distribution Plan
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {portionTemplates.length > 0 && (
+                                                                        <div className="relative group/template">
+                                                                            <Button variant="outline" className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent">
+                                                                                <ListFilter size={14} /> Load Template
+                                                                            </Button>
+                                                                            <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-xl shadow-xl opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50 overflow-hidden">
+                                                                                <div className="p-2 bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                                                    Your Templates
+                                                                                </div>
+                                                                                <div className="max-h-60 overflow-y-auto">
+                                                                                    {portionTemplates.map(t => (
+                                                                                        <div key={t.id} className="flex items-center justify-between p-2.5 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors" onClick={() => applyPortionTemplate(t)}>
+                                                                                            <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
+                                                                                            <button onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }} className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md">
+                                                                                                <Trash2 size={12} />
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    ))}
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="w-1/2 relative bg-[var(--color-bg-page)]/30">
-                                                                                <AutocompleteMatrixCell
-                                                                                    value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
-                                                                                    onChange={(val) => updatePortionCell(meal, item.id, val)}
-                                                                                    item={item}
-                                                                                />
+                                                                        </div>
+                                                                    )}
+
+                                                                    <Button
+                                                                        onClick={() => setIsTemplateModalOpen(true)}
+                                                                        variant="outline"
+                                                                        className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent"
+                                                                        title="Save current matrix as a template"
+                                                                    >
+                                                                        <BookmarkPlus size={14} /> Save Template
+                                                                    </Button>
+
+                                                                    <Button
+                                                                        onClick={handleSavePortions}
+                                                                        disabled={isSavingPortions}
+                                                                        className="h-9 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                                                                    >
+                                                                        {isSavingPortions ? 'Saving...' : <><Save size={14} /> Update Matrix</>}
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* PORTION GRID / MOBILE CARDS */}
+                                                            <div className="w-full">
+                                                                {/* DESKTOP MATRIX */}
+                                                                <div className="hidden lg:block bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                                    <div className="overflow-x-auto">
+                                                                        <table className="w-full border-collapse min-w-[900px]">
+                                                                            <thead>
+                                                                                <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
+                                                                                    <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                        <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
+                                                                                    </th>
+                                                                                    {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                                        <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
+                                                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                                                        </th>
+                                                                                    ))}
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {[
+                                                                                    { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
+                                                                                    { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
+                                                                                    { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
+                                                                                    { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
+                                                                                    { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
+                                                                                    { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
+                                                                                ].map(item => (
+                                                                                    <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
+                                                                                        <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                            <div className="flex items-center gap-3">
+                                                                                                <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                                                                                    {item.icon}
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
+                                                                                                    <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </td>
+                                                                                        {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                                            <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
+                                                                                                <AutocompleteMatrixCell
+                                                                                                    value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
+                                                                                                    onChange={(val) => updatePortionCell(meal, item.id, val)}
+                                                                                                    item={item}
+                                                                                                />
+                                                                                            </td>
+                                                                                        ))}
+                                                                                    </tr>
+                                                                                ))}
+                                                                                {/* Special Row for Sugar */}
+                                                                                <tr className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
+                                                                                    <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-amber-500">
+                                                                                                <AlertCircle size={14} />
+                                                                                            </div>
+                                                                                            <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">Sugar / Limits</div>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td colSpan="5" className="p-3">
+                                                                                        <textarea
+                                                                                            rows={2}
+                                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-[var(--color-text-muted)]/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
+                                                                                            placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
+                                                                                            value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
+                                                                                            onChange={(e) => {
+                                                                                                updatePortionCell('Breakfast', 'sugar', e.target.value);
+                                                                                            }}
+                                                                                        />
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* MOBILE MEAL CARDS */}
+                                                                <div className="block lg:hidden space-y-4">
+                                                                    {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
+                                                                        <div key={meal} className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                                            <div className="bg-[var(--color-bg-page)] p-3 border-b-2 border-[var(--color-divider)] text-center shadow-inner">
+                                                                                <span className="font-black text-[var(--color-primary)] uppercase tracking-widest text-[11px]">{meal}</span>
+                                                                            </div>
+                                                                            <div className="divide-y-2 divide-[var(--color-divider)]">
+                                                                                {[
+                                                                                    { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
+                                                                                    { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
+                                                                                    { id: 'milk', label: 'Milk', icon: <Milk size={14} />, unit: '1 cup' },
+                                                                                    { id: 'rice', label: 'Rice/Carbs', icon: <Zap size={14} />, unit: '1/2 cup' },
+                                                                                    { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
+                                                                                    { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
+                                                                                ].map(item => (
+                                                                                    <div key={item.id} className="flex items-stretch bg-white dark:bg-[#1a1a1a]">
+                                                                                        <div className="flex items-center gap-2 p-3 w-1/2 border-r-2 border-[var(--color-divider)]">
+                                                                                            <div className="p-1.5 bg-[var(--color-bg-page)] rounded-lg text-[var(--color-primary)] shrink-0">
+                                                                                                {item.icon}
+                                                                                            </div>
+                                                                                            <div className="min-w-0">
+                                                                                                <div className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-tight truncate">{item.label}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="w-1/2 relative bg-[var(--color-bg-page)]/30">
+                                                                                            <AutocompleteMatrixCell
+                                                                                                value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
+                                                                                                onChange={(val) => updatePortionCell(meal, item.id, val)}
+                                                                                                item={item}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
                                                                             </div>
                                                                         </div>
                                                                     ))}
+
+                                                                    {/* Mobile Sugar / Limits Card */}
+                                                                    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[1.5rem] border-2 border-amber-200 dark:border-amber-800/30 overflow-hidden shadow-sm">
+                                                                        <div className="p-3 border-b-2 border-amber-200 dark:border-amber-800/30 flex items-center justify-center gap-2">
+                                                                            <AlertCircle size={14} className="text-amber-500" />
+                                                                            <h4 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-[11px] text-center">Sugar / Limits</h4>
+                                                                        </div>
+                                                                        <div className="p-1">
+                                                                            <textarea
+                                                                                rows={2}
+                                                                                className="w-full bg-transparent border-0 p-3 text-sm font-bold text-amber-900 dark:text-amber-100 focus:ring-0 outline-none placeholder:text-amber-700/40 resize-none"
+                                                                                placeholder="e.g. Limit intake of sugar, sugary products..."
+                                                                                value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
+                                                                                onChange={(e) => updatePortionCell('Breakfast', 'sugar', e.target.value)}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        ))}
 
-                                                        {/* Mobile Sugar / Limits Card */}
-                                                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[1.5rem] border-2 border-amber-200 dark:border-amber-800/30 overflow-hidden shadow-sm">
-                                                            <div className="p-3 border-b-2 border-amber-200 dark:border-amber-800/30 flex items-center justify-center gap-2">
-                                                                <AlertCircle size={14} className="text-amber-500" />
-                                                                <h4 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-[11px] text-center">Sugar / Limits</h4>
-                                                            </div>
-                                                            <div className="p-1">
-                                                                <textarea
-                                                                    rows={2}
-                                                                    className="w-full bg-transparent border-0 p-3 text-sm font-bold text-amber-900 dark:text-amber-100 focus:ring-0 outline-none placeholder:text-amber-700/40 resize-none"
-                                                                    placeholder="e.g. Limit intake of sugar, sugary products..."
-                                                                    value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
-                                                                    onChange={(e) => updatePortionCell('Breakfast', 'sugar', e.target.value)}
-                                                                />
+                                                            {/* EXCHANGE GUIDE TOOLTIP */}
+                                                            <div className="p-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border-2 border-blue-100 dark:border-blue-800/30">
+                                                                <div className="flex items-start gap-4">
+                                                                    <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-2xl text-blue-600 dark:text-blue-400">
+                                                                        <Info size={24} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="font-black text-blue-800 dark:text-blue-300 uppercase tracking-[0.2em] text-xs mb-2">Standard Exchange Guide</h4>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Vegetables</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup cooked OR 1 cup raw</p>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Rice & Carbs</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup rice OR 1.5 slices bread</p>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Milk</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 cup (250 mL) low fat milk</p>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Meat/Protein</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 30-40g (Size of a matchbox)</p>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fruit</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 medium pc OR 1 slice (40-60g)</p>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fat & Oil</span>
+                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 tsp (5 mL) vegetable oil</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </div>
+                                                    )}
 
-                                                {/* EXCHANGE GUIDE TOOLTIP */}
-                                                <div className="p-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border-2 border-blue-100 dark:border-blue-800/30">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-2xl text-blue-600 dark:text-blue-400">
-                                                            <Info size={24} />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="font-black text-blue-800 dark:text-blue-300 uppercase tracking-[0.2em] text-xs mb-2">Standard Exchange Guide</h4>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Vegetables</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup cooked OR 1 cup raw</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Rice & Carbs</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup rice OR 1.5 slices bread</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Milk</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 cup (250 mL) low fat milk</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Meat/Protein</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 30-40g (Size of a matchbox)</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fruit</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 medium pc OR 1 slice (40-60g)</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fat & Oil</span>
-                                                                    <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 tsp (5 mL) vegetable oil</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Final Closing of Tab Content Container */}
-                                        </motion.div>
-                                        </AnimatePresence>
+                                                    {/* Final Closing of Tab Content Container */}
+                                                </motion.div>
+                                            </AnimatePresence>
                                         </div>
 
                                     </CardContent>

@@ -171,7 +171,8 @@ router.post('/login', async (req, res) => {
                 theme_preference: user.theme_preference,
                 privacy_mode: user.privacy_mode,
                 measurement_system: user.measurement_system,
-                nutrient_precision: user.nutrient_precision
+                nutrient_precision: user.nutrient_precision,
+                profile_image_url: user.profile_image_url || null
             },
             token,
         });
