@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 import { verifyAdmin } from '../middleware/auth.js';
 import { logAuditAction } from '../lib/auditLogger.js';
+import { aiStats } from '../services/gemini.js';
+import { systemConfig } from '../lib/systemConfig.js';
 
 const router = express.Router();
 
@@ -20,7 +22,8 @@ router.get('/stats', verifyAdmin, async (req, res) => {
             users: totalUsers,
             profiles: totalProfiles,
             pendingApprovals: pendingNutritionists,
-            totalMealsLogged: totalLogs
+            totalMealsLogged: totalLogs,
+            aiHealth: aiStats
         });
     } catch (err) {
         console.error(err);
@@ -98,26 +101,118 @@ router.patch('/nutritionists/:id/verify', verifyAdmin, async (req, res) => {
     }
 });
 
-// GET /admin/users - Master user list
+// GET /admin/users - Master user list with pagination and search
 router.get('/users', verifyAdmin, async (req, res) => {
     try {
-        const users = await prisma.users.findMany({
-            select: {
-                id: true,
-                email: true,
-                full_name: true,
-                role: true,
-                status: true,
-                created_at: true,
-                professional_id: true,
-                clinic: true,
-                is_suspended: true
-            },
-            orderBy: { created_at: 'desc' }
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const search = req.query.search || '';
+        const role = req.query.role || 'all';
+        const status = req.query.status || 'all';
+        const skip = (page - 1) * limit;
+
+        let where = {};
+        if (search) {
+            where.OR = [
+                { full_name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+        if (role !== 'all') {
+            where.role = role;
+        }
+        if (status !== 'all') {
+            if (status === 'approved') {
+                 where.OR = [{ status: 'approved' }, { role: { not: 'nutritionist' } }];
+            } else {
+                 where.status = status;
+            }
+        }
+
+        const [users, total] = await Promise.all([
+            prisma.users.findMany({
+                where,
+                select: {
+                    id: true,
+                    email: true,
+                    full_name: true,
+                    role: true,
+                    status: true,
+                    created_at: true,
+                    professional_id: true,
+                    clinic: true,
+                    is_suspended: true,
+                    force_password_reset: true,
+                    license_image_url: true,
+                    profile_image_url: true
+                },
+                orderBy: { created_at: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.users.count({ where })
+        ]);
+
+        res.json({
+            data: users,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
         });
-        res.json(users);
     } catch (err) {
         console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /admin/users/bulk-status
+router.patch('/users/bulk-status', verifyAdmin, async (req, res) => {
+    const { userIds, status } = req.body;
+    if (!['approved', 'rejected', 'pending'].includes(status) || !Array.isArray(userIds)) {
+        return res.status(400).json({ message: 'Invalid data' });
+    }
+    try {
+        await prisma.users.updateMany({
+            where: { id: { in: userIds }, role: 'nutritionist' },
+            data: { status }
+        });
+        await logAuditAction({
+            adminId: req.user.id,
+            action: `BULK_${status.toUpperCase()}_NUTRITIONISTS`,
+            entityType: 'USER_BATCH',
+            details: { count: userIds.length, target_ids: userIds },
+            ipAddress: req.ip
+        });
+        res.json({ message: `Bulk status updated to ${status}` });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /admin/users/bulk-suspend
+router.patch('/users/bulk-suspend', verifyAdmin, async (req, res) => {
+    const { userIds, is_suspended } = req.body;
+    if (!Array.isArray(userIds)) return res.status(400).json({ message: 'Invalid data' });
+    
+    const validIds = userIds.filter(id => id !== req.user.id); // Prevent self-suspend
+
+    try {
+        await prisma.users.updateMany({
+            where: { id: { in: validIds } },
+            data: { is_suspended }
+        });
+        await logAuditAction({
+            adminId: req.user.id,
+            action: is_suspended ? 'BULK_SUSPEND_USERS' : 'BULK_REACTIVATE_USERS',
+            entityType: 'USER_BATCH',
+            details: { count: validIds.length, target_ids: validIds },
+            ipAddress: req.ip
+        });
+        res.json({ message: `Bulk suspension updated` });
+    } catch (err) {
         res.status(500).json({ message: 'Server Error' });
     }
 });
@@ -292,11 +387,13 @@ router.get('/users/:id/details', verifyAdmin, async (req, res) => {
                     select: {
                         id: true,
                         child_name: true,
-                        created_at: true
+                        created_at: true,
+                        profile_image_url: true
                     }
                 },
                 license_image_url: true,
-                is_suspended: true
+                is_suspended: true,
+                profile_image_url: true
             }
         });
 
@@ -353,22 +450,71 @@ router.post('/users', verifyAdmin, async (req, res) => {
     }
 });
 
-// GET /admin/audit-logs - Retrieve global audit ledger
+// GET /admin/audit-logs - Retrieve global audit ledger with pagination and filters
 router.get('/audit-logs', verifyAdmin, async (req, res) => {
     try {
-        const logs = await prisma.audit_logs.findMany({
-            include: {
-                admin: {
-                    select: { full_name: true, email: true }
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const search = req.query.search || '';
+        const action = req.query.action || 'all';
+        const startDate = req.query.startDate;
+        const endDate = req.query.endDate;
+        const skip = (page - 1) * limit;
+
+        let where = {};
+        
+        if (action !== 'all') {
+            where.action = action;
+        }
+
+        if (startDate && endDate) {
+            where.created_at = {
+                gte: new Date(startDate),
+                lte: new Date(endDate + 'T23:59:59.999Z')
+            };
+        } else if (startDate) {
+            where.created_at = { gte: new Date(startDate) };
+        } else if (endDate) {
+            where.created_at = { lte: new Date(endDate + 'T23:59:59.999Z') };
+        }
+
+        if (search) {
+            where.OR = [
+                { action: { contains: search, mode: 'insensitive' } },
+                { admin: { is: { full_name: { contains: search, mode: 'insensitive' } } } },
+                { admin: { is: { email: { contains: search, mode: 'insensitive' } } } },
+                { target_user: { is: { full_name: { contains: search, mode: 'insensitive' } } } },
+                { target_user: { is: { email: { contains: search, mode: 'insensitive' } } } }
+            ];
+        }
+
+        const [logs, total] = await Promise.all([
+            prisma.audit_logs.findMany({
+                where,
+                include: {
+                    admin: {
+                        select: { full_name: true, email: true }
+                    },
+                    target_user: {
+                        select: { full_name: true, email: true }
+                    }
                 },
-                target_user: {
-                    select: { full_name: true, email: true }
-                }
-            },
-            orderBy: { created_at: 'desc' },
-            take: 100 // Limit to latest 100 logs for performance
+                orderBy: { created_at: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.audit_logs.count({ where })
+        ]);
+        
+        res.json({
+            data: logs,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
         });
-        res.json(logs);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -523,6 +669,101 @@ router.delete('/announcements/:id', verifyAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /admin/maintenance - Toggle Maintenance Mode
+router.patch('/maintenance', verifyAdmin, async (req, res) => {
+    const { enabled } = req.body;
+
+    systemConfig.maintenanceMode = !!enabled;
+
+    await logAuditAction({
+        adminId: req.user.id,
+        action: enabled ? 'ENABLE_MAINTENANCE_MODE' : 'DISABLE_MAINTENANCE_MODE',
+        entityType: 'SYSTEM',
+        ipAddress: req.ip
+    });
+
+    res.json({ message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`, maintenanceMode: systemConfig.maintenanceMode });
+});
+
+// ==========================================
+// CONTENT MODERATION (DATA OVERSIGHT)
+// ==========================================
+
+// GET /admin/content/search
+router.get('/content/search', verifyAdmin, async (req, res) => {
+    const { query, type } = req.query; // type: 'profiles' | 'meals' | 'notes'
+    if (!query) return res.json([]);
+
+    try {
+        if (type === 'profiles') {
+            const results = await prisma.profiles.findMany({
+                where: { child_name: { contains: query, mode: 'insensitive' } },
+                include: { user: { select: { email: true, full_name: true } } },
+                take: 20
+            });
+            return res.json(results);
+        }
+        
+        if (type === 'meals') {
+            const results = await prisma.meal_logs.findMany({
+                where: { OR: [{ food_name: { contains: query, mode: 'insensitive' } }, { notes: { contains: query, mode: 'insensitive' } }] },
+                include: { profile: { select: { child_name: true, user: { select: { email: true } } } } },
+                take: 20
+            });
+            return res.json(results);
+        }
+
+        if (type === 'notes') {
+            const results = await prisma.clinical_notes.findMany({
+                where: { OR: [{ diagnosis: { contains: query, mode: 'insensitive' } }, { intervention: { contains: query, mode: 'insensitive' } }] },
+                include: { 
+                    nutritionist: { select: { full_name: true } },
+                    profile: { select: { child_name: true } } 
+                },
+                take: 20
+            });
+            return res.json(results);
+        }
+
+        res.json([]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Search failed' });
+    }
+});
+
+// DELETE /admin/content/:type/:id
+router.delete('/content/:type/:id', verifyAdmin, async (req, res) => {
+    const { type, id } = req.params;
+    
+    try {
+        let deletedEntity = null;
+        if (type === 'profiles') {
+            deletedEntity = await prisma.profiles.delete({ where: { id } });
+        } else if (type === 'meals') {
+            deletedEntity = await prisma.meal_logs.delete({ where: { id } });
+        } else if (type === 'notes') {
+            deletedEntity = await prisma.clinical_notes.delete({ where: { id } });
+        } else {
+            return res.status(400).json({ message: 'Invalid content type' });
+        }
+
+        await logAuditAction({
+            adminId: req.user.id,
+            action: `DELETE_CONTENT_${type.toUpperCase()}`,
+            entityType: type.toUpperCase(),
+            entityId: id,
+            details: deletedEntity,
+            ipAddress: req.ip
+        });
+
+        res.json({ message: 'Content deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to delete content' });
     }
 });
 

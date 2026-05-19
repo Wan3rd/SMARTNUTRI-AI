@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X } from 'lucide-react';
+import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -62,7 +62,9 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     const adminNavItems = [
         { icon: ShieldCheck, label: 'Oversight', path: '/' },
         { icon: Users, label: 'All Users', path: '/admin/users' },
+        { icon: Database, label: 'Data Oversight', path: '/admin/data' },
         { icon: History, label: 'Audit Logs', path: '/admin/audit' },
+        { icon: BrainCircuit, label: 'AI Monitor', path: '/admin/ai-health' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 

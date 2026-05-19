@@ -16,11 +16,13 @@ import reportRoutes from './routes/reports.js';
 import noteRoutes from './routes/notes.js';
 import rulesRoutes from './routes/rules.js';
 import adminRoutes from './routes/admin.js';
+import { systemConfig } from './lib/systemConfig.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
 
 // Middleware
 const allowedOrigins = [
@@ -53,7 +55,8 @@ app.get('/api/health', async (req, res) => {
             status: 'online', 
             database: 'connected', 
             timestamp: new Date(),
-            dbTime: dbCheck[0].now
+            dbTime: dbCheck[0].now,
+            maintenance: systemConfig.maintenanceMode
         });
     } catch (err) {
         console.error('[Health Check Error]:', err.message);
@@ -63,8 +66,11 @@ app.get('/api/health', async (req, res) => {
 
 // Global Maintenance Middleware
 app.use((req, res, next) => {
-    if (process.env.MAINTENANCE_MODE === 'true') {
-        return res.status(503).json({ message: 'Server is currently under maintenance. Please try again later.' });
+    if (systemConfig.maintenanceMode) {
+        // Exempt auth and admin routes so admins can still log in and disable it
+        if (!req.path.startsWith('/api/auth') && !req.path.startsWith('/api/admin')) {
+            return res.status(503).json({ message: 'Server is currently under maintenance. Please try again later.', maintenance: true });
+        }
     }
     next();
 });

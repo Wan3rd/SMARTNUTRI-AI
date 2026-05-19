@@ -9,6 +9,14 @@ const API_KEYS = [
 
 const MODEL_NAME = 'gemini-2.5-flash';
 
+export const aiStats = {
+    totalRequests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    lastUsedKeyIndex: 0,
+    failuresByKey: [0, 0, 0]
+};
+
 /**
  * Core function to call Gemini with automatic failover
  */
@@ -17,11 +25,13 @@ export const callGemini = async (prompt, imageBase64 = null) => {
         throw new Error("No Gemini API keys defined in .env");
     }
 
+    aiStats.totalRequests++;
     let lastError = null;
 
     // Try each key in sequence until one works
     for (let i = 0; i < API_KEYS.length; i++) {
         const key = API_KEYS[i];
+        aiStats.lastUsedKeyIndex = i;
         
         try {
             const body = {
@@ -57,28 +67,36 @@ export const callGemini = async (prompt, imageBase64 = null) => {
             const isHighDemand = data.error && data.error.message.toLowerCase().includes('high demand');
 
             if (isOverloaded || isQuotaExceeded || isHighDemand) {
+                aiStats.failuresByKey[i]++;
                 console.warn(`Gemini Key ${i + 1} busy or exhausted, trying next key...`);
                 continue;
             }
 
             if (!response.ok || data.error) {
+                aiStats.failuresByKey[i]++;
                 throw new Error(data.error?.message || `API Error: ${response.status}`);
             }
 
             const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!output) throw new Error("AI returned empty response");
+            if (!output) {
+                aiStats.failuresByKey[i]++;
+                throw new Error("AI returned empty response");
+            }
 
+            aiStats.successfulRequests++;
             return output;
 
         } catch (err) {
+            aiStats.failuresByKey[i]++;
             console.error(`Gemini Key ${i + 1} Failed:`, err.message);
             lastError = err;
             // Only continue to next key if it's a rate limit or network issue
-            if (err.message.includes('429') || err.message.includes('quota')) continue;
+            if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('fetch')) continue;
             throw err; // For other errors, stop immediately
         }
     }
 
+    aiStats.failedRequests++;
     throw new Error(`All Gemini API keys failed. Last error: ${lastError?.message}`);
 };
 

@@ -36,6 +36,14 @@ api.interceptors.response.use(
                 window.location.href = '/settings?reason=force_reset';
             }
         }
+
+        // Handle maintenance mode (server returns 503 with maintenance:true)
+        if (error.response?.status === 503 && error.response?.data?.maintenance === true) {
+            if (window.location.pathname !== '/maintenance') {
+                window.location.href = '/maintenance';
+            }
+        }
+
         return Promise.reject(error);
     }
 );

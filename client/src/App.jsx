@@ -29,6 +29,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersList from './pages/AdminUsersList';
 import AdminAuditLogs from './pages/AdminAuditLogs';
+import AdminAIHealth from './pages/AdminAIHealth';
+import AdminDataOversight from './pages/AdminDataOversight';
 
 import config from '../../env_config';
 import Maintenance from './pages/Maintenance';
@@ -50,6 +52,7 @@ function AppContent() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/maintenance" element={<Maintenance />} />
         
         {/* Force Password Reset - Dedicated Top Level Route */}
         <Route path="/force-password-reset" element={
@@ -99,6 +102,16 @@ function AppContent() {
                 <Route path="/admin/audit" element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminAuditLogs />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/ai-health" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminAIHealth />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/data" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminDataOversight />
                   </ProtectedRoute>
                 } />
               </Routes>

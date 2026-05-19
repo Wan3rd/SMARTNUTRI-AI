@@ -3,60 +3,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/common/C
 import { Button } from '../components/common/Button';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Notification from '../components/common/Notification';
-import { Users, Search, Shield, User, Clock, Trash2, ShieldAlert, CheckCircle2, XCircle, ChevronDown, UserCog, AlertCircle, Filter, ShieldCheck, Lock, RefreshCw } from 'lucide-react';
+import { Users, Search, Shield, User, Clock, Trash2, ShieldAlert, CheckCircle2, XCircle, ChevronDown, UserCog, AlertCircle, Filter, ShieldCheck, Lock, RefreshCw, Download, ChevronLeft, ChevronRight, Eye, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import api from '../lib/api';
 
+import UserDetailsModal from '../admin/components/UserDetailsModal';
+import CreateUserModal from '../admin/components/CreateUserModal';
+
 export default function AdminUsersList() {
     const { user: currentUser } = useAuth();
     const dropdownRef = useRef(null);
+
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [selectedUsers, setSelectedUsers] = useState([]);
     const [processingId, setProcessingId] = useState(null);
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, userId: null });
     const [confirmStatus, setConfirmStatus] = useState({ isOpen: false, userId: null, status: '' });
+    const [confirmSuspend, setConfirmSuspend] = useState({ isOpen: false, userId: null, currentStatus: false });
+    const [confirmReset, setConfirmReset] = useState({ isOpen: false, userId: null, currentState: false });
+    const [confirmBulkSuspend, setConfirmBulkSuspend] = useState({ isOpen: false, isSuspend: false });
+    const [confirmBulkStatus, setConfirmBulkStatus] = useState({ isOpen: false, status: '' });
     const [message, setMessage] = useState({ type: 'success', text: '' });
 
+    // Modals
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedUserDetails, setSelectedUserDetails] = useState(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
 
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [createForm, setCreateForm] = useState({
-        full_name: '',
-        email: '',
-        password: '',
-        role: 'parent',
-        professional_id: '',
-        clinic: ''
-    });
-
     useEffect(() => {
-        if (selectedUserDetails || isCreateModalOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [selectedUserDetails, isCreateModalOpen]);
-
-    useEffect(() => {
-        const handleEsc = (event) => {
-            if (event.key === 'Escape') {
-                setSelectedUserDetails(null);
-            }
-        };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, []);
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     useEffect(() => {
         fetchUsers();
@@ -68,33 +57,72 @@ export default function AdminUsersList() {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const handleCreateUser = async (e) => {
-        e.preventDefault();
-        setProcessingId('creating');
-        try {
-            const res = await api.post('/admin/users', createForm);
-            setUsers(prev => [res.data, ...prev]);
-            setIsCreateModalOpen(false);
-            setCreateForm({ full_name: '', email: '', password: '', role: 'parent', professional_id: '', clinic: '' });
-            setMessage({ type: 'success', text: 'User account created successfully' });
-        } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.message || "Failed to create user" });
-        } finally {
-            setProcessingId(null);
-        }
-    };
+    }, [page, roleFilter, statusFilter, debouncedSearch]);
 
     const fetchUsers = async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/admin/users');
-            setUsers(res.data);
+            const params = new URLSearchParams({
+                page,
+                limit: 50,
+                search: debouncedSearch,
+                role: roleFilter,
+                status: statusFilter
+            });
+            const res = await api.get(`/admin/users?${params.toString()}`);
+            setUsers(res.data.data);
+            setTotalPages(res.data.meta.totalPages);
         } catch (err) {
             console.error("Failed to fetch users", err);
         } finally {
             setLoading(false);
         }
+    };
+
+    const toggleSelectUser = (id) => setSelectedUsers(p => p.includes(id) ? p.filter(uid => uid !== id) : [...p, id]);
+    const selectAllUsers = () => setSelectedUsers(selectedUsers.length === users.length && users.length > 0 ? [] : users.map(u => u.id));
+
+    const handleBulkSuspendAction = async () => {
+        const { isSuspend } = confirmBulkSuspend;
+        setProcessingId('bulk');
+        try {
+            await api.patch('/admin/users/bulk-suspend', { userIds: selectedUsers, is_suspended: isSuspend });
+            setMessage({ type: 'success', text: `Bulk ${isSuspend ? 'suspension' : 'reactivation'} successful` });
+            setSelectedUsers([]);
+            fetchUsers();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Bulk action failed' });
+        } finally {
+            setProcessingId(null);
+            setConfirmBulkSuspend({ isOpen: false, isSuspend: false });
+        }
+    };
+
+    const handleBulkStatusAction = async () => {
+        const { status } = confirmBulkStatus;
+        setProcessingId('bulk');
+        try {
+            await api.patch('/admin/users/bulk-status', { userIds: selectedUsers, status });
+            setMessage({ type: 'success', text: `Bulk practitioner status updated to ${status}` });
+            setSelectedUsers([]);
+            fetchUsers();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Bulk status update failed' });
+        } finally {
+            setProcessingId(null);
+            setConfirmBulkStatus({ isOpen: false, status: '' });
+        }
+    };
+
+    const exportCSV = () => {
+        const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Joined Date', 'Suspended', 'Forced Reset'];
+        const rows = users.map(u => [u.id, u.full_name, u.email, u.role, u.status || 'verified', new Date(u.created_at).toLocaleDateString(), u.is_suspended, u.force_password_reset]);
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `smartnutri_users_page_${page}.csv`;
+        link.click();
     };
 
     const fetchDeepDetails = async (id) => {
@@ -103,198 +131,190 @@ export default function AdminUsersList() {
             const res = await api.get(`/admin/users/${id}/details`);
             setSelectedUserDetails(res.data);
         } catch (err) {
-            console.error("Failed to fetch user details", err);
+            setMessage({ type: 'error', text: 'Failed to retrieve deep user data' });
         } finally {
             setDetailsLoading(false);
         }
     };
 
-    const handleDelete = async () => {
-        const id = confirmDelete.userId;
-        if (!id) return;
-
-        setProcessingId(id);
+    const handleRoleChange = async (userId, newRole) => {
         try {
-            await api.delete(`/admin/users/${id}`);
-            setUsers(prev => prev.filter(u => u.id !== id));
-            setConfirmDelete({ isOpen: false, userId: null });
-            setSelectedUserDetails(null);
-            setMessage({ type: 'success', text: 'User deleted' });
-        } catch (err) {
-            setMessage({ type: 'error', text: "Deletion failed: " + (err.response?.data?.message || "Server Error") });
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    const handleRoleChange = async (id, newRole) => {
-        setProcessingId(id);
-        try {
-            await api.patch(`/admin/users/${id}/role`, { role: newRole });
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
-            if (selectedUserDetails?.id === id) {
-                setSelectedUserDetails(prev => ({ ...prev, role: newRole }));
-            }
+            await api.patch(`/admin/users/${userId}/role`, { role: newRole });
+            setMessage({ type: 'success', text: 'User authorization level updated' });
+            fetchUsers();
             setActiveDropdown(null);
-            setMessage({ type: 'success', text: 'Role updated' });
         } catch (err) {
-            setMessage({ type: 'error', text: "Role update failed" });
-        } finally {
-            setProcessingId(null);
+            setMessage({ type: 'error', text: 'Role update failed' });
         }
     };
-
 
     const handleStatusChange = async () => {
         const { userId, status } = confirmStatus;
         if (!userId) return;
-
         setProcessingId(userId);
         try {
-            await api.patch(`/admin/nutritionists/${userId}/verify`, { status });
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u));
-            if (selectedUserDetails?.id === userId) {
-                setSelectedUserDetails(prev => ({ ...prev, status }));
-            }
+            await api.patch(`/admin/users/${userId}/status`, { status });
+            setMessage({ type: 'success', text: `Nutritionist access ${status}` });
+            fetchUsers();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Access update failed' });
+        } finally {
+            setProcessingId(null);
             setConfirmStatus({ isOpen: false, userId: null, status: '' });
-            setMessage({ type: 'success', text: 'Account status updated' });
-        } catch (err) {
-            setMessage({ type: 'error', text: "Status update failed" });
-        } finally {
-            setProcessingId(null);
         }
     };
 
-
-    const handleSuspendToggle = async (id, currentSuspension) => {
-        setProcessingId(id);
+    const handleSuspendToggle = async () => {
+        const { userId, currentStatus } = confirmSuspend;
+        if (!userId) return;
+        const isSuspending = !currentStatus;
+        setProcessingId(userId);
         try {
-            const newStatus = !currentSuspension;
-            await api.patch(`/admin/users/${id}/suspend`, { is_suspended: newStatus });
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, is_suspended: newStatus } : u));
-            if (selectedUserDetails?.id === id) {
-                setSelectedUserDetails(prev => ({ ...prev, is_suspended: newStatus }));
-            }
-            setMessage({ type: 'success', text: newStatus ? 'Account suspended' : 'Account reactivated' });
+            await api.patch(`/admin/users/${userId}/suspend`, { is_suspended: isSuspending });
+            setMessage({ type: 'success', text: `Account successfully ${isSuspending ? 'suspended' : 'reactivated'}` });
+            fetchUsers();
         } catch (err) {
-            setMessage({ type: 'error', text: "Suspension update failed" });
+            setMessage({ type: 'error', text: 'Suspension toggle failed' });
         } finally {
             setProcessingId(null);
+            setConfirmSuspend({ isOpen: false, userId: null, currentStatus: false });
         }
     };
 
-    const handleForceReset = async (id, currentFlag) => {
-        setProcessingId(id);
+    const handleForceReset = async () => {
+        const { userId, currentState } = confirmReset;
+        if (!userId) return;
+        setProcessingId(userId);
         try {
-            const newFlag = !currentFlag;
-            await api.patch(`/admin/users/${id}/force-reset`, { force_password_reset: newFlag });
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, force_password_reset: newFlag } : u));
-            if (selectedUserDetails?.id === id) {
-                setSelectedUserDetails(prev => ({ ...prev, force_password_reset: newFlag }));
-            }
-            setMessage({
-                type: 'success',
-                text: newFlag ? 'User flagged for mandatory password change' : 'Forced reset requirement cleared'
-            });
+            await api.patch(`/admin/users/${userId}/force-reset`, { force_password_reset: !currentState });
+            setMessage({ type: 'success', text: `Forced password reset policy ${!currentState ? 'initiated' : 'cleared'}` });
+            fetchUsers();
         } catch (err) {
-            setMessage({ type: 'error', text: "Force reset update failed" });
+            setMessage({ type: 'error', text: 'Action failed' });
         } finally {
             setProcessingId(null);
+            setConfirmReset({ isOpen: false, userId: null, currentState: false });
         }
     };
 
-    const filteredUsers = users.filter(u => {
-        const matchesSearch = u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-        const matchesStatus = statusFilter === 'all' ||
-            (u.role === 'nutritionist' ? u.status === statusFilter : statusFilter === 'approved');
+    const handleDelete = async () => {
+        const userId = confirmDelete.userId;
+        if (!userId) return;
+        setProcessingId(userId);
+        try {
+            await api.delete(`/admin/users/${userId}`);
+            setMessage({ type: 'success', text: 'Account permanently eradicated' });
+            fetchUsers();
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Account deletion failed' });
+        } finally {
+            setProcessingId(null);
+            setConfirmDelete({ isOpen: false, userId: null });
+        }
+    };
 
-        return matchesSearch && matchesRole && matchesStatus;
-    });
+    const filteredUsers = users; // filtered on backend
 
     const Tooltip = ({ text, children, align = 'center' }) => (
         <div className="group/tip relative inline-block">
             {children}
-            <div className={`absolute top-full mt-3 px-3 py-2 bg-[var(--color-text-main)] text-[var(--color-bg-card)] text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover/tip:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-[110] shadow-2xl scale-90 group-hover/tip:scale-100 origin-top border border-white/10 ${align === 'right' ? 'right-0' :
-                    align === 'left' ? 'left-0' :
-                        'left-1/2 -translate-x-1/2'
-                }`}>
-                <div className={`absolute bottom-full border-[6px] border-transparent border-b-[var(--color-text-main)] ${align === 'right' ? 'right-3' :
-                        align === 'left' ? 'left-3' :
-                            'left-1/2 -translate-x-1/2'
-                    }`} />
-                {text}
+            <div className={`absolute bottom-full mb-2 ${align === 'right' ? 'right-0' : align === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2'} hidden group-hover/tip:block z-50`}>
+                <div className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest py-1.5 px-3 rounded-lg whitespace-nowrap">
+                    {text}
+                </div>
             </div>
         </div>
     );
 
-    if (loading) return <div className="p-8 text-center text-[var(--color-text-muted)] font-outfit uppercase tracking-widest text-xs">Accessing User Vault...</div>;
-
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto font-outfit">
-            {/* Page Header Area */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-5xl font-black text-[var(--color-text-main)] tracking-tight mb-2">User Directory</h1>
-                    <p className="text-[var(--color-text-muted)] font-medium max-w-lg">Master platform oversight. Manage clinical credentials, account authority, and platform entry for all practitioners and caregivers.</p>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center">
+                            <Users size={24} />
+                        </div>
+                        <h1 className="text-4xl font-black text-[var(--color-text-main)] tracking-tight">User Directory</h1>
+                    </div>
+                    <p className="text-[var(--color-text-muted)] font-medium">Complete administrative oversight of all platform accounts.</p>
                 </div>
-                <Button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="h-14 px-8 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-[1.5rem] font-black uppercase tracking-[0.15em] text-[11px] shadow-2xl shadow-[var(--color-primary)]/20 whitespace-nowrap flex items-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
-                >
-                    <User size={16} />
-                    Provision New Account
-                </Button>
+                <div className="flex items-center gap-3">
+                    <button onClick={exportCSV} className="h-12 px-5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm shrink-0">
+                        <Download size={14} /> Export CSV
+                    </button>
+                    <Button onClick={() => setIsCreateModalOpen(true)} className="h-12 px-6 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20 shrink-0">
+                        <UserPlus size={16} /> Provision Account
+                    </Button>
+                </div>
             </div>
 
-            {/* Filter & Search Command Bar */}
-            <div className="flex flex-wrap items-center gap-3 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-[2rem] shadow-sm">
-                <div className="flex items-center gap-2 px-4 py-2 border-r border-[var(--color-divider)]">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-[2rem] shadow-sm">
+                <div className="flex items-center gap-2 px-4 py-2 border-b lg:border-b-0 lg:border-r border-[var(--color-divider)]">
                     <Filter size={14} className="text-[var(--color-text-muted)]" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Filters</span>
                 </div>
+                
+                <div className="flex flex-col sm:flex-row gap-2 px-2 lg:px-0 flex-1">
+                    <select 
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="flex-1 w-full px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors border lg:border-0 border-[var(--color-divider)] lg:border-r"
+                    >
+                        <option value="all">All Roles</option>
+                        <option value="parent">Parents</option>
+                        <option value="nutritionist">Nutritionists</option>
+                        <option value="admin">Administrators</option>
+                    </select>
 
-                <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="px-4 py-2 bg-transparent dark:bg-[var(--color-bg-card)] font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors"
-                >
-                    <option value="all" className="dark:bg-[#0f172a]">All Roles</option>
-                    <option value="nutritionist" className="dark:bg-[#0f172a]">Nutritionists</option>
-                    <option value="parent" className="dark:bg-[#0f172a]">Parents</option>
-                    <option value="admin" className="dark:bg-[#0f172a]">Admins</option>
-                </select>
+                    <select 
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="flex-1 w-full px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors border lg:border-0 border-[var(--color-divider)] lg:border-r"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
 
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 bg-transparent dark:bg-[var(--color-bg-card)] font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors"
-                >
-                    <option value="all" className="dark:bg-[#0f172a]">All Status</option>
-                    <option value="approved" className="dark:bg-[#0f172a]">Approved</option>
-                    <option value="pending" className="dark:bg-[#0f172a]">Pending</option>
-                    <option value="rejected" className="dark:bg-[#0f172a]">Rejected</option>
-                </select>
-
-                <div className="flex-1 min-w-[200px] relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-30" size={16} />
+                <div className="flex-1 lg:min-w-[200px] relative px-2 lg:px-0 pb-2 lg:pb-0">
+                    <Search className="absolute left-6 lg:left-4 top-1/2 -translate-y-1/2 lg:-mt-0 -mt-1 text-[var(--color-text-muted)] opacity-30" size={16} />
                     <input
                         type="text"
                         placeholder="Search directory by name or email..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2 bg-transparent outline-none font-bold text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50"
+                        className="w-full pl-11 pr-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)] lg:border-l outline-none font-bold text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50"
                     />
                 </div>
             </div>
 
+            {selectedUsers.length > 0 && (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-[var(--color-primary)]/10 border-2 border-[var(--color-primary)]/30 rounded-2xl animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-black uppercase tracking-widest text-[var(--color-primary)]">{selectedUsers.length} Users Selected</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                        <Button onClick={() => setConfirmBulkStatus({ isOpen: true, status: 'approved' })} className="flex-1 md:flex-none h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl">Approve</Button>
+                        <Button onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: true })} className="flex-1 md:flex-none h-9 px-4 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl">Suspend</Button>
+                        <Button onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: false })} className="flex-1 md:flex-none h-9 px-4 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl">Reactivate</Button>
+                        <Button onClick={() => setSelectedUsers([])} className="w-full md:w-auto h-9 px-4 bg-transparent border border-[var(--color-primary)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[var(--color-primary)]/10">Cancel</Button>
+                    </div>
+                </div>
+            )}
+
+
+
             <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)]">
                 <CardContent className="p-0 overflow-visible">
-                    <div className="overflow-x-auto scrollbar-hide">
+                    <div className="hidden lg:block overflow-x-auto scrollbar-hide">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="bg-[var(--color-bg-page)] text-left border-b border-[var(--color-divider)]">
+                                    <th className="px-6 py-5 w-12">
+                                        <input type="checkbox" onChange={selectAllUsers} checked={users.length > 0 && selectedUsers.length === users.length} className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
+                                    </th>
                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">User Identity</th>
                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Role</th>
                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Auth Status</th>
@@ -309,10 +329,17 @@ export default function AdminUsersList() {
                                         className="hover:bg-[var(--color-bg-page)]/50 transition-colors group cursor-pointer"
                                         onClick={() => fetchDeepDetails(user.id)}
                                     >
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                            <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => toggleSelectUser(user.id)} className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] flex items-center justify-center font-black text-[var(--color-text-muted)]">
-                                                    <User size={18} />
+                                                <div className="h-10 w-10 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] flex items-center justify-center font-black text-[var(--color-text-muted)] overflow-hidden shrink-0">
+                                                    {user.profile_image_url ? (
+                                                        <img src={user.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <User size={18} />
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <div className={cn("text-sm font-black text-[var(--color-text-main)]", currentUser?.privacy_mode && "privacy-blur", user.is_suspended && "opacity-40")}>{user.full_name}</div>
@@ -369,7 +396,6 @@ export default function AdminUsersList() {
                                         </td>
                                         <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex justify-end gap-2">
-                                                {/* Status Cycle Actions */}
                                                 {user.role === 'nutritionist' && (
                                                     <Tooltip text={user.status === 'approved' ? 'Revoke Approval' : 'Approve Practitioner'}>
                                                         <button
@@ -422,7 +448,7 @@ export default function AdminUsersList() {
                                                 {currentUser?.id !== user.id && (
                                                     <Tooltip text={user.force_password_reset ? 'Clear Forced Reset' : 'Force Password Reset'}>
                                                         <button
-                                                            onClick={() => handleForceReset(user.id, user.force_password_reset)}
+                                                            onClick={() => setConfirmReset({ isOpen: true, userId: user.id, currentState: user.force_password_reset })}
                                                             className={`p-2 rounded-lg transition-all ${user.force_password_reset ? 'text-violet-500 bg-violet-500/10' : 'text-[var(--color-text-muted)] hover:text-violet-500 hover:bg-violet-500/10'}`}
                                                         >
                                                             <RefreshCw size={16} className={user.force_password_reset ? 'animate-spin-slow' : ''} />
@@ -432,7 +458,7 @@ export default function AdminUsersList() {
                                                 {currentUser?.id !== user.id && (
                                                     <Tooltip text={user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}>
                                                         <button
-                                                            onClick={() => handleSuspendToggle(user.id, user.is_suspended)}
+                                                            onClick={() => setConfirmSuspend({ isOpen: true, userId: user.id, currentStatus: user.is_suspended })}
                                                             className={`p-2 rounded-lg transition-all ${user.is_suspended ? 'text-amber-500 bg-amber-500/10' : 'text-[var(--color-text-muted)] hover:text-amber-500 hover:bg-amber-500/10'}`}
                                                         >
                                                             {user.is_suspended ? <ShieldCheck size={16} /> : <Lock size={16} />}
@@ -462,7 +488,85 @@ export default function AdminUsersList() {
                     {filteredUsers.length === 0 && (
                         <div className="p-20 text-center text-[var(--color-text-muted)] italic font-medium">No accounts found matching your criteria.</div>
                     )}
+
+                    <div className="lg:hidden divide-y divide-[var(--color-divider)]">
+                        {filteredUsers.map(user => (
+                            <div key={user.id} className="p-4 bg-[var(--color-bg-card)] flex flex-col gap-4 active:bg-gray-50 transition-colors" onClick={() => fetchDeepDetails(user.id)}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.includes(user.id)}
+                                            onChange={() => toggleSelectUser(user.id)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-5 h-5 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] animate-scale-up"
+                                        />
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] overflow-hidden shrink-0">
+                                                {user.profile_image_url ? (
+                                                    <img src={user.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={18} />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-black text-[var(--color-text-main)] truncate max-w-[150px]">{user.full_name}</div>
+                                                <div className="text-[10px] text-[var(--color-text-muted)] font-medium truncate max-w-[150px]">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-primary)]">{user.role}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : user.status === 'pending' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200'}`}>{user.status || 'verified'}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-3 border-t border-[var(--color-divider)]" onClick={(e) => e.stopPropagation()}>
+                                    <div className="text-[10px] font-bold text-[var(--color-text-muted)]">
+                                        Joined: {new Date(user.created_at).toLocaleDateString()}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {user.role === 'nutritionist' && (
+                                            <button
+                                                onClick={() => setConfirmStatus({
+                                                    isOpen: true,
+                                                    userId: user.id,
+                                                    status: user.status === 'approved' ? 'pending' : 'approved'
+                                                })}
+                                                className={`p-2 rounded-lg transition-all ${user.status === 'approved' ? 'text-emerald-500 bg-emerald-500/10' : 'text-[var(--color-text-muted)] hover:text-emerald-500 hover:bg-emerald-500/10'}`}
+                                            >
+                                                <CheckCircle2 size={16} />
+                                            </button>
+                                        )}
+                                        {currentUser?.id !== user.id && (
+                                            <button
+                                                onClick={() => setConfirmSuspend({ isOpen: true, userId: user.id, currentStatus: user.is_suspended })}
+                                                className={`p-2 rounded-lg transition-all ${user.is_suspended ? 'text-amber-500 bg-amber-500/10' : 'text-[var(--color-text-muted)] hover:text-amber-500 hover:bg-amber-500/10'}`}
+                                            >
+                                                {user.is_suspended ? <ShieldCheck size={16} /> : <Lock size={16} />}
+                                            </button>
+                                        )}
+                                        {currentUser?.id !== user.id && (
+                                            <button
+                                                onClick={() => setConfirmDelete({ isOpen: true, userId: user.id })}
+                                                className="p-2 bg-rose-500/10 rounded-lg text-rose-500"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </CardContent>
+
+                <div className="p-4 border-t border-[var(--color-divider)] flex items-center justify-between bg-zinc-50 dark:bg-white/5">
+                    <span className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Page {page} of {totalPages}</span>
+                    <div className="flex gap-2">
+                        <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="h-9 px-4 bg-[var(--color-bg-page)] border border-[var(--color-divider)] text-[var(--color-text-main)] rounded-lg hover:bg-[var(--color-primary)]/10 text-xs font-bold disabled:opacity-50">Prev</button>
+                        <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="h-9 px-4 bg-[var(--color-bg-page)] border border-[var(--color-divider)] text-[var(--color-text-main)] rounded-lg hover:bg-[var(--color-primary)]/10 text-xs font-bold disabled:opacity-50">Next</button>
+                    </div>
+                </div>
             </Card>
 
             <ConfirmDialog
@@ -489,267 +593,71 @@ export default function AdminUsersList() {
                 loading={processingId !== null}
             />
 
-            {selectedUserDetails && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-300"
-                    onClick={() => setSelectedUserDetails(null)}
-                >
-                    <Card
-                        className="max-w-2xl w-full border-2 border-[var(--color-divider)] rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-2xl bg-[var(--color-bg-card)] max-h-[95vh] flex flex-col"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="overflow-y-auto flex-1 scrollbar-hide p-6 sm:p-10 space-y-8">
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-5">
-                                    <div className="h-20 w-20 rounded-[2rem] bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)]">
-                                        <User size={36} />
-                                    </div>
-                                    <div>
-                                        <h2 className={cn("text-3xl font-black text-[var(--color-text-main)] tracking-tight leading-none mb-2", currentUser?.privacy_mode && "privacy-blur")}>{selectedUserDetails.full_name}</h2>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs font-black uppercase tracking-widest text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-3 py-1 rounded-lg">
-                                                {selectedUserDetails.role}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-[var(--color-text-muted)]">{selectedUserDetails.email}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedUserDetails(null)}
-                                    className="p-3 hover:bg-[var(--color-bg-page)] rounded-2xl transition-all text-[var(--color-text-muted)]"
-                                >
-                                    <XCircle size={24} />
-                                </button>
-                            </div>
+            <ConfirmDialog
+                isOpen={confirmSuspend.isOpen}
+                onClose={() => setConfirmSuspend({ isOpen: false, userId: null, currentStatus: false })}
+                onConfirm={handleSuspendToggle}
+                title={confirmSuspend.currentStatus ? "Reactivate User Account" : "Suspend User Account"}
+                message={confirmSuspend.currentStatus 
+                    ? "Are you sure you want to reactivate this account? The user will immediately regain platform access."
+                    : "Are you sure you want to suspend this account? The user will be immediately locked out and their session will be terminated."}
+                confirmText={confirmSuspend.currentStatus ? "Reactivate Account" : "Suspend Account"}
+                isDestructive={!confirmSuspend.currentStatus}
+                loading={processingId !== null}
+            />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-6 bg-[var(--color-bg-page)] rounded-3xl border border-[var(--color-divider)]">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4">Account Metadata</div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <span className="text-xs font-bold text-[var(--color-text-muted)]">Joined Platform</span>
-                                            <span className="text-xs font-black text-[var(--color-text-main)]">
-                                                {new Date(selectedUserDetails.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-xs font-bold text-[var(--color-text-muted)]">Contact Number</span>
-                                            <span className="text-xs font-black text-[var(--color-text-main)]">
-                                                {selectedUserDetails.phone || 'Not Provided'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-xs font-bold text-[var(--color-text-muted)]">Auth ID</span>
-                                            <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[100px]">{selectedUserDetails.id}</span>
-                                        </div>
-                                    </div>
-                                </div>
+            <ConfirmDialog
+                isOpen={confirmReset.isOpen}
+                onClose={() => setConfirmReset({ isOpen: false, userId: null, currentState: false })}
+                onConfirm={handleForceReset}
+                title={confirmReset.currentState ? "Clear Force Password Reset" : "Force Password Reset"}
+                message={confirmReset.currentState
+                    ? "Are you sure you want to clear the forced password reset requirement for this user?"
+                    : "Are you sure you want to force this user to reset their password on their next login?"}
+                confirmText={confirmReset.currentState ? "Clear Requirement" : "Force Reset"}
+                isDestructive={!confirmReset.currentState}
+                loading={processingId !== null}
+            />
 
-                                <div className="p-6 bg-[var(--color-bg-page)] rounded-3xl border border-[var(--color-divider)]">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4">Security Status</div>
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-3 w-3 rounded-full ${selectedUserDetails.role !== 'nutritionist' || selectedUserDetails.status === 'approved' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                            <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">
-                                                {selectedUserDetails.role === 'nutritionist' ? (selectedUserDetails.status || 'Pending Review') : 'Active Member'}
-                                            </span>
-                                        </div>
-                                        {selectedUserDetails.is_suspended && (
-                                            <div className="flex items-center gap-3 animate-pulse">
-                                                <div className="h-3 w-3 rounded-full bg-rose-500" />
-                                                <span className="text-xs font-black uppercase tracking-widest text-rose-600">Access Suspended</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+            <ConfirmDialog
+                isOpen={confirmBulkSuspend.isOpen}
+                onClose={() => setConfirmBulkSuspend({ isOpen: false, isSuspend: false })}
+                onConfirm={handleBulkSuspendAction}
+                title={confirmBulkSuspend.isSuspend ? "Bulk Suspend Accounts" : "Bulk Reactivate Accounts"}
+                message={confirmBulkSuspend.isSuspend
+                    ? `Are you sure you want to suspend the ${selectedUsers.length} selected accounts? They will immediately lose platform access.`
+                    : `Are you sure you want to reactivate the ${selectedUsers.length} selected accounts? They will regain platform access.`}
+                confirmText={confirmBulkSuspend.isSuspend ? "Suspend All" : "Reactivate All"}
+                isDestructive={confirmBulkSuspend.isSuspend}
+                loading={processingId !== null}
+            />
 
-                            {/* Role Specific Deep Data */}
-                            {selectedUserDetails.role === 'nutritionist' && (
-                                <div className="space-y-4">
-                                    <div className="p-8 bg-[var(--color-bg-page)] rounded-[2.5rem] border border-[var(--color-divider)]">
-                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-6 flex items-center gap-2">
-                                            <Shield size={14} className="text-[var(--color-primary)]" />
-                                            Professional Credentials
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-8 mb-8">
-                                            <div>
-                                                <div className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 uppercase">Medical License / ID</div>
-                                                <div className="text-sm font-black text-[var(--color-text-main)] font-mono">{selectedUserDetails.professional_id || selectedUserDetails.license_no || 'NOT PROVIDED'}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-[10px] font-bold text-[var(--color-text-muted)] mb-1 uppercase">Affiliated Clinic</div>
-                                                <div className="text-sm font-black text-[var(--color-text-main)]">{selectedUserDetails.clinic || 'Not Specified'}</div>
-                                            </div>
-                                        </div>
+            <ConfirmDialog
+                isOpen={confirmBulkStatus.isOpen}
+                onClose={() => setConfirmBulkStatus({ isOpen: false, status: '' })}
+                onConfirm={handleBulkStatusAction}
+                title="Bulk Approve Status"
+                message={`Are you sure you want to approve the ${selectedUsers.length} selected accounts? This will grant them active status.`}
+                confirmText="Approve All"
+                isDestructive={false}
+                loading={processingId !== null}
+            />
 
-                                        {selectedUserDetails.license_image_url && (
-                                            <div>
-                                                <div className="text-[10px] font-bold text-[var(--color-text-muted)] mb-3 uppercase tracking-widest">Digital License Certificate</div>
-                                                <div className="relative aspect-video rounded-3xl overflow-hidden border-2 border-[var(--color-divider)] bg-zinc-900 shadow-inner group">
-                                                    <img src={selectedUserDetails.license_image_url} className="w-full h-full object-cover" />
-                                                    <a
-                                                        href={selectedUserDetails.license_image_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-sm"
-                                                    >
-                                                        View Full Document
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+            {/* Extracted Modals */}
+            <UserDetailsModal 
+                selectedUserDetails={selectedUserDetails} 
+                currentUser={currentUser} 
+                onClose={() => setSelectedUserDetails(null)} 
+            />
 
-                            {selectedUserDetails.role === 'parent' && (
-                                <div className="p-8 bg-[var(--color-bg-page)] rounded-[2.5rem] border border-[var(--color-divider)]">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-6 flex items-center gap-2">
-                                        <Users size={14} className="text-[var(--color-primary)]" />
-                                        Connected Patient Profiles
-                                    </div>
-                                    {selectedUserDetails.profiles?.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {selectedUserDetails.profiles.map(child => (
-                                                <div key={child.id} className="flex items-center justify-between p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)]">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)]">
-                                                            <User size={14} />
-                                                        </div>
-                                                        <span className="text-xs font-black text-[var(--color-text-main)]">{child.child_name}</span>
-                                                    </div>
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-bg-page)] px-2 py-1 rounded-md">
-                                                        Patient Profile
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-xs font-medium text-[var(--color-text-muted)] italic">No patient profiles linked to this account.</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-white/5 border-t border-[var(--color-divider)] flex justify-center">
-                            <Button
-                                onClick={() => setSelectedUserDetails(null)}
-                                className="w-full h-14 bg-white dark:bg-zinc-900 border-2 border-[var(--color-divider)] text-zinc-900 dark:text-zinc-100 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
-                            >
-                                Dismiss
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
-            )}
-
-            {/* Account Creation Modal */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                    <Card className="max-w-md w-full border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-2xl bg-[var(--color-bg-card)]">
-                        <form onSubmit={handleCreateUser} className="p-8 space-y-6">
-                            <div className="flex justify-between items-center mb-2">
-                                <div>
-                                    <h2 className="text-2xl font-black text-[var(--color-text-main)] tracking-tight">New Platform Account</h2>
-                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Administrative Provisioning</p>
-                                </div>
-                                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
-                                    <XCircle size={20} />
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Account Role</label>
-                                    <div className="flex gap-2 p-1 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                        {['parent', 'nutritionist', 'admin'].map(r => (
-                                            <button
-                                                key={r}
-                                                type="button"
-                                                onClick={() => setCreateForm(prev => ({ ...prev, role: r }))}
-                                                className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${createForm.role === r ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm border border-[var(--color-divider)]' : 'text-[var(--color-text-muted)]'}`}
-                                            >
-                                                {r === 'parent' ? 'Parent' : r === 'nutritionist' ? 'Nutritionist' : 'Admin'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Full Identity</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        placeholder="Enter legal name..."
-                                        value={createForm.full_name}
-                                        onChange={(e) => setCreateForm(prev => ({ ...prev, full_name: e.target.value }))}
-                                        className="w-full px-5 py-3 bg-[var(--color-bg-page)] border border-[var(--color-divider)] rounded-2xl text-sm font-bold outline-none focus:border-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Email Address</label>
-                                    <input
-                                        required
-                                        type="email"
-                                        placeholder="user@smartnutri.ai"
-                                        value={createForm.email}
-                                        onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
-                                        className="w-full px-5 py-3 bg-[var(--color-bg-page)] border border-[var(--color-divider)] rounded-2xl text-sm font-bold outline-none focus:border-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Temporary Password</label>
-                                    <input
-                                        required
-                                        type="password"
-                                        placeholder="Min 6 characters..."
-                                        value={createForm.password}
-                                        onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
-                                        className="w-full px-5 py-3 bg-[var(--color-bg-page)] border border-[var(--color-divider)] rounded-2xl text-sm font-bold outline-none focus:border-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                                    />
-                                </div>
-
-                                {createForm.role === 'nutritionist' && (
-                                    <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">License ID</label>
-                                            <input
-                                                required
-                                                type="text"
-                                                placeholder="PH-..."
-                                                value={createForm.professional_id}
-                                                onChange={(e) => setCreateForm(prev => ({ ...prev, professional_id: e.target.value }))}
-                                                className="w-full px-5 py-3 bg-[var(--color-bg-page)] border border-[var(--color-divider)] rounded-2xl text-sm font-bold outline-none focus:border-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Clinic</label>
-                                            <input
-                                                required
-                                                type="text"
-                                                placeholder="Hospital..."
-                                                value={createForm.clinic}
-                                                onChange={(e) => setCreateForm(prev => ({ ...prev, clinic: e.target.value }))}
-                                                className="w-full px-5 py-3 bg-[var(--color-bg-page)] border border-[var(--color-divider)] rounded-2xl text-sm font-bold outline-none focus:border-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <Button
-                                type="submit"
-                                disabled={processingId === 'creating'}
-                                className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[var(--color-primary)]/20"
-                            >
-                                {processingId === 'creating' ? 'Provisioning Account...' : 'Generate Account'}
-                            </Button>
-                        </form>
-                    </Card>
-                </div>
-            )}
+            <CreateUserModal 
+                isOpen={isCreateModalOpen} 
+                onClose={() => setIsCreateModalOpen(false)} 
+                onSuccess={(msg) => {
+                    setMessage({ type: 'success', text: msg });
+                    fetchUsers();
+                }} 
+            />
 
             <Notification
                 show={!!message.text}

@@ -8,6 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Bell, Shield, Smartphone, Scale, UserCog, HelpCircle, ChevronRight, Key } from 'lucide-react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import DeactivateAccountModal from '../components/DeactivateAccountModal';
+import api from '../lib/api';
+import MaintenanceModeModal from '../admin/components/MaintenanceModeModal';
 
 export default function Settings() {
     const { user, updatePreferences } = useAuth();
@@ -15,7 +17,24 @@ export default function Settings() {
     const [message, setMessage] = useState({ type: 'success', text: '' });
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+    const [maintenanceLoading, setMaintenanceLoading] = useState(false);
     const location = useLocation();
+
+    useEffect(() => {
+        const fetchHealth = async () => {
+            if (user?.role === 'admin') {
+                try {
+                    const res = await api.get('/health');
+                    setMaintenanceMode(res.data.maintenance ?? false);
+                } catch (err) {
+                    console.error("Failed to fetch system health");
+                }
+            }
+        };
+        fetchHealth();
+    }, [user?.role]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -48,6 +67,21 @@ export default function Settings() {
         if (isUpdating || theme === newTheme) return;
         setTheme(newTheme);
         await handlePreferenceChange('theme', newTheme, `Theme changed to ${newTheme} mode`);
+    };
+
+    const handleMaintenanceToggle = async () => {
+        setShowMaintenanceModal(false);
+        setMaintenanceLoading(true);
+        try {
+            const res = await api.patch('/admin/maintenance', { enabled: !maintenanceMode });
+            setMaintenanceMode(res.data.maintenanceMode);
+            setMessage({ type: 'success', text: res.data.message });
+        } catch (err) {
+            console.error(err);
+            setMessage({ type: 'error', text: 'Failed to toggle maintenance mode' });
+        } finally {
+            setMaintenanceLoading(false);
+        }
     };
 
     const sections = [
@@ -172,7 +206,28 @@ export default function Settings() {
                     }
                 ] : []),
             ]
-        }
+        },
+        ...(user?.role === 'admin' ? [
+            {
+                title: "System Administration",
+                icon: Shield,
+                items: [
+                    {
+                        label: "Maintenance Mode",
+                        desc: "Enable to instantly block all non-admin traffic. Use only during emergencies or upgrades.",
+                        action: (
+                            <button
+                                onClick={() => setShowMaintenanceModal(true)}
+                                disabled={maintenanceLoading}
+                                className={`w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner ${maintenanceMode ? 'bg-rose-500 shadow-rose-500/30' : 'bg-gray-300 dark:bg-zinc-700'}`}
+                            >
+                                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm ${maintenanceMode ? 'right-1 scale-110' : 'left-1'}`} />
+                            </button>
+                        )
+                    }
+                ]
+            }
+        ] : [])
     ];
 
     return (
@@ -245,6 +300,14 @@ export default function Settings() {
             <DeactivateAccountModal
                 isOpen={showDeactivateModal}
                 onClose={() => setShowDeactivateModal(false)}
+            />
+
+            <MaintenanceModeModal
+                isOpen={showMaintenanceModal}
+                onClose={() => setShowMaintenanceModal(false)}
+                onConfirm={handleMaintenanceToggle}
+                currentlyEnabled={maintenanceMode}
+                isLoading={maintenanceLoading}
             />
         </div>
     );
