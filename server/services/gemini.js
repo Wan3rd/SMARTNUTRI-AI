@@ -17,8 +17,10 @@ export const aiStats = {
     failuresByKey: [0, 0, 0]
 };
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * Core function to call Gemini with automatic failover
+ * Core function to call Gemini with automatic failover, exponential backoff retries, and model fallback.
  */
 export const callGemini = async (prompt, imageBase64 = null) => {
     if (API_KEYS.length === 0) {
@@ -28,76 +30,104 @@ export const callGemini = async (prompt, imageBase64 = null) => {
     aiStats.totalRequests++;
     let lastError = null;
 
-    // Try each key in sequence until one works
-    for (let i = 0; i < API_KEYS.length; i++) {
-        const key = API_KEYS[i];
-        aiStats.lastUsedKeyIndex = i;
-        
-        try {
-            const body = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            };
+    // Define the candidate models in priority order
+    const modelsToTry = [
+        MODEL_NAME, // 'gemini-2.5-flash'
+        'gemini-3-flash-preview',
+        'gemini-2.5-flash-lite'
+    ];
 
-            // Add image if provided
-            if (imageBase64) {
-                body.contents[0].parts.push({
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: imageBase64
+    for (const model of modelsToTry) {
+        // Try each key in sequence
+        for (let i = 0; i < API_KEYS.length; i++) {
+            const key = API_KEYS[i];
+            aiStats.lastUsedKeyIndex = i;
+
+            // Retry up to 3 times per key with exponential backoff for transient issues
+            const maxRetries = 2; // total 3 attempts (initial + 2 retries)
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    if (attempt > 0) {
+                        const delay = Math.pow(2, attempt - 1) * 500; // 500ms, then 1000ms
+                        console.warn(`Retrying Gemini Key ${i + 1} with model ${model} (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms...`);
+                        await sleep(delay);
                     }
-                });
-            }
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body),
+                    const body = {
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    };
+
+                    // Add image if provided
+                    if (imageBase64) {
+                        body.contents[0].parts.push({
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: imageBase64
+                            }
+                        });
+                    }
+
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(body),
+                        }
+                    );
+
+                    const data = await response.json();
+
+                    const isRateLimited = response.status === 429;
+                    const isOverloaded = response.status === 503 || (data.error && data.error.message?.toLowerCase().includes('high demand'));
+                    const isQuotaExceeded = data.error && (data.error.message?.toLowerCase().includes('quota') || data.error.status === 'RESOURCE_EXHAUSTED');
+
+                    if (isRateLimited || isOverloaded || isQuotaExceeded) {
+                        aiStats.failuresByKey[i]++;
+                        const reason = isRateLimited ? 'Rate Limited' : isQuotaExceeded ? 'Quota Exceeded' : 'High Demand/Overloaded';
+                        console.warn(`Gemini Key ${i + 1} (${model}) ${reason}. Status: ${response.status}`);
+                        lastError = new Error(`${reason} (${model}): ${data.error?.message || 'Details unavailable'}`);
+                        // Retry this key
+                        continue;
+                    }
+
+                    if (!response.ok || data.error) {
+                        aiStats.failuresByKey[i]++;
+                        const errMsg = data.error?.message || `API Error: ${response.status}`;
+                        console.error(`Gemini Key ${i + 1} (${model}) API error: ${errMsg}`);
+                        lastError = new Error(errMsg);
+                        // For 4xx errors other than rate limits, don't retry this key, proceed to next key
+                        break;
+                    }
+
+                    const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!output) {
+                        aiStats.failuresByKey[i]++;
+                        lastError = new Error("AI returned empty response");
+                        break;
+                    }
+
+                    aiStats.successfulRequests++;
+                    if (model !== modelsToTry[0]) {
+                        console.log(`Successfully recovered using fallback model: ${model} on Key ${i + 1}`);
+                    }
+                    return output;
+
+                } catch (err) {
+                    aiStats.failuresByKey[i]++;
+                    console.error(`Gemini Key ${i + 1} (${model}) Network or unexpected error:`, err.message);
+                    lastError = err;
+                    // Retry this key for network-level exceptions
+                    continue;
                 }
-            );
-
-            const data = await response.json();
-
-            // If we hit a rate limit (429), high demand (503), or quota error, try the next key
-            const isOverloaded = response.status === 429 || response.status === 503;
-            const isQuotaExceeded = data.error && (data.error.message.includes('quota') || data.error.status === 'RESOURCE_EXHAUSTED');
-            const isHighDemand = data.error && data.error.message.toLowerCase().includes('high demand');
-
-            if (isOverloaded || isQuotaExceeded || isHighDemand) {
-                aiStats.failuresByKey[i]++;
-                console.warn(`Gemini Key ${i + 1} busy or exhausted, trying next key...`);
-                continue;
             }
-
-            if (!response.ok || data.error) {
-                aiStats.failuresByKey[i]++;
-                throw new Error(data.error?.message || `API Error: ${response.status}`);
-            }
-
-            const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!output) {
-                aiStats.failuresByKey[i]++;
-                throw new Error("AI returned empty response");
-            }
-
-            aiStats.successfulRequests++;
-            return output;
-
-        } catch (err) {
-            aiStats.failuresByKey[i]++;
-            console.error(`Gemini Key ${i + 1} Failed:`, err.message);
-            lastError = err;
-            // Only continue to next key if it's a rate limit or network issue
-            if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('fetch')) continue;
-            throw err; // For other errors, stop immediately
         }
     }
 
     aiStats.failedRequests++;
-    throw new Error(`All Gemini API keys failed. Last error: ${lastError?.message}`);
+    throw new Error(`All Gemini API keys and fallback models failed. Last error: ${lastError?.message || 'unknown error'}`);
 };
 
 /**
