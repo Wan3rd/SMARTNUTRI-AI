@@ -16,7 +16,7 @@ import { cn, convertWater } from '../lib/utils';
 const COOKING_METHODS = [
     "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Broiled",
     "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached",
-    "Roasted", "Sautéed / Stir-fried", "Seared", "Simmered", "Smoked", 
+    "Roasted", "Sautéed / Stir-fried", "Seared", "Simmered", "Smoked",
     "Sous Vide", "Steamed", "Unknown"
 ];
 
@@ -74,26 +74,26 @@ const normalizeItem = (item) => {
     const qty = parseFloat(item.measure_qty) || 1;
     return {
         ...item,
-        _base_calories:  (item.calories || 0) / qty,
+        _base_calories: (item.calories || 0) / qty,
         _base_protein_g: (item.protein_g || 0) / qty,
-        _base_carbs_g:   (item.carbs_g || 0) / qty,
-        _base_fat_g:     (item.fat_g || 0) / qty,
-        _base_weight_g:  (item.serving_weight_g || 100) / qty,
+        _base_carbs_g: (item.carbs_g || 0) / qty,
+        _base_fat_g: (item.fat_g || 0) / qty,
+        _base_weight_g: (item.serving_weight_g || 100) / qty,
     };
 };
 
 export default function MealLogger({ profileId, onLogged, recentLogs = [], allergies = [] }) {
     const { user } = useAuth();
     const { useMemo } = React;
-    const { 
-        file, setFile, 
-        preview, setPreview, 
-        fileAfter, setFileAfter, 
-        previewAfter, setPreviewAfter, 
-        loading, setLoading, 
-        analysisResult, setAnalysisResult, 
-        verifiedItems, setVerifiedItems, 
-        status, setStatus, 
+    const {
+        file, setFile,
+        preview, setPreview,
+        fileAfter, setFileAfter,
+        previewAfter, setPreviewAfter,
+        loading, setLoading,
+        analysisResult, setAnalysisResult,
+        verifiedItems, setVerifiedItems,
+        status, setStatus,
         suppData, setSuppData,
         resetLogger
     } = useMealLoggerStore();
@@ -110,7 +110,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [isCropping, setIsCropping] = useState(false);
     const [aspect, setAspect] = useState(4 / 3);
-    
+
     // Webcam States
     const [isWebcamOpen, setIsWebcamOpen] = useState(false);
     const [webcamType, setWebcamType] = useState('before');
@@ -169,7 +169,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         try {
             const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
             let croppedFile = new File([croppedBlob], `meal_${cropType}.jpg`, { type: 'image/jpeg' });
-            
+
             // Compress image to ~500kb to save bandwidth and storage
             try {
                 const options = {
@@ -299,10 +299,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                 ...base,
                 measure_qty: qty,
                 weight_g: Math.round(qty * (base._base_weight_g || 100)),
-                calories:  Math.round((base._base_calories  || 0) * qty),
+                calories: Math.round((base._base_calories || 0) * qty),
                 protein_g: Math.round((base._base_protein_g || 0) * qty * 10) / 10,
-                carbs_g:   Math.round((base._base_carbs_g   || 0) * qty * 10) / 10,
-                fat_g:     Math.round((base._base_fat_g     || 0) * qty * 10) / 10,
+                carbs_g: Math.round((base._base_carbs_g || 0) * qty * 10) / 10,
+                fat_g: Math.round((base._base_fat_g || 0) * qty * 10) / 10,
             };
             return next;
         });
@@ -474,8 +474,19 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     };
 
     return (
-        <Card className="border-2 border-[var(--color-primary)]/20">
+        <Card className="border-2 border-[var(--color-primary)]/20 relative overflow-hidden">
             <CardContent className="p-0">
+                {status === 'saving' && (
+                    <div className="absolute inset-0 bg-white/95 dark:bg-black/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+                        <Loader2 className="animate-spin text-[var(--color-primary)]" size={40} />
+                        <div className="text-center mt-6 space-y-2">
+                            <h4 className="text-base font-black text-[var(--color-secondary)] uppercase tracking-wider animate-pulse">Saving Meal Log...</h4>
+                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
+                                Uploading images and updating clinical logs
+                            </p>
+                        </div>
+                    </div>
+                )}
                 <div className="bg-[var(--color-primary)]/5 p-4 flex items-center justify-between border-b border-[var(--color-primary)]/10 rounded-t-xl">
                     <h3 className="font-bold text-[var(--color-secondary)] flex items-center gap-2">
                         <Camera size={18} className="text-[var(--color-primary)]" />
@@ -539,7 +550,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
+                    {status !== 'done' && status !== 'saving' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
                         {/* Before Photo */}
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Before Meal</span>
@@ -567,34 +579,34 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                         </div>
 
                         {/* Webcam Modal */}
-            {isWebcamOpen && (
-                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="w-full max-w-lg bg-[var(--color-bg-card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center">
-                        <div className="flex w-full justify-between items-center p-4 border-b border-[var(--color-divider)]">
-                            <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">Capture Photo</span>
-                            <button onClick={() => setIsWebcamOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="w-full bg-black relative">
-                            <Webcam
-                                audio={false}
-                                ref={webcamRef}
-                                screenshotFormat="image/jpeg"
-                                videoConstraints={{ facingMode: "environment" }}
-                                className="w-full h-auto max-h-[60vh] object-contain"
-                            />
-                        </div>
-                        <div className="p-6 w-full flex justify-center">
-                            <Button onClick={handleWebcamCapture} className="w-full sm:w-auto px-12 py-3 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-[var(--color-primary)]/20 hover:scale-105 transition-transform flex gap-2 items-center">
-                                <Camera size={16} /> Capture Image
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        {isWebcamOpen && (
+                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+                                <div className="w-full max-w-lg bg-[var(--color-bg-card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center">
+                                    <div className="flex w-full justify-between items-center p-4 border-b border-[var(--color-divider)]">
+                                        <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">Capture Photo</span>
+                                        <button onClick={() => setIsWebcamOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="w-full bg-black relative">
+                                        <Webcam
+                                            audio={false}
+                                            ref={webcamRef}
+                                            screenshotFormat="image/jpeg"
+                                            videoConstraints={{ facingMode: "environment" }}
+                                            className="w-full h-auto max-h-[60vh] object-contain"
+                                        />
+                                    </div>
+                                    <div className="p-6 w-full flex justify-center">
+                                        <Button onClick={handleWebcamCapture} className="w-full sm:w-auto px-12 py-3 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-[var(--color-primary)]/20 hover:scale-105 transition-transform flex gap-2 items-center">
+                                            <Camera size={16} /> Capture Image
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-            {/* Cropper Modal */}
+                        {/* Cropper Modal */}
                         {/* After Photo */}
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">After Meal</span>
@@ -606,16 +618,16 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     )}
                                 </div>
                             ) : (
-                                <div className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${status === 'uploading' ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60' : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]'}`}>
+                                <div className={`w-full h-16 sm:h-auto sm:aspect-square rounded-2xl border-2 border-dashed flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-4 transition-all ${status === 'uploading' ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60' : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]'}`}>
                                     {status === 'uploading' ? (
-                                        <>
-                                            <Loader2 size={20} className="animate-spin text-gray-400" />
-                                            <span className="text-[8px] font-black text-gray-400 text-center uppercase">AI Analyzing...</span>
-                                        </>
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 size={16} className="animate-spin text-gray-400" />
+                                            <span className="text-[8px] font-black text-gray-400 uppercase">AI Analyzing...</span>
+                                        </div>
                                     ) : (
-                                        <div className="flex gap-4">
-                                            <button onClick={() => fileAfterInputRef.current?.click()} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
-                                                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
+                                        <div className="flex gap-4 items-center justify-center w-full h-full p-2 sm:p-0">
+                                            <button onClick={() => fileAfterInputRef.current?.click()} className="flex flex-row sm:flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                <div className="p-2 sm:p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={16} /></div>
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                                             </button>
                                             <button onClick={() => openWebcam('after')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
@@ -628,6 +640,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                             )}
                         </div>
                     </div>
+                )}
 
                     <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e, 'before')} className="hidden" accept="image/*" />
                     <input type="file" ref={fileAfterInputRef} onChange={(e) => handleFileChange(e, 'after')} className="hidden" accept="image/*" />
@@ -697,7 +710,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     <div
                                         key={idx}
                                         onBlur={(e) => handleRowBlur(e, idx)}
-                                        className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-sm transition-all duration-300 ${item.isUpdating ? 'opacity-60 scale-[0.98]' : 'hover:border-[var(--color-primary)]/30'}`}
+                                        className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-y-2 border-x-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-2xl shadow-sm transition-all duration-300 -mx-6 w-[calc(100%+3rem)] sm:w-full sm:mx-0 ${item.isUpdating ? 'opacity-60 scale-[0.98]' : 'hover:border-[var(--color-primary)]/30'}`}
                                     >
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center gap-2">
@@ -743,43 +756,62 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                     <option value="Plate">Plate</option>
                                                 </select>
                                             </div>
-                                            <div className="bg-[var(--color-bg-page)] p-2.5 rounded-xl border border-[var(--color-divider)] space-y-2">
+
+                                            <div className="bg-[var(--color-bg-page)] p-2.5 rounded-xl border border-[var(--color-divider)] space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Portion Quantity</span>
-                                                    <span className="text-sm font-bold text-[var(--color-primary)] tabular-nums">
-                                                        {item.measure_qty || 1}x
-                                                    </span>
+                                                    <div className="flex items-center gap-1 bg-[var(--color-bg-card)] border border-[var(--color-divider)] px-2 py-1 rounded-xl shadow-sm">
+                                                        <input
+                                                            type="number"
+                                                            min="0.01"
+                                                            max="999"
+                                                            step="0.25"
+                                                            value={item.measure_qty || 1}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                updateItemQuantity(idx, isNaN(val) ? '' : val);
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (isNaN(val) || val <= 0) {
+                                                                    updateItemQuantity(idx, 1);
+                                                                }
+                                                            }}
+                                                            className="w-12 h-6 text-center text-xs font-black text-[var(--color-primary)] bg-transparent border-none outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        />
+                                                        <span className="text-[10px] font-black text-[var(--color-primary)] uppercase pr-0.5">x</span>
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-3">
-                                                    <button 
+                                                <div className="flex items-center gap-4">
+                                                    <button
                                                         onClick={() => {
                                                             const newQty = Math.max(0.25, (item.measure_qty || 1) - 0.25);
                                                             updateItemQuantity(idx, newQty);
                                                         }}
-                                                        className="h-8 w-8 rounded-lg bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                        className="h-11 w-11 rounded-xl bg-white dark:bg-white/10 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-md text-lg font-black"
                                                     >
                                                         <span className="text-xl font-bold">−</span>
                                                     </button>
 
-                                                    <div className="flex-1 px-1">
+                                                    <div className="flex-1 px-2">
                                                         <input
                                                             type="range"
                                                             min="0.25"
-                                                            max="5"
+                                                            max="10"
                                                             step="0.25"
                                                             value={item.measure_qty || 1}
                                                             onChange={(e) => updateItemQuantity(idx, e.target.value)}
-                                                            className="w-full h-2 accent-[var(--color-primary)] cursor-pointer"
+                                                            className="w-full h-2.5 accent-[var(--color-primary)] cursor-pointer"
                                                         />
                                                     </div>
 
                                                     <button
                                                         onClick={() => {
-                                                            const newQty = Math.min(5, (item.measure_qty || 1) + 0.25);
+                                                            const newQty = Math.min(10, (item.measure_qty || 1) + 0.25);
                                                             updateItemQuantity(idx, newQty);
                                                         }}
-                                                        className="h-8 w-8 rounded-lg bg-white dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-sm"
+                                                        className="h-11 w-11 rounded-xl bg-white dark:bg-white/10 border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-main)] active:scale-90 transition-all shadow-md text-lg font-black"
                                                     >
                                                         <span className="text-xl font-bold">+</span>
                                                     </button>
@@ -787,12 +819,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                             </div>
                                         </div>
 
-                                        <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-xs mt-1 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
-                                            <div className="flex flex-wrap gap-x-5 gap-y-1">
-                                                <span className="text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
-                                                <span className="text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
-                                                <span className="text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>
-                                                <span className="text-indigo-600 dark:text-indigo-400">{item.fat_g || 0}g fat</span>
+                                        <div className={`flex flex-wrap items-center justify-between gap-2 text-[10px] xs:text-xs mt-1.5 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
+                                            <div className="flex flex-wrap items-center gap-x-2 xs:gap-x-4 sm:gap-x-5 gap-y-1">
+                                                <span className="whitespace-nowrap text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
+                                                <span className="whitespace-nowrap text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
+                                                <span className="whitespace-nowrap text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>
+                                                <span className="whitespace-nowrap text-indigo-600 dark:text-indigo-400">{item.fat_g || 0}g fat</span>
                                             </div>
 
                                             {item.isStale && !item.isUpdating && (

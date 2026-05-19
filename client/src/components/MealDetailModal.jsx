@@ -208,7 +208,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
 
                         <div className="space-y-2">
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest pl-1">After Meal / Leftovers</p>
-                            <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group h-48 sm:h-64 flex items-center justify-center">
+                            <div className={`relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group flex items-center justify-center transition-all duration-300 ${log.image_after_url ? 'h-48 sm:h-64 w-full' : 'h-16 sm:h-64 w-full'}`}>
                                 {log.image_after_url ? (
                                     <img
                                         src={log.image_after_url}
@@ -216,11 +216,11 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                         className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
                                     />
                                 ) : (
-                                    <div className="text-center p-6">
-                                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3 text-gray-400">
-                                            <Activity size={20} />
+                                    <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-3 p-4">
+                                        <div className="h-8 w-8 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 flex-shrink-0">
+                                            <Activity size={16} />
                                         </div>
-                                        <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tight">No After-Meal Photo</p>
+                                        <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tight">No After-Meal Photo</p>
                                     </div>
                                 )}
                             </div>
@@ -336,11 +336,11 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                                         <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 uppercase">
                                                             {item.measure_qty || 1} {item.serving_unit || 'Serving'}
                                                         </p>
-                                                        <div className="flex gap-3 text-[10px] mt-2.5 font-black border-t border-[var(--color-divider)] pt-2">
-                                                            <span className="text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Protein: {formatValue(item.protein_g, user?.nutrient_precision)}g</span>
-                                                            <span className="text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Carbs: {formatValue(item.carbs_g, user?.nutrient_precision)}g</span>
-                                                            <span className="text-orange-600 dark:text-orange-400 uppercase tracking-tighter">Fat: {formatValue(item.fat_g, user?.nutrient_precision)}g</span>
-                                                        </div>
+                                                         <div className="flex flex-wrap gap-x-2 xs:gap-x-4 sm:gap-x-5 gap-y-1 text-[9px] xs:text-[10px] sm:text-xs mt-2.5 font-black border-t border-[var(--color-divider)] pt-2">
+                                                             <span className="whitespace-nowrap text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Protein: {formatValue(item.protein_g, user?.nutrient_precision)}g</span>
+                                                             <span className="whitespace-nowrap text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Carbs: {formatValue(item.carbs_g, user?.nutrient_precision)}g</span>
+                                                             <span className="whitespace-nowrap text-orange-600 dark:text-orange-400 uppercase tracking-tighter">Fat: {formatValue(item.fat_g, user?.nutrient_precision)}g</span>
+                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
