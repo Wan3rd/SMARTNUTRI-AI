@@ -347,7 +347,7 @@ router.delete('/growth-record/:logId', verifyToken, async (req, res) => {
 
 // Vaccination Routes
 // GET /vaccination-types - Get all available vaccination types
-router.get('/vaccination-types', verifyToken, async (req, res) => {
+router.get('/vaccination-types', async (req, res) => {
     try {
         const types = await prisma.vaccination_types.findMany({
             orderBy: { name: 'asc' }
