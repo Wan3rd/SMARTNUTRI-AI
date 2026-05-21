@@ -520,14 +520,39 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     return (
         <Card className="border-2 border-[var(--color-primary)]/20 relative overflow-hidden">
             <CardContent className="p-0">
-                {status === 'saving' && (
-                    <div className="absolute inset-0 bg-white/95 dark:bg-black/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-                        <Loader2 className="animate-spin text-[var(--color-primary)]" size={40} />
-                        <div className="text-center mt-6 space-y-2">
-                            <h4 className="text-base font-black text-[var(--color-secondary)] uppercase tracking-wider animate-pulse">Saving Meal Log...</h4>
+                {(status === 'saving' || status === 'syncing') && (
+                    <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden rounded-t-xl">
+                        {/* Ambient Glowing Orbs */}
+                        <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[60px] animate-pulse" />
+                        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />
+
+                        {/* Dual Spinning Ring Spinner */}
+                        <div className="relative flex items-center justify-center w-24 h-24">
+                            {/* Outer Slow Ring */}
+                            <div className="absolute inset-0 border-4 border-dashed border-[var(--color-primary)]/30 rounded-full animate-[spin_10s_linear_infinite]" />
+                            {/* Middle Flowing Ring */}
+                            <div className="absolute inset-2 border-4 border-t-[var(--color-primary)] border-r-[var(--color-secondary)] border-b-transparent border-l-transparent rounded-full animate-spin" />
+                            {/* Inner Pulsing Core */}
+                            <div className="absolute inset-4 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shadow-inner">
+                                <ChefHat className="text-[var(--color-primary)] animate-pulse" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Texts */}
+                        <div className="text-center mt-8 space-y-3 max-w-xs z-10">
+                            <h4 className="text-lg font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-widest animate-pulse">
+                                {status === 'syncing' ? 'Syncing Clinical Data...' : 'Saving Meal Log...'}
+                            </h4>
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
-                                Uploading images and updating clinical logs
+                                {status === 'syncing' 
+                                    ? 'Aligning portion sizes & nutritional macros'
+                                    : 'Uploading images & updating client record'}
                             </p>
+                            <div className="flex justify-center gap-1.5 pt-1">
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
                         </div>
                     </div>
                 )}

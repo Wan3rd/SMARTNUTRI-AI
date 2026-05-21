@@ -172,6 +172,17 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
     }
 });
 
+// Helper to sanitize cooking_method into a single string or null
+function sanitizeCookingMethod(method) {
+    if (method === undefined) return undefined;
+    if (method === null) return null;
+    if (Array.isArray(method)) {
+        return method.length > 0 ? String(method[0]).trim().slice(0, 100) : null;
+    }
+    const trimmed = String(method).trim().slice(0, 100);
+    return trimmed.length > 0 ? trimmed : null;
+}
+
 // POST /logs - Save verified meal log (Human-in-the-loop step 2)
 router.post('/', verifyToken, async (req, res) => {
     const {
@@ -274,7 +285,7 @@ router.post('/', verifyToken, async (req, res) => {
                 profiles: { connect: { id: profile_id } },
                 image_url,
                 image_after_url,
-                cooking_method,
+                cooking_method: sanitizeCookingMethod(cooking_method),
                 ai_analysis: finalizedAnalysis,
                 status: 'pending',
                 compliance_status: complianceResult.status,
@@ -485,7 +496,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
         const dataToUpdate = {};
 
-        if (cooking_method !== undefined) dataToUpdate.cooking_method = cooking_method;
+        if (cooking_method !== undefined) dataToUpdate.cooking_method = sanitizeCookingMethod(cooking_method);
         if (water_ml !== undefined) dataToUpdate.water_ml = parseInt(water_ml) || 0;
         if (supplements !== undefined) dataToUpdate.supplements = supplements;
         if (physical_activity !== undefined) dataToUpdate.physical_activity = physical_activity;

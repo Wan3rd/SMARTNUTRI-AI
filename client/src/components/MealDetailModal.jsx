@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle, ChefHat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -211,6 +211,42 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500"
                 onClick={(e) => e.stopPropagation()}
             >
+                {(isResubmitting || isDeleting) && (
+                    <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden sm:rounded-[2.5rem]">
+                        {/* Ambient Glowing Orbs */}
+                        <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[60px] animate-pulse" />
+                        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />
+
+                        {/* Dual Spinning Ring Spinner */}
+                        <div className="relative flex items-center justify-center w-24 h-24">
+                            {/* Outer Slow Ring */}
+                            <div className="absolute inset-0 border-4 border-dashed border-[var(--color-primary)]/30 rounded-full animate-[spin_10s_linear_infinite]" />
+                            {/* Middle Flowing Ring */}
+                            <div className="absolute inset-2 border-4 border-t-[var(--color-primary)] border-r-[var(--color-secondary)] border-b-transparent border-l-transparent rounded-full animate-spin" />
+                            {/* Inner Pulsing Core */}
+                            <div className="absolute inset-4 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shadow-inner">
+                                <ChefHat className="text-[var(--color-primary)] animate-pulse" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Texts */}
+                        <div className="text-center mt-8 space-y-3 max-w-xs z-10">
+                            <h4 className="text-lg font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-widest animate-pulse">
+                                {isDeleting ? 'Deleting Meal Log...' : (log.status === 'rejected' ? 'Resubmitting Meal...' : 'Saving Changes...')}
+                            </h4>
+                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
+                                {isDeleting 
+                                    ? 'Removing clinical entry & updating records'
+                                    : 'Processing corrections & syncing database'}
+                            </p>
+                            <div className="flex justify-center gap-1.5 pt-1">
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Header */}
                 <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-6 flex justify-between items-start z-10">
                     <div>
