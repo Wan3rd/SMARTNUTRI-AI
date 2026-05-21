@@ -649,7 +649,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
                                     <img src={preview} alt="Before" className="w-full h-full object-cover" />
                                     {status === 'idle' && (
-                                        <button onClick={() => { setFile(null); setPreview(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                        <button onClick={() => {
+                                            setFile(null);
+                                            setPreview(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                        }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
                                     )}
                                 </div>
                             ) : (
@@ -704,7 +708,11 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
                                     <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
                                     {status !== 'uploading' && (
-                                        <button onClick={() => { setFileAfter(null); setPreviewAfter(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                        <button onClick={() => {
+                                            setFileAfter(null);
+                                            setPreviewAfter(null);
+                                            if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
+                                        }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
                                     )}
                                 </div>
                             ) : (
@@ -1134,7 +1142,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setIsCropping(false)}
+                                    onClick={() => {
+                                        setIsCropping(false);
+                                        setCropImage(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                        if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
+                                    }}
                                     className="p-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
                                 >
                                     <X size={24} />
