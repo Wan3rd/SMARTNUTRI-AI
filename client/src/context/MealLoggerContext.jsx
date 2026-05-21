@@ -29,6 +29,9 @@ export function MealLoggerProvider({ children }) {
         return 'Other';
     };
 
+    const [autoOpenWebcam, setAutoOpenWebcam] = useState(false);
+    const [autoQuickLog, setAutoQuickLog] = useState(false);
+
     const [suppData, setSuppData] = useState({
         waterMl: '',
         supplements: '',
@@ -51,6 +54,8 @@ export function MealLoggerProvider({ children }) {
         setAnalysisResult(null);
         setVerifiedItems([]);
         setStatus('idle');
+        setAutoOpenWebcam(false);
+        setAutoQuickLog(false);
         setSuppData(prev => ({
             ...prev,
             waterMl: '',
@@ -77,7 +82,9 @@ export function MealLoggerProvider({ children }) {
             verifiedItems, setVerifiedItems,
             status, setStatus,
             suppData, setSuppData,
-            resetLogger
+            resetLogger,
+            autoOpenWebcam, setAutoOpenWebcam,
+            autoQuickLog, setAutoQuickLog
         }}>
             {children}
         </MealLoggerContext.Provider>

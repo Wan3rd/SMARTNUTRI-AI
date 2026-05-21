@@ -82,7 +82,7 @@ const normalizeItem = (item) => {
     };
 };
 
-export default function MealLogger({ profileId, onLogged, recentLogs = [], allergies = [] }) {
+export default function MealLogger({ profileId, onLogged, recentLogs = [], allergies = [], autoOpenWebcam: propAutoOpenWebcam = false, autoQuickLog: propAutoQuickLog = false }) {
     const { user } = useAuth();
     const { useMemo } = React;
     const {
@@ -95,9 +95,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         verifiedItems, setVerifiedItems,
         status, setStatus,
         suppData, setSuppData,
-        resetLogger
+        resetLogger,
+        autoOpenWebcam: storeAutoOpenWebcam, setAutoOpenWebcam,
+        autoQuickLog: storeAutoQuickLog, setAutoQuickLog
     } = useMealLoggerStore();
     const debounceTimers = useRef({});
+    const cardRef = useRef(null);
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
@@ -115,6 +118,30 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const [isWebcamOpen, setIsWebcamOpen] = useState(false);
     const [webcamType, setWebcamType] = useState('before');
     const webcamRef = useRef(null);
+
+    React.useEffect(() => {
+        const triggerOpen = propAutoOpenWebcam || storeAutoOpenWebcam;
+        if (triggerOpen && profileId) {
+            setWebcamType('before');
+            setIsWebcamOpen(true);
+            // Reset global store trigger
+            if (setAutoOpenWebcam) setAutoOpenWebcam(false);
+        }
+    }, [propAutoOpenWebcam, storeAutoOpenWebcam, profileId, setAutoOpenWebcam]);
+
+    React.useEffect(() => {
+        const triggerQuick = propAutoQuickLog || storeAutoQuickLog;
+        if (triggerQuick && recentLogs && recentLogs.length > 0 && status === 'idle' && !preview) {
+            handleQuickLog(recentLogs[0]);
+            // Reset global store trigger
+            if (setAutoQuickLog) setAutoQuickLog(false);
+
+            // Smooth scroll to container on mobile viewports so user sees loaded elements
+            setTimeout(() => {
+                cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+    }, [propAutoQuickLog, storeAutoQuickLog, recentLogs, status, preview, setAutoQuickLog]);
 
     const handleWebcamCapture = () => {
         const imageSrc = webcamRef.current?.getScreenshot();
@@ -518,7 +545,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     };
 
     return (
-        <Card className={`border-2 border-[var(--color-primary)]/20 relative overflow-hidden transition-all duration-500 ${(status === 'saving' || status === 'syncing') ? 'min-h-[480px]' : ''}`}>
+        <Card ref={cardRef} className={`border-2 border-[var(--color-primary)]/20 relative overflow-hidden transition-all duration-500 ${(status === 'saving' || status === 'syncing') ? 'min-h-[480px]' : ''}`}>
             <CardContent className="p-0">
                 {(status === 'saving' || status === 'syncing') && (
                     <div className="absolute inset-0 bg-zinc-50/90 dark:bg-zinc-950/95 backdrop-blur-2xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500 select-none overflow-hidden rounded-xl border border-[var(--color-primary)]/20 shadow-2xl">
@@ -817,12 +844,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                         value={item.name}
                                                         onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                                                         placeholder="Food name..."
-                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm font-bold uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                        className="w-full p-2 sm:p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs sm:text-sm font-bold uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                     />
                                                 </div>
                                                 <button
                                                     onClick={() => handleDeleteItem(idx)}
-                                                    className="p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-all active:scale-90"
+                                                    className="p-2 sm:p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-all active:scale-90"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -832,7 +859,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                 <select
                                                     value={item.cooking_method || ''}
                                                     onChange={(e) => handleItemChange(idx, 'cooking_method', e.target.value)}
-                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    className="w-full p-2 sm:p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="">Method...</option>
                                                     {COOKING_METHODS.map(method => (
@@ -842,7 +869,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                 <select
                                                     value={item.serving_unit || 'Serving'}
                                                     onChange={(e) => handleItemChange(idx, 'serving_unit', e.target.value)}
-                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    className="w-full p-2 sm:p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-black uppercase focus:border-[var(--color-primary)] outline-none transition-all"
                                                 >
                                                     <option value="Serving">Serving</option>
                                                     <option value="Cup">Cup</option>

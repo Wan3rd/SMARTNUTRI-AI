@@ -132,8 +132,9 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                     gender,
                     height_cm: height_cm ? parseFloat(height_cm) : null,
                     weight_kg: weight_kg ? parseFloat(weight_kg) : null,
-                    activity_level,
-                    allergies: Array.isArray(allergies) ? allergies : (allergies ? [allergies] : []),
+                    allergies: Array.isArray(allergies)
+                        ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
+                        : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []),
                     medical_history: medical_history || '',
                     family_history: family_history || '',
                     food_intolerances: food_intolerances || '',
@@ -616,7 +617,15 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
     try {
         const log = await prisma.meal_logs.findUnique({
             where: { id: req.params.id },
-            select: { profile_id: true, logged_at: true }
+            select: { 
+                profile_id: true, 
+                logged_at: true,
+                profiles: {
+                    select: {
+                        allergies: true
+                    }
+                }
+            }
         });
         if (!log) return res.status(404).json({ message: 'Log not found' });
         if (!(await checkProfileAccess(req, log.profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
@@ -666,7 +675,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
 
         // 4. Check Compliance (Dynamic Import)
         const { checkCompliance } = await import('../utils/compliance.js');
-        const complianceResult = checkCompliance({ nutritionist_review }, rules, dailyTotals);
+        const complianceResult = checkCompliance({ nutritionist_review }, rules, dailyTotals, log.profiles?.allergies || []);
 
         // 5. Update Log with first-class nutritional columns
         const verified = nutritionist_review?.verified_analysis || {};
@@ -1277,8 +1286,11 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
                 medical_history,
                 medications,
                 vaccinations,
-                bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : undefined,
-                allergies,
+                allergies: allergies !== undefined
+                    ? (Array.isArray(allergies)
+                        ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
+                        : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []))
+                    : undefined,
                 dietary_preferences,
                 height_cm: height_cm ? parseFloat(height_cm) : undefined,
                 weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
@@ -1301,6 +1313,17 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
                     weight_kg: updated.weight_kg
                 }
             });
+        }
+        // Re-validate compliance for all child's meal logs if allergies changed
+        const allergiesChanged = allergies !== undefined && 
+            JSON.stringify(updated.allergies) !== JSON.stringify(profile.allergies);
+        if (allergiesChanged) {
+            try {
+                const { revalidateProfileLogs } = await import('../utils/compliance.js');
+                await revalidateProfileLogs(prisma, id);
+            } catch (revalErr) {
+                console.error(`Error revalidating logs for profile ${id} after allergy change:`, revalErr);
+            }
         }
 
         res.json(updated);

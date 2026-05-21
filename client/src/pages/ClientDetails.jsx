@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, 
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter } from 'lucide-react';
+import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -306,6 +306,7 @@ export default function ClientDetails() {
     // --- History State ---
     const [logs, setLogs] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+    const [isMobileDateDropdownOpen, setIsMobileDateDropdownOpen] = useState(false);
 
     // --- Insights State ---
     const [reportData, setReportData] = useState(null);
@@ -3036,56 +3037,188 @@ export default function ClientDetails() {
                                                     )}
 
                                                     {/* TAB: LOG HISTORY (Date-Grouped) */}
-                                                    {activeTab === 'history' && (
-                                                        <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
-                                                            {/* LEFT SIDEBAR: DATE SELECTION (Timeline) */}
-                                                            <div className="w-full md:w-72 flex-shrink-0 space-y-4">
-                                                                <div className="sticky top-[140px] lg:top-8 z-20 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
-                                                                    <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] px-2 mb-3 hidden md:block">Clinical Timeline</h3>
-                                                                    <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:max-h-[700px] scrollbar-hide pb-2 md:pb-0 snap-x">
-                                                                        {Object.keys(logs.reduce((acc, log) => {
-                                                                            const date = new Date(log.logged_at).toLocaleDateString();
-                                                                            acc[date] = true;
-                                                                            return acc;
-                                                                        }, {})).sort((a, b) => new Date(b) - new Date(a)).map(date => {
-                                                                            const isSelected = selectedHistoryDate === date;
-                                                                            const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
-                                                                            return (
-                                                                                <button
-                                                                                    key={date}
-                                                                                    onClick={() => setSelectedHistoryDate(date)}
-                                                                                    className={cn(
-                                                                                        "flex-shrink-0 snap-start flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left min-w-[160px] md:min-w-0 shadow-sm",
-                                                                                        isSelected
-                                                                                            ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02] md:scale-100'
-                                                                                            : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
-                                                                                    )}
-                                                                                >
-                                                                                    <div className="flex items-center gap-3">
-                                                                                        <div className={cn(
-                                                                                            "w-3 h-3 rounded-full border-2 shadow-sm transition-colors",
-                                                                                            isSelected ? "border-white/50" : "border-white dark:border-zinc-800",
-                                                                                            dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                                dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                                    dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                                        'bg-gray-300'
-                                                                                        )} />
-                                                                                        <div className="text-left">
-                                                                                            <div className={cn("text-xs md:text-sm font-black tracking-tight", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>{date}</div>
-                                                                                            <div className={cn("text-[9px] font-bold uppercase tracking-tighter mt-0.5", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
-                                                                                                {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                    {activeTab === 'history' && (() => {
+                                                        const uniqueDates = Object.keys(logs.reduce((acc, log) => {
+                                                            const date = new Date(log.logged_at).toLocaleDateString();
+                                                            acc[date] = true;
+                                                            return acc;
+                                                        }, {})).sort((a, b) => new Date(b) - new Date(a));
+
+                                                        return (
+                                                            <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
+                                                                {/* LEFT SIDEBAR: DATE SELECTION (Timeline) */}
+                                                                <div className="w-full md:w-72 flex-shrink-0 space-y-4">
+                                                                    {/* DESKTOP TIMELINE: Hidden on Mobile */}
+                                                                    <div className="hidden md:block">
+                                                                        <div className="sticky top-[140px] lg:top-8 z-20 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
+                                                                            <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] px-2 mb-3">Clinical Timeline</h3>
+                                                                            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[700px] scrollbar-hide pb-2 md:pb-0">
+                                                                                {uniqueDates.map(date => {
+                                                                                    const isSelected = selectedHistoryDate === date;
+                                                                                    const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={date}
+                                                                                            onClick={() => setSelectedHistoryDate(date)}
+                                                                                            className={cn(
+                                                                                                "flex-shrink-0 flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left shadow-sm w-full",
+                                                                                                isSelected
+                                                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02]'
+                                                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
+                                                                                            )}
+                                                                                        >
+                                                                                            <div className="flex items-center gap-3">
+                                                                                                <div className={cn(
+                                                                                                    "w-3 h-3 rounded-full border-2 shadow-sm transition-colors",
+                                                                                                    isSelected ? "border-white/50" : "border-white dark:border-zinc-800",
+                                                                                                    dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                                                        dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                            dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                                'bg-gray-300'
+                                                                                                )} />
+                                                                                                <div className="text-left">
+                                                                                                    <div className={cn("text-xs md:text-sm font-black tracking-tight", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>{date}</div>
+                                                                                                    <div className={cn("text-[9px] font-bold uppercase tracking-tighter mt-0.5", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
+                                                                                                        {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                                                                    </div>
+                                                                                                </div>
                                                                                             </div>
-                                                                                        </div>
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                                {uniqueDates.length === 0 && (
+                                                                                    <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* MOBILE TIMELINE: Hidden on Desktop */}
+                                                                    <div className="block md:hidden space-y-3">
+                                                                        {/* CUSTOM DROPDOWN SELECTOR */}
+                                                                        <div className="relative w-full z-30">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setIsMobileDateDropdownOpen(!isMobileDateDropdownOpen)}
+                                                                                className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] shadow-sm hover:border-[var(--color-primary)]/50 transition-all font-semibold active:scale-[0.98]"
+                                                                            >
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className={cn(
+                                                                                        "w-3 h-3 rounded-full border-2 shadow-sm",
+                                                                                        selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'danger' ? 'bg-red-500' :
+                                                                                        selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'warning' ? 'bg-amber-500' :
+                                                                                        selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'success' ? 'bg-emerald-500' :
+                                                                                        'bg-gray-300'
+                                                                                    )} />
+                                                                                    <div className="text-left">
+                                                                                        <span className="text-xs font-black tracking-tight text-[var(--color-text-main)]">
+                                                                                            {selectedHistoryDate ? selectedHistoryDate : 'Select Clinical Date'}
+                                                                                        </span>
+                                                                                        {selectedHistoryDate && (
+                                                                                            <span className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-widest ml-2.5">
+                                                                                                ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Logs)
+                                                                                            </span>
+                                                                                        )}
                                                                                     </div>
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                        {logs.length === 0 && (
-                                                                            <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
+                                                                                </div>
+                                                                                <ChevronDown size={16} className={cn("text-[var(--color-text-muted)] transition-transform duration-200", isMobileDateDropdownOpen ? "rotate-180 text-[var(--color-primary)]" : "")} />
+                                                                            </button>
+
+                                                                            <AnimatePresence>
+                                                                                {isMobileDateDropdownOpen && (
+                                                                                    <motion.div
+                                                                                        initial={{ opacity: 0, y: -8 }}
+                                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                                        exit={{ opacity: 0, y: -8 }}
+                                                                                        transition={{ duration: 0.15 }}
+                                                                                        className="absolute left-0 right-0 mt-2 max-h-[260px] overflow-y-auto bg-[var(--color-bg-card)]/98 backdrop-blur-xl border-2 border-[var(--color-divider)] rounded-2xl shadow-xl p-2 z-40 scrollbar-none"
+                                                                                    >
+                                                                                        {uniqueDates.map(date => {
+                                                                                            const isSelected = selectedHistoryDate === date;
+                                                                                            const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                                                                            return (
+                                                                                                <button
+                                                                                                    key={date}
+                                                                                                    type="button"
+                                                                                                    onClick={() => {
+                                                                                                        setSelectedHistoryDate(date);
+                                                                                                        setIsMobileDateDropdownOpen(false);
+                                                                                                    }}
+                                                                                                    className={cn(
+                                                                                                        "w-full flex items-center justify-between p-3 my-0.5 rounded-xl transition-all text-left text-xs font-semibold",
+                                                                                                        isSelected
+                                                                                                            ? 'bg-[var(--color-primary)] text-white font-black shadow-md'
+                                                                                                            : 'hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)]'
+                                                                                                    )}
+                                                                                                >
+                                                                                                    <div className="flex items-center gap-2.5">
+                                                                                                        <div className={cn(
+                                                                                                            "w-2.5 h-2.5 rounded-full border border-white/20",
+                                                                                                            dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                                                            dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                            dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                            'bg-gray-300'
+                                                                                                        )} />
+                                                                                                        <span>{date}</span>
+                                                                                                    </div>
+                                                                                                    <span className={cn("text-[9px] font-black uppercase tracking-widest", isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]')}>
+                                                                                                        {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
+                                                                                                    </span>
+                                                                                                </button>
+                                                                                            );
+                                                                                        })}
+                                                                                        {uniqueDates.length === 0 && (
+                                                                                            <div className="p-4 text-center text-xs text-[var(--color-text-muted)] italic">No dates available.</div>
+                                                                                        )}
+                                                                                    </motion.div>
+                                                                                )}
+                                                                            </AnimatePresence>
+                                                                        </div>
+
+                                                                        {/* ULTRA COMPACT HORIZONTAL CALENDAR PILL SWIPER */}
+                                                                        {uniqueDates.length > 0 && (
+                                                                            <div className="flex items-center gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x px-2 w-full">
+                                                                                <div className="w-1.5 shrink-0" />
+                                                                                {uniqueDates.map(date => {
+                                                                                    const isSelected = selectedHistoryDate === date;
+                                                                                    const dateObj = new Date(date);
+                                                                                    const monthStr = dateObj.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+                                                                                    const dayStr = dateObj.getDate();
+                                                                                    
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={date}
+                                                                                            type="button"
+                                                                                            onClick={() => setSelectedHistoryDate(date)}
+                                                                                            className={cn(
+                                                                                                "flex-shrink-0 snap-start w-[64px] h-[68px] flex flex-col items-center justify-between p-2 rounded-2xl border-2 transition-all relative shadow-sm",
+                                                                                                isSelected
+                                                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-105'
+                                                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/40'
+                                                                                            )}
+                                                                                        >
+                                                                                            <span className={cn("text-[8px] font-black uppercase tracking-wider", isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]')}>
+                                                                                                {monthStr}
+                                                                                            </span>
+                                                                                            <span className={cn("text-base font-black tracking-tight leading-none", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
+                                                                                                {dayStr}
+                                                                                            </span>
+                                                                                            <div className={cn(
+                                                                                                "w-1.5 h-1.5 rounded-full border-xs",
+                                                                                                isSelected ? "border-white/30" : "border-white dark:border-zinc-800",
+                                                                                                dayStatuses[date] === 'danger' ? 'bg-red-500' :
+                                                                                                dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                'bg-gray-300'
+                                                                                            )} />
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                                <div className="w-1.5 shrink-0" />
+                                                                            </div>
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                            </div>
 
                                                             {/* RIGHT CONTENT: DAILY LOGS */}
                                                             <div className="flex-grow space-y-8">
@@ -3221,7 +3354,8 @@ export default function ClientDetails() {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                    )}
+                                                        );
+                                                    })()}
 
                                                     {/* TAB: REVIEW */}
                                                     {activeTab === 'review' && (

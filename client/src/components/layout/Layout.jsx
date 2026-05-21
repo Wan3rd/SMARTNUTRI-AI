@@ -1,32 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw, Home, Calendar, ChefHat, User, Plus, Camera, Clock } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLoading } from '../../context/LoadingContext';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useProfile } from '../../context/ProfileContext';
+import { useMealLoggerStore } from '../../context/MealLoggerContext';
 
 export function Layout({ children }) {
     // Start with false on mobile, true on desktop
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { selectedProfile } = useProfile();
+    const { setAutoOpenWebcam, setAutoQuickLog } = useMealLoggerStore();
+    const [fabMenuOpen, setFabMenuOpen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
             const mobile = window.innerWidth < 1024;
             setIsMobile(mobile);
-            if (!mobile && !sidebarOpen) {
-                // Optional: auto-open when going to desktop if it was closed?
-                // Or just leave it as is.
-            }
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [sidebarOpen]);
+    }, []);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
     const { isLoading, loadingMessage, progress, hasTimedOut, stopLoading } = useLoading();
+
+    const handleNavClick = (path) => {
+        setFabMenuOpen(false);
+        navigate(path);
+    };
+
+    const navItems = [
+        { icon: Home, path: '/', label: 'Home' },
+        { icon: Calendar, path: '/calendar', label: 'Calendar' },
+        { isFab: true },
+        { icon: ChefHat, path: '/ai-kitchen', label: 'AI Kitchen' },
+        { icon: User, path: '/profile', label: 'Profile' },
+    ];
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)] overflow-x-hidden">
@@ -127,6 +144,14 @@ export function Layout({ children }) {
                 />
             )}
 
+            {/* Mobile FAB Backdrop Dismiss Click */}
+            {fabMenuOpen && (
+                <div 
+                    className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-in fade-in duration-200 lg:hidden"
+                    onClick={() => setFabMenuOpen(false)}
+                />
+            )}
+
             <div className="flex">
                 <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
 
@@ -169,7 +194,8 @@ export function Layout({ children }) {
                     <div style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }} />
 
                     <main className={cn(
-                        "p-4 sm:p-6 md:p-8 transition-all duration-300 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-8",
+                        "p-4 sm:p-6 md:p-8 transition-all duration-300",
+                        isMobile ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8"
                     )}>
                         <div className="mx-auto max-w-7xl">
                             {children}
@@ -177,6 +203,109 @@ export function Layout({ children }) {
                     </main>
                 </div>
             </div>
+
+            {/* ── ERGONOMIC MOBILE BOTTOM NAVIGATION BAR & FAB (lg:hidden) ── */}
+            {isMobile && (
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-bg-card)]/80 backdrop-blur-lg border-t border-[var(--color-divider)] px-4 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
+                    <div className="flex items-center justify-between max-w-md mx-auto relative h-12">
+                        {/* Speed Dial Quick Actions overlay floating menu */}
+                        <AnimatePresence>
+                            {fabMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                                    className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-[var(--color-bg-card)]/90 backdrop-blur-xl border border-[var(--color-divider)] p-4 rounded-3xl shadow-2xl flex flex-col gap-3 w-56 z-50"
+                                >
+                                    <div className="text-center pb-1.5 border-b border-[var(--color-divider)] select-none">
+                                        <span className="text-[10px] font-black uppercase text-[var(--color-primary)] tracking-widest">quick log options</span>
+                                    </div>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            setAutoOpenWebcam(true);
+                                            setFabMenuOpen(false);
+                                            navigate('/');
+                                        }}
+                                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--color-primary)]/10 text-left transition-colors active:scale-95 group"
+                                    >
+                                        <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                                            <Camera size={18} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none mb-1">AI Camera Scan</span>
+                                            <span className="text-[8px] font-medium text-[var(--color-text-muted)] leading-none uppercase">Scan plate with camera</span>
+                                        </div>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            setAutoQuickLog(true);
+                                            setFabMenuOpen(false);
+                                            navigate('/');
+                                        }}
+                                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--color-primary)]/10 text-left transition-colors active:scale-95 group"
+                                    >
+                                        <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                                            <Clock size={18} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none mb-1">Log Last Meal</span>
+                                            <span className="text-[8px] font-medium text-[var(--color-text-muted)] leading-none uppercase">Copy yesterday's meal</span>
+                                        </div>
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {navItems.map((item, idx) => {
+                            if (item.isFab) {
+                                return (
+                                    <div key="fab" className="relative -top-4">
+                                        <div className="absolute inset-0 bg-[var(--color-primary)]/20 rounded-full blur-md animate-pulse" />
+                                        <motion.button
+                                            whileTap={{ scale: 0.92 }}
+                                            onClick={() => setFabMenuOpen(!fabMenuOpen)}
+                                            className="relative z-10 w-14 h-14 bg-gradient-to-tr from-[var(--color-primary)] to-emerald-400 text-white rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-transform"
+                                        >
+                                            <Plus size={28} className={cn("stroke-[2.5] transition-transform duration-300", fabMenuOpen && "rotate-45")} />
+                                        </motion.button>
+                                    </div>
+                                );
+                            }
+
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.path;
+
+                            return (
+                                <button
+                                    key={item.path}
+                                    onClick={() => handleNavClick(item.path)}
+                                    className="flex flex-col items-center justify-center flex-1 h-full relative"
+                                >
+                                    <Icon 
+                                        size={20} 
+                                        className={isActive ? "text-[var(--color-primary)] transition-colors duration-200" : "text-[var(--color-text-muted)]"} 
+                                    />
+                                    <span className={`text-[9px] font-black uppercase mt-1 tracking-wider ${isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>
+                                        {item.label}
+                                    </span>
+                                    
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="bottomTabIndicator"
+                                            className="absolute bottom-0 w-8 h-[2px] bg-[var(--color-primary)] rounded-full"
+                                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                        />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 }

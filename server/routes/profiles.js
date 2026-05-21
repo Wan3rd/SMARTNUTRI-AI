@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary } from '../lib/cloudinary.js';
 import { getGrowthStatus } from '../utils/growth.js';
+import { revalidateProfileLogs } from '../utils/compliance.js';
 
 const router = express.Router();
 
@@ -60,8 +61,9 @@ router.post('/', verifyToken, async (req, res) => {
                     gender,
                     height_cm: height_cm ? parseFloat(height_cm) : null,
                     weight_kg: weight_kg ? parseFloat(weight_kg) : null,
-                    activity_level,
-                    allergies: Array.isArray(allergies) ? allergies : (allergies ? [allergies] : []),
+                    allergies: Array.isArray(allergies)
+                        ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
+                        : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []),
                     dietary_preferences,
                     vaccinations: typeof vaccinations === 'string' ? vaccinations : null, // Legacy support
                     medications,
@@ -158,8 +160,11 @@ router.put('/:id', verifyToken, async (req, res) => {
                 gender,
                 height_cm: height_cm ? parseFloat(height_cm) : undefined,
                 weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
-                activity_level,
-                allergies,
+                allergies: allergies !== undefined
+                    ? (Array.isArray(allergies)
+                        ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
+                        : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []))
+                    : undefined,
                 dietary_preferences,
                 calories_target: calories_target ? parseInt(calories_target) : undefined,
                 protein_target: protein_target ? parseInt(protein_target) : undefined,
@@ -193,6 +198,16 @@ router.put('/:id', verifyToken, async (req, res) => {
                     weight_kg: updatedProfile.weight_kg
                 }
             });
+        }
+        // Re-validate compliance for all child's meal logs if allergies changed
+        const allergiesChanged = allergies !== undefined && 
+            JSON.stringify(updatedProfile.allergies) !== JSON.stringify(profileBefore.allergies);
+        if (allergiesChanged) {
+            try {
+                await revalidateProfileLogs(prisma, id);
+            } catch (revalErr) {
+                console.error(`Error revalidating logs for profile ${id} after allergy change:`, revalErr);
+            }
         }
 
         res.json(updatedProfile);

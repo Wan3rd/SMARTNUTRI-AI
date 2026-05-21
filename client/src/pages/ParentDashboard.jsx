@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
 import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
@@ -26,6 +26,7 @@ export default function ParentDashboard() {
     const [filterTab, setFilterTab] = useState('all');
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
+    const [dailyLog, setDailyLog] = useState({ water_intake_glasses: 0, steps_count: 0 });
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
     const [showWelcome, setShowWelcome] = useState(false);
@@ -47,7 +48,7 @@ export default function ParentDashboard() {
         const loadDashboardData = async () => {
             if (selectedProfile) {
                 startLoading('Syncing Child Profile...');
-                await Promise.all([fetchLogs(), fetchRules()]);
+                await Promise.all([fetchLogs(), fetchRules(), fetchDailyLog()]);
                 setIsInitialSync(false);
                 stopLoading();
             } else if (!profileLoading) {
@@ -94,6 +95,37 @@ export default function ParentDashboard() {
         }
     };
 
+    const fetchDailyLog = async () => {
+        if (!selectedProfile) return;
+        try {
+            const res = await api.get(`/progress/today?profileId=${selectedProfile.id}`);
+            setDailyLog(res.data || { water_intake_glasses: 0, steps_count: 0 });
+        } catch (err) {
+            console.error("Error fetching daily progress log:", err);
+        }
+    };
+
+    const handleQuickWaterChange = async (action) => {
+        if (!selectedProfile) return;
+        
+        // Optimistic UI update
+        const prevGlasses = dailyLog?.water_intake_glasses || 0;
+        let newGlasses = prevGlasses;
+        if (action === 'increment') newGlasses += 1;
+        else if (action === 'decrement' && prevGlasses > 0) newGlasses -= 1;
+        
+        setDailyLog(prev => ({ ...prev, water_intake_glasses: newGlasses }));
+        
+        try {
+            await api.post('/progress/water', { action, profileId: selectedProfile.id });
+        } catch (err) {
+            console.error("Failed to update water intake on server:", err);
+            // Revert state on error
+            setDailyLog(prev => ({ ...prev, water_intake_glasses: prevGlasses }));
+        }
+    };
+
+
     // Calculate Today's Intake vs Goals
     const todayLogs = allLogs.filter(log => new Date(log.logged_at).toDateString() === new Date().toDateString());
 
@@ -113,7 +145,10 @@ export default function ParentDashboard() {
         }
     });
 
-    const getGoalForCategory = (category) => {
+    const glassesVolume = (dailyLog?.water_intake_glasses || 0) * 250;
+    const totalIntakeMl = glassesVolume + todayIntake.water;
+
+    const getRuleForCategory = (category) => {
         // Find rules that match the category or aliases (e.g., 'water' matches 'Fluid/Water')
         const matches = rules.filter(r => {
             const cat = r.category?.toLowerCase();
@@ -124,41 +159,83 @@ export default function ParentDashboard() {
         if (matches.length === 0) return null;
 
         // Prioritize 'max' rules for limit-based visualization, but accept any (min/max) as the target
-        const rule = matches.find(r => r.rule_type?.toLowerCase() === 'max') || matches[0];
-        return rule ? parseFloat(rule.rule_value) : null;
+        return matches.find(r => r.rule_type?.toLowerCase() === 'max') || matches[0];
     };
 
     const latestMeal = recentLogs[0];
     const suggestions = latestMeal?.violation_details?.suggestions || [];
 
-    const renderProgressBar = (label, current, goal, unit, color = 'green') => {
+    const renderProgressBar = (label, current, rule, unit, color = 'green') => {
+        if (!rule) return null;
+        const goal = parseFloat(rule.rule_value);
         if (!goal) return null;
+
+        const isMax = rule.rule_type?.toLowerCase() === 'max';
         const percentage = Math.min((current / goal) * 100, 100);
-        const isOver = current > goal;
         
-        // Colors mapping
-        const colors = {
-            green: isOver ? 'bg-red-500' : 'bg-gradient-to-r from-emerald-500 to-green-400',
-            blue: 'bg-gradient-to-r from-blue-500 to-cyan-400',
-            orange: 'bg-gradient-to-r from-orange-500 to-amber-400'
-        };
+        let barColor = 'bg-gradient-to-r from-emerald-500 to-green-400';
+        let badgeStyle = '';
+        let badgeLabel = '';
+
+        if (isMax) {
+            badgeLabel = 'Max Limit';
+            badgeStyle = 'border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/5';
+            if (current > goal) {
+                barColor = 'bg-gradient-to-r from-rose-500 to-red-600 shadow-[0_0_12px_rgba(239,68,68,0.5)]';
+            } else if (current > goal * 0.8) {
+                barColor = 'bg-gradient-to-r from-amber-500 to-orange-400';
+            } else {
+                barColor = 'bg-gradient-to-r from-cyan-500 to-blue-400';
+            }
+        } else {
+            badgeLabel = 'Min Target';
+            badgeStyle = 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5';
+            if (current >= goal) {
+                barColor = 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]';
+            } else if (current >= goal * 0.5) {
+                barColor = 'bg-gradient-to-r from-amber-500 to-yellow-400';
+            } else {
+                barColor = 'bg-gradient-to-r from-orange-500 to-rose-400 animate-pulse';
+            }
+        }
+
+        // Overrides for water or other custom colors if specified and no rule overrides are active
+        if (color === 'blue' && !isMax && current < goal) {
+            barColor = 'bg-gradient-to-r from-blue-500 to-cyan-400';
+        }
 
         return (
-            <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 mb-2">
-                    <span className="text-[10px] sm:text-xs font-black text-[var(--color-secondary)] uppercase tracking-widest">{label}</span>
-                    <span className={cn("text-xs sm:text-sm font-black tabular-nums", 
-                        (color === 'green' && isOver) ? 'text-red-500' : 
-                        (color === 'blue') ? 'text-[var(--color-info)]' : 'text-[var(--color-primary)]'
+            <div className="mb-5 bg-zinc-50 dark:bg-white/[0.01] p-3.5 rounded-2xl border border-[var(--color-divider)] transition-all duration-300 hover:border-[var(--color-primary)]/20 relative group">
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1.5 mb-2.5">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-wider">{label}</span>
+                        <span className={cn("text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border select-none", badgeStyle)}>
+                            {badgeLabel}
+                        </span>
+                        {!isMax && current >= goal && (
+                            <span className="text-[10px] text-emerald-500 animate-bounce">✓</span>
+                        )}
+                        {isMax && current > goal && (
+                            <span className="text-[10px] text-red-500 font-bold animate-pulse">⚠️ OVER</span>
+                        )}
+                    </div>
+                    <span className={cn("text-xs sm:text-sm font-black tabular-nums flex items-baseline gap-0.5", 
+                        (isMax && current > goal) ? 'text-red-500 font-extrabold' : 
+                        (!isMax && current >= goal) ? 'text-emerald-500' : 'text-[var(--color-primary)]'
                     )}>
-                        {formatValue(current, user?.nutrient_precision)} <span className="opacity-50 text-[10px]">/</span> {formatValue(goal, user?.nutrient_precision)} <span className="text-[10px] opacity-70 uppercase">{unit}</span>
+                        {formatValue(current, user?.nutrient_precision)} 
+                        <span className="opacity-50 text-[10px] px-0.5">/</span> 
+                        {formatValue(goal, user?.nutrient_precision)} 
+                        <span className="text-[10px] opacity-70 uppercase pl-0.5">{unit}</span>
                     </span>
                 </div>
-                <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner relative">
                     <div
-                        className={cn("h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)]", colors[color] || colors.green)}
+                        className={cn("h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.15)]", barColor)}
                         style={{ width: `${percentage}%` }}
                     />
+                    {/* Dashed Guideline at 100% threshold mark */}
+                    <div className="absolute top-0 bottom-0 left-[100%] border-l border-dashed border-zinc-400 dark:border-zinc-500 opacity-60 pointer-events-none" />
                 </div>
             </div>
         );
@@ -202,17 +279,18 @@ export default function ParentDashboard() {
                             </h3>
                             {rules.length > 0 ? (
                                 <div className="space-y-5">
-                                    {renderProgressBar('Calories', todayIntake.calories, getGoalForCategory('calories'), 'kcal')}
+                                    {renderProgressBar('Calories', todayIntake.calories, getRuleForCategory('calories'), 'kcal')}
                                     {(() => {
-                                        const waterGoal = getGoalForCategory('water') || 1500;
-                                        const convCurrent = convertWater(todayIntake.water, user?.measurement_system);
-                                        const convGoal = convertWater(waterGoal, user?.measurement_system);
-                                        return renderProgressBar('Hydration', convCurrent.value, convGoal.value, convCurrent.unit, 'blue');
+                                        const waterRule = getRuleForCategory('water') || { rule_value: 1500, rule_type: 'min' };
+                                        const convCurrent = convertWater(totalIntakeMl, user?.measurement_system);
+                                        const convGoal = convertWater(parseFloat(waterRule.rule_value), user?.measurement_system);
+                                        const modifiedRule = { ...waterRule, rule_value: convGoal.value };
+                                        return renderProgressBar('Hydration', convCurrent.value, modifiedRule, convCurrent.unit, 'blue');
                                     })()}
-                                    {renderProgressBar('Protein', todayIntake.protein, getGoalForCategory('protein'), 'g')}
-                                    {renderProgressBar('Sodium', todayIntake.sodium, getGoalForCategory('sodium'), 'mg')}
-                                    {renderProgressBar('Sugar', todayIntake.sugar, getGoalForCategory('sugar'), 'g')}
-                                    {renderProgressBar('Fats', todayIntake.fat, getGoalForCategory('fats'), 'g')}
+                                    {renderProgressBar('Protein', todayIntake.protein, getRuleForCategory('protein'), 'g')}
+                                    {renderProgressBar('Sodium', todayIntake.sodium, getRuleForCategory('sodium'), 'mg')}
+                                    {renderProgressBar('Sugar', todayIntake.sugar, getRuleForCategory('sugar'), 'g')}
+                                    {renderProgressBar('Fats', todayIntake.fat, getRuleForCategory('fats'), 'g')}
                                 </div>
                             ) : (
                                 <div className="p-8 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
@@ -314,33 +392,240 @@ export default function ParentDashboard() {
                                 className="space-y-6"
                             >
                                 {allLogs.length > 0 && (
-                                    <Card className="bg-gradient-to-br from-[var(--color-primary)]/10 to-blue-500/5 border-2 border-[var(--color-primary)]/20 relative overflow-hidden rounded-3xl shadow-lg">
-                                        <CardContent className="p-6 sm:p-8 relative z-10">
-                                            <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 mb-6 text-center sm:text-left">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Compliance Score</p>
-                                                    <div className="flex items-center gap-4 justify-center sm:justify-start">
-                                                        <span className="text-5xl sm:text-6xl font-black text-[var(--color-secondary)]">{latestMeal?.compliance_score || 100}</span>
-                                                        <div>
-                                                            <p className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase">{latestMeal?.compliance_score >= 80 ? 'Optimal!' : 'Review Required'}</p>
-                                                            <p className="text-[10px] text-[var(--color-text-muted)] font-bold">Latest clinical rating</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-white/50 dark:bg-black/20 p-4 sm:p-5 rounded-2xl border-2 border-white/50 shadow-inner">
-                                                    <Star size={24} className="text-yellow-500 sm:w-8 sm:h-8 animate-bounce" fill="currentColor" />
+                                    <Card className={cn(
+                                        "border-2 relative overflow-hidden rounded-[2rem] shadow-xl transition-all duration-500 bg-white dark:bg-zinc-900/50 p-6 sm:p-8",
+                                        (latestMeal?.compliance_score || 100) >= 80 
+                                            ? 'border-emerald-500/20 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)] bg-gradient-to-br from-emerald-500/[0.02] to-teal-500/[0.01]' 
+                                            : 'border-amber-500/20 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)] bg-gradient-to-br from-amber-500/[0.02] to-orange-500/[0.01]'
+                                    )}>
+                                        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
+                                        <CardContent className="p-0 flex flex-col md:flex-row items-center gap-6 sm:gap-8 relative z-10">
+                                            {/* Circular SVG HUD Ring */}
+                                            <div className="relative flex items-center justify-center shrink-0 w-32 h-32 sm:w-36 sm:h-36">
+                                                {/* Background soft pulse aura */}
+                                                <div className={cn(
+                                                    "absolute inset-2 rounded-full blur-[20px] transition-all duration-1000",
+                                                    (latestMeal?.compliance_score || 100) >= 80 
+                                                        ? 'bg-emerald-500/20 dark:bg-emerald-500/10 animate-pulse' 
+                                                        : 'bg-amber-500/20 dark:bg-amber-500/10 animate-pulse'
+                                                )} />
+                                                
+                                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                    {/* Outer Dotted rotating HUD line */}
+                                                    <circle
+                                                        cx="50"
+                                                        cy="50"
+                                                        r="47"
+                                                        fill="transparent"
+                                                        stroke="rgba(16, 185, 129, 0.1)"
+                                                        strokeWidth="0.75"
+                                                        strokeDasharray="3 3"
+                                                        className="animate-[spin_40s_linear_infinite]"
+                                                    />
+                                                    {/* Inner Track */}
+                                                    <circle
+                                                        cx="50"
+                                                        cy="50"
+                                                        r="40"
+                                                        fill="transparent"
+                                                        stroke="rgba(0,0,0,0.06)"
+                                                        className="dark:stroke-white/5"
+                                                        strokeWidth="8"
+                                                    />
+                                                    {/* Active Indicator Ring */}
+                                                    <motion.circle
+                                                        cx="50"
+                                                        cy="50"
+                                                        r="40"
+                                                        fill="transparent"
+                                                        stroke={(latestMeal?.compliance_score || 100) >= 80 ? 'url(#emeraldGrad)' : 'url(#amberGrad)'}
+                                                        strokeWidth="8"
+                                                        strokeLinecap="round"
+                                                        strokeDasharray={2 * Math.PI * 40}
+                                                        initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
+                                                        animate={{ strokeDashoffset: 2 * Math.PI * 40 * (1 - (latestMeal?.compliance_score || 100) / 100) }}
+                                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                                    />
+                                                    <defs>
+                                                        <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#10b981" />
+                                                            <stop offset="100%" stopColor="#059669" />
+                                                        </linearGradient>
+                                                        <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#f59e0b" />
+                                                            <stop offset="100%" stopColor="#d97706" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                </svg>
+                                                {/* Centered Score */}
+                                                <div className="absolute flex flex-col items-center justify-center select-none text-center">
+                                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter text-[var(--color-secondary)] leading-none tabular-nums">
+                                                        {latestMeal?.compliance_score || 100}
+                                                    </span>
+                                                    <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">score</span>
                                                 </div>
                                             </div>
-                                            <div className="h-3 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden border border-black/5 shadow-inner">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${latestMeal?.compliance_score || 100}%` }}
-                                                    className="h-full bg-gradient-to-r from-green-400 to-[var(--color-primary)] shadow-sm"
-                                                />
+
+                                            {/* Score description details */}
+                                            <div className="flex-1 text-center md:text-left space-y-3">
+                                                <div>
+                                                    <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-[0.25em]">Clinical Performance</span>
+                                                    <h4 className="text-lg sm:text-xl font-black text-[var(--color-secondary)] uppercase mt-0.5 tracking-tight leading-none">
+                                                        {(latestMeal?.compliance_score || 100) >= 80 ? 'Optimal Intake Level' : 'Review & Adjust Plan'}
+                                                    </h4>
+                                                    <p className="text-xs font-medium text-[var(--color-text-muted)] mt-1.5 leading-relaxed max-w-sm">
+                                                        {(latestMeal?.compliance_score || 100) >= 80 
+                                                            ? 'Your child is maintaining outstanding compliance with all active nutritionist goals and clinical parameters today.'
+                                                            : 'Some intake indicators have departed from standard clinical targets. Check details and recommendations below.'}
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-divider)] text-[10px] font-black uppercase text-[var(--color-text-main)] border border-black/5 dark:border-white/5">
+                                                        <Star size={10} className="text-yellow-500 shrink-0" fill="currentColor" />
+                                                        <span>Latest rating</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>
                                 )}
+
+                                {/* Ultra-Premium Live Wave Hydration Card */}
+                                {(() => {
+                                    const waterRule = getRuleForCategory('water') || { rule_value: 1500, rule_type: 'min' };
+                                    const goalMl = parseFloat(waterRule.rule_value) || 1500;
+                                    const hydrationPercentage = Math.min(Math.round((totalIntakeMl / goalMl) * 100), 100);
+                                    
+                                    const convCurrent = convertWater(totalIntakeMl, user?.measurement_system);
+                                    const convGoal = convertWater(goalMl, user?.measurement_system);
+                                    
+                                    return (
+                                        <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-xl transition-all duration-500 bg-white dark:bg-zinc-900/50 p-6 sm:p-8 relative">
+                                            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
+                                            <CardContent className="p-0 flex flex-col sm:flex-row items-center gap-6 sm:gap-10 relative z-10">
+                                                
+                                                {/* Tumbler Water Glass Fluid Simulation */}
+                                                <div className="relative flex items-center justify-center shrink-0">
+                                                    {/* Background light aura */}
+                                                    <div className="absolute inset-[-10px] rounded-full blur-[25px] bg-sky-500/10 dark:bg-sky-500/5 animate-pulse" />
+                                                    
+                                                    {/* Tumbler Cup Container */}
+                                                    <div className="relative w-28 h-40 bg-slate-100/50 dark:bg-slate-800/20 rounded-b-[2rem] rounded-t-lg border-[3.5px] border-slate-300 dark:border-slate-700/80 overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.06)] flex items-end">
+                                                        
+                                                        {/* Animated wave elements container */}
+                                                        <div 
+                                                            className="w-full absolute bottom-0 left-0 transition-all duration-1000 ease-out" 
+                                                            style={{ height: `${hydrationPercentage}%` }}
+                                                        >
+                                                            {/* Slow overlapping wave */}
+                                                            {hydrationPercentage > 0 && (
+                                                                <svg 
+                                                                    className="absolute top-[-23px] left-0 w-[200%] h-6 text-sky-400/40 dark:text-sky-500/30 fill-current animate-wave-slow pointer-events-none" 
+                                                                    viewBox="0 0 1200 120" 
+                                                                    preserveAspectRatio="none"
+                                                                >
+                                                                    <path d="M0,60 C150,100 350,20 500,60 C650,100 850,20 1000,60 C1150,100 1350,20 1500,60 L1500,120 L0,120 Z" />
+                                                                </svg>
+                                                            )}
+                                                            {/* Fast wave */}
+                                                            {hydrationPercentage > 0 && (
+                                                                <svg 
+                                                                    className="absolute top-[-23px] left-0 w-[300%] h-6 text-blue-500/60 dark:text-cyan-400/50 fill-current animate-wave-fast pointer-events-none" 
+                                                                    viewBox="0 0 1200 120" 
+                                                                    preserveAspectRatio="none"
+                                                                >
+                                                                    <path d="M0,50 C100,20 250,80 400,50 C550,20 700,80 850,50 C1000,20 1150,80 1300,50 L1300,120 L0,120 Z" />
+                                                                </svg>
+                                                            )}
+                                                            {/* Solid deep fill underneath */}
+                                                            <div className="w-full h-40 bg-gradient-to-t from-blue-600/90 to-blue-500/80 dark:from-cyan-600/80 dark:to-cyan-500/70 shadow-[0_0_12px_rgba(59,130,246,0.3)]" />
+                                                        </div>
+
+                                                        {/* Realistic Glass Shine & Reflections */}
+                                                        <div className="absolute top-0 bottom-0 left-3 w-1.5 bg-white/20 dark:bg-white/10 blur-[0.5px] rounded-full pointer-events-none" />
+                                                        <div className="absolute top-0 bottom-0 right-3 w-1.5 bg-white/10 dark:bg-white/5 blur-[0.5px] rounded-full pointer-events-none" />
+                                                        <div className="absolute top-2 right-4 w-4 h-4 bg-white/25 dark:bg-white/10 blur-[1px] rounded-full pointer-events-none" />
+                                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
+                                                        
+                                                        {/* Dynamic HUD reading overlay */}
+                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                                                            <span className="text-sm font-black tracking-tight text-[var(--color-secondary)] dark:text-white tabular-nums drop-shadow-[0_2px_4px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                                                {hydrationPercentage}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Dynamic Content Controls */}
+                                                <div className="flex-1 space-y-4">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <div className="h-6 w-6 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                                                                <Droplets size={14} className="text-blue-600 dark:text-cyan-400" />
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.25em]">Live Hydration Monitor</span>
+                                                        </div>
+                                                        <h4 className="text-lg sm:text-xl font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-tight leading-none">
+                                                            {hydrationPercentage >= 100 ? 'Optimal Hydration Reached!' : 'Daily Fluid Tracker'}
+                                                        </h4>
+                                                        <p className="text-xs font-semibold text-[var(--color-text-muted)] mt-2 leading-relaxed max-w-sm">
+                                                            {hydrationPercentage >= 100 
+                                                                ? 'Wonderful job! Your child has met or exceeded the daily recommended hydration goal. Keep it up!' 
+                                                                : 'Fluids are vital for core metabolic functions and concentration. Use quick buttons below to add cups easily.'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Goal Status Numbers */}
+                                                    <div className="flex items-center gap-3 flex-wrap">
+                                                        <div className="flex items-baseline gap-1.5">
+                                                            <span className="text-2xl sm:text-3xl font-black tabular-nums text-[var(--color-secondary)] dark:text-white leading-none">
+                                                                {formatValue(convCurrent.value, user?.nutrient_precision)}
+                                                            </span>
+                                                            <span className="text-sm font-black text-[var(--color-text-muted)]">
+                                                                / {formatValue(convGoal.value, user?.nutrient_precision)} {convCurrent.unit}
+                                                            </span>
+                                                        </div>
+                                                        {hydrationPercentage >= 100 && (
+                                                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase px-2.5 py-1 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 tracking-wider shadow-sm select-none">
+                                                                <BadgeCheck size={12} className="text-emerald-500 shrink-0" />
+                                                                Target Achieved
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Quick Log Controls */}
+                                                    <div className="flex flex-wrap items-center gap-3.5 pt-1">
+                                                        <div className="flex items-center bg-slate-100 dark:bg-slate-800/40 rounded-2xl p-1 border border-[var(--color-divider)] shrink-0">
+                                                            <motion.button 
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => handleQuickWaterChange('decrement')}
+                                                                disabled={(dailyLog?.water_intake_glasses || 0) <= 0}
+                                                                className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all border border-slate-200/50 dark:border-zinc-700/30 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                <Minus size={16} strokeWidth={2.5} />
+                                                            </motion.button>
+                                                            <div className="px-3.5 flex flex-col items-center justify-center select-none shrink-0 min-w-[70px]">
+                                                                <span className="text-sm font-black text-[var(--color-text-main)] dark:text-white tabular-nums">{dailyLog?.water_intake_glasses || 0}</span>
+                                                                <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">glasses</span>
+                                                            </div>
+                                                            <motion.button 
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => handleQuickWaterChange('increment')}
+                                                                className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all border border-slate-200/50 dark:border-zinc-700/30 shadow-sm"
+                                                            >
+                                                                <Plus size={16} strokeWidth={2.5} />
+                                                            </motion.button>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0 select-none">
+                                                            +1 glass = 250ml / 8.5oz
+                                                        </span>
+                                                    </div>
+
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })()}
 
                                 {suggestions.length > 0 && (
                                     <div className="space-y-4">

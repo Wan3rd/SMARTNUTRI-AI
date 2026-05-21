@@ -277,7 +277,12 @@ router.post('/', verifyToken, async (req, res) => {
 
         // Dynamically import compliance utils
         const { checkCompliance } = await import('../utils/compliance.js');
-        const complianceResult = checkCompliance({ ai_analysis: finalizedAnalysis }, rules, dailyTotals);
+        const complianceResult = checkCompliance(
+            { ai_analysis: finalizedAnalysis },
+            rules,
+            dailyTotals,
+            profile.allergies || []
+        );
 
         // 4. Save to Database
         const newLog = await prisma.meal_logs.create({
@@ -591,7 +596,12 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
             const { checkCompliance } = await import('../utils/compliance.js');
             const finalAnalysisForCompliance = dataToUpdate.ai_analysis || log.ai_analysis;
-            const complianceResult = checkCompliance({ ai_analysis: finalAnalysisForCompliance }, rules, dailyTotals);
+            const complianceResult = checkCompliance(
+                { ai_analysis: finalAnalysisForCompliance },
+                rules,
+                dailyTotals,
+                log.profiles.allergies || []
+            );
 
             dataToUpdate.compliance_status = complianceResult.status;
             dataToUpdate.compliance_score = complianceResult.compliance_score;
