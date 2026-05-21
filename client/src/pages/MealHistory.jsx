@@ -162,6 +162,16 @@ export default function MealHistory() {
                 const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
                 setSelectedHistoryDate(latestDate);
             }
+
+            // Mark all fetched reviews as seen
+            const reviewedIds = res.data.filter(l => l.status === 'reviewed' || l.status === 'verified').map(l => l.id);
+            if (reviewedIds.length > 0) {
+                const existingSeen = JSON.parse(localStorage.getItem('seen_meal_reviews') || '[]');
+                const newSeen = Array.from(new Set([...existingSeen, ...reviewedIds]));
+                localStorage.setItem('seen_meal_reviews', JSON.stringify(newSeen));
+                // Dispatch event to clear sidebar badge instantly
+                window.dispatchEvent(new Event('seen-reviews-updated'));
+            }
         } catch (err) {
             console.error('Error fetching logs:', err);
         }

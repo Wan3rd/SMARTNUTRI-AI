@@ -21,7 +21,11 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
             if (user?.role === 'parent' && selectedProfile) {
                 try {
                     const res = await api.get(`/logs/profile/${selectedProfile.id}`);
-                    const count = res.data.filter(log => log.status === 'reviewed' || log.status === 'verified').length;
+                    const seenReviews = JSON.parse(localStorage.getItem('seen_meal_reviews') || '[]');
+                    const count = res.data.filter(log => 
+                        (log.status === 'reviewed' || log.status === 'verified') && 
+                        !seenReviews.includes(log.id)
+                    ).length;
                     setNewReviewsCount(count);
                 } catch (err) {
                     console.error("Failed to fetch reviews for sidebar", err);
@@ -30,7 +34,13 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
         };
         fetchReviewCount();
         const interval = setInterval(fetchReviewCount, 30000); // Check every 30s
-        return () => clearInterval(interval);
+        
+        window.addEventListener('seen-reviews-updated', fetchReviewCount);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('seen-reviews-updated', fetchReviewCount);
+        };
     }, [selectedProfile?.id, user?.role]);
 
     const handleLogout = () => {

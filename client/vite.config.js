@@ -31,6 +31,9 @@ export default defineConfig({
             type: 'image/png'
           }
         ]
+      },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5000000 // Increase limit to 5MB to handle larger vendors safely
       }
     })
   ],
@@ -39,4 +42,25 @@ export default defineConfig({
       '@config': path.resolve(__dirname, '../env_config.js'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui')) {
+              return 'vendor_mui';
+            }
+            if (id.includes('recharts') || id.includes('d3')) {
+              return 'vendor_charts';
+            }
+            if (id.includes('quill') || id.includes('react-quill')) {
+              return 'vendor_editor';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 })
