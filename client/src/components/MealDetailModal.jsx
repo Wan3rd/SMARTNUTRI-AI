@@ -435,7 +435,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                     onChange={(e) => setEditedCategory(e.target.value)}
                                     className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
                                 >
-                                    {['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Other'].map(cat => (
+                                    {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner', 'Other'].map(cat => (
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
