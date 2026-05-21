@@ -518,7 +518,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     };
 
     return (
-        <Card className="border-2 border-[var(--color-primary)]/20 relative overflow-hidden">
+        <Card className={`border-2 border-[var(--color-primary)]/20 relative overflow-hidden transition-all duration-500 ${(status === 'saving' || status === 'syncing') ? 'min-h-[480px]' : ''}`}>
             <CardContent className="p-0">
                 {(status === 'saving' || status === 'syncing') && (
                     <div className="absolute inset-0 bg-zinc-50/90 dark:bg-zinc-950/95 backdrop-blur-2xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500 select-none overflow-hidden rounded-xl border border-[var(--color-primary)]/20 shadow-2xl">
