@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
-import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Snackbar, Alert } from '@mui/material';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
@@ -20,6 +20,7 @@ export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [logs, setLogs] = useState([]);
     const [rules, setRules] = useState([]);
+    const [scheduledMeals, setScheduledMeals] = useState([]);
     const [dayStatuses, setDayStatuses] = useState({});
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [notification, setNotification] = useState({
@@ -35,6 +36,7 @@ export default function Calendar() {
         } else if (!profileLoading) {
             setLogs([]);
             setRules([]);
+            setScheduledMeals([]);
             setIsInitialSync(false);
         }
     }, [selectedProfile?.id, currentMonth, profileLoading]);
@@ -43,12 +45,14 @@ export default function Calendar() {
         if (!selectedProfile) return;
         startLoading('Syncing Clinical Calendar...');
         try {
-            const [logsRes, rulesRes] = await Promise.all([
+            const [logsRes, rulesRes, plansRes] = await Promise.all([
                 api.get(`/logs/profile/${selectedProfile.id}`),
-                api.get(`/rules/profile/${selectedProfile.id}`)
+                api.get(`/rules/profile/${selectedProfile.id}`),
+                api.get('/meals/plans', { params: { profileId: selectedProfile.id } })
             ]);
             setLogs(logsRes.data);
             setRules(rulesRes.data);
+            setScheduledMeals(plansRes.data || []);
             calculateHeatmap(logsRes.data, rulesRes.data);
             setIsInitialSync(false);
         } catch (err) {
@@ -57,6 +61,7 @@ export default function Calendar() {
             stopLoading();
         }
     };
+
 
     const calculateHeatmap = (mealLogs, profileRules) => {
         const statuses = {};
@@ -179,6 +184,8 @@ export default function Calendar() {
                 const dateKey = day.toLocaleDateString();
                 const status = dayStatuses[dateKey];
                 const dayLogs = logs.filter(l => isSameDay(new Date(l.logged_at), day));
+                const dayPlans = scheduledMeals.filter(p => isSameDay(new Date(p.date), day));
+                const hasPrescribedPlan = dayPlans.length > 0;
 
                 days.push(
                     <div
@@ -198,7 +205,7 @@ export default function Calendar() {
                         </span>
 
                         {/* Status Heatmap Dot/Indicator */}
-                        <div className="flex justify-center sm:justify-start gap-1">
+                        <div className="flex justify-center sm:justify-start gap-1 items-center">
                             {status && (
                                 <div className={cn(
                                     "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full shadow-sm",
@@ -207,6 +214,12 @@ export default function Calendar() {
                                     'bg-emerald-500 shadow-emerald-500/50'
                                 )} />
                             )}
+                            {hasPrescribedPlan && (
+                                <div 
+                                    className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--color-primary)] shadow-sm shadow-[var(--color-primary)]/50" 
+                                    title="Prescribed scheduled plan" 
+                                />
+                            )}
                             {dayLogs.length > 1 && (
                                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-blue-400 opacity-40 hidden sm:block" />
                             )}
@@ -214,6 +227,11 @@ export default function Calendar() {
 
                         {/* Desktop Only Details */}
                         <div className="hidden sm:block space-y-1.5 mt-3">
+                            {hasPrescribedPlan && (
+                                <div className="text-[8px] p-1.5 rounded-lg font-black uppercase tracking-tighter truncate bg-[var(--color-primary)]/10 border-l-4 border-[var(--color-primary)] text-[var(--color-primary)]">
+                                    Prescribed ({dayPlans.length} meals)
+                                </div>
+                            )}
                             {dayLogs.slice(0, 2).map((log, idx) => (
                                 <div key={idx} className={cn(
                                     "text-[8px] p-1.5 rounded-lg font-black uppercase tracking-tighter truncate border-l-4",
@@ -282,59 +300,132 @@ export default function Calendar() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-6 sm:p-8">
-                    <div className="space-y-4">
-                        {logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate)).length > 0 ? (
-                            logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate)).map(log => (
-                                <div key={log.id}
-                                    className="flex flex-col xs:flex-row items-start xs:items-center gap-5 p-5 rounded-3xl bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] group cursor-pointer hover:border-[var(--color-primary)] transition-all hover:shadow-xl hover:translate-y-[-2px]"
-                                    onClick={() => navigate('/meal-history')}
-                                >
-                                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
-                                        <img src={log.image_url} alt="meal" className="w-full h-full object-cover" />
+                    <div className="space-y-8">
+                        {/* 1. Prescribed clinical plan section */}
+                        {(() => {
+                            const dayPlans = scheduledMeals.filter(p => isSameDay(new Date(p.date), selectedDate));
+                            if (dayPlans.length === 0) return null;
+                            return (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 border-b-2 border-[var(--color-divider)] pb-2">
+                                        <Utensils size={18} className="text-[var(--color-primary)]" />
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-secondary)]">Prescribed Nutritionist Plan</h3>
                                     </div>
-                                    <div className="flex-1 min-w-0 w-full">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                <h4 className="font-black text-[var(--color-text-main)] text-lg uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">
-                                                    {log.meal_category}
-                                                </h4>
-                                            </div>
-                                            <span className={cn(
-                                                "text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm",
-                                                log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
-                                            )}>
-                                                {log.compliance_status}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-[var(--color-divider)]/50">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                                                    <Flame size={12} className="text-orange-500" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {dayPlans.map(plan => (
+                                            <div key={plan.id}
+                                                className={cn(
+                                                    "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all hover:shadow-md hover:translate-y-[-2px] relative overflow-hidden",
+                                                    plan.is_consumed 
+                                                        ? "bg-emerald-50/20 border-emerald-500/20" 
+                                                        : "bg-gradient-to-br from-[var(--color-primary)]/5 to-[var(--color-secondary)]/5 border-[var(--color-divider)] hover:border-[var(--color-primary)]/30"
+                                                )}
+                                            >
+                                                <div className="h-16 w-16 rounded-xl border border-[var(--color-divider)] overflow-hidden flex-shrink-0 bg-white dark:bg-white/5 flex items-center justify-center shadow-inner">
+                                                    {plan.image_url ? (
+                                                        <img src={plan.image_url} alt={plan.recipe_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Utensils size={24} className="text-[var(--color-primary)]/50" />
+                                                    )}
                                                 </div>
-                                                <span className="text-xs font-black tabular-nums">{log.total_calories} <span className="text-[9px] text-[var(--color-text-muted)]">KCAL</span></span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-wider bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded">
+                                                            {plan.meal_type}
+                                                        </span>
+                                                        {plan.is_consumed && (
+                                                            <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                                                Consumed
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h4 className="font-bold text-[var(--color-text-main)] text-sm truncate uppercase tracking-tight leading-tight">
+                                                        {plan.recipe_name}
+                                                    </h4>
+                                                    <div className="flex gap-2 mt-1.5 text-[10px] font-bold text-[var(--color-text-muted)] tracking-tighter">
+                                                        <span className="flex items-center gap-0.5"><Flame size={10} className="text-orange-500" /> {plan.calories || 0} kcal</span>
+                                                        <span>•</span>
+                                                        <span>P: {plan.protein_g || 0}g</span>
+                                                        <span>•</span>
+                                                        <span>C: {plan.carbs_g || 0}g</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center text-[10px] font-black text-blue-600">P</div>
-                                                <span className="text-xs font-black tabular-nums">{log.total_protein_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-[10px] font-black text-emerald-600">C</div>
-                                                <span className="text-xs font-black tabular-nums">{log.total_carbs_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="py-16 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                                <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                                    <Apple className="text-[var(--color-text-muted)]" size={32} />
+                            );
+                        })()}
+
+                        {/* 2. Parent logs section */}
+                        {(() => {
+                            const dayLogs = logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate));
+                            const dayPlans = scheduledMeals.filter(p => isSameDay(new Date(p.date), selectedDate));
+                            if (dayLogs.length === 0 && dayPlans.length === 0) {
+                                return (
+                                    <div className="py-16 text-center bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                                        <div className="h-16 w-16 bg-gray-50 dark:bg-white/5 rounded-full flex-shrink-0 flex items-center justify-center mx-auto mb-4 opacity-50">
+                                            <Apple className="text-[var(--color-text-muted)]" size={32} />
+                                        </div>
+                                        <p className="text-[var(--color-text-muted)] font-black uppercase text-[10px] tracking-[0.2em]">No clinical logs or prescribed plans for this day</p>
+                                    </div>
+                                );
+                            }
+                            if (dayLogs.length === 0) return null;
+                            return (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 border-b-2 border-[var(--color-divider)] pb-2">
+                                        <Apple size={18} className="text-emerald-500" />
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-secondary)]">Parent Uploaded Logs</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {dayLogs.map(log => (
+                                            <div key={log.id}
+                                                className="flex flex-col xs:flex-row items-start xs:items-center gap-5 p-5 rounded-3xl bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] group cursor-pointer hover:border-[var(--color-primary)] transition-all hover:shadow-xl hover:translate-y-[-2px]"
+                                                onClick={() => navigate('/meal-history')}
+                                            >
+                                                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
+                                                    <img src={log.image_url} alt="meal" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="flex-1 min-w-0 w-full">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <h4 className="font-black text-[var(--color-text-main)] text-lg uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">
+                                                                {log.meal_category}
+                                                            </h4>
+                                                        </div>
+                                                        <span className={cn(
+                                                            "text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm",
+                                                            log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
+                                                        )}>
+                                                            {log.compliance_status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-[var(--color-divider)]/50">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                                                <Flame size={12} className="text-orange-500" />
+                                                            </div>
+                                                            <span className="text-xs font-black tabular-nums">{log.total_calories} <span className="text-[9px] text-[var(--color-text-muted)]">KCAL</span></span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center text-[10px] font-black text-blue-600">P</div>
+                                                            <span className="text-xs font-black tabular-nums">{log.total_protein_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-[10px] font-black text-emerald-600">C</div>
+                                                            <span className="text-xs font-black tabular-nums">{log.total_carbs_g} <span className="text-[9px] text-[var(--color-text-muted)]">G</span></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <p className="text-[var(--color-text-muted)] font-black uppercase text-[10px] tracking-[0.2em]">No clinical logs for this day</p>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </CardContent>
             </Card>

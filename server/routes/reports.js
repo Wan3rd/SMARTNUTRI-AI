@@ -1,16 +1,31 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/reports/compliance/:clientId
 // Returns compliance stats for the last 30 days
-router.get('/compliance/:clientId', async (req, res) => {
+router.get('/compliance/:clientId', verifyToken, async (req, res) => {
     try {
         const { clientId } = req.params;
-        const { days = 30 } = req.query; // Default to 30 days
 
-        // 1. Get Summary Stats
+        // SECURITY FIX: Parse and clamp `days` to prevent SQL injection via raw query concatenation
+        const rawDays = parseInt(req.query.days, 10);
+        const days = isNaN(rawDays) || rawDays < 1 ? 30 : Math.min(rawDays, 365);
+
+        // Verify authorization
+        const profile = await prisma.profiles.findUnique({ where: { id: clientId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to compliance reports' });
+
+        // 1. Get Summary Stats — days is now a safe integer parameter
         const summary = await prisma.$queryRaw`
             SELECT 
                 COUNT(*)::int as total_logs,
@@ -19,7 +34,7 @@ router.get('/compliance/:clientId', async (req, res) => {
                 COUNT(CASE WHEN compliance_status = 'pending' THEN 1 END)::int as pending_count
             FROM meal_logs 
             WHERE profile_id = ${clientId}::uuid
-            AND logged_at >= NOW() - CAST(${days + ' days'} AS INTERVAL)
+            AND logged_at >= NOW() - (${days} || ' days')::INTERVAL
         `;
 
         const summaryData = summary[0];
@@ -33,7 +48,7 @@ router.get('/compliance/:clientId', async (req, res) => {
                 COUNT(CASE WHEN compliance_status = 'flagged' THEN 1 END)::int as flagged
             FROM meal_logs
             WHERE profile_id = ${clientId}::uuid
-            AND logged_at >= NOW() - CAST(${days + ' days'} AS INTERVAL)
+            AND logged_at >= NOW() - (${days} || ' days')::INTERVAL
             GROUP BY DATE(logged_at)
             ORDER BY log_date ASC
         `;

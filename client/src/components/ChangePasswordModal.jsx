@@ -34,8 +34,8 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         if (formData.newPassword !== formData.confirmPassword) {
             return setMessage({ type: 'error', text: 'New passwords do not match' });
         }
-        if (formData.newPassword.length < 6) {
-            return setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+        if (formData.newPassword.length < 8) {
+            return setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
         }
 
         setLoading(true);

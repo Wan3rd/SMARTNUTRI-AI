@@ -517,9 +517,9 @@ export default function Onboarding() {
                                             </div>
 
                                             <div className="flex flex-wrap gap-2">
-                                                {formData.allergies.map(allergy => (
+                                                {formData.allergies?.filter(Boolean).map((allergy, idx) => (
                                                     <div
-                                                        key={allergy}
+                                                        key={`${allergy}-${idx}`}
                                                         className={cn(
                                                             "flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-[9px] font-black uppercase tracking-tight transition-all",
                                                             allergy === 'None'

@@ -32,6 +32,25 @@ router.post('/', verifyToken, async (req, res) => {
     } = req.body;
 
     try {
+        // Biometric Validation
+        if (date_of_birth) {
+            const dob = new Date(date_of_birth);
+            if (isNaN(dob.getTime())) return res.status(400).json({ message: 'Invalid date_of_birth format' });
+            if (dob > new Date()) return res.status(400).json({ message: 'date_of_birth cannot be in the future' });
+        }
+        if (height_cm !== undefined && height_cm !== null) {
+            const h = parseFloat(height_cm);
+            if (isNaN(h) || h < 10 || h > 250) return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
+        }
+        if (weight_kg !== undefined && weight_kg !== null) {
+            const w = parseFloat(weight_kg);
+            if (isNaN(w) || w < 1 || w > 300) return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
+        }
+        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null) {
+            const bss = parseInt(bristol_stool_scale);
+            if (isNaN(bss) || bss < 1 || bss > 7) return res.status(400).json({ message: 'bristol_stool_scale must be between 1 and 7' });
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             const profile = await tx.profiles.create({
                 data: {
@@ -99,10 +118,39 @@ router.put('/:id', verifyToken, async (req, res) => {
     } = req.body;
 
     try {
-        const updatedProfile = await prisma.profiles.updateMany({
-            where: { 
+        // Biometric Validation
+        if (date_of_birth) {
+            const dob = new Date(date_of_birth);
+            if (isNaN(dob.getTime())) return res.status(400).json({ message: 'Invalid date_of_birth format' });
+            if (dob > new Date()) return res.status(400).json({ message: 'date_of_birth cannot be in the future' });
+        }
+        if (height_cm !== undefined && height_cm !== null) {
+            const h = parseFloat(height_cm);
+            if (isNaN(h) || h < 10 || h > 250) return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
+        }
+        if (weight_kg !== undefined && weight_kg !== null) {
+            const w = parseFloat(weight_kg);
+            if (isNaN(w) || w < 1 || w > 300) return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
+        }
+        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null) {
+            const bss = parseInt(bristol_stool_scale);
+            if (isNaN(bss) || bss < 1 || bss > 7) return res.status(400).json({ message: 'bristol_stool_scale must be between 1 and 7' });
+        }
+
+        // Fetch old profile first to compare height/weight
+        const profileBefore = await prisma.profiles.findFirst({
+            where: {
                 id: id,
-                user_id: req.user.id 
+                user_id: req.user.id
+            }
+        });
+        if (!profileBefore) {
+            return res.status(404).json({ message: 'Profile not found or not authorized' });
+        }
+
+        const updatedProfile = await prisma.profiles.update({
+            where: { 
+                id: id
             },
             data: {
                 child_name,
@@ -133,12 +181,21 @@ router.put('/:id', verifyToken, async (req, res) => {
             }
         });
 
-        if (updatedProfile.count === 0) {
-            return res.status(404).json({ message: 'Profile not found or not authorized' });
+        // Write growth log if height_cm or weight_kg changed
+        const heightChanged = updatedProfile.height_cm !== profileBefore.height_cm;
+        const weightChanged = updatedProfile.weight_kg !== profileBefore.weight_kg;
+
+        if ((heightChanged || weightChanged) && updatedProfile.height_cm !== null && updatedProfile.weight_kg !== null) {
+            await prisma.growth_logs.create({
+                data: {
+                    profile_id: id,
+                    height_cm: updatedProfile.height_cm,
+                    weight_kg: updatedProfile.weight_kg
+                }
+            });
         }
 
-        const profile = await prisma.profiles.findUnique({ where: { id } });
-        res.json(profile);
+        res.json(updatedProfile);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -205,6 +262,17 @@ router.get('/:id/growth', verifyToken, async (req, res) => {
 router.post('/:id/growth', verifyToken, async (req, res) => {
     const { id } = req.params;
     const { height_cm, weight_kg } = req.body;
+
+    // Biometric Validation
+    const h = parseFloat(height_cm);
+    const w = parseFloat(weight_kg);
+    if (isNaN(h) || h < 10 || h > 250) {
+        return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
+    }
+    if (isNaN(w) || w < 1 || w > 300) {
+        return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
+    }
+
     try {
         // Ownership Check
         const profile = await prisma.profiles.findUnique({ where: { id } });

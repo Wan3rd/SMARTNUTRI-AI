@@ -227,6 +227,23 @@ model users {
   announcements                                                   announcements[]
   portion_plans                                                   portion_plans[]
   portion_templates                                               portion_templates[]
+  meal_plan_templates                                             meal_plan_templates[]
+}
+
+model meal_plan_templates {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nutritionist_id String    @db.Uuid
+  name            String    @db.VarChar(150)
+  description     String?
+  target_age      String?   @db.VarChar(50)
+  days            Json      // { Monday: [{meal_type, recipe_name, calories, protein_g, carbs_g, fats_g}], ... }
+  is_default      Boolean?  @default(false) // true = cloned from system defaults
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  nutritionist    users     @relation(fields: [nutritionist_id], references: [id], onDelete: Cascade)
+
+  @@index([nutritionist_id], map: "idx_meal_plan_templates_nutri")
 }
 
 model portion_plans {

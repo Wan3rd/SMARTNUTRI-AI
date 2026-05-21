@@ -44,6 +44,10 @@ api.interceptors.response.use(
             }
         }
 
+        // 429 Rate Limit — let each page's catch block display err.response?.data?.message
+        // (e.g. "Too many login attempts. Please try again in 15 minutes.")
+        // No global redirect needed; just propagate the error normally.
+
         return Promise.reject(error);
     }
 );

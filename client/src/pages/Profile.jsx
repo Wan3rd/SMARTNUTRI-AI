@@ -1628,12 +1628,12 @@ export default function Profile() {
                                 )}
 
                                 <div className="flex flex-wrap gap-2">
-                                    {(profileData.allergies.length === 0 || (profileData.allergies.length === 1 && profileData.allergies[0] === "None")) ? (
+                                    {(profileData.allergies?.filter(Boolean).length === 0 || (profileData.allergies?.filter(Boolean).length === 1 && profileData.allergies?.filter(Boolean)[0] === "None")) ? (
                                         <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
                                     ) : (
-                                        profileData.allergies.map(allergy => (
+                                        profileData.allergies?.filter(Boolean).map((allergy, idx) => (
                                             <div
-                                                key={allergy}
+                                                key={`${allergy}-${idx}`}
                                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
                                                     ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
                                                     : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'

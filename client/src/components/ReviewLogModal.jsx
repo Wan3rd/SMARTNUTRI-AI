@@ -427,6 +427,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 )}
                             </motion.div>
 
+
+
                             {/* Metrics Grid */}
                             {/* #4: Plate Waste Donut Ring Card */}
                             <motion.div variants={itemVariants} className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] shadow-lg shadow-black/5 flex items-center gap-4">
@@ -611,6 +613,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     ))}
                                 </div>
                             </motion.div>
+
+                            {log.hidden_ingredients && (
+                                <motion.div variants={itemVariants} className="bg-amber-500/10 dark:bg-amber-500/20 p-4 rounded-2xl border-2 border-amber-500/20 flex flex-col gap-2 mt-4 shadow-inner">
+                                    <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                                        <ChefHat size={14} /> Caregiver Note: Hidden Ingredients
+                                    </h3>
+                                    <p className="text-sm font-bold text-[var(--color-text-main)] italic leading-relaxed">
+                                        "{log.hidden_ingredients}"
+                                    </p>
+                                </motion.div>
+                            )}
 
                             {/* AI Insights */}
                             {log.violation_details?.xai_feedback && (

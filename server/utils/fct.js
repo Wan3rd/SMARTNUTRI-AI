@@ -23,7 +23,14 @@ const FCT_DATABASE = {
     "siomai": { calories: 220, protein_g: 10, carbs_g: 18, fat_g: 12, sugar_g: 1, sodium_mg: 450 },
     "mango": { calories: 60, protein_g: 0.8, carbs_g: 15, fat_g: 0.4, sugar_g: 14, sodium_mg: 1 },
     "banana": { calories: 89, protein_g: 1.1, carbs_g: 23, fat_g: 0.3, sugar_g: 12, sodium_mg: 1 }, // Lakatan
-    "milk": { calories: 61, protein_g: 3.2, carbs_g: 4.8, fat_g: 3.3, sugar_g: 4.8, sodium_mg: 40 }, // Processed/Fortified
+    "milk": { calories: 61, protein_g: 3.2, carbs_g: 4.8, fat_g: 3.3, sugar_g: 4.8, sodium_mg: 40 }, // Processed/Fortified liquid
+    "powdered milk": { calories: 496, protein_g: 26, carbs_g: 38, fat_g: 27, sugar_g: 38, sodium_mg: 371 }, // Instant milk / Bear Brand
+    "instant milk": { calories: 496, protein_g: 26, carbs_g: 38, fat_g: 27, sugar_g: 38, sodium_mg: 371 },
+    "milk formula": { calories: 490, protein_g: 15, carbs_g: 55, fat_g: 25, sugar_g: 50, sodium_mg: 200 }, // Infant/Toddler Formula (Nido/Lactum)
+    "boiled egg": { calories: 155, protein_g: 12.6, carbs_g: 1.1, fat_g: 10.6, sugar_g: 1.1, sodium_mg: 124 },
+    "egg": { calories: 155, protein_g: 12.6, carbs_g: 1.1, fat_g: 10.6, sugar_g: 1.1, sodium_mg: 124 },
+    "chicken": { calories: 165, protein_g: 31, carbs_g: 0, fat_g: 3.6, sugar_g: 0, sodium_mg: 74 }, // Generic boiled/roasted chicken
+    "instant noodles": { calories: 450, protein_g: 9, carbs_g: 60, fat_g: 18, sugar_g: 3, sodium_mg: 1500 }, // Pancit Canton/Instant Ramen
 };
 
 /**
@@ -36,33 +43,13 @@ const FCT_DATABASE = {
  * @returns {Object} mapped item with localized macros
  */
 export const mapToFCT = (item, aiMacrosEsimtation = null) => {
-    const searchName = item.name.toLowerCase().trim();
-    
-    // Exact or loose match
-    const fctEntry = FCT_DATABASE[searchName] || 
-                     Object.keys(FCT_DATABASE).find(key => searchName.includes(key)) 
-                     ? FCT_DATABASE[Object.keys(FCT_DATABASE).find(key => searchName.includes(key))] 
-                     : null;
+    // 1. If the item already has verified/user-edited macros, PRESERVE them!
+    const hasValues = (
+        (item.calories !== undefined && item.calories !== null && item.calories > 0) || 
+        (item.protein_g !== undefined && item.protein_g !== null && item.protein_g > 0) || 
+        (item.carbs_g !== undefined && item.carbs_g !== null && item.carbs_g > 0)
+    );
 
-    if (fctEntry) {
-        // Calculate based on weight_g (FCT is per 100g)
-        const ratio = (item.weight_g || 100) / 100;
-        
-        return {
-            ...item,
-            fct_matched: true,
-            calories: Math.round(fctEntry.calories * ratio),
-            protein_g: Math.round(fctEntry.protein_g * ratio * 10) / 10,
-            carbs_g: Math.round(fctEntry.carbs_g * ratio * 10) / 10,
-            fat_g: Math.round(fctEntry.fat_g * ratio * 10) / 10,
-            sugar_g: Math.round(fctEntry.sugar_g * ratio * 10) / 10,
-            sodium_mg: Math.round(fctEntry.sodium_mg * ratio)
-        };
-    }
-
-    // Fallback: If the item already has verified macros (from frontend or manual edit), keep them!
-    const hasValues = (item.calories > 0 || item.protein_g > 0 || item.carbs_g > 0);
-    
     if (hasValues) {
         return {
             ...item,
@@ -77,7 +64,54 @@ export const mapToFCT = (item, aiMacrosEsimtation = null) => {
         };
     }
 
-    // Fallback if not found in FCT but has AI generic estimation data
+    // 2. Otherwise, attempt to map to the FCT database using correct phrase matching
+    const searchName = item.name.toLowerCase().trim();
+    let fctKey = Object.keys(FCT_DATABASE).find(k => k === searchName);
+
+    if (!fctKey) {
+        // Robust word boundary match to prevent partial matching (e.g. "egg" in "eggplant" or "milk" in "milkshake")
+        const matches = Object.keys(FCT_DATABASE).filter(key => {
+            const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`\\b${escapedKey}\\b`, 'i');
+            return regex.test(searchName);
+        });
+        
+        if (matches.length > 0) {
+            // Sort by length in descending order to prioritize longer, more specific matches
+            matches.sort((a, b) => b.length - a.length);
+            fctKey = matches[0];
+        }
+    }
+
+    const fctEntry = fctKey ? FCT_DATABASE[fctKey] : null;
+
+    if (fctEntry) {
+        // AI often hallucinates weight for volume measurements. Override standard units:
+        let actualWeight = item.weight_g || 100;
+        const unit = (item.serving_unit || '').toLowerCase();
+
+        if (searchName.includes('rice')) {
+            if (unit === 'cup') actualWeight = 160 * (item.measure_qty || 1); // 1 Cup cooked rice ~ 160g
+            if (unit === 'sandok' || unit === 'spoon') actualWeight = 60 * (item.measure_qty || 1); // 1 Sandok ~ 60g
+            if (unit === 'bowl') actualWeight = 160 * (item.measure_qty || 1); // 1 standard bowl ~ 1 cup
+        }
+
+        // Calculate based on actualWeight (FCT is per 100g)
+        const ratio = actualWeight / 100;
+
+        return {
+            ...item,
+            fct_matched: true,
+            calories: Math.round(fctEntry.calories * ratio),
+            protein_g: Math.round(fctEntry.protein_g * ratio * 10) / 10,
+            carbs_g: Math.round(fctEntry.carbs_g * ratio * 10) / 10,
+            fat_g: Math.round(fctEntry.fat_g * ratio * 10) / 10,
+            sugar_g: Math.round(fctEntry.sugar_g * ratio * 10) / 10,
+            sodium_mg: Math.round(fctEntry.sodium_mg * ratio)
+        };
+    }
+
+    // 3. Fallback if not found in FCT but has AI generic estimation data
     if (item.macros_per_serving) {
         const qty = item.measure_qty || 1;
         return {
@@ -92,7 +126,7 @@ export const mapToFCT = (item, aiMacrosEsimtation = null) => {
         };
     }
 
-    // Ultimate fallback if even AI data and verified data are missing
+    // 4. Ultimate fallback if even AI data and verified data are missing
     return {
         ...item,
         fct_matched: false,
@@ -114,7 +148,7 @@ export const recalculateMealTotals = (verifiedItems, plate_waste = 100) => {
     const pwValue = parseInt(plate_waste);
     const wasteFactor = (isNaN(pwValue) ? 100 : pwValue) / 100;
     let total_calories = 0, total_protein = 0, total_carbs = 0, total_fat = 0, total_sugar = 0, total_sodium = 0;
-    
+
     const mappedItems = verifiedItems.map(item => {
         const mapped = mapToFCT(item);
         total_calories += mapped.calories;

@@ -246,7 +246,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         });
 
         try {
-            const res = await api.post('/ai/analyze-item', {
+            const res = await api.post('/logs/analyze-item', {
                 name,
                 serving_unit: unit,
                 cooking_method: method
@@ -387,6 +387,50 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         setLoading(true);
         setStatus('saving');
         try {
+            // 1. Sync any stale or currently updating items in parallel before saving to prevent race conditions
+            let currentItems = [...verifiedItems];
+            const staleIndices = currentItems
+                .map((item, idx) => ((item.isStale || item.isUpdating) ? idx : -1))
+                .filter(idx => idx !== -1);
+
+            if (staleIndices.length > 0) {
+                setStatus('syncing');
+                await Promise.all(staleIndices.map(async (index) => {
+                    const item = currentItems[index];
+                    if (!item.name || item.name.trim().length < 2) return;
+                    try {
+                        const res = await api.post('/logs/analyze-item', {
+                            name: item.name,
+                            serving_unit: item.serving_unit,
+                            cooking_method: item.cooking_method
+                        });
+                        const data = res.data;
+                        const qty = item.measure_qty || 1;
+                        currentItems[index] = {
+                            ...item,
+                            _base_calories: data.calories || 0,
+                            _base_protein_g: data.protein_g || 0,
+                            _base_carbs_g: data.carbs_g || 0,
+                            _base_fat_g: data.fat_g || 0,
+                            _base_weight_g: data.serving_weight_g || 100,
+                            calories: Math.round((data.calories || 0) * qty),
+                            protein_g: Math.round((data.protein_g || 0) * qty * 10) / 10,
+                            carbs_g: Math.round((data.carbs_g || 0) * qty * 10) / 10,
+                            fat_g: Math.round((data.fat_g || 0) * qty * 10) / 10,
+                            serving_weight_g: data.serving_weight_g || 100,
+                            isStale: false,
+                            isUpdating: false
+                        };
+                    } catch (err) {
+                        console.error("Failed to sync item on save", err);
+                    }
+                }));
+                // Update verified items in state so UI displays synced values
+                setVerifiedItems(currentItems);
+            }
+
+            setStatus('saving');
+
             let imageAfterUrl = null;
             if (fileAfter) {
                 const formData = new FormData();
@@ -399,7 +443,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
             const finalizedAnalysis = {
                 ...analysisResult.ai_analysis,
-                items: verifiedItems,
+                items: currentItems,
                 plate_waste: suppData.plateWaste
             };
 

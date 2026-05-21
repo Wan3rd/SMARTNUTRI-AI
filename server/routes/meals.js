@@ -148,7 +148,7 @@ router.get('/:id', verifyToken, async (req, res) => {
         }
 
         // Fix: Use correct v2 look up by ID logic or search by URI if needed, but plain ID is simplest
-        const response = await axios.get(`${EDAMAM_API_URL}/${id}`, {
+        const response = await axios.get(`${EDAMAM_API_URL}/${encodeURIComponent(id)}`, {
             params: {
                 type: 'public',
                 app_id: EDAMAM_APP_ID,
@@ -212,15 +212,24 @@ router.post('/generate', verifyToken, async (req, res) => {
         if (!profile) {
             return res.status(404).json({ message: 'Child profile not found.' });
         }
-        console.log("Profile found:", profile.id);
 
-        // 2. Calculate TDEE (Same as before)
+        // Guard: weight and DOB are required to calculate TDEE
+        if (!profile.weight_kg || !profile.date_of_birth) {
+            return res.status(400).json({ message: 'Child profile is missing weight or date of birth. Please update the profile first.' });
+        }
+
+        // 2. Calculate TDEE — birthday-aware age
+        const dob = new Date(profile.date_of_birth);
+        const now = new Date();
+        let childAge = now.getFullYear() - dob.getFullYear();
+        const hasBirthdayPassed = now.getMonth() > dob.getMonth() ||
+            (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+        if (!hasBirthdayPassed) childAge--;
+
         const weight = profile.weight_kg;
-        const years = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear();
-        let bmr = (years < 10) ? (22.7 * weight) + 495 : (17.5 * weight) + 651;
+        let bmr = (childAge < 10) ? (22.7 * weight) + 495 : (17.5 * weight) + 651;
         const activityMultipliers = { 'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'very_active': 1.725 };
         const tdee = Math.round(bmr * (activityMultipliers[profile.activity_level] || 1.2));
-        console.log("Calculated TDEE:", tdee);
 
         // 3. Define Meal Targets
         const targets = [
@@ -354,10 +363,21 @@ router.post('/generate/day', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'Child profile not found.' });
         }
 
-        // 2. Calculate TDEE
+        // Guard: weight and DOB are required to calculate TDEE
+        if (!profile.weight_kg || !profile.date_of_birth) {
+            return res.status(400).json({ message: 'Child profile is missing weight or date of birth. Please update the profile first.' });
+        }
+
+        // 2. Calculate TDEE — birthday-aware age
+        const dob = new Date(profile.date_of_birth);
+        const now = new Date();
+        let childAge = now.getFullYear() - dob.getFullYear();
+        const hasBirthdayPassed = now.getMonth() > dob.getMonth() ||
+            (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+        if (!hasBirthdayPassed) childAge--;
+
         const weight = profile.weight_kg;
-        const years = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear();
-        let bmr = (years < 10) ? (22.7 * weight) + 495 : (17.5 * weight) + 651;
+        let bmr = (childAge < 10) ? (22.7 * weight) + 495 : (17.5 * weight) + 651;
         const activityMultipliers = { 'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'very_active': 1.725 };
         const tdee = Math.round(bmr * (activityMultipliers[profile.activity_level] || 1.2));
 

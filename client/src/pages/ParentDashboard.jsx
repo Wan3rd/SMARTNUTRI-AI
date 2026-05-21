@@ -63,7 +63,7 @@ export default function ParentDashboard() {
             setAllLogs(res.data);
 
             let filtered = res.data;
-            if (filterTab === 'pending') filtered = res.data.filter(log => log.status === 'pending');
+            if (filterTab === 'pending') filtered = res.data.filter(log => log.status === 'pending' || log.status === 'rejected');
             else if (filterTab === 'reviewed') filtered = res.data.filter(log => log.status === 'reviewed' || log.status === 'verified');
             else if (filterTab === 'flagged') filtered = res.data.filter(log => log.compliance_status === 'flagged');
 
@@ -421,7 +421,15 @@ export default function ParentDashboard() {
                                                                     <AlertCircle size={8} /> Flagged
                                                                 </span>
                                                             )}
-                                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${(log.status === 'reviewed' || log.status === 'verified') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{log.status}</span>
+                                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                                                (log.status === 'reviewed' || log.status === 'verified') 
+                                                                    ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' 
+                                                                    : log.status === 'rejected'
+                                                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
+                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+                                                            }`}>
+                                                                {log.status === 'rejected' ? 'Correction Needed' : log.status}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-1 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
@@ -433,7 +441,9 @@ export default function ParentDashboard() {
                                                         </p>
                                                     )}
                                                     <p className="text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-tight font-medium">
-                                                        {(log.status === 'reviewed' || log.status === 'verified') ? `"${log.nutritionist_review?.comment}"` : "Waiting for professional clinician review..."}
+                                                        {(log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected') 
+                                                            ? `"${log.nutritionist_review?.comment || 'Correction requested.'}"` 
+                                                            : "Waiting for professional clinician review..."}
                                                     </p>
                                                 </div>
                                             </div>

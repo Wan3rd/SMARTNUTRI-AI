@@ -56,7 +56,12 @@ export const callGemini = async (prompt, imageBase64 = null) => {
                     const body = {
                         contents: [{
                             parts: [{ text: prompt }]
-                        }]
+                        }],
+                        generationConfig: {
+                            temperature: 0,        // 0 = fully deterministic, same input → same output every time
+                            topP: 1,
+                            topK: 1
+                        }
                     };
 
                     // Add image if provided

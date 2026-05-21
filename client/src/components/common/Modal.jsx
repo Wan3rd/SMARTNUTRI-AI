@@ -41,7 +41,7 @@ export default function Modal({ isOpen, onClose, title, children, className, max
             />
             <Card className={cn(
                 "w-full relative shadow-2xl animate-in zoom-in-95 duration-200 border-[var(--color-divider)] bg-[var(--color-bg-card)]",
-                maxWidthClasses[maxWidth] || maxWidthClasses.md,
+                maxWidthClasses[maxWidth] || maxWidth || maxWidthClasses.md,
                 className
             )}>
                 <button

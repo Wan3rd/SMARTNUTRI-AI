@@ -171,8 +171,12 @@ export default function MealHistory() {
         let filtered = [...logs];
 
         // Status filter
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(log => log.status === statusFilter);
+        if (statusFilter === 'pending') {
+            filtered = filtered.filter(log => log.status === 'pending');
+        } else if (statusFilter === 'reviewed') {
+            filtered = filtered.filter(log => log.status === 'reviewed' || log.status === 'verified');
+        } else if (statusFilter === 'rejected') {
+            filtered = filtered.filter(log => log.status === 'rejected');
         }
 
         // Compliance filter
@@ -224,9 +228,15 @@ export default function MealHistory() {
     };
 
     const getStatusBadge = (status) => {
-        return status === 'reviewed'
-            ? { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', label: 'Reviewed' }
-            : { color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', label: 'Pending Review' };
+        if (status === 'verified') {
+            return { color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300', label: 'Clinically Verified' };
+        } else if (status === 'reviewed') {
+            return { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', label: 'Reviewed' };
+        } else if (status === 'rejected') {
+            return { color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50', label: 'Correction Needed' };
+        } else {
+            return { color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', label: 'Awaiting Review' };
+        }
     };
 
     // Pagination
@@ -272,6 +282,7 @@ export default function MealHistory() {
                         <option value="all">All Reviews</option>
                         <option value="reviewed">Expert Reviewed</option>
                         <option value="pending">Awaiting Review</option>
+                        <option value="rejected">Correction Needed</option>
                     </select>
                 </div>
                 <div>
@@ -425,11 +436,14 @@ export default function MealHistory() {
                                                 <div>
                                                     <div className="flex items-center justify-between mb-2">
                                                         <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
-                                                        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                                        }`}>
-                                                            {(log.status === 'verified' || log.status === 'reviewed') ? 'Clinically Verified' : 'Awaiting Review'}
-                                                        </div>
+                                                        {(() => {
+                                                            const badge = getStatusBadge(log.status);
+                                                            return (
+                                                                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badge.color}`}>
+                                                                    {badge.label}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                     <h3 className="text-lg font-black text-[var(--color-text-main)] line-clamp-1 uppercase">
                                                         {log.nutritionist_review?.title || log.ai_analysis?.meal_summary || "Meal Log Entry"}

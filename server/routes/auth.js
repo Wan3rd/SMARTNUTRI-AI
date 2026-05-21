@@ -10,6 +10,20 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
+// ─── Shared Validation Helpers ──────────────────────────────────────────────
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_ROLES = ['parent', 'nutritionist'];
+const VALID_THEMES = ['light', 'dark', 'system'];
+const VALID_MEASUREMENT_SYSTEMS = ['metric', 'imperial'];
+const VALID_NUTRIENT_PRECISIONS = ['whole', 'decimal'];
+
+function validateEmail(email) {
+    return typeof email === 'string' && EMAIL_REGEX.test(email);
+}
+function validatePassword(password) {
+    return typeof password === 'string' && password.length >= 8;
+}
+
 // CHECK EMAIL AVAILABILITY
 router.get('/check-email', async (req, res) => {
     const email = req.query.email?.toLowerCase();
@@ -30,6 +44,20 @@ router.get('/check-email', async (req, res) => {
 router.post('/register', upload.single('license'), async (req, res) => {
     const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
     const email = req.body.email?.toLowerCase();
+
+    // Input Validation
+    if (!email || !validateEmail(email)) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
+    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+        return res.status(400).json({ message: 'Full name is required (minimum 2 characters)' });
+    }
+    if (!validatePassword(password)) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (!role || !VALID_ROLES.includes(role)) {
+        return res.status(400).json({ message: 'Role must be either "parent" or "nutritionist"' });
+    }
 
     try {
         // Check if user exists
@@ -123,8 +151,26 @@ router.post('/register', upload.single('license'), async (req, res) => {
     }
 });
 
+// Rate limiter for sensitive auth routes
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Limit each IP to 5 requests per window
+    message: { message: 'Too many requests. Please try again in an hour.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate limiter for login (slightly more lenient)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // LOGIN
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     const { password, rememberMe } = req.body;
     const email = req.body.email?.toLowerCase();
 
@@ -353,8 +399,12 @@ router.post('/license-image', verifyToken, (req, res, next) => {
 });
 
 // FORGOT PASSWORD
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', authLimiter, async (req, res) => {
     const { email } = req.body;
+
+    if (!email || !validateEmail(email.toLowerCase())) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
     try {
         const user = await prisma.users.findUnique({ where: { email: email?.toLowerCase() } });
 
@@ -386,6 +436,14 @@ router.post('/forgot-password', async (req, res) => {
 // RESET PASSWORD
 router.post('/reset-password', async (req, res) => {
     const { token, password } = req.body;
+
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+        return res.status(400).json({ message: 'Reset token is required' });
+    }
+    if (!validatePassword(password)) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+    }
+
     try {
         const user = await prisma.users.findFirst({
             where: {
@@ -423,10 +481,19 @@ router.put('/preferences', verifyToken, async (req, res) => {
     const { theme, privacy_mode, measurement_system, nutrient_precision } = req.body;
     try {
         const updateData = {};
-        if (theme !== undefined) updateData.theme_preference = theme;
-        if (privacy_mode !== undefined) updateData.privacy_mode = privacy_mode;
-        if (measurement_system !== undefined) updateData.measurement_system = measurement_system;
-        if (nutrient_precision !== undefined) updateData.nutrient_precision = nutrient_precision;
+        if (theme !== undefined) {
+            if (!VALID_THEMES.includes(theme)) return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
+            updateData.theme_preference = theme;
+        }
+        if (privacy_mode !== undefined) updateData.privacy_mode = !!privacy_mode;
+        if (measurement_system !== undefined) {
+            if (!VALID_MEASUREMENT_SYSTEMS.includes(measurement_system)) return res.status(400).json({ message: `Invalid measurement system. Must be one of: ${VALID_MEASUREMENT_SYSTEMS.join(', ')}` });
+            updateData.measurement_system = measurement_system;
+        }
+        if (nutrient_precision !== undefined) {
+            if (!VALID_NUTRIENT_PRECISIONS.includes(nutrient_precision)) return res.status(400).json({ message: `Invalid nutrient precision. Must be one of: ${VALID_NUTRIENT_PRECISIONS.join(', ')}` });
+            updateData.nutrient_precision = nutrient_precision;
+        }
 
         await prisma.users.update({
             where: { id: req.user.id },
@@ -454,18 +521,19 @@ router.put('/theme', verifyToken, async (req, res) => {
     }
 });
 
-// Rate limiter for sensitive auth routes
-const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5, // Limit each IP to 5 requests per window
-    message: { message: 'Too many requests. Please try again in an hour.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// (authLimiter defined above near login)
 
 // CHANGE PASSWORD
 router.put('/change-password', verifyToken, authLimiter, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || typeof currentPassword !== 'string') {
+        return res.status(400).json({ message: 'Current password is required' });
+    }
+    if (!validatePassword(newPassword)) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+    }
+
     try {
         const user = await prisma.users.findUnique({
             where: { id: req.user.id }
@@ -524,6 +592,11 @@ router.get('/announcements', verifyToken, async (req, res) => {
 // FORCE CHANGE PASSWORD (for new accounts)
 router.post('/change-password-force', verifyToken, async (req, res) => {
     const { newPassword } = req.body;
+
+    if (!validatePassword(newPassword)) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
     try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);

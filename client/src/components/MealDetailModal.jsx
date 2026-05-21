@@ -15,6 +15,20 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const [nutritionist, setNutritionist] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
 
+    // Editable state for parent resubmission
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedConsumption, setEditedConsumption] = useState(log?.consumption_percent ?? 100);
+    const [editedHiddenIngredients, setEditedHiddenIngredients] = useState(log?.hidden_ingredients || '');
+    const [editedWater, setEditedWater] = useState(log?.water_ml ?? 0);
+    const [editedSupplements, setEditedSupplements] = useState(log?.supplements || '');
+    const [editedActivity, setEditedActivity] = useState(log?.physical_activity || '');
+    const [editedCategory, setEditedCategory] = useState(log?.meal_category || 'Other');
+    const [editedCookingMethod, setEditedCookingMethod] = useState(log?.cooking_method || 'Standard');
+    const [editedImageAfter, setEditedImageAfter] = useState(null);
+    const [editedImageAfterPreview, setEditedImageAfterPreview] = useState(log?.image_after_url || '');
+    const [isResubmitting, setIsResubmitting] = useState(false);
+    const fileAfterInputRef = React.useRef(null);
+
     // Robust normalization of allergies (handle strings from DB, arrays, or null)
     const allergyList = React.useMemo(() => {
         const sourceAllergies = (allergies && allergies.length > 0) ? allergies : (log.profile?.allergies || []);
@@ -88,12 +102,58 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     }, [onClose]);
 
     React.useEffect(() => {
-        if (log.status === 'reviewed') {
+        if (log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected') {
             api.get('/auth/my-nutritionist')
                 .then(res => setNutritionist(res.data))
                 .catch(() => setNutritionist(null));
         }
     }, [log.status]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setEditedImageAfter(file);
+            setEditedImageAfterPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleResubmit = async () => {
+        setIsResubmitting(true);
+        try {
+            let uploadedImageUrl = editedImageAfterPreview;
+
+            if (editedImageAfter) {
+                const formData = new FormData();
+                formData.append('image', editedImageAfter);
+                const uploadRes = await api.post('/logs/upload', formData);
+                uploadedImageUrl = uploadRes.data.image_url;
+            }
+
+            await api.patch(`/logs/${log.id}`, {
+                consumption_percent: editedConsumption,
+                hidden_ingredients: editedHiddenIngredients,
+                water_ml: editedWater,
+                supplements: editedSupplements,
+                physical_activity: editedActivity,
+                meal_category: editedCategory,
+                cooking_method: editedCookingMethod,
+                image_after_url: uploadedImageUrl
+            });
+            
+            const successMsg = log.status === 'rejected' 
+                ? "Meal log corrected and resubmitted successfully!" 
+                : "Meal log updated successfully!";
+            setNotif({ show: true, message: successMsg, type: 'success' });
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (err) {
+            console.error(err);
+            setNotif({ show: true, message: err.response?.data?.message || "Failed to save. Please try again.", type: 'error' });
+            setIsResubmitting(false);
+        }
+    };
 
     if (!log) return null;
 
@@ -174,6 +234,60 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
 
                 {/* Content */}
                 <div className="p-4 sm:p-5 space-y-3">
+                    {/* Rejection Correction Alert Panel */}
+                    {log.status === 'rejected' && (
+                        <Card className="border-rose-200 dark:border-rose-950/50 bg-rose-50/30 dark:bg-rose-950/10 overflow-hidden shadow-md">
+                            <div className="bg-rose-600 dark:bg-rose-800 px-4 py-2.5 flex items-center justify-between">
+                                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <AlertCircle size={12} className="text-rose-200 animate-pulse" /> Correction Needed
+                                </span>
+                                <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">
+                                    Clinician Request
+                                </span>
+                            </div>
+                            <CardContent className="p-5 space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 rounded-2xl border-2 border-white dark:border-rose-900/50 overflow-hidden bg-white flex-shrink-0 shadow-md">
+                                        {nutritionist?.profile_image_url ? (
+                                            <img src={nutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center bg-gray-50">
+                                                <User size={24} className="text-gray-300" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h4 className={cn("font-black text-[var(--color-text-main)] uppercase text-sm leading-none mb-1.5", user?.privacy_mode && "privacy-blur")}>
+                                            {nutritionist?.full_name || 'Nutritionist'}
+                                        </h4>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tighter bg-rose-100 dark:bg-rose-950/30 px-2 py-0.5 rounded-md">
+                                                {nutritionist?.specialization || 'Clinical Expert'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 pt-4 border-t border-[var(--color-divider)]">
+                                    <h4 className="font-black text-rose-700 dark:text-rose-400 text-base leading-tight uppercase tracking-tight">Clinician Feedback & Instructions</h4>
+                                    <div className="relative">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 rounded-full opacity-55" />
+                                        <p className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed italic pl-5 py-1">
+                                            "{log.nutritionist_review?.comment || 'Please adjust and resubmit details.'}"
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-200 dark:border-amber-900/50">
+                                    <p className="text-xs text-amber-800 dark:text-amber-300 font-bold leading-relaxed flex items-start gap-2">
+                                        <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                                        A corrective action is required for this meal. Please review the feedback above, toggle Edit Mode using the button below to make the necessary adjustments, and resubmit.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Allergen Warning Banner */}
                     {detectedAllergens.length > 0 && (
                         <div className="bg-red-600 text-white p-4 rounded-3xl shadow-xl flex items-center gap-4 animate-pulse">
@@ -208,77 +322,197 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
 
                         <div className="space-y-2">
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest pl-1">After Meal / Leftovers</p>
-                            <div className={`relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group flex items-center justify-center transition-all duration-300 ${log.image_after_url ? 'h-48 sm:h-64 w-full' : 'h-16 sm:h-64 w-full'}`}>
-                                {log.image_after_url ? (
-                                    <img
-                                        src={log.image_after_url}
-                                        alt="After"
-                                        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
-                                    />
-                                ) : (
-                                    <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-3 p-4">
-                                        <div className="h-8 w-8 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 flex-shrink-0">
-                                            <Activity size={16} />
+                            {isEditing ? (
+                                <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-dashed border-[var(--color-primary)]/40 hover:border-[var(--color-primary)] transition-all flex flex-col items-center justify-center h-48 sm:h-64 w-full p-4 group">
+                                    {editedImageAfterPreview ? (
+                                        <>
+                                            <img
+                                                src={editedImageAfterPreview}
+                                                alt="After Preview"
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col gap-2 items-center justify-center transition-opacity z-10">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => fileAfterInputRef.current?.click()}
+                                                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/80 text-white font-black text-[9px] uppercase tracking-widest h-8 px-4 rounded-xl shadow-lg border border-[var(--color-primary)]/20"
+                                                >
+                                                    Change Photo
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => { setEditedImageAfter(null); setEditedImageAfterPreview(''); }}
+                                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] uppercase tracking-widest h-8 px-4 rounded-xl shadow-lg border border-rose-500/20"
+                                                >
+                                                    Remove Photo
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div 
+                                            onClick={() => fileAfterInputRef.current?.click()}
+                                            className="flex flex-col items-center justify-center gap-3 cursor-pointer w-full h-full text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all"
+                                        >
+                                            <div className="h-12 w-12 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                                <Activity size={20} />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-center">Upload After-Meal Photo</p>
+                                            <p className="text-[8px] text-[var(--color-text-muted)] text-center max-w-[160px]">Helps clinicians review plate waste accurately</p>
                                         </div>
-                                        <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tight">No After-Meal Photo</p>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                    <input 
+                                        type="file" 
+                                        ref={fileAfterInputRef} 
+                                        onChange={handleFileChange} 
+                                        className="hidden" 
+                                        accept="image/*" 
+                                    />
+                                </div>
+                            ) : (
+                                <div className={`relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group flex items-center justify-center transition-all duration-300 ${log.image_after_url ? 'h-48 sm:h-64 w-full' : 'h-16 sm:h-64 w-full'}`}>
+                                    {log.image_after_url ? (
+                                        <img
+                                            src={log.image_after_url}
+                                            alt="After"
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
+                                        />
+                                    ) : (
+                                        <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-3 p-4">
+                                            <div className="h-8 w-8 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 flex-shrink-0">
+                                                <Activity size={16} />
+                                            </div>
+                                            <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tight">No After-Meal Photo</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Metadata Bar */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
-                            <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Cooking Method</p>
-                            <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.cooking_method || 'Standard'}</p>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                             <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Category</p>
-                            <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.meal_category || 'Other'}</p>
+                            {isEditing ? (
+                                <select
+                                    value={editedCategory}
+                                    onChange={(e) => setEditedCategory(e.target.value)}
+                                    className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
+                                >
+                                    {['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Other'].map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.meal_category || 'Other'}</p>
+                            )}
                         </div>
                         <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                             <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Water Intake</p>
-                            <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.water_ml || 0} ML</p>
+                            {isEditing ? (
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="number"
+                                        value={editedWater}
+                                        onChange={(e) => setEditedWater(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl px-2 py-1 focus:border-[var(--color-primary)] outline-none"
+                                    />
+                                    <span className="text-[10px] font-black text-[var(--color-text-muted)]">ML</span>
+                                </div>
+                            ) : (
+                                <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.water_ml || 0} ML</p>
+                            )}
                         </div>
                         <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                             <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Caregiver Reported</p>
-                            <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">
-                                {log.consumption_percent === 100 ? 'Finished (100%)' : 
-                                 log.consumption_percent === 75 ? 'Mostly (75%)' : 
-                                 log.consumption_percent === 50 ? 'Half (50%)' : 
-                                 log.consumption_percent === 25 ? 'A Little (25%)' : 
-                                 log.consumption_percent === 0 ? 'None (0%)' : 
-                                 'Finished (100%)'}
-                            </p>
+                            {isEditing ? (
+                                <select
+                                    value={editedConsumption}
+                                    onChange={(e) => setEditedConsumption(parseInt(e.target.value))}
+                                    className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
+                                >
+                                    <option value={100}>Finished (100%)</option>
+                                    <option value={75}>Mostly (75%)</option>
+                                    <option value={50}>Half (50%)</option>
+                                    <option value={25}>A Little (25%)</option>
+                                    <option value={0}>None (0%)</option>
+                                </select>
+                            ) : (
+                                <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">
+                                    {log.consumption_percent === 100 ? 'Finished (100%)' : 
+                                     log.consumption_percent === 75 ? 'Mostly (75%)' : 
+                                     log.consumption_percent === 50 ? 'Half (50%)' : 
+                                     log.consumption_percent === 25 ? 'A Little (25%)' : 
+                                     log.consumption_percent === 0 ? 'None (0%)' : 
+                                     'Finished (100%)'}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     {/* Additional Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {log.hidden_ingredients && (
+                    {isEditing ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
                                 <h4 className="text-[10px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2">Hidden Add-ons</h4>
-                                <p className="text-xs text-amber-900/80 dark:text-amber-200/80 font-medium leading-relaxed">{log.hidden_ingredients}</p>
+                                <textarea
+                                    value={editedHiddenIngredients}
+                                    onChange={(e) => setEditedHiddenIngredients(e.target.value)}
+                                    placeholder="Enter hidden oils, sugars, sauces, or other details..."
+                                    rows={2}
+                                    className="w-full bg-[var(--color-bg-page)] text-xs font-medium text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl p-2 focus:border-amber-500 outline-none resize-none"
+                                />
                             </div>
-                        )}
-                        {log.supplements && (
                             <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
                                 <h4 className="text-[10px] font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest mb-2">Supplements</h4>
-                                <p className="text-xs text-blue-900/80 dark:text-blue-200/80 font-medium leading-relaxed">{log.supplements}</p>
+                                <textarea
+                                    value={editedSupplements}
+                                    onChange={(e) => setEditedSupplements(e.target.value)}
+                                    placeholder="Enter any supplements consumed..."
+                                    rows={2}
+                                    className="w-full bg-[var(--color-bg-page)] text-xs font-medium text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl p-2 focus:border-blue-500 outline-none resize-none"
+                                />
                             </div>
-                        )}
-                        {log.physical_activity && (
                             <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
                                 <h4 className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest mb-2">Physical Activity</h4>
-                                <p className="text-xs text-emerald-900/80 dark:text-emerald-200/80 font-medium leading-relaxed">{log.physical_activity}</p>
+                                <textarea
+                                    value={editedActivity}
+                                    onChange={(e) => setEditedActivity(e.target.value)}
+                                    placeholder="Enter any related physical activity details..."
+                                    rows={2}
+                                    className="w-full bg-[var(--color-bg-page)] text-xs font-medium text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl p-2 focus:border-emerald-500 outline-none resize-none"
+                                />
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {(log.hidden_ingredients || log.consumption_percent !== 100) && (
+                                <div className="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                    <h4 className="text-[10px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2">Hidden Add-ons / Edits</h4>
+                                    <p className="text-xs text-amber-900/80 dark:text-amber-200/80 font-medium leading-relaxed">
+                                        {log.hidden_ingredients || "No extra ingredients reported."}
+                                        {log.consumption_percent !== 100 && ` (Consumption adjusted to ${log.consumption_percent}%)`}
+                                    </p>
+                                </div>
+                            )}
+                            {log.supplements && (
+                                <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                                    <h4 className="text-[10px] font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest mb-2">Supplements</h4>
+                                    <p className="text-xs text-blue-900/80 dark:text-blue-200/80 font-medium leading-relaxed">{log.supplements}</p>
+                                </div>
+                            )}
+                            {log.physical_activity && (
+                                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                                    <h4 className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest mb-2">Physical Activity</h4>
+                                    <p className="text-xs text-emerald-900/80 dark:text-emerald-200/80 font-medium leading-relaxed">{log.physical_activity}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Analysis Content (Verified vs AI) */}
                     {(() => {
-                        const isVerified = log.status === 'reviewed' && log.nutritionist_review?.verified_analysis;
+                        const isVerified = (log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected') && log.nutritionist_review?.verified_analysis;
                         const displayAnalysis = isVerified ? log.nutritionist_review.verified_analysis : log.ai_analysis;
                         const nutrition = displayAnalysis?.nutrition || displayAnalysis?.macros_est || {};
                         const items = displayAnalysis?.items || [];
@@ -380,7 +614,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     })()}
 
                     {/* Nutritionist Review */}
-                    {log.status === 'reviewed' && log.nutritionist_review && (
+                    {(log.status === 'reviewed' || log.status === 'verified') && log.nutritionist_review && (
                         <Card className="border-[var(--color-divider)] dark:border-green-900/30 bg-emerald-50/30 dark:bg-green-900/10 overflow-hidden shadow-sm">
                             <div className="bg-emerald-600 dark:bg-emerald-800 px-4 py-2.5 flex items-center justify-between">
                                 <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
@@ -494,22 +728,77 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-6 flex flex-col sm:flex-row gap-3 sm:justify-between items-center z-10">
-                    <Button
-                        variant="outline"
-                        className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm font-black uppercase tracking-widest text-[10px]"
-                        onClick={() => setShowConfirm(true)}
-                        disabled={isDeleting}
-                    >
-                        {isDeleting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Trash2 size={14} className="mr-2" />}
-                        Delete Meal
-                    </Button>
-                    <Button
-                        className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-10 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20"
-                        onClick={onClose}
-                    >
-                        Close Details
-                    </Button>
+                <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-6 flex flex-col sm:flex-row gap-3 sm:justify-between items-center w-full z-10">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-start">
+                        <Button
+                            variant="none"
+                            className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 bg-rose-50/10 dark:bg-rose-950/15 hover:bg-rose-100/70 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300 shadow-sm font-black uppercase tracking-widest text-[10px]"
+                            onClick={() => setShowConfirm(true)}
+                            disabled={isDeleting || isResubmitting}
+                        >
+                            {isDeleting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Trash2 size={14} className="mr-2" />}
+                            Delete Meal
+                        </Button>
+                        
+                        {user?.role === 'parent' && (log.status === 'rejected' || log.status === 'pending') && !isEditing && (
+                            <Button
+                                variant="none"
+                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 bg-amber-50/10 dark:bg-amber-900/15 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300 shadow-sm font-black uppercase tracking-widest text-[10px]"
+                                onClick={() => setIsEditing(true)}
+                            >
+                                {log.status === 'rejected' ? 'Correct Details' : 'Edit Details'}
+                            </Button>
+                        )}
+
+                        {isEditing && (
+                            <Button
+                                variant="none"
+                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300 bg-gray-50/10 dark:bg-zinc-900/20 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white shadow-sm font-black uppercase tracking-widest text-[10px]"
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    // Reset edit states to originals
+                                    setEditedConsumption(log.consumption_percent ?? 100);
+                                    setEditedHiddenIngredients(log.hidden_ingredients || '');
+                                    setEditedWater(log.water_ml ?? 0);
+                                    setEditedSupplements(log.supplements || '');
+                                    setEditedActivity(log.physical_activity || '');
+                                    setEditedCategory(log.meal_category || 'Other');
+                                    setEditedCookingMethod(log.cooking_method || 'Standard');
+                                    setEditedImageAfter(null);
+                                    setEditedImageAfterPreview(log.image_after_url || '');
+                                }}
+                            >
+                                Cancel Edits
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2 w-full sm:w-auto justify-end">
+                        {isEditing ? (
+                            <Button
+                                variant="none"
+                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-amber-500/20 flex items-center justify-center animate-pulse px-10"
+                                onClick={handleResubmit}
+                                disabled={isResubmitting}
+                            >
+                                {isResubmitting ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin mr-2" />
+                                        {log.status === 'rejected' ? 'Resubmitting...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    log.status === 'rejected' ? "Save & Resubmit" : "Save Changes"
+                                )}
+                            </Button>
+                        ) : (
+                            <Button
+                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-10 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20"
+                                onClick={onClose}
+                            >
+                                Close Details
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 

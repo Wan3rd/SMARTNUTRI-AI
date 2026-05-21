@@ -2,15 +2,32 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { DEFAULT_MEAL_TEMPLATES } from '../data/default_meal_templates.js';
 
 const router = express.Router();
 
-// Middleware to check if user is a nutritionist
+// Middleware to check if user is a nutritionist with an approved account
 const isNutritionist = (req, res, next) => {
     if (req.user.role !== 'nutritionist') {
         return res.status(403).json({ message: 'Access Denied: Nutritionist role required' });
     }
+    if (req.user.status !== 'approved') {
+        return res.status(403).json({ message: 'Clinical Verification Required: Your account is currently under review.' });
+    }
     next();
+};
+
+const checkProfileAccess = async (req, profileId) => {
+    if (!profileId) return false;
+    const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
+    if (!profile) return false;
+    if (req.user.role === 'admin') return true;
+    if (profile.user_id === req.user.id) return true;
+    const isLinked = await prisma.nutritionist_clients.findFirst({
+        where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+    });
+    return !!isLinked;
 };
 
 // POST /invite - Link a parent to this nutritionist by email
@@ -64,8 +81,8 @@ router.post('/invite', verifyToken, isNutritionist, async (req, res) => {
 
 // POST /create-client - Create a new parent and child profile and link them with full clinical profiling
 router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
-    const { 
-        parent_name, parent_email, 
+    const {
+        parent_name, parent_email,
         child_name, date_of_birth, gender,
         medical_history, family_history, food_intolerances, symptoms, medications, lifestyle_factors,
         height_cm, weight_kg, waist_circumference, weighing_time, is_fasting, is_post_voiding,
@@ -74,6 +91,14 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
     } = req.body;
 
     try {
+        // Input Validation
+        if (!parent_email || typeof parent_email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email.toLowerCase())) {
+            return res.status(400).json({ message: 'A valid parent email address is required' });
+        }
+        if (!child_name || typeof child_name !== 'string' || child_name.trim().length < 1) {
+            return res.status(400).json({ message: 'Child name is required' });
+        }
+
         // 1. Check if parent email already exists
         const existingUser = await prisma.users.findUnique({
             where: { email: parent_email.toLowerCase() }
@@ -141,12 +166,12 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                     date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
                     notes: v.notes || 'Recorded during initial profiling'
                 }));
-                
+
                 await tx.profile_vaccinations.createMany({
                     data: vaccinationData
                 });
             }
-            
+
             // 6. Link to Nutritionist
             await tx.nutritionist_clients.create({
                 data: {
@@ -209,9 +234,9 @@ router.get('/clients', verifyToken, isNutritionist, async (req, res) => {
         res.json(formattedClients);
     } catch (err) {
         console.error("CRITICAL: Failed to fetch clinical clients:", err);
-        res.status(500).json({ 
-            message: 'Internal Server Error', 
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+        res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 });
@@ -229,11 +254,11 @@ router.get('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
 
         const client = await prisma.users.findUnique({
             where: { id: req.params.id },
-            select: { 
-                id: true, 
-                email: true, 
-                full_name: true, 
-                deleted_at: true, 
+            select: {
+                id: true,
+                email: true,
+                full_name: true,
+                deleted_at: true,
                 deactivation_reason: true,
                 status: true
             }
@@ -244,9 +269,9 @@ router.get('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
         res.json(client);
     } catch (err) {
         console.error("CRITICAL: Failed to fetch client details:", err);
-        res.status(500).json({ 
-            message: 'Internal Server Error', 
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+        res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 });
@@ -321,6 +346,25 @@ router.get('/clients/:parentId/profiles', verifyToken, isNutritionist, async (re
 router.post('/rules', verifyToken, isNutritionist, async (req, res) => {
     const { profile_id, category, rule_name, rule_definition, rule_type, rule_value, rule_unit, is_standard } = req.body;
     try {
+        if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+    } catch(err) {
+        return res.status(500).json({ message: 'Authorization error' });
+    }
+
+    if (!profile_id || typeof profile_id !== 'string') {
+        return res.status(400).json({ message: 'profile_id is required' });
+    }
+    if (!rule_name || typeof rule_name !== 'string' || rule_name.trim().length === 0) {
+        return res.status(400).json({ message: 'rule_name is required' });
+    }
+    if (!category || typeof category !== 'string' || category.trim().length === 0) {
+        return res.status(400).json({ message: 'category is required' });
+    }
+    if (rule_type && !['min', 'max', 'range'].includes(rule_type)) {
+        return res.status(400).json({ message: 'rule_type must be one of: min, max, range' });
+    }
+
+    try {
         const newRule = await prisma.nutrition_rules.create({
             data: {
                 profile_id,
@@ -355,9 +399,9 @@ router.get('/rules/:profileId', verifyToken, async (req, res) => {
         const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
 
-        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
-            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
-                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id }
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to rules' });
@@ -377,7 +421,8 @@ router.get('/rules/:profileId', verifyToken, async (req, res) => {
 router.delete('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
         const rule = await prisma.nutrition_rules.findUnique({ where: { id: req.params.id } });
-        if (!rule) return res.status(404).json({ message: 'Rule not found' });
+        if (!rule) return res.status(404).json({ message: 'Not found' });
+        if (!(await checkProfileAccess(req, rule.profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
 
         await prisma.nutrition_rules.delete({
             where: { id: req.params.id }
@@ -399,6 +444,9 @@ router.patch('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
     const { id } = req.params;
     const { rule_name, rule_type, rule_value, rule_unit, rule_definition, category } = req.body;
     try {
+        const rule = await prisma.nutrition_rules.findUnique({ where: { id: req.params.id } });
+        if (!rule) return res.status(404).json({ message: 'Not found' });
+        if (!(await checkProfileAccess(req, rule.profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         const updatedRule = await prisma.nutrition_rules.update({
             where: { id: id },
             data: {
@@ -430,10 +478,16 @@ router.get('/standards/:profileId', verifyToken, isNutritionist, async (req, res
         });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
 
-        const age = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear();
+        const dob2 = new Date(profile.date_of_birth);
+        const now2 = new Date();
+        let age = now2.getFullYear() - dob2.getFullYear();
+        const bpassed = now2.getMonth() > dob2.getMonth() ||
+            (now2.getMonth() === dob2.getMonth() && now2.getDate() >= dob2.getDate());
+        if (!bpassed) age--;
 
         const { getPDRITargets, GLOBAL_LIMITS } = await import('../utils/standards.js');
         const targets = getPDRITargets(age, profile.gender);
+
 
         // Construct recommended templates
         const templates = [];
@@ -458,7 +512,7 @@ router.get('/standards/:profileId', verifyToken, isNutritionist, async (req, res
 
         // Add clinical templates (Iron, Calcium, Fiber, Water)
         const ageGroup = age >= 1 && age <= 3 ? '1-3' : (age >= 4 && age <= 8 ? '4-8' : '9-13');
-        
+
         if (GLOBAL_LIMITS.IRON_MIN_MG[ageGroup]) {
             templates.push({
                 name: `Clinical Iron (${GLOBAL_LIMITS.IRON_MIN_MG[ageGroup]}mg)`,
@@ -560,12 +614,12 @@ router.get('/logs/pending', verifyToken, isNutritionist, async (req, res) => {
 router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) => {
     const { nutritionist_review, status } = req.body;
     try {
-        // 1. Get current log to find profile_id and logged_at
         const log = await prisma.meal_logs.findUnique({
             where: { id: req.params.id },
             select: { profile_id: true, logged_at: true }
         });
         if (!log) return res.status(404).json({ message: 'Log not found' });
+        if (!(await checkProfileAccess(req, log.profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
 
         const { profile_id, logged_at } = log;
 
@@ -646,22 +700,217 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
 // PATCH /logs/batch-verify - Verify multiple logs at once
 router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res) => {
     const { logIds } = req.body;
+
+    // Validate input first before any DB calls
+    if (!logIds || !Array.isArray(logIds) || logIds.length === 0) {
+        return res.status(400).json({ message: 'logIds must be a non-empty array' });
+    }
+
     try {
-        if (!logIds || !Array.isArray(logIds)) {
-            return res.status(400).json({ message: 'Invalid log IDs' });
+        // Fetch all logs in the batch to get their profile IDs
+        const logs = await prisma.meal_logs.findMany({
+            where: { id: { in: logIds } },
+            select: { id: true, profile_id: true }
+        });
+
+        if (logs.length === 0) {
+            return res.status(404).json({ message: 'No matching logs found' });
         }
 
+        // SECURITY: Check access for EVERY unique profile in the batch, not just the first
+        const uniqueProfileIds = [...new Set(logs.map(l => l.profile_id).filter(Boolean))];
+        for (const profileId of uniqueProfileIds) {
+            if (!(await checkProfileAccess(req, profileId))) {
+                return res.status(403).json({ message: 'Access Denied: One or more logs belong to an unlinked profile' });
+            }
+        }
+
+        // Only update logs that were actually found (prevent verifying arbitrary IDs)
+        const verifiedIds = logs.map(l => l.id);
         await prisma.meal_logs.updateMany({
-            where: { id: { in: logIds } },
+            where: { id: { in: verifiedIds } },
             data: { status: 'verified' }
         });
-        
-        res.json({ message: 'Logs verified successfully', verifiedCount: logIds.length });
+
+        res.json({ message: 'Logs verified successfully', verifiedCount: verifiedIds.length });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
+// GET /plan/meal-templates - Get all weekly meal templates for this nutritionist (with auto-seeding)
+router.get('/plan/meal-templates', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        let templates = await prisma.meal_plan_templates.findMany({
+            where: { nutritionist_id: req.user.id },
+            orderBy: { created_at: 'asc' }
+        });
+
+        // Auto-seed defaults if nutritionist has none
+        if (templates.length === 0) {
+            console.log(`Auto-seeding ${DEFAULT_MEAL_TEMPLATES.length} meal templates for nutritionist ${req.user.id}`);
+            await prisma.$transaction(
+                DEFAULT_MEAL_TEMPLATES.map(t => 
+                    prisma.meal_plan_templates.create({
+                        data: {
+                            nutritionist_id: req.user.id,
+                            name: t.name,
+                            description: t.description,
+                            target_age: t.target_age,
+                            days: t.days,
+                            is_default: true
+                        }
+                    })
+                )
+            );
+
+            templates = await prisma.meal_plan_templates.findMany({
+                where: { nutritionist_id: req.user.id },
+                orderBy: { created_at: 'asc' }
+            });
+        }
+
+        res.json(templates);
+    } catch (err) {
+        console.error("Error fetching meal templates:", err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /plan/meal-templates - Create a new weekly meal template
+router.post('/plan/meal-templates', verifyToken, isNutritionist, async (req, res) => {
+    const { name, description, target_age, days } = req.body;
+    if (!name) {
+        return res.status(400).json({ message: 'Template name is required' });
+    }
+    try {
+        const newTemplate = await prisma.meal_plan_templates.create({
+            data: {
+                nutritionist_id: req.user.id,
+                name,
+                description,
+                target_age,
+                days: days || {},
+                is_default: false
+            }
+        });
+        res.status(201).json(newTemplate);
+    } catch (err) {
+        console.error("Error creating meal template:", err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /plan/meal-templates/:id - Update an existing weekly meal template
+router.patch('/plan/meal-templates/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, target_age, days } = req.body;
+    try {
+        const template = await prisma.meal_plan_templates.findUnique({
+            where: { id }
+        });
+
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found' });
+        }
+
+        if (template.nutritionist_id !== req.user.id) {
+            return res.status(403).json({ message: 'Access Denied: You do not own this template' });
+        }
+
+        const updatedTemplate = await prisma.meal_plan_templates.update({
+            where: { id },
+            data: {
+                name: name !== undefined ? name : template.name,
+                description: description !== undefined ? description : template.description,
+                target_age: target_age !== undefined ? target_age : template.target_age,
+                days: days !== undefined ? days : template.days,
+                updated_at: new Date()
+            }
+        });
+
+        res.json(updatedTemplate);
+    } catch (err) {
+        console.error("Error updating meal template:", err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /plan/meal-templates/:id - Delete a weekly meal template
+router.delete('/plan/meal-templates/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const template = await prisma.meal_plan_templates.findUnique({
+            where: { id }
+        });
+
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found' });
+        }
+
+        if (template.nutritionist_id !== req.user.id) {
+            return res.status(403).json({ message: 'Access Denied: You do not own this template' });
+        }
+
+        await prisma.meal_plan_templates.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'Template deleted successfully' });
+    } catch (err) {
+        console.error("Error deleting meal template:", err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// PATCH /plan/meal/:id - Edit an individual meal plan entry
+router.patch('/plan/meal/:id', verifyToken, isNutritionist, async (req, res) => {
+    const { id } = req.params;
+    const { recipe_name, calories, protein_g, carbs_g, fats_g, meal_type } = req.body;
+    try {
+        const meal = await prisma.meal_plans.findUnique({
+            where: { id },
+            include: { profiles: true }
+        });
+
+        if (!meal) {
+            return res.status(404).json({ message: 'Meal plan entry not found' });
+        }
+
+        // Verify nutritionist permissions: either creator OR linked to parent
+        const isCreator = meal.nutritionist_id === req.user.id;
+        const isLinked = await prisma.nutritionist_clients.findFirst({
+            where: {
+                nutritionist_id: req.user.id,
+                parent_id: meal.profiles?.user_id,
+                status: 'active'
+            }
+        });
+
+        if (!isCreator && !isLinked) {
+            return res.status(403).json({ message: 'Access Denied: You are not authorized to edit this meal plan entry' });
+        }
+
+        const updatedMeal = await prisma.meal_plans.update({
+            where: { id },
+            data: {
+                recipe_name: recipe_name !== undefined ? recipe_name : meal.recipe_name,
+                calories: calories !== undefined ? (calories === null ? null : parseInt(calories)) : meal.calories,
+                protein_g: protein_g !== undefined ? (protein_g === null ? null : parseInt(protein_g)) : meal.protein_g,
+                carbs_g: carbs_g !== undefined ? (carbs_g === null ? null : parseInt(carbs_g)) : meal.carbs_g,
+                fats_g: fats_g !== undefined ? (fats_g === null ? null : parseInt(fats_g)) : meal.fats_g,
+                meal_type: meal_type !== undefined ? meal_type : meal.meal_type
+            }
+        });
+
+        res.json(updatedMeal);
+    } catch (err) {
+        console.error("Error updating meal plan entry:", err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 
 // GET /plan/:profileId - Get active meal plan for a profile
 router.get('/plan/:profileId', verifyToken, isNutritionist, async (req, res) => {
@@ -670,9 +919,9 @@ router.get('/plan/:profileId', verifyToken, isNutritionist, async (req, res) => 
         const profile = await prisma.profiles.findUnique({ where: { id: req.params.profileId } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
 
-        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
-            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
-                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id }
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to meal plans' });
@@ -698,6 +947,16 @@ router.post('/plan/generate', verifyToken, isNutritionist, async (req, res) => {
         });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
 
+        // SECURITY: Verify this nutritionist is linked to this profile
+        if (!(await checkProfileAccess(req, profileId))) {
+            return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+        }
+
+        // Guard: weight and DOB are required for a meaningful plan
+        if (!profile.weight_kg || !profile.date_of_birth) {
+            return res.status(400).json({ message: 'Child profile is missing weight or date of birth. Please update the profile before generating a plan.' });
+        }
+
         // 2. Fetch Rules
         const rules = await prisma.nutrition_rules.findMany({
             where: { profile_id: profileId }
@@ -706,9 +965,17 @@ router.post('/plan/generate', verifyToken, isNutritionist, async (req, res) => {
         // 3. Construct Prompt
         const rulesText = rules.map(r => `- ${r.category}: ${r.rule_name} (${JSON.stringify(r.rule_definition)})`).join('\n');
 
+        // Birthday-aware age calculation
+        const dob = new Date(profile.date_of_birth);
+        const today = new Date();
+        let childAge = today.getFullYear() - dob.getFullYear();
+        const hasBirthdayPassed = today.getMonth() > dob.getMonth() ||
+            (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+        if (!hasBirthdayPassed) childAge--;
+
         const prompt = `
         Act as a professional pediatric nutritionist. Generate a 7-day meal plan for a child with the following profile:
-        - Age: ${new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()} years old
+        - Age: ${childAge} years old
         - Weight: ${profile.weight_kg}kg
         - Height: ${profile.height_cm}cm
         - Activity Level: ${profile.activity_level}
@@ -769,14 +1036,13 @@ router.post('/plan/generate', verifyToken, isNutritionist, async (req, res) => {
         }
 
         // 5. Save to Database
-        const today = new Date();
         const startDate = new Date(today);
         startDate.setDate(startDate.getDate() + 1);
-        startDate.setHours(0,0,0,0);
+        startDate.setHours(0, 0, 0, 0);
 
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
-        endDate.setHours(23,59,59,999);
+        endDate.setHours(23, 59, 59, 999);
 
         await prisma.$transaction(async (tx) => {
             // Clear existing plans for this range
@@ -836,6 +1102,7 @@ router.post('/plan/generate', verifyToken, isNutritionist, async (req, res) => {
 router.post('/plan/meal', verifyToken, isNutritionist, async (req, res) => {
     const { profile_id, date, meal_type, recipe_name, calories, protein_g, carbs_g, fats_g } = req.body;
     try {
+        if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         const meal = await prisma.meal_plans.create({
             data: {
                 profile_id,
@@ -860,6 +1127,8 @@ router.post('/plan/meal', verifyToken, isNutritionist, async (req, res) => {
 // DELETE /plan/meal/:id - Delete a meal from a plan
 router.delete('/plan/meal/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
+        const meal = await prisma.meal_plans.findUnique({ where: { id: req.params.id } });
+        if (!meal || meal.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
         await prisma.meal_plans.delete({
             where: { id: req.params.id }
         });
@@ -873,6 +1142,7 @@ router.delete('/plan/meal/:id', verifyToken, isNutritionist, async (req, res) =>
 // DELETE /plan/all/:profileId - Clear entire plan for a profile
 router.delete('/plan/all/:profileId', verifyToken, isNutritionist, async (req, res) => {
     try {
+        if (!(await checkProfileAccess(req, req.params.profileId))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         await prisma.meal_plans.deleteMany({
             where: { profile_id: req.params.profileId }
         });
@@ -890,9 +1160,9 @@ router.get('/adime-notes/:profileId', verifyToken, async (req, res) => {
         const profile = await prisma.profiles.findUnique({ where: { id: req.params.profileId } });
         if (!profile) return res.status(404).json({ message: 'Profile not found' });
 
-        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' || 
-            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({ 
-                where: { nutritionist_id: req.user.id, parent_id: profile.user_id } 
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id }
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to clinical notes' });
@@ -912,6 +1182,7 @@ router.get('/adime-notes/:profileId', verifyToken, async (req, res) => {
 router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
     const { profile_id, assessment, diagnosis, intervention, monitoring, evaluation } = req.body;
     try {
+        if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         const newNote = await prisma.adime_notes.create({
             data: {
                 profile_id,
@@ -934,6 +1205,8 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
 router.patch('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) => {
     const { assessment, diagnosis, intervention, monitoring, evaluation } = req.body;
     try {
+        const note = await prisma.adime_notes.findUnique({ where: { id: req.params.id } });
+        if (!note || note.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
         const updated = await prisma.adime_notes.update({
             where: { id: req.params.id },
             data: { assessment, diagnosis, intervention, monitoring, evaluation }
@@ -948,6 +1221,8 @@ router.patch('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) =
 // DELETE /adime-notes/:id - Delete a clinical note
 router.delete('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
+        const note = await prisma.adime_notes.findUnique({ where: { id: req.params.id } });
+        if (!note || note.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
         await prisma.adime_notes.delete({
             where: { id: req.params.id }
         });
@@ -961,12 +1236,12 @@ router.delete('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) 
 // PATCH /clients/profile/:id - Nutritionist updates a child's clinical profile
 router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, res) => {
     const { id } = req.params;
-    const { 
-        medical_history, 
-        medications, 
-        vaccinations, 
-        bristol_stool_scale, 
-        allergies, 
+    const {
+        medical_history,
+        medications,
+        vaccinations,
+        bristol_stool_scale,
+        allergies,
         dietary_preferences,
         height_cm,
         weight_kg,
@@ -1014,6 +1289,20 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
             }
         });
 
+        // 3. Write growth log if height_cm or weight_kg changed
+        const heightChanged = updated.height_cm !== profile.height_cm;
+        const weightChanged = updated.weight_kg !== profile.weight_kg;
+
+        if ((heightChanged || weightChanged) && updated.height_cm !== null && updated.weight_kg !== null) {
+            await prisma.growth_logs.create({
+                data: {
+                    profile_id: id,
+                    height_cm: updated.height_cm,
+                    weight_kg: updated.weight_kg
+                }
+            });
+        }
+
         res.json(updated);
     } catch (err) {
         console.error(err);
@@ -1021,66 +1310,81 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
     }
 });
 
-// --- Meal Planning Routes ---
+// NOTE: Duplicate unprotected route block removed. All meal plan routes
+// are defined above (lines ~908–1130) with proper authorization checks.
 
-// GET /plan/:profileId - Get meal plans for a profile
-router.get('/plan/:profileId', verifyToken, async (req, res) => {
-    try {
-        const plans = await prisma.meal_plans.findMany({
-            where: { profile_id: req.params.profileId },
-            orderBy: { date: 'asc' }
-        });
-        res.json(plans);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server Error' });
-    }
-});
 
-// POST /plan/meal - Add a meal to the plan
-router.post('/plan/meal', verifyToken, isNutritionist, async (req, res) => {
-    const { profile_id, date, meal_type, recipe_name, calories, protein_g, carbs_g, fats_g } = req.body;
+// POST /plan/apply-template - Apply a weekly meal template to a profile for a week
+router.post('/plan/apply-template', verifyToken, isNutritionist, async (req, res) => {
     try {
-        const newMeal = await prisma.meal_plans.create({
-            data: {
-                profile_id,
-                date: new Date(date),
-                meal_type,
-                recipe_name,
-                calories: calories ? parseInt(calories) : null,
-                protein_g: protein_g ? parseInt(protein_g) : null,
-                carbs_g: carbs_g ? parseInt(carbs_g) : null,
-                fats_g: fats_g ? parseInt(fats_g) : null,
+        const { templateId, profileId, startDate } = req.body;
+        if (!(await checkProfileAccess(req, profileId))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+        const template = await prisma.meal_plan_templates.findFirst({
+            where: {
+                id: templateId,
                 nutritionist_id: req.user.id
             }
         });
-        res.status(201).json(newMeal);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server Error' });
-    }
-});
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found' });
+        }
 
-// DELETE /plan/meal/:mealId - Remove a meal from the plan
-router.delete('/plan/meal/:mealId', verifyToken, isNutritionist, async (req, res) => {
-    try {
-        await prisma.meal_plans.delete({
-            where: { id: req.params.mealId }
-        });
-        res.json({ message: 'Meal removed from plan' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server Error' });
-    }
-});
+        const baseDate = new Date(startDate);
+        baseDate.setHours(0, 0, 0, 0);
 
-// DELETE /plan/:profileId - Clear all plans for a profile
-router.delete('/plan/:profileId', verifyToken, isNutritionist, async (req, res) => {
-    try {
-        await prisma.meal_plans.deleteMany({
-            where: { profile_id: req.params.profileId }
+        const endDate = new Date(baseDate);
+        endDate.setDate(baseDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+
+        const dayOffsets = {
+            "Monday": 0,
+            "Tuesday": 1,
+            "Wednesday": 2,
+            "Thursday": 3,
+            "Friday": 4,
+            "Saturday": 5,
+            "Sunday": 6
+        };
+
+        await prisma.$transaction(async (tx) => {
+            // Delete existing plans in this 7-day range
+            await tx.meal_plans.deleteMany({
+                where: {
+                    profile_id: profileId,
+                    date: {
+                        gte: baseDate,
+                        lte: endDate
+                    }
+                }
+            });
+
+            // Insert new template plans
+            for (const [dayName, meals] of Object.entries(template.days)) {
+                const offset = dayOffsets[dayName];
+                if (offset === undefined) continue;
+
+                const mealDate = new Date(baseDate);
+                mealDate.setDate(baseDate.getDate() + offset);
+
+                for (const meal of meals) {
+                    await tx.meal_plans.create({
+                        data: {
+                            profile_id: profileId,
+                            date: mealDate,
+                            meal_type: meal.meal_type,
+                            recipe_name: meal.recipe_name,
+                            calories: meal.calories,
+                            protein_g: meal.protein_g,
+                            carbs_g: meal.carbs_g,
+                            fats_g: meal.fats_g,
+                            nutritionist_id: req.user.id
+                        }
+                    });
+                }
+            }
         });
-        res.json({ message: 'Meal plan cleared' });
+
+        res.json({ message: 'Weekly template applied successfully!' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -1093,7 +1397,12 @@ router.delete('/plan/:profileId', verifyToken, isNutritionist, async (req, res) 
 router.get('/portion-templates', verifyToken, isNutritionist, async (req, res) => {
     try {
         const templates = await prisma.portion_templates.findMany({
-            where: { nutritionist_id: req.user.id },
+            where: {
+                OR: [
+                    { nutritionist_id: req.user.id },
+                    { nutritionist_id: null }
+                ]
+            },
             orderBy: { created_at: 'desc' }
         });
         res.json(templates);
@@ -1124,6 +1433,15 @@ router.post('/portion-templates', verifyToken, isNutritionist, async (req, res) 
 // DELETE /portion-templates/:id - Delete a template
 router.delete('/portion-templates/:id', verifyToken, isNutritionist, async (req, res) => {
     try {
+        const template = await prisma.portion_templates.findUnique({
+            where: { id: req.params.id }
+        });
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found' });
+        }
+        if (template.nutritionist_id !== req.user.id) {
+            return res.status(403).json({ message: 'Access Denied: You are not authorized to delete this template' });
+        }
         await prisma.portion_templates.delete({
             where: { id: req.params.id }
         });
@@ -1139,10 +1457,15 @@ router.delete('/portion-templates/:id', verifyToken, isNutritionist, async (req,
 // GET /portion-plan/:profileId - Get the portion exchange matrix for a profile
 router.get('/portion-plan/:profileId', verifyToken, async (req, res) => {
     try {
+        // SECURITY: Verify the requesting user has access to this profile
+        if (!(await checkProfileAccess(req, req.params.profileId))) {
+            return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+        }
+
         const plans = await prisma.portion_plans.findMany({
             where: { profile_id: req.params.profileId }
         });
-        
+
         // Clean up legacy "0" values from before the text migration
         const cleanedPlans = plans.map(plan => {
             const cleanPlan = { ...plan };
@@ -1163,16 +1486,17 @@ router.get('/portion-plan/:profileId', verifyToken, async (req, res) => {
 
 // POST /portion-plan - Save/Update the entire portion matrix
 router.post('/portion-plan', verifyToken, isNutritionist, async (req, res) => {
-    const { profile_id, matrix } = req.body; // matrix: [{ meal_type, vegetables, ... }]
+    const { profile_id, matrix } = req.body;
     try {
+        if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         // We use a transaction to ensure all or nothing
-        const operations = matrix.map(row => 
+        const operations = matrix.map(row =>
             prisma.portion_plans.upsert({
-                where: { 
-                    profile_id_meal_type: { 
-                        profile_id, 
-                        meal_type: row.meal_type 
-                    } 
+                where: {
+                    profile_id_meal_type: {
+                        profile_id,
+                        meal_type: row.meal_type
+                    }
                 },
                 update: {
                     vegetables: row.vegetables || '',
@@ -1213,6 +1537,7 @@ router.post('/portion-plan', verifyToken, isNutritionist, async (req, res) => {
 router.get('/adherence/:profileId', verifyToken, async (req, res) => {
     const { date } = req.query; // format: YYYY-MM-DD
     try {
+        if (!(await checkProfileAccess(req, req.params.profileId))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         if (!date) return res.status(400).json({ message: 'Date is required' });
 
         const logs = await prisma.daily_adherence_logs.findMany({
@@ -1232,6 +1557,7 @@ router.get('/adherence/:profileId', verifyToken, async (req, res) => {
 router.post('/adherence/:profileId', verifyToken, async (req, res) => {
     const { date, meal_type, category, completed } = req.body;
     try {
+        if (!(await checkProfileAccess(req, req.params.profileId))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         const log = await prisma.daily_adherence_logs.upsert({
             where: {
                 profile_id_date_meal_type_category: {
@@ -1261,3 +1587,4 @@ router.post('/adherence/:profileId', verifyToken, async (req, res) => {
 });
 
 export default router;
+// Restart trigger comment to reload prisma client.

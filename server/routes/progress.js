@@ -14,7 +14,12 @@ router.get('/today', verifyToken, async (req, res) => {
     try {
         let activeProfileId = profileId;
 
-        if (!activeProfileId) {
+        if (activeProfileId) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(activeProfileId)) {
+                return res.status(400).json({ message: 'Invalid Profile ID format' });
+            }
+        } else {
             // Fallback: Get first child profile linked to user
             const profile = await prisma.profiles.findFirst({
                 where: { user_id: userId },
@@ -25,6 +30,17 @@ router.get('/today', verifyToken, async (req, res) => {
             }
             activeProfileId = profile.id;
         }
+
+        // Verify authorization
+        const profile = await prisma.profiles.findUnique({ where: { id: activeProfileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to progress log' });
 
         // Get log
         const log = await prisma.daily_logs.findUnique({
@@ -51,13 +67,24 @@ router.get('/today', verifyToken, async (req, res) => {
 router.post('/water', verifyToken, async (req, res) => {
     const userId = req.user.id;
     const { action, profileId } = req.body; // 'increment' or 'decrement'
+
+    // Input Validation
+    if (!action || !['increment', 'decrement'].includes(action)) {
+        return res.status(400).json({ message: 'Invalid action. Must be "increment" or "decrement"' });
+    }
+
     const todayStr = new Date().toISOString().split('T')[0];
     const today = new Date(todayStr);
 
     try {
         let activeProfileId = profileId;
 
-        if (!activeProfileId) {
+        if (activeProfileId) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(activeProfileId)) {
+                return res.status(400).json({ message: 'Invalid Profile ID format' });
+            }
+        } else {
             const profile = await prisma.profiles.findFirst({
                 where: { user_id: userId },
                 select: { id: true }
@@ -65,6 +92,17 @@ router.post('/water', verifyToken, async (req, res) => {
             if (!profile) return res.status(404).json({ message: 'No profile' });
             activeProfileId = profile.id;
         }
+
+        // Verify authorization
+        const profile = await prisma.profiles.findUnique({ where: { id: activeProfileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized to log progress data' });
 
         // Upsert logic
         const existingLog = await prisma.daily_logs.findUnique({

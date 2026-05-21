@@ -8,6 +8,7 @@ const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', 
         outline: 'border-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white dark:hover:text-gray-900',
         secondary: 'border-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:bg-[var(--color-divider)] hover:text-[var(--color-text-main)] bg-[var(--color-bg-page)] dark:hover:bg-white/10',
         ghost: 'text-[var(--color-text-muted)] hover:bg-gray-100 hover:text-[var(--color-text-main)] dark:hover:bg-white/5 dark:text-[var(--color-text-muted)] dark:hover:text-white',
+        none: '',
     };
 
     const sizes = {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -8,6 +9,7 @@ import { useProfile } from '../context/ProfileContext';
 import { useLoading } from '../context/LoadingContext';
 import { DailyPlanSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
+
 
 // Static Food Exchange Dictionary
 const FEL_DICTIONARY = {
@@ -43,6 +45,16 @@ const FEL_DICTIONARY = {
     }
 };
 
+const isSnackMatch = (mealPlanType, checklistMealName) => {
+    if (!mealPlanType || !checklistMealName) return false;
+    const pt = mealPlanType.toLowerCase();
+    const ct = checklistMealName.toLowerCase();
+    if (pt === 'snack' && (ct === 'am snack' || ct === 'pm snack')) {
+        return true;
+    }
+    return pt === ct;
+};
+
 export default function DailyPlan() {
     const { selectedProfile, loading: profileLoading } = useProfile();
     const { startLoading, stopLoading } = useLoading();
@@ -51,6 +63,7 @@ export default function DailyPlan() {
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [expandedMeal, setExpandedMeal] = useState("Breakfast");
     const [activeSwap, setActiveSwap] = useState(null);
+    const [scheduledMeals, setScheduledMeals] = useState([]);
 
     useEffect(() => {
         const fetchPlan = async () => {
@@ -61,15 +74,25 @@ export default function DailyPlan() {
             try {
                 startLoading('Loading Daily Plan...');
                 const currentDate = format(new Date(), 'yyyy-MM-dd');
-                
-                // Fetch matrix and adherence in parallel
-                const [matrixRes, adherenceRes] = await Promise.all([
+
+                // Fetch matrix, adherence, and scheduled meal plans in parallel
+                const [matrixRes, adherenceRes, plansRes] = await Promise.all([
                     api.get(`/nutritionist/portion-plan/${selectedProfile.id}`),
-                    api.get(`/nutritionist/adherence/${selectedProfile.id}?date=${currentDate}`)
+                    api.get(`/nutritionist/adherence/${selectedProfile.id}?date=${currentDate}`),
+                    api.get('/meals/plans', { params: { profileId: selectedProfile.id } })
                 ]);
-                
+
                 const matrix = matrixRes.data;
                 const adherenceLogs = adherenceRes.data || [];
+                const allPlans = plansRes.data || [];
+
+                // Filter scheduled meals for today's local date
+                const todayStr = format(new Date(), 'yyyy-MM-dd');
+                const todaysScheduled = allPlans.filter(p => {
+                    const planDateStr = format(new Date(p.date), 'yyyy-MM-dd');
+                    return planDateStr === todayStr;
+                });
+                setScheduledMeals(todaysScheduled);
 
                 const times = {
                     'Breakfast': '8:00 AM',
@@ -105,9 +128,9 @@ export default function DailyPlan() {
                         if (mealRow[key]) {
                             const categoryName = key.charAt(0).toUpperCase() + key.slice(1);
                             // Check if this specific item was completed today
-                            const isCompleted = adherenceLogs.some(log => 
-                                log.meal_type === mealRow.meal_type && 
-                                log.category.toLowerCase() === key && 
+                            const isCompleted = adherenceLogs.some(log =>
+                                log.meal_type === mealRow.meal_type &&
+                                log.category.toLowerCase() === key &&
                                 log.completed
                             );
                             items.push({
@@ -143,7 +166,7 @@ export default function DailyPlan() {
         const newPlan = [...plan];
         const item = newPlan[mealIndex].items[itemIndex];
         const newCompletedStatus = !item.completed;
-        
+
         // Optimistic UI update
         item.completed = newCompletedStatus;
         setPlan(newPlan);
@@ -165,6 +188,20 @@ export default function DailyPlan() {
             setPlan(revertedPlan);
         }
     };
+
+    const toggleScheduledMeal = async (mealId) => {
+        // Optimistic UI update
+        setScheduledMeals(prev => prev.map(m => m.id === mealId ? { ...m, is_consumed: !m.is_consumed } : m));
+
+        try {
+            await api.patch(`/meals/plans/${mealId}/toggle`);
+        } catch (err) {
+            console.error("Failed to toggle scheduled meal consumption", err);
+            // Revert on failure
+            setScheduledMeals(prev => prev.map(m => m.id === mealId ? { ...m, is_consumed: !m.is_consumed } : m));
+        }
+    };
+
 
     const calculateProgress = () => {
         const totals = {
@@ -224,8 +261,9 @@ export default function DailyPlan() {
                 <p className="text-[var(--color-text-muted)] mt-1 font-medium">Follow the prescribed food exchange list for {selectedProfile.child_name}. Tap any item to see swap options.</p>
 
                 {sugarLimit && (
-                    <div className="mt-4 bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-900/30 p-3 rounded-xl flex items-center justify-center">
-                        <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-[0.2em] text-center">
+                    <div className="mt-4 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-900/30 p-3 rounded-xl">
+                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">Nutritionist Clinical Note</p>
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 leading-relaxed">
                             {sugarLimit}
                         </span>
                     </div>
@@ -292,6 +330,62 @@ export default function DailyPlan() {
 
                             {isExpanded && (
                                 <CardContent className="p-0">
+                                    {scheduledMeals.find(sm => isSnackMatch(sm.meal_type, meal.meal)) && (
+                                        (() => {
+                                            const sm = scheduledMeals.find(sm => isSnackMatch(sm.meal_type, meal.meal));
+                                            const isRealRecipe = sm.recipe_id && !sm.recipe_id.startsWith('ai-gen-') && !sm.recipe_id.startsWith('manual-');
+                                            return (
+                                                <div className="p-4 sm:p-6 bg-gradient-to-br from-[var(--color-primary)]/5 to-[var(--color-secondary)]/5 border-b-2 border-[var(--color-divider)]">
+                                                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                                                        <div className="flex gap-4 items-center flex-1 min-w-0">
+                                                            {sm.image_url ? (
+                                                                <img src={sm.image_url} alt={sm.recipe_name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-sm border border-[var(--color-divider)] flex-shrink-0" />
+                                                            ) : (
+                                                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-divider)] flex-shrink-0">
+                                                                    <Utensils size={28} />
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0 flex-1">
+                                                                <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em] block mb-1">Prescribed Recommendation</span>
+                                                                <h4 className="text-sm sm:text-base font-black text-[var(--color-secondary)] leading-tight uppercase tracking-tight truncate">{sm.recipe_name}</h4>
+                                                                <div className="flex flex-wrap gap-x-2.5 gap-y-1 mt-2 text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] tracking-tight">
+                                                                    <span className="flex items-center gap-1"><Flame size={12} className="text-amber-500" /> {sm.calories || 0} kcal</span>
+                                                                    <span>•</span>
+                                                                    <span>P: {sm.protein_g || 0}g</span>
+                                                                    <span>•</span>
+                                                                    <span>C: {sm.carbs_g || 0}g</span>
+                                                                    <span>•</span>
+                                                                    <span>F: {sm.fats_g || 0}g</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex sm:flex-col gap-2 w-full sm:w-auto items-stretch sm:items-end flex-shrink-0">
+                                                            <button
+                                                                onClick={() => toggleScheduledMeal(sm.id)}
+                                                                className={cn(
+                                                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all h-10",
+                                                                    sm.is_consumed 
+                                                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/25" 
+                                                                        : "bg-white dark:bg-transparent border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]"
+                                                                )}
+                                                            >
+                                                                <CheckCircle2 size={14} />
+                                                                {sm.is_consumed ? "Consumed" : "Mark Consumed"}
+                                                            </button>
+                                                            {isRealRecipe && (
+                                                                <Link 
+                                                                    to={`/meals/${sm.recipe_id}`}
+                                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105 h-10 shadow-md shadow-[var(--color-primary)]/20 text-center"
+                                                                >
+                                                                    View Recipe
+                                                                </Link>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()
+                                    )}
                                     <div className="divide-y-2 divide-[var(--color-divider)]">
                                         {meal.items.map((item, itemIdx) => {
                                             const dict = FEL_DICTIONARY[item.category];

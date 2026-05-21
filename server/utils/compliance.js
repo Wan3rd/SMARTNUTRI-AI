@@ -76,8 +76,11 @@ function calculateComplianceScore(rules, analysis, dailyTotals) {
             const excessRatio = (cumulativeTotal - limit) / limit;
             const penalty = Math.min(weightPerRule, weightPerRule * excessRatio);
             totalScore -= penalty;
+        } else if (rule.rule_type === 'min' && cumulativeTotal < limit) {
+            const deficitRatio = (limit - cumulativeTotal) / limit;
+            const penalty = Math.min(weightPerRule, weightPerRule * deficitRatio);
+            totalScore -= penalty;
         }
-        // Min rules could be added here for end-of-day scoring
     });
 
     return Math.max(0, Math.round(totalScore));
@@ -115,13 +118,14 @@ function evaluateStructuredRule(rule, analysis, dailyTotals, violations, xaiMess
     const currentDaily = dailyTotals[category] || 0;
     const cumulativeTotal = currentDaily + mealValue;
 
-    if (cumulativeTotal === 0 && mealValue === 0) return;
+    // Only skip zero checks for max rules, as a min rule with zero cumulative total is a violation
+    if (rule.rule_type?.toLowerCase() === 'max' && cumulativeTotal === 0 && mealValue === 0) return;
 
     const limit = parseFloat(rule.rule_value);
     let isViolated = false;
     let deficit = 0;
 
-    switch (rule.rule_type.toLowerCase()) {
+    switch (rule.rule_type?.toLowerCase()) {
         case 'max':
             if (cumulativeTotal > limit) {
                 isViolated = true;
@@ -129,9 +133,10 @@ function evaluateStructuredRule(rule, analysis, dailyTotals, violations, xaiMess
             }
             break;
         case 'min':
-            // For minimum goals, we usually only flag at End of Day, 
-            // but for realtime, maybe we just show progress.
-            // Let's only flag "max" rules for immediate compliance warnings.
+            if (cumulativeTotal < limit) {
+                isViolated = true;
+                deficit = limit - cumulativeTotal;
+            }
             break;
     }
 
@@ -145,12 +150,15 @@ function evaluateStructuredRule(rule, analysis, dailyTotals, violations, xaiMess
         });
 
         // XAI Feedback generation
-        const topItem = analysis.items?.sort((a, b) => b[getMacroKey(category)] - a[getMacroKey(category)])[0];
-        
-        if (topItem && getMacroKey(category)) {
-            xaiMessages.push(`Your intake of ${cumulativeTotal}${rule.rule_unit || ''} ${category} exceeds the daily limit by ${deficit}${rule.rule_unit || ''}. The highest contributor in this meal was ${topItem.name} (${topItem[getMacroKey(category)]}${rule.rule_unit || ''}). Consider smaller portions for this item next time.`);
+        if (rule.rule_type?.toLowerCase() === 'min') {
+            xaiMessages.push(`Your cumulative intake of ${cumulativeTotal}${rule.rule_unit || ''} ${category} is below the minimum daily requirement of ${limit}${rule.rule_unit || ''} (deficit of ${deficit}${rule.rule_unit || ''}). Try adding ${category}-rich foods to your next meal.`);
         } else {
-            xaiMessages.push(`This meal pushes your daily ${category} to ${cumulativeTotal}${rule.rule_unit || ''}, exceeding your target limit of ${limit}.`);
+            const topItem = analysis.items?.sort((a, b) => b[getMacroKey(category)] - a[getMacroKey(category)])[0];
+            if (topItem && getMacroKey(category)) {
+                xaiMessages.push(`Your intake of ${cumulativeTotal}${rule.rule_unit || ''} ${category} exceeds the daily limit by ${deficit}${rule.rule_unit || ''}. The highest contributor in this meal was ${topItem.name} (${topItem[getMacroKey(category)]}${rule.rule_unit || ''}). Consider smaller portions for this item next time.`);
+            } else {
+                xaiMessages.push(`This meal pushes your daily ${category} to ${cumulativeTotal}${rule.rule_unit || ''}, exceeding your target limit of ${limit}.`);
+            }
         }
     }
 }
@@ -216,7 +224,8 @@ function evaluateLegacyRule(rule, analysis, dailyTotals, violations, xaiMessages
     const currentDaily = dailyTotals[category] || 0;
     const cumulativeTotal = currentDaily + mealValue;
 
-    if (cumulativeTotal === 0 && mealValue === 0) return;
+    // Only skip zero checks for max rules, as a min rule with zero cumulative total is a violation
+    if (type === 'max' && cumulativeTotal === 0 && mealValue === 0) return;
 
     let isViolated = false;
     let deficit = 0;
@@ -224,8 +233,10 @@ function evaluateLegacyRule(rule, analysis, dailyTotals, violations, xaiMessages
     if (type === 'max' && cumulativeTotal > limit) {
         isViolated = true;
         deficit = cumulativeTotal - limit;
+    } else if (type === 'min' && cumulativeTotal < limit) {
+        isViolated = true;
+        deficit = limit - cumulativeTotal;
     }
-    // Ignoring min for real-time flagging for now, unless end-of-day
 
     if (isViolated) {
         violations.push({
@@ -235,15 +246,19 @@ function evaluateLegacyRule(rule, analysis, dailyTotals, violations, xaiMessages
         });
 
         // XAI Feedback generation
-        const topItem = analysis.items?.sort((a, b) => b[getMacroKey(category)] - a[getMacroKey(category)])[0];
-        
-        if (topItem && getMacroKey(category)) {
-            xaiMessages.push(`Your ${category} intake of ${cumulativeTotal} exceeds the ${limit} limit. The highest contributor was ${topItem.name} (${topItem[getMacroKey(category)]}). Consider substituting this item next time.`);
+        if (type === 'min') {
+            xaiMessages.push(`Your cumulative ${category} intake of ${cumulativeTotal} is below the minimum daily target of ${limit} (deficit of ${deficit}).`);
         } else {
-            xaiMessages.push(`This meal pushes your daily ${category} to ${cumulativeTotal}, exceeding your target limit of ${limit}.`);
+            const topItem = analysis.items?.sort((a, b) => b[getMacroKey(category)] - a[getMacroKey(category)])[0];
+            if (topItem && getMacroKey(category)) {
+                xaiMessages.push(`Your ${category} intake of ${cumulativeTotal} exceeds the ${limit} limit. The highest contributor was ${topItem.name} (${topItem[getMacroKey(category)]}). Consider substituting this item next time.`);
+            } else {
+                xaiMessages.push(`This meal pushes your daily ${category} to ${cumulativeTotal}, exceeding your target limit of ${limit}.`);
+            }
         }
     }
 }
+
 /**
  * Re-validates all meal logs for a profile against the current rules.
  * This should be called when rules are updated/deleted.

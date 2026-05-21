@@ -28,8 +28,8 @@ export default function ResetPassword() {
         if (password !== confirmPassword) {
             return setMessage({ type: 'error', text: 'Passwords do not match.' });
         }
-        if (password.length < 6) {
-            return setMessage({ type: 'error', text: 'Password must be at least 6 characters.' });
+        if (password.length < 8) {
+            return setMessage({ type: 'error', text: 'Password must be at least 8 characters.' });
         }
 
         setLoading(true);

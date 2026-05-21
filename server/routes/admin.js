@@ -416,6 +416,20 @@ router.get('/users/:id/details', verifyAdmin, async (req, res) => {
 router.post('/users', verifyAdmin, async (req, res) => {
     const { email, password, full_name, role, professional_id, clinic } = req.body;
 
+    // Input Validation
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase())) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
+    if (!password || typeof password !== 'string' || password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+        return res.status(400).json({ message: 'Full name is required (minimum 2 characters)' });
+    }
+    if (!role || !['parent', 'nutritionist', 'admin'].includes(role)) {
+        return res.status(400).json({ message: 'Role must be one of: parent, nutritionist, admin' });
+    }
+
     try {
         // Check if user exists
         const userExist = await prisma.users.findUnique({
@@ -546,19 +560,8 @@ router.get('/users/:id/audit', verifyAdmin, async (req, res) => {
     }
 });
 
-// POST /admin/broadcast - Create a system-wide announcement
-router.get('/announcements', verifyAdmin, async (req, res) => {
-    try {
-        const announcements = await prisma.announcements.findMany({
-            orderBy: { created_at: 'desc' },
-            include: { admin: { select: { full_name: true } } }
-        });
-        res.json(announcements);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to fetch announcements' });
-    }
-});
+// NOTE: GET /admin/announcements is defined below at the management section.
+// The duplicate handler that was here has been removed — Express only matched the first one.
 
 router.post('/broadcast', verifyAdmin, async (req, res) => {
     const { title, content, target_role, priority, expires_at } = req.body;
