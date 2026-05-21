@@ -205,6 +205,18 @@ textarea {
   animation: spin-slow 3s linear infinite;
 }
 
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
+
 /* Custom Sidebar Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;

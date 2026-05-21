@@ -521,37 +521,58 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         <Card className="border-2 border-[var(--color-primary)]/20 relative overflow-hidden">
             <CardContent className="p-0">
                 {(status === 'saving' || status === 'syncing') && (
-                    <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden rounded-t-xl">
-                        {/* Ambient Glowing Orbs */}
-                        <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[60px] animate-pulse" />
-                        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />
+                    <div className="absolute inset-0 bg-zinc-50/90 dark:bg-zinc-950/95 backdrop-blur-2xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500 select-none overflow-hidden rounded-xl border border-[var(--color-primary)]/20 shadow-2xl">
+                        {/* Glassmorphic Grid Pattern Overlay */}
+                        <div className="absolute inset-0 opacity-15 dark:opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
 
-                        {/* Dual Spinning Ring Spinner */}
-                        <div className="relative flex items-center justify-center w-24 h-24">
-                            {/* Outer Slow Ring */}
-                            <div className="absolute inset-0 border-4 border-dashed border-[var(--color-primary)]/30 rounded-full animate-[spin_10s_linear_infinite]" />
-                            {/* Middle Flowing Ring */}
-                            <div className="absolute inset-2 border-4 border-t-[var(--color-primary)] border-r-[var(--color-secondary)] border-b-transparent border-l-transparent rounded-full animate-spin" />
-                            {/* Inner Pulsing Core */}
-                            <div className="absolute inset-4 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shadow-inner">
-                                <ChefHat className="text-[var(--color-primary)] animate-pulse" size={24} />
+                        {/* Animated Laser Scan Line */}
+                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-primary)] to-transparent opacity-80 shadow-[0_0_12px_var(--color-primary)] animate-[scan_3s_ease-in-out_infinite]" />
+
+                        {/* Ambient Deep Glow Orbs */}
+                        <div className="absolute -top-12 -left-12 w-64 h-64 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[80px] animate-pulse" />
+                        <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1.5s' }} />
+
+                        {/* Futuristic Multi-Layered Orbital Engine */}
+                        <div className="relative flex items-center justify-center w-32 h-32 scale-95 sm:scale-100">
+                            {/* Inner Pulsing Radar Glow */}
+                            <div className="absolute inset-0 bg-[var(--color-primary)]/5 rounded-full animate-ping opacity-60" style={{ animationDuration: '3s' }} />
+                            {/* Outer Dotted Rotating Boundary */}
+                            <div className="absolute inset-0 border-[2px] border-dashed border-[var(--color-primary)]/20 rounded-full animate-[spin_25s_linear_infinite]" />
+                            {/* Segmented Gradient Fast Ring */}
+                            <div className="absolute inset-3 border-[4px] border-transparent border-t-[var(--color-primary)] border-r-[var(--color-secondary)] rounded-full animate-[spin_1.5s_cubic-bezier(0.53,0.21,0.29,0.67)_infinite]" />
+                            {/* Counter-rotating Thin Ring */}
+                            <div className="absolute inset-6 border-[1px] border-dashed border-indigo-400/40 rounded-full animate-[spin_8s_linear_infinite_reverse]" />
+                            {/* Pulsing Core Plate */}
+                            <div className="absolute inset-8 bg-white dark:bg-zinc-900 border border-[var(--color-divider)] rounded-full flex items-center justify-center shadow-lg relative z-10">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-indigo-500/10 dark:from-emerald-500/20 dark:to-indigo-500/20 rounded-full animate-pulse" />
+                                <ChefHat className="text-[var(--color-primary)] animate-bounce relative z-10 filter drop-shadow-[0_2px_4px_rgba(16,185,129,0.3)]" size={32} />
                             </div>
                         </div>
 
-                        {/* Texts */}
-                        <div className="text-center mt-8 space-y-3 max-w-xs z-10">
-                            <h4 className="text-lg font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-widest animate-pulse">
-                                {status === 'syncing' ? 'Syncing Clinical Data...' : 'Saving Meal Log...'}
-                            </h4>
-                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
-                                {status === 'syncing' 
-                                    ? 'Aligning portion sizes & nutritional macros'
-                                    : 'Uploading images & updating client record'}
-                            </p>
-                            <div className="flex justify-center gap-1.5 pt-1">
-                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        {/* Info & Status Typography */}
+                        <div className="text-center mt-8 space-y-4 max-w-xs z-10">
+                            {/* Clinical Engine Active Badge */}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]" />
+                                <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-wider">compliance engine active</span>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <h4 className="text-lg font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-widest leading-none">
+                                    {status === 'syncing' ? 'Syncing Clinical Data...' : 'Saving Meal Log...'}
+                                </h4>
+                                <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
+                                    {status === 'syncing' 
+                                        ? 'Aligning portion sizes & nutritional macros'
+                                        : 'Uploading images & updating client record'}
+                                </p>
+                            </div>
+
+                            {/* Flowing Pipeline Progress Dots */}
+                            <div className="flex justify-center gap-2 pt-2">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                             </div>
                         </div>
                     </div>
