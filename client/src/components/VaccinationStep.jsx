@@ -91,7 +91,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                             <div 
                                 key={type.id}
                                 onClick={() => toggleVaccine(type)}
-                                className={`group cursor-pointer p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${isSelected ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 shadow-md' : 'bg-[var(--color-bg-page)] border-slate-200 dark:border-[var(--color-divider)] hover:border-emerald-300'}`}
+                                className={`group cursor-pointer p-4 rounded-2xl border-2 transition-all active:scale-[0.98] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${isSelected ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 shadow-md' : 'bg-[var(--color-bg-page)] border-slate-200 dark:border-[var(--color-divider)] hover:border-emerald-300'}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-500'}`}>
@@ -109,14 +109,14 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                                                 type="date" 
                                                 value={vaccineData?.date_administered || ''}
                                                 onChange={(e) => updateVaccine(type.id, { date_administered: e.target.value })}
-                                                className="text-[10px] bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-lg p-1.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                className="text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none w-full sm:w-auto"
                                             />
                                             <input 
                                                 type="text"
                                                 placeholder="Batch # / Notes"
                                                 value={vaccineData?.notes || ''}
                                                 onChange={(e) => updateVaccine(type.id, { notes: e.target.value })}
-                                                className="flex-1 sm:w-32 text-[10px] bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-lg p-1.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none placeholder:opacity-50"
+                                                className="flex-1 w-full sm:w-32 text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none placeholder:opacity-50"
                                             />
                                         </div>
                                         <CheckCircle className="text-emerald-500 hidden sm:block" size={18} />

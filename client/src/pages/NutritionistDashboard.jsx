@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock } from 'lucide-react';
+import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoading } from '../context/LoadingContext';
 import { cn } from '../lib/utils';
@@ -13,14 +13,14 @@ import { motion } from 'framer-motion';
 import AddClientModal from '../components/AddClientModal';
 import CreatePatientModal from '../components/CreatePatientModal';
 import ReviewLogModal from '../components/ReviewLogModal';
-import Notification from '../components/common/Notification';
+import { useNotification } from '../context/NotificationContext';
 import { DashboardSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 import AnimatedNumber from '../components/common/AnimatedNumber';
 
 
 
 export default function NutritionistDashboard() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const [clients, setClients] = useState([]);
@@ -34,19 +34,17 @@ export default function NutritionistDashboard() {
     const [selectedLog, setSelectedLog] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewStatus, setViewStatus] = useState('active');
-    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    const { showNotification } = useNotification();
 
     const showNotif = (message, type = 'success') => {
-        setNotif({ show: true, message, type });
+        showNotification(message, type);
     };
 
     useEffect(() => {
         const loadNutritionistData = async () => {
             if (user?.role === 'nutritionist' && user?.status === 'approved') {
-                startLoading('Syncing Clinical Command Center...');
                 await fetchData();
                 setIsInitialSync(false);
-                stopLoading();
             } else {
                 setIsInitialSync(false);
             }
@@ -75,49 +73,86 @@ export default function NutritionistDashboard() {
 
     if (user?.role === 'nutritionist' && user?.status !== 'approved') {
         return (
-            <div className="min-h-[85vh] flex flex-col items-center justify-center p-6 bg-[var(--color-bg-page)] font-outfit">
-                <div className="w-full max-w-xl space-y-12 text-center animate-in fade-in zoom-in duration-700">
+            <div className="min-h-[75vh] w-full flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-outfit py-4 sm:py-8 rounded-3xl animate-in fade-in duration-500">
+                {/* Mesh Background */}
+                <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-20 rounded-3xl">
+                    <div className="absolute inset-0 mesh-emerald opacity-60" />
+                </div>
+
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="w-full max-w-xl glass rounded-[2rem] sm:rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl p-5 sm:p-8 text-center relative z-10 space-y-5 sm:space-y-7"
+                >
                     {/* ── MINIMAL STATUS INDICATOR ── */}
                     <div className="relative inline-flex items-center justify-center">
-                        <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-                        <div className="relative h-20 w-20 rounded-[1.5rem] bg-white dark:bg-zinc-900 border-2 border-[var(--color-divider)] flex items-center justify-center text-emerald-500 shadow-xl">
-                            <ShieldAlert size={32} />
-                        </div>
+                        <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
+                        <motion.div 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-[1.5rem] bg-white dark:bg-zinc-900 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-xl transition-all"
+                        >
+                            <ShieldAlert size={28} className="sm:size-[32px] animate-bounce" />
+                        </motion.div>
                     </div>
 
                     {/* ── WELL-INFORMED MESSAGING ── */}
-                    <div className="space-y-4">
-                        <h1 className="text-4xl font-black text-[var(--color-text-main)] tracking-tight">Clinical Verification <span className="text-emerald-500">Pending</span></h1>
-                        <p className="text-[var(--color-text-muted)] text-lg font-medium leading-relaxed max-w-lg mx-auto">
-                            Hello, <span className="text-[var(--color-text-main)] font-bold">Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance and data security.
+                    <div className="space-y-2.5 sm:space-y-3">
+                        <h1 className="text-2xl sm:text-4xl font-black text-[var(--color-text-main)] tracking-tight leading-tight uppercase">
+                            Clinical Verification <br className="sm:hidden" />
+                            <span className="text-emerald-500">Pending</span>
+                        </h1>
+                        <p className="text-[var(--color-text-muted)] text-xs sm:text-sm font-semibold leading-relaxed max-w-md mx-auto">
+                            Hello, <span className="text-[var(--color-text-main)] font-black">Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance and data security.
                         </p>
                     </div>
 
                     {/* ── INFORMATION GRID ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                        <div className="p-6 bg-[var(--color-bg-card)] rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm hover:shadow-md transition-all group">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                        <motion.div 
+                            whileHover={{ y: -4 }}
+                            className="p-5 sm:p-6 bg-white/40 dark:bg-black/10 backdrop-blur-md rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm transition-all group"
+                        >
                             <div className="h-10 w-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 mb-4 transition-transform group-hover:scale-110">
                                 <Clock size={20} />
                             </div>
-                            <h3 className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Audit Timeline</h3>
-                            <p className="text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">Standard verification typically takes <span className="text-[var(--color-text-main)] font-bold">12-24 business hours</span>.</p>
-                        </div>
-                        <div className="p-6 bg-[var(--color-bg-card)] rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm hover:shadow-md transition-all group">
+                            <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Audit Timeline</h3>
+                            <p className="text-xs text-[var(--color-text-muted)] font-bold leading-relaxed">Standard verification typically takes <span className="text-[var(--color-text-main)] font-black">12-24 business hours</span>.</p>
+                        </motion.div>
+                        <motion.div 
+                            whileHover={{ y: -4 }}
+                            className="p-5 sm:p-6 bg-white/40 dark:bg-black/10 backdrop-blur-md rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm transition-all group"
+                        >
                             <div className="h-10 w-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 mb-4 transition-transform group-hover:scale-110">
                                 <Lock size={20} />
                             </div>
-                            <h3 className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Data Status</h3>
-                            <p className="text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">All patient clinical profiles remain <span className="text-[var(--color-text-main)] font-bold">encrypted & secure</span> during this audit.</p>
-                        </div>
+                            <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Data Status</h3>
+                            <p className="text-xs text-[var(--color-text-muted)] font-bold leading-relaxed">All patient clinical profiles remain <span className="text-[var(--color-text-main)] font-black">encrypted & secure</span> during this audit.</p>
+                        </motion.div>
                     </div>
 
                     {/* ── ACTIONS ── */}
-                    <div className="pt-4 flex flex-col items-center gap-6">
-                        <p className="text-xs text-[var(--color-text-muted)] font-bold flex items-center gap-2">
-                            Require assistance? <a href="mailto:clinical@smartnutri.ai" className="text-emerald-500 border-b border-emerald-500/20">Contact Support</a>
+                    <div className="pt-2 sm:pt-4 flex flex-col items-center gap-4">
+                        <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full sm:w-auto"
+                        >
+                            <Button
+                                onClick={logout}
+                                className="w-full sm:w-auto px-8 py-3 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/30 hover:border-red-500/50 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all"
+                            >
+                                <LogOut size={14} />
+                                Sign Out
+                            </Button>
+                        </motion.div>
+                        
+                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-black uppercase tracking-wider flex items-center gap-2">
+                            Require assistance? <a href="mailto:clinical@smartnutri.ai" className="text-emerald-500 border-b-2 border-emerald-500/20 hover:border-emerald-500 transition-all pb-0.5">Contact Support</a>
                         </p>
                     </div>
-                </div>
+                </motion.div>
             </div>
         );
     }
@@ -272,7 +307,7 @@ export default function NutritionistDashboard() {
                                 client.email?.toLowerCase().includes(searchQuery.toLowerCase())
                             )
                             .map((client, index) => {
-                            const clientPendingCount = pendingLogs.filter(log => log.profiles?.user_id === client.id).length;
+                            const clientPendingCount = pendingLogs.filter(log => (log.profile?.user_id || log.profiles?.user_id) === client.id).length;
                             const isArchived = client.status === 'archived';
                             return (
                                 <motion.div
@@ -292,16 +327,16 @@ export default function NutritionistDashboard() {
                                     >
                                         <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
                                             <div className={cn(
-                                                "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0 overflow-hidden",
+                                                "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0",
                                                 isArchived ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                                             )}>
                                                 {client.profile_image_url ? (
-                                                    <img src={client.profile_image_url} alt={client.full_name} className="h-full w-full object-cover" />
+                                                    <img src={client.profile_image_url} alt={client.full_name} className="h-full w-full object-cover rounded-2xl" />
                                                 ) : (
                                                     <Users size={20} className="sm:w-6 sm:h-6" />
                                                 )}
                                                 {!isArchived && clientPendingCount > 0 && (
-                                                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
                                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                                                         <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white dark:border-zinc-900 text-[8px] font-black text-white items-center justify-center">
                                                             {clientPendingCount}
@@ -421,13 +456,6 @@ export default function NutritionistDashboard() {
                     fetchData();
                     showNotif("Review finalized and saved!");
                 }}
-            />
-
-            <Notification
-                show={notif.show}
-                type={notif.type}
-                message={notif.message}
-                onClose={() => setNotif({ ...notif, show: false })}
             />
         </div>
     );

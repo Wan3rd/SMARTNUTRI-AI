@@ -47,10 +47,8 @@ export default function ParentDashboard() {
     useEffect(() => {
         const loadDashboardData = async () => {
             if (selectedProfile) {
-                startLoading('Syncing Child Profile...');
                 await Promise.all([fetchLogs(), fetchRules(), fetchDailyLog()]);
                 setIsInitialSync(false);
-                stopLoading();
             } else if (!profileLoading) {
                 setIsInitialSync(false);
             }

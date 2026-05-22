@@ -10,7 +10,7 @@ import { ProfileSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
-import Notification from '../components/common/Notification';
+import { useNotification } from '../context/NotificationContext';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import AddChildModal from '../components/AddChildModal';
 import AddClientModal from '../components/AddClientModal';
@@ -124,6 +124,7 @@ export default function Profile() {
 
     const { user, logout, updateUser } = useAuth();
     const { startLoading, stopLoading } = useLoading();
+    const { showNotification } = useNotification();
     const navigate = useNavigate();
 
     // Redirect admins away from profile page
@@ -134,7 +135,6 @@ export default function Profile() {
     }, [user, navigate]);
     const [saving, setSaving] = useState(false);
     const [isInitialSync, setIsInitialSync] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' });
     const [isEditing, setIsEditing] = useState(false);
 
     // Nutritionist-specific state
@@ -150,7 +150,6 @@ export default function Profile() {
     });
     const [nutriEditing, setNutriEditing] = useState(false);
     const [nutriSaving, setNutriSaving] = useState(false);
-    const [nutriMsg, setNutriMsg] = useState({ type: '', text: '' });
     const [clientCount, setClientCount] = useState(null);
     const [isLicenseBlurred, setIsLicenseBlurred] = useState(true);
 
@@ -163,7 +162,6 @@ export default function Profile() {
     });
     const [parentEditing, setParentEditing] = useState(false);
     const [parentSaving, setParentSaving] = useState(false);
-    const [parentMsg, setParentMsg] = useState({ type: '', text: '' });
 
     // Using string 'null' or empty string for uninitialized prevents uncontrolled/controlled warnings
     const [profileData, setProfileData] = useState({
@@ -198,7 +196,6 @@ export default function Profile() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [deleteConfirmName, setDeleteConfirmName] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
-    const [notif, setNotif] = useState({ show: false, type: 'success', message: '' });
 
     // Photo Crop & Upload States
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -210,7 +207,6 @@ export default function Profile() {
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            startLoading('Syncing Clinical Identity...');
             try {
                 if (user?.role !== 'nutritionist') {
                     await Promise.all([fetchProfile(), fetchVaccinationData()]);
@@ -246,7 +242,6 @@ export default function Profile() {
                 console.error("Error fetching initial profile data", err);
             } finally {
                 setIsInitialSync(false);
-                stopLoading();
             }
         };
         if (user) fetchInitialData();
@@ -254,7 +249,6 @@ export default function Profile() {
 
     const handleNutriSave = async () => {
         setNutriSaving(true);
-        setNutriMsg({ type: '', text: '' });
         try {
             const res = await api.put('/auth/profile', {
                 full_name: nutri.fullName,
@@ -264,7 +258,7 @@ export default function Profile() {
                 clinic: nutri.clinic,
                 profile_image_url: nutri.profileImageUrl
             });
-            setNutriMsg({ type: 'success', text: 'Nutritionist professional profile updated' });
+            showNotification('Nutritionist professional profile updated', 'success');
 
             // Sync with global auth state
             if (updateUser) {
@@ -278,7 +272,7 @@ export default function Profile() {
             setNutriEditing(false);
         } catch (err) {
             console.error(err);
-            setNutriMsg({ type: 'error', text: 'Failed to synchronize clinical profile' });
+            showNotification('Failed to synchronize clinical profile', 'error');
         } finally {
             setNutriSaving(false);
         }
@@ -286,14 +280,13 @@ export default function Profile() {
 
     const handleParentSave = async () => {
         setParentSaving(true);
-        setParentMsg({ type: '', text: '' });
         try {
             await api.put('/auth/profile', {
                 full_name: parentData.fullName,
                 phone: parentData.phone,
                 profile_image_url: parentData.profileImageUrl
             });
-            setParentMsg({ type: 'success', text: 'Account information updated' });
+            showNotification('Account information updated', 'success');
 
             if (updateUser) {
                 updateUser({
@@ -305,7 +298,7 @@ export default function Profile() {
             setParentEditing(false);
         } catch (err) {
             console.error(err);
-            setParentMsg({ type: 'error', text: 'Failed to update account details' });
+            showNotification('Failed to update account details', 'error');
         } finally {
             setParentSaving(false);
         }
@@ -527,10 +520,10 @@ export default function Profile() {
             setChildVaccinations([res.data, ...childVaccinations]);
             setIsAddingVaccine(false);
             setNewVaccine({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
-            setMessage({ type: 'success', text: 'Vaccination record added' });
+            showNotification('Vaccination record added', 'success');
         } catch (err) {
             console.error("Error adding vaccine", err);
-            setMessage({ type: 'error', text: 'Failed to add immunization record' });
+            showNotification('Failed to add immunization record', 'error');
         }
     };
 
@@ -543,8 +536,7 @@ export default function Profile() {
                 try {
                     await api.delete(`/profiles/vaccinations/${id}`);
                     setChildVaccinations(childVaccinations.filter(v => v.id !== id));
-                    if (user?.role === 'nutritionist') setNutriMsg({ type: 'success', text: 'Removed' });
-                    else setMessage({ type: 'success', text: 'Removed' });
+                    showNotification('Removed', 'success');
                 } catch (err) {
                     console.error("Error deleting vaccine", err);
                 }
@@ -641,7 +633,7 @@ export default function Profile() {
                 });
 
                 setNutri(prev => ({ ...prev, licenseImageUrl: res.data.user.license_image_url }));
-                setNutriMsg({ type: 'success', text: 'Credential document uploaded' });
+                showNotification('Credential document uploaded', 'success');
             } else {
                 const formData = new FormData();
                 formData.append('photo', croppedBlob, 'profile.jpg');
@@ -651,9 +643,9 @@ export default function Profile() {
                 });
                 setProfileData(prev => ({ ...prev, profileImageUrl: res.data.profile_image_url }));
             }
-            if (cropTarget === 'nutritionist') setNutriMsg({ type: 'success', text: 'Profile photo updated' });
-            else if (cropTarget === 'parent') setParentMsg({ type: 'success', text: 'Account photo updated' });
-            else setMessage({ type: 'success', text: 'Child profile photo updated' });
+            if (cropTarget === 'nutritionist') showNotification('Profile photo updated', 'success');
+            else if (cropTarget === 'parent') showNotification('Account photo updated', 'success');
+            else showNotification('Child profile photo updated', 'success');
 
             setImageToCrop(null);
         } catch (err) {
@@ -687,7 +679,7 @@ export default function Profile() {
                 setSelectedProfileId(null);
             }
 
-            setNotif({ show: true, type: 'success', message: 'Profile deleted successfully' });
+            showNotification('Profile deleted successfully', 'success');
         } catch (err) {
             console.error('Delete error:', err);
         } finally {
@@ -697,8 +689,6 @@ export default function Profile() {
 
     const handleSave = async () => {
         setSaving(true);
-        setMessage({ type: '', text: '' });
-
         try {
             // Calculate rough DOB from age again
             const dob = new Date();
@@ -728,11 +718,11 @@ export default function Profile() {
                 medical_history: profileData.medicalHistory
             });
 
-            setMessage({ type: 'success', text: 'Child clinical profile updated' });
+            showNotification('Child clinical profile updated', 'success');
             setIsEditing(false);
         } catch (err) {
             console.error(err);
-            setMessage({ type: 'error', text: 'Failed to update clinical profile data' });
+            showNotification('Failed to update clinical profile data', 'error');
         } finally {
             setSaving(false);
         }
@@ -848,12 +838,7 @@ export default function Profile() {
                     ))}
                 </motion.div>
 
-                <Notification
-                    show={!!nutriMsg.text}
-                    type={nutriMsg.type}
-                    message={nutriMsg.text}
-                    onClose={() => setNutriMsg({ type: '', text: '' })}
-                />
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* ── PROFESSIONAL IDENTITY ── */}
@@ -1178,12 +1163,7 @@ export default function Profile() {
                     </div>
                 )}
 
-                <Notification
-                    show={!!parentMsg.text}
-                    type={parentMsg.type}
-                    message={parentMsg.text}
-                    onClose={() => setParentMsg({ type: '', text: '' })}
-                />
+
             </motion.div>
 
             {/* Divider */}
@@ -1351,12 +1331,7 @@ export default function Profile() {
                 </div>
             </motion.div>
 
-            <Notification
-                show={!!message.text}
-                type={message.type}
-                message={message.text}
-                onClose={() => setMessage({ type: '', text: '' })}
-            />
+
 
             {/* Profile Form Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
@@ -1947,12 +1922,7 @@ export default function Profile() {
                 </div>
             )}
 
-            <Notification
-                show={notif.show}
-                type={notif.type}
-                message={notif.message}
-                onClose={() => setNotif({ ...notif, show: false })}
-            />
+
 
             <ConfirmDialog
                 {...confirmDialog}

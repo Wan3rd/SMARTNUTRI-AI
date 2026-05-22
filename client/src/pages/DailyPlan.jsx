@@ -72,7 +72,6 @@ export default function DailyPlan() {
                 return;
             }
             try {
-                startLoading('Loading Daily Plan...');
                 const currentDate = format(new Date(), 'yyyy-MM-dd');
 
                 // Fetch matrix, adherence, and scheduled meal plans in parallel
@@ -155,7 +154,6 @@ export default function DailyPlan() {
             } catch (err) {
                 console.error("Failed to fetch portion plan", err);
             } finally {
-                stopLoading();
                 setIsInitialSync(false);
             }
         };

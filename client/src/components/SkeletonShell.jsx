@@ -164,3 +164,198 @@ export const DailyPlanSkeleton = () => (
         </div>
     </div>
 );
+
+export const CalendarSkeleton = () => (
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="space-y-2">
+            <SkeletonLoader className="h-9 w-48 rounded-2xl" />
+            <SkeletonLoader className="h-4 w-72 rounded-xl" />
+        </div>
+
+        {/* Calendar Navigation Header */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-white/5 p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+            <div className="space-y-2">
+                <SkeletonLoader className="h-6 w-32 rounded-lg" />
+                <SkeletonLoader className="h-3.5 w-20 rounded-md" />
+            </div>
+            <div className="flex items-center gap-3">
+                <SkeletonLoader className="h-8 w-16 rounded-xl" />
+                <SkeletonLoader className="h-10 w-24 rounded-xl" />
+            </div>
+        </div>
+
+        {/* Calendar Grid Skeletons */}
+        <div className="space-y-2">
+            {/* Days row */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-4 px-2 mb-2">
+                {[...Array(7)].map((_, i) => (
+                    <SkeletonLoader key={i} className="h-4 w-full rounded-md" />
+                ))}
+            </div>
+            {/* 5 rows of cells */}
+            <div className="space-y-2 sm:space-y-4">
+                {[...Array(5)].map((_, r) => (
+                    <div key={r} className="grid grid-cols-7 gap-2 sm:gap-4">
+                        {[...Array(7)].map((_, c) => (
+                            <div key={c} className="min-h-[60px] sm:min-h-[120px] border-2 border-[var(--color-divider)] p-3 rounded-2xl relative bg-white dark:bg-white/5 flex flex-col justify-between">
+                                <SkeletonLoader className="h-4 w-6 rounded-md" />
+                                <div className="space-y-1.5 mt-4 hidden sm:block">
+                                    <SkeletonLoader className="h-3 w-full rounded-md" />
+                                    <SkeletonLoader className="h-3 w-3/4 rounded-md" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        {/* Selected Day Card Skeleton */}
+        <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-lg">
+            <div className="p-6 sm:p-8 border-b-2 border-[var(--color-divider)] bg-gray-50/50 dark:bg-black/20 flex flex-row items-center justify-between">
+                <div className="space-y-2">
+                    <SkeletonLoader className="h-6 w-40 rounded-xl" />
+                    <SkeletonLoader className="h-3.5 w-24 rounded-md" />
+                </div>
+                <SkeletonLoader className="h-7 w-20 rounded-full" />
+            </div>
+            <CardContent className="p-6 sm:p-8 space-y-4">
+                <SkeletonLoader className="h-24 w-full rounded-2xl" />
+            </CardContent>
+        </Card>
+    </div>
+);
+
+export const RecipeDetailSkeleton = () => (
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+        <SkeletonLoader className="h-10 w-32 rounded-xl" />
+
+        <div className="relative h-64 md:h-80 w-full rounded-3xl overflow-hidden bg-[var(--color-divider)] opacity-10">
+            <div className="absolute bottom-6 left-6 md:left-10 space-y-3">
+                <SkeletonLoader className="h-8 w-64 rounded-lg" />
+                <div className="flex gap-4">
+                    <SkeletonLoader className="h-4 w-20 rounded" />
+                    <SkeletonLoader className="h-4 w-20 rounded" />
+                    <SkeletonLoader className="h-4 w-20 rounded" />
+                </div>
+            </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+            <div className="space-y-6">
+                <Card className="border border-[var(--color-divider)] rounded-[2rem]">
+                    <CardContent className="p-6 space-y-4">
+                        <SkeletonLoader className="h-6 w-36 rounded-lg" />
+                        <div className="grid grid-cols-3 gap-4">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl space-y-2 flex flex-col items-center">
+                                    <SkeletonLoader className="h-3 w-10 rounded" />
+                                    <SkeletonLoader className="h-4 w-12 rounded" />
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-[var(--color-divider)] rounded-[2rem]">
+                    <CardContent className="p-6 space-y-4">
+                        <SkeletonLoader className="h-6 w-36 rounded-lg" />
+                        <div className="space-y-3">
+                            {[...Array(6)].map((_, i) => (
+                                <SkeletonLoader key={i} className="h-4 w-full rounded" />
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="md:col-span-2">
+                <Card className="border border-[var(--color-divider)] rounded-[2rem]">
+                    <CardContent className="p-6 space-y-6">
+                        <SkeletonLoader className="h-6 w-48 rounded-lg" />
+                        <div className="space-y-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="flex gap-4">
+                                    <SkeletonLoader className="h-8 w-8 rounded-full shrink-0" />
+                                    <div className="space-y-2 flex-1">
+                                        <SkeletonLoader className="h-4 w-full rounded" />
+                                        <SkeletonLoader className="h-4 w-5/6 rounded" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    </div>
+);
+
+export const AdminDashboardSkeleton = () => (
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+        <div className="relative overflow-hidden rounded-[2.5rem] border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)]">
+            <div className="p-6 md:p-10 flex flex-col xl:flex-row items-center justify-between gap-8">
+                <div className="text-center xl:text-left space-y-4 flex-1">
+                    <div className="flex items-center justify-center xl:justify-start gap-3">
+                        <SkeletonLoader className="h-10 w-10 rounded-xl" />
+                        <SkeletonLoader className="h-4 w-48 rounded" />
+                    </div>
+                    <SkeletonLoader className="h-12 w-64 rounded-xl" />
+                    <SkeletonLoader className="h-4 w-80 rounded" />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 gap-3 md:gap-4 w-full xl:w-auto">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="p-3 md:p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] min-w-[120px] space-y-3">
+                            <div className="flex items-center justify-between">
+                                <SkeletonLoader className="h-4 w-4 rounded-full" />
+                                <SkeletonLoader className="h-3 w-12 rounded" />
+                            </div>
+                            <SkeletonLoader className="h-6 w-16 rounded" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+
+        <Card className="border border-[var(--color-divider)] rounded-[2rem]">
+            <CardContent className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                    <SkeletonLoader className="h-6 w-48 rounded" />
+                    <SkeletonLoader className="h-4 w-24 rounded" />
+                </div>
+                <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="p-4 border border-[var(--color-divider)] rounded-xl flex items-center justify-between">
+                            <div className="space-y-2">
+                                <SkeletonLoader className="h-4 w-32 rounded" />
+                                <SkeletonLoader className="h-3 w-48 rounded" />
+                            </div>
+                            <SkeletonLoader className="h-8 w-24 rounded-lg" />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    </div>
+);
+
+export const MealsGridSkeleton = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+        {[...Array(6)].map((_, i) => (
+            <Card key={i} className="overflow-hidden border border-[var(--color-divider)] rounded-[2rem] bg-white dark:bg-white/5 shadow-sm">
+                <div className="h-48 relative bg-gray-100 dark:bg-zinc-800">
+                    <SkeletonLoader className="w-full h-full" />
+                    <SkeletonLoader className="absolute top-2 right-2 h-6 w-16 rounded-full" />
+                </div>
+                <CardContent className="p-4 space-y-3">
+                    <SkeletonLoader className="h-5 w-3/4 rounded-lg" />
+                    <div className="flex items-center gap-4">
+                        <SkeletonLoader className="h-4 w-12 rounded" />
+                        <SkeletonLoader className="h-4 w-16 rounded" />
+                    </div>
+                </CardContent>
+            </Card>
+        ))}
+    </div>
+);

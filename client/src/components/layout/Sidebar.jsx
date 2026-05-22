@@ -86,17 +86,17 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                 className={cn(
                     "flex flex-col border-r border-[var(--color-divider)] bg-[var(--color-bg-card)] transition-all duration-300 ease-in-out z-50 overflow-hidden fixed inset-y-0 left-0",
                     isMobile
-                        ? "w-72 shadow-2xl"
-                        : "h-screen",
+                        ? "w-72 shadow-2xl rounded-r-3xl"
+                        : "h-screen w-64",
                     !isOpen && "-translate-x-full"
                 )}
                 style={{ width: isMobile ? '18rem' : '16rem' }}
             >
                 <div className="flex flex-col h-full w-full flex-shrink-0 overflow-y-auto custom-scrollbar p-5 sm:p-6">
-                    <div className="mb-8 sm:mb-10 flex items-center justify-between gap-2">
+                    <div className="mb-6 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-full shadow-sm" />
-                            <span className="text-lg sm:text-xl font-black text-[var(--color-secondary)] uppercase tracking-tighter">SmartNutri</span>
+                            <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-9 w-9 object-contain rounded-full shadow-sm" />
+                            <span className="text-lg font-black text-[var(--color-secondary)] uppercase tracking-tighter">SmartNutri</span>
                         </div>
                         {isMobile && (
                             <Button
@@ -110,8 +110,30 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                         )}
                     </div>
 
+                    {/* Premium, Simple User Profile Identity Card */}
+                    {user && (
+                        <div className="mb-6 p-3 rounded-2xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/10 flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl overflow-hidden bg-[var(--color-primary)] text-white flex items-center justify-center font-black shrink-0 shadow-sm">
+                                {user.profile_image_url ? (
+                                    <img src={user.profile_image_url} alt={user.full_name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <span className="uppercase text-sm">{user.full_name?.charAt(0)}</span>
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black uppercase text-[var(--color-text-main)] truncate tracking-tight">
+                                    {user.role === 'nutritionist' ? `Dr. ${user.full_name?.replace(/^dr\.?\s+/i, '')}` : user.full_name}
+                                </h4>
+                                <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-semibold tracking-wide truncate mt-0.5">
+                                    {user.role === 'nutritionist' ? (user.specialization || 'Clinical Expert') : user.role === 'admin' ? 'System Oversight' : 'Caregiver'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Switch Profile Capsule for Caregivers */}
                     {user?.role === 'parent' && profiles.length > 0 && (
-                        <div className="mb-8 relative">
+                        <div className="mb-6 relative">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-2 block">Switch Profile</label>
                             <button
                                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}

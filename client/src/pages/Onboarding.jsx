@@ -407,7 +407,7 @@ export default function Onboarding() {
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, activityLevel: lvl.id })}
                                                         className={cn(
-                                                            "p-4 rounded-2xl border-2 transition-all text-left",
+                                                            "p-4 rounded-2xl border-2 transition-all text-left active:scale-[0.98] cursor-pointer",
                                                             formData.activityLevel === lvl.id
                                                                 ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
                                                                 : "border-[var(--color-divider)] hover:border-[var(--color-primary)]/30"
@@ -424,14 +424,14 @@ export default function Onboarding() {
                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 flex items-center gap-2">
                                                 <Activity size={12} className="text-amber-500" /> Bristol Stool Scale (Baseline)
                                             </label>
-                                            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5">
                                                 {BRISTOL_TYPES.map((type) => (
                                                     <button
                                                         key={type.type}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, bristolStoolScale: type.type.toString() })}
                                                         className={cn(
-                                                            "flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all group",
+                                                            "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all group active:scale-[0.93] cursor-pointer",
                                                             formData.bristolStoolScale === type.type.toString()
                                                                 ? "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20"
                                                                 : "bg-[var(--color-bg-page)] text-amber-600 border-amber-100 dark:border-amber-900/20 hover:border-amber-400"
@@ -450,137 +450,153 @@ export default function Onboarding() {
                                                     </button>
                                                 ))}
                                             </div>
-                                            <div className="p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-900/20">
-                                                <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed italic">
-                                                    <strong>{BRISTOL_TYPES.find(t => t.type.toString() === formData.bristolStoolScale)?.desc}:</strong> {BRISTOL_TYPES.find(t => t.type.toString() === formData.bristolStoolScale)?.detail}
-                                                </p>
+                                            <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-900/20 min-h-[4.5rem] flex items-center overflow-hidden">
+                                                <AnimatePresence mode="wait">
+                                                    <motion.p
+                                                        key={formData.bristolStoolScale}
+                                                        initial={{ opacity: 0, y: 5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -5 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="text-[10px] sm:text-xs font-semibold text-amber-700 dark:text-amber-400 leading-relaxed italic"
+                                                    >
+                                                        <strong>{BRISTOL_TYPES.find(t => t.type.toString() === formData.bristolStoolScale)?.desc}: </strong>
+                                                        {BRISTOL_TYPES.find(t => t.type.toString() === formData.bristolStoolScale)?.detail}
+                                                    </motion.p>
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
                                 {step === 3 && (
-                                    <div className="space-y-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Clinical Allergies</label>
-
-                                            <div className="relative">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsAllergiesDropdownOpen(!isAllergiesDropdownOpen)}
-                                                    className={cn(
-                                                        "w-full p-4 flex items-center justify-between rounded-2xl border-2 transition-all bg-[var(--color-bg-page)]",
-                                                        isAllergiesDropdownOpen ? "border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10" : "border-[var(--color-divider)]"
-                                                    )}
-                                                >
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                                                        <Plus size={14} className="text-[var(--color-primary)]" /> Add Allergy...
-                                                    </span>
-                                                    <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)]", isAllergiesDropdownOpen && "rotate-180")} />
-                                                </button>
-
-                                                {isAllergiesDropdownOpen && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-40" onClick={() => setIsAllergiesDropdownOpen(false)} />
-                                                        <motion.div
-                                                            initial={{ opacity: 0, y: -10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
-                                                        >
-                                                            {ALLERGY_OPTIONS.map(option => {
-                                                                const isSelected = formData.allergies.includes(option);
-                                                                if (isSelected) return null;
-
-                                                                return (
-                                                                    <button
-                                                                        key={option}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            if (option === 'None') {
-                                                                                setFormData(prev => ({ ...prev, allergies: ['None'] }));
-                                                                            } else {
-                                                                                let newAllergies = formData.allergies.filter(a => a !== 'None');
-                                                                                newAllergies.push(option);
-                                                                                setFormData(prev => ({ ...prev, allergies: newAllergies }));
-                                                                            }
-                                                                            setIsAllergiesDropdownOpen(false);
-                                                                        }}
-                                                                        className="w-full text-left p-3 rounded-xl hover:bg-[var(--color-primary)]/10 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-[var(--color-primary)]"
-                                                                    >
-                                                                        {option}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </motion.div>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-2">
-                                                {formData.allergies?.filter(Boolean).map((allergy, idx) => (
-                                                    <div
-                                                        key={`${allergy}-${idx}`}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-[9px] font-black uppercase tracking-tight transition-all",
-                                                            allergy === 'None'
-                                                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                                                : "bg-red-500/10 text-red-600 border-red-500/20"
-                                                        )}
-                                                    >
-                                                        {allergy}
-                                                        {allergy !== 'None' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const newAllergies = formData.allergies.filter(a => a !== allergy);
-                                                                    setFormData(prev => ({
-                                                                        ...prev,
-                                                                        allergies: newAllergies.length === 0 ? ['None'] : newAllergies
-                                                                    }));
-                                                                }}
-                                                                className="hover:bg-black/5 dark:hover:bg-white/5 rounded-md p-0.5"
-                                                            >
-                                                                <X size={10} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3 pt-4 border-t border-[var(--color-divider)]">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {DIETARY_OPTIONS.map(option => (
-                                                    <button
-                                                        key={option}
-                                                        type="button"
-                                                        onClick={() => toggleSelection('dietaryPreferences', option)}
-                                                        className={cn(
-                                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all border-2",
-                                                            formData.dietaryPreferences.includes(option)
-                                                                ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20"
-                                                                : "bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]"
-                                                        )}
-                                                    >
-                                                        {option}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5 pt-4 border-t border-[var(--color-divider)]">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History Summary</label>
-                                            <textarea
-                                                name="medicalHistory"
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
-                                                placeholder="e.g. History of asthma, frequent digestive issues..."
-                                                rows="3"
-                                                value={formData.medicalHistory}
-                                                onChange={handleChange}
-                                            />
-                                        </div>
-                                    </div>
+                                     <div className="space-y-6">
+                                         <div className="space-y-3">
+                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Clinical Allergies</label>
+ 
+                                             <div className="relative">
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setIsAllergiesDropdownOpen(!isAllergiesDropdownOpen)}
+                                                     className={cn(
+                                                         "w-full p-4 flex items-center justify-between rounded-2xl border-2 transition-all bg-[var(--color-bg-page)] active:scale-[0.99] cursor-pointer",
+                                                         isAllergiesDropdownOpen ? "border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/10" : "border-[var(--color-divider)]"
+                                                     )}
+                                                 >
+                                                     <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
+                                                         <Plus size={14} className="text-[var(--color-primary)] animate-pulse" /> Add Allergy...
+                                                     </span>
+                                                     <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)]", isAllergiesDropdownOpen && "rotate-180")} />
+                                                 </button>
+ 
+                                                 {isAllergiesDropdownOpen && (
+                                                     <>
+                                                         <div className="fixed inset-0 z-40" onClick={() => setIsAllergiesDropdownOpen(false)} />
+                                                         <motion.div
+                                                             initial={{ opacity: 0, y: -10 }}
+                                                             animate={{ opacity: 1, y: 0 }}
+                                                             className="absolute top-full left-0 w-full mt-2 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                                         >
+                                                             {ALLERGY_OPTIONS.map(option => {
+                                                                 const isSelected = formData.allergies.includes(option);
+                                                                 if (isSelected) return null;
+ 
+                                                                 return (
+                                                                     <button
+                                                                         key={option}
+                                                                         type="button"
+                                                                         onClick={() => {
+                                                                             if (option === 'None') {
+                                                                                 setFormData(prev => ({ ...prev, allergies: ['None'] }));
+                                                                             } else {
+                                                                                 let newAllergies = formData.allergies.filter(a => a !== 'None');
+                                                                                 newAllergies.push(option);
+                                                                                 setFormData(prev => ({ ...prev, allergies: newAllergies }));
+                                                                             }
+                                                                             setIsAllergiesDropdownOpen(false);
+                                                                         }}
+                                                                         className="w-full text-left p-3.5 rounded-xl hover:bg-[var(--color-primary)]/10 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-all border-l-4 border-transparent hover:border-[var(--color-primary)] active:scale-[0.98] cursor-pointer"
+                                                                     >
+                                                                         {option}
+                                                                     </button>
+                                                                 );
+                                                             })}
+                                                         </motion.div>
+                                                     </>
+                                                 )}
+                                             </div>
+ 
+                                             <div className="flex flex-wrap gap-2 min-h-[2rem]">
+                                                 <AnimatePresence>
+                                                     {formData.allergies?.filter(Boolean).map((allergy, idx) => (
+                                                         <motion.div
+                                                             key={allergy}
+                                                             initial={{ opacity: 0, scale: 0.8 }}
+                                                             animate={{ opacity: 1, scale: 1 }}
+                                                             exit={{ opacity: 0, scale: 0.8 }}
+                                                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                             className={cn(
+                                                                 "flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 text-[10px] font-black uppercase tracking-wider transition-all shadow-sm",
+                                                                 allergy === 'None'
+                                                                     ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:border-emerald-500/30"
+                                                                     : "bg-red-500/10 text-red-600 border-red-500/20 dark:border-red-500/30"
+                                                             )}
+                                                         >
+                                                             {allergy}
+                                                             {allergy !== 'None' && (
+                                                                 <button
+                                                                     type="button"
+                                                                     onClick={() => {
+                                                                         const newAllergies = formData.allergies.filter(a => a !== allergy);
+                                                                         setFormData(prev => ({
+                                                                             ...prev,
+                                                                             allergies: newAllergies.length === 0 ? ['None'] : newAllergies
+                                                                         }));
+                                                                     }}
+                                                                     className="hover:bg-black/10 dark:hover:bg-white/10 rounded-md p-1 transition-colors flex items-center justify-center cursor-pointer active:scale-[0.85]"
+                                                                 >
+                                                                     <X size={12} className="stroke-[3]" />
+                                                                 </button>
+                                                             )}
+                                                         </motion.div>
+                                                     ))}
+                                                 </AnimatePresence>
+                                             </div>
+                                         </div>
+ 
+                                         <div className="space-y-3 pt-4 border-t border-[var(--color-divider)]">
+                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
+                                             <div className="flex flex-wrap gap-2">
+                                                 {DIETARY_OPTIONS.map(option => (
+                                                     <button
+                                                         key={option}
+                                                         type="button"
+                                                         onClick={() => toggleSelection('dietaryPreferences', option)}
+                                                         className={cn(
+                                                             "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all border-2 active:scale-[0.95] cursor-pointer",
+                                                             formData.dietaryPreferences.includes(option)
+                                                                 ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20"
+                                                                 : "bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]"
+                                                         )}
+                                                     >
+                                                         {option}
+                                                     </button>
+                                                 ))}
+                                             </div>
+                                         </div>
+ 
+                                         <div className="space-y-1.5 pt-4 border-t border-[var(--color-divider)]">
+                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History Summary</label>
+                                             <textarea
+                                                 name="medicalHistory"
+                                                 className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
+                                                 placeholder="e.g. History of asthma, frequent digestive issues..."
+                                                 rows="3"
+                                                 value={formData.medicalHistory}
+                                                 onChange={handleChange}
+                                             />
+                                         </div>
+                                     </div>
                                 )}
 
                                 {step === 4 && (
@@ -616,7 +632,7 @@ export default function Onboarding() {
                                     type="button"
                                     variant="outline"
                                     onClick={prevStep}
-                                    className="flex-1"
+                                    className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
                                 >
                                     Back
                                 </Button>
@@ -625,14 +641,14 @@ export default function Onboarding() {
                                 <Button
                                     type="button"
                                     onClick={nextStep}
-                                    className="flex-1"
+                                    className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
                                 >
                                     Continue
                                 </Button>
                             ) : (
                                 <Button
                                     type="submit"
-                                    className="flex-1 bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20"
+                                    className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
                                 >
                                     Complete Setup
                                 </Button>

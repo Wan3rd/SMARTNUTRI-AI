@@ -4,12 +4,15 @@ import { Button } from '../components/common/Button';
 import { Card, CardContent } from '../components/common/Card';
 import { Clock, Users, ArrowLeft, Flame, ChefHat, ScrollText, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import api from '../lib/api';
+import { RecipeDetailSkeleton } from '../components/SkeletonShell';
+import { useNotification } from '../context/NotificationContext';
 
 export default function RecipeDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [recipe, setRecipe] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { showNotification } = useNotification();
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -18,14 +21,15 @@ export default function RecipeDetail() {
                 setRecipe(res.data);
             } catch (err) {
                 console.error("Failed to fetch recipe info", err);
+                showNotification("Failed to load recipe details. Please try again.", "error");
             } finally {
                 setLoading(false);
             }
         };
         fetchRecipe();
-    }, [id]);
+    }, [id, showNotification]);
 
-    if (loading) return <div className="p-10 text-center">Loading recipe details...</div>;
+    if (loading) return <RecipeDetailSkeleton />;
     if (!recipe) return <div className="p-10 text-center">Recipe not found.</div>;
 
     // Helper to get nutrient value

@@ -4,6 +4,7 @@ import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Search, Filter, Clock, Flame, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../lib/api';
+import { MealsGridSkeleton } from '../components/SkeletonShell';
 
 const FILTERS = {
     mealTypes: ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Teatime'],
@@ -235,9 +236,7 @@ export default function Meals() {
 
 
             {loading ? (
-                <div className="flex justify-center items-center h-64">
-                    <Loader2 className="animate-spin text-[var(--color-primary)]" size={40} />
-                </div>
+                <MealsGridSkeleton />
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {meals.length > 0 ? (

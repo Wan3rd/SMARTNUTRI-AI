@@ -3,6 +3,7 @@ import { Users, ShieldCheck, UserCheck, Activity, Clock } from 'lucide-react';
 import api from '../lib/api';
 import RegistrationQueue from '../admin/components/RegistrationQueue';
 import BroadcastTool from '../admin/components/BroadcastTool';
+import { AdminDashboardSkeleton } from '../components/SkeletonShell';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, profiles: 0, pendingApprovals: 0, totalMealsLogged: 0 });
@@ -24,7 +25,7 @@ export default function AdminDashboard() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Loading Administrative Console...</div>;
+    if (loading) return <AdminDashboardSkeleton />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">

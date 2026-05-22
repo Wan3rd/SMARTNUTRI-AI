@@ -1732,13 +1732,11 @@ export default function ClientDetails() {
     useEffect(() => {
         const loadInitialClientData = async () => {
             if (clientId) {
-                startLoading('Syncing Clinical Patient Records...');
                 await fetchProfiles();
                 // Wait for profiles to be set, then others will trigger? 
                 // Actually fetchProfiles sets selectedProfile which triggers other effects.
                 // But for the initial sync to be clean, we should wait for everything.
                 setIsInitialSync(false);
-                stopLoading();
             }
         };
         loadInitialClientData();

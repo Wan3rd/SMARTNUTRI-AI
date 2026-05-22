@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import api from '../lib/api';
 import { useProfile } from '../context/ProfileContext';
 import { useLoading } from '../context/LoadingContext';
+import { CalendarSkeleton } from '../components/SkeletonShell';
 
 export default function Calendar() {
     const navigate = useNavigate();
@@ -43,7 +44,6 @@ export default function Calendar() {
 
     const fetchData = async () => {
         if (!selectedProfile) return;
-        startLoading('Syncing Clinical Calendar...');
         try {
             const [logsRes, rulesRes, plansRes] = await Promise.all([
                 api.get(`/logs/profile/${selectedProfile.id}`),
@@ -57,8 +57,7 @@ export default function Calendar() {
             setIsInitialSync(false);
         } catch (err) {
             console.error(err);
-        } finally {
-            stopLoading();
+            setIsInitialSync(false);
         }
     };
 
@@ -263,7 +262,7 @@ export default function Calendar() {
         return <div className="bg-transparent rounded-2xl">{rows}</div>;
     };
 
-    if (isInitialSync) return null;
+    if (isInitialSync) return <CalendarSkeleton />;
 
     if (!selectedProfile && !profileLoading) {
         return <div className="p-8 text-center text-[var(--color-text-muted)] font-medium">Please select a child profile to view the health calendar.</div>;

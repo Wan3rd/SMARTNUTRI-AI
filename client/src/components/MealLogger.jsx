@@ -589,7 +589,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     {status === 'syncing' ? 'Syncing Clinical Data...' : 'Saving Meal Log...'}
                                 </h4>
                                 <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-relaxed">
-                                    {status === 'syncing' 
+                                    {status === 'syncing'
                                         ? 'Aligning portion sizes & nutritional macros'
                                         : 'Uploading images & updating client record'}
                                 </p>
@@ -669,103 +669,103 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
                     {status !== 'done' && status !== 'saving' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
-                        {/* Before Photo */}
-                        <div className="flex flex-col items-center gap-2">
-                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Before Meal</span>
-                            {preview ? (
-                                <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
-                                    <img src={preview} alt="Before" className="w-full h-full object-cover" />
-                                    {status === 'idle' && (
-                                        <button onClick={() => {
-                                            setFile(null);
-                                            setPreview(null);
-                                            if (fileInputRef.current) fileInputRef.current.value = "";
-                                        }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 transition-all bg-gray-50/50 dark:bg-white/[0.02]">
-                                    <div className="flex gap-4">
-                                        <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
-                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
-                                        </button>
-                                        <button onClick={() => openWebcam('before')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
-                                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
-                                        </button>
+                            {/* Before Photo */}
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Before Meal</span>
+                                {preview ? (
+                                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
+                                        <img src={preview} alt="Before" className="w-full h-full object-cover" />
+                                        {status === 'idle' && (
+                                            <button onClick={() => {
+                                                setFile(null);
+                                                setPreview(null);
+                                                if (fileInputRef.current) fileInputRef.current.value = "";
+                                            }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                        )}
                                     </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Webcam Modal */}
-                        {isWebcamOpen && (
-                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-                                <div className="w-full max-w-lg bg-[var(--color-bg-card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center">
-                                    <div className="flex w-full justify-between items-center p-4 border-b border-[var(--color-divider)]">
-                                        <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">Capture Photo</span>
-                                        <button onClick={() => setIsWebcamOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
-                                            <X size={20} />
-                                        </button>
-                                    </div>
-                                    <div className="w-full bg-black relative">
-                                        <Webcam
-                                            audio={false}
-                                            ref={webcamRef}
-                                            screenshotFormat="image/jpeg"
-                                            videoConstraints={{ facingMode: "environment" }}
-                                            className="w-full h-auto max-h-[60vh] object-contain"
-                                        />
-                                    </div>
-                                    <div className="p-6 w-full flex justify-center">
-                                        <Button onClick={handleWebcamCapture} className="w-full sm:w-auto px-12 py-3 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-[var(--color-primary)]/20 hover:scale-105 transition-transform flex gap-2 items-center">
-                                            <Camera size={16} /> Capture Image
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Cropper Modal */}
-                        {/* After Photo */}
-                        <div className="flex flex-col items-center gap-2">
-                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">After Meal</span>
-                            {previewAfter ? (
-                                <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
-                                    <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
-                                    {status !== 'uploading' && (
-                                        <button onClick={() => {
-                                            setFileAfter(null);
-                                            setPreviewAfter(null);
-                                            if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
-                                        }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className={`w-full h-16 sm:h-auto sm:aspect-square rounded-2xl border-2 border-dashed flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-4 transition-all ${status === 'uploading' ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60' : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]'}`}>
-                                    {status === 'uploading' ? (
-                                        <div className="flex items-center gap-2">
-                                            <Loader2 size={16} className="animate-spin text-gray-400" />
-                                            <span className="text-[8px] font-black text-gray-400 uppercase">AI Analyzing...</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex gap-4 items-center justify-center w-full h-full p-2 sm:p-0">
-                                            <button onClick={() => fileAfterInputRef.current?.click()} className="flex flex-row sm:flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
-                                                <div className="p-2 sm:p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={16} /></div>
+                                ) : (
+                                    <div className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 transition-all bg-gray-50/50 dark:bg-white/[0.02]">
+                                        <div className="flex gap-4">
+                                            <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={20} /></div>
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                                             </button>
-                                            <button onClick={() => openWebcam('after')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                            <button onClick={() => openWebcam('before')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
                                                 <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
                                             </button>
                                         </div>
-                                    )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Webcam Modal */}
+                            {isWebcamOpen && (
+                                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+                                    <div className="w-full max-w-lg bg-[var(--color-bg-card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center">
+                                        <div className="flex w-full justify-between items-center p-4 border-b border-[var(--color-divider)]">
+                                            <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">Capture Photo</span>
+                                            <button onClick={() => setIsWebcamOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+                                        <div className="w-full bg-black relative">
+                                            <Webcam
+                                                audio={false}
+                                                ref={webcamRef}
+                                                screenshotFormat="image/jpeg"
+                                                videoConstraints={{ facingMode: "environment" }}
+                                                className="w-full h-auto max-h-[60vh] object-contain"
+                                            />
+                                        </div>
+                                        <div className="p-6 w-full flex justify-center">
+                                            <Button onClick={handleWebcamCapture} className="w-full sm:w-auto px-12 py-3 bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-[var(--color-primary)]/20 hover:scale-105 transition-transform flex gap-2 items-center">
+                                                <Camera size={16} /> Capture Image
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
+
+                            {/* Cropper Modal */}
+                            {/* After Photo */}
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">After Meal</span>
+                                {previewAfter ? (
+                                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-divider)] shadow-md group">
+                                        <img src={previewAfter} alt="After" className="w-full h-full object-cover" />
+                                        {status !== 'uploading' && (
+                                            <button onClick={() => {
+                                                setFileAfter(null);
+                                                setPreviewAfter(null);
+                                                if (fileAfterInputRef.current) fileAfterInputRef.current.value = "";
+                                            }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-[10px] font-bold">CHANGE</button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className={`w-full h-16 sm:h-auto sm:aspect-square rounded-2xl border-2 border-dashed flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-4 transition-all ${status === 'uploading' ? 'border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 cursor-not-allowed opacity-60' : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]'}`}>
+                                        {status === 'uploading' ? (
+                                            <div className="flex items-center gap-2">
+                                                <Loader2 size={16} className="animate-spin text-gray-400" />
+                                                <span className="text-[8px] font-black text-gray-400 uppercase">AI Analyzing...</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-4 items-center justify-center w-full h-full p-2 sm:p-0">
+                                                <button onClick={() => fileAfterInputRef.current?.click()} className="flex flex-row sm:flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                    <div className="p-2 sm:p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Upload size={16} /></div>
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+                                                </button>
+                                                <button onClick={() => openWebcam('after')} className="hidden sm:flex flex-col items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group">
+                                                    <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full group-hover:scale-110 transition-transform"><Camera size={20} /></div>
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Webcam</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
                     <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e, 'before')} className="hidden" accept="image/*" />
                     <input type="file" ref={fileAfterInputRef} onChange={(e) => handleFileChange(e, 'after')} className="hidden" accept="image/*" />

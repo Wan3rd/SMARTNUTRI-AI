@@ -40,10 +40,8 @@ export default function MealHistory() {
     useEffect(() => {
         const loadHistoryData = async () => {
             if (selectedProfile) {
-                startLoading('Syncing Historical Records...');
                 await Promise.all([fetchLogs(), fetchRules()]);
                 setIsInitialSync(false);
-                stopLoading();
             } else if (!profileLoading) {
                 setIsInitialSync(false);
             }

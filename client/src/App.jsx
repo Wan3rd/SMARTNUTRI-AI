@@ -53,7 +53,7 @@ function AppContent() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/maintenance" element={<Maintenance />} />
-        
+
         {/* Force Password Reset - Dedicated Top Level Route */}
         <Route path="/force-password-reset" element={
           <ProtectedRoute>
@@ -67,9 +67,9 @@ function AppContent() {
             <Layout>
               <Routes>
                 <Route path="/" element={
-                  user?.role === 'admin' ? <AdminDashboard /> : 
-                  user?.role === 'nutritionist' ? <NutritionistDashboard /> : 
-                  <ParentDashboard />
+                  user?.role === 'admin' ? <AdminDashboard /> :
+                    user?.role === 'nutritionist' ? <NutritionistDashboard /> :
+                      <ParentDashboard />
                 } />
                 <Route path="/parent-dashboard" element={<ParentDashboard />} />
                 <Route path="/nutritionist-dashboard" element={<NutritionistDashboard />} />
@@ -126,18 +126,21 @@ function AppContent() {
 import { ProfileProvider } from './context/ProfileContext';
 import { LoadingProvider } from './context/LoadingContext';
 import { MealLoggerProvider } from './context/MealLoggerContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
   return (
     <AuthProvider>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <ProfileProvider>
-          <LoadingProvider>
-            <MealLoggerProvider>
-              <AppContent />
-            </MealLoggerProvider>
-          </LoadingProvider>
-        </ProfileProvider>
+        <NotificationProvider>
+          <ProfileProvider>
+            <LoadingProvider>
+              <MealLoggerProvider>
+                <AppContent />
+              </MealLoggerProvider>
+            </LoadingProvider>
+          </ProfileProvider>
+        </NotificationProvider>
       </ThemeProvider>
     </AuthProvider>
   );

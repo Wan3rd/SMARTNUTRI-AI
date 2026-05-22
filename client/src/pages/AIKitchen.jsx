@@ -1,10 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import api from '../lib/api';
 import ReactMarkdown from 'react-markdown';
 import { useProfile } from '../context/ProfileContext';
 import { AlertCircle, ChefHat, ThumbsDown, Sparkles, Utensils } from 'lucide-react';
+
+function ClinicalRecipeSimulator() {
+    const steps = [
+        { id: 1, text: "Syncing patient bio-metrics...", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: 2, text: "Verifying allergen safety shields...", color: "text-rose-500", bg: "bg-rose-500/10" },
+        { id: 3, text: "Structuring pediatric macronutrients...", color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: 4, text: "Finalizing clinical recipe cards...", color: "text-emerald-500", bg: "bg-emerald-500/10" }
+    ];
+
+    const [currentStepIdx, setCurrentStepIdx] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentStepIdx(prev => (prev < steps.length - 1 ? prev + 1 : prev));
+        }, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="h-full min-h-[400px] flex flex-col items-center justify-center p-8 border-4 border-dashed border-[var(--color-primary)]/30 rounded-[3rem] bg-white dark:bg-white/5 shadow-2xl relative overflow-hidden font-outfit animate-in fade-in duration-500">
+            {/* Pulsing Chef Hat Ring */}
+            <div className="relative mb-8 flex justify-center">
+                <div className="absolute h-24 w-24 rounded-full border-4 border-[var(--color-primary)]/20 animate-ping duration-1000" />
+                <div className="relative h-20 w-20 rounded-3xl bg-[var(--color-primary)]/10 flex items-center justify-center shadow-lg border border-[var(--color-primary)]/20">
+                    <ChefHat size={36} className="text-[var(--color-primary)] animate-pulse" />
+                </div>
+            </div>
+
+            {/* Simulated Progress Logger */}
+            <div className="w-full max-w-sm space-y-4">
+                <div className="text-center">
+                    <h3 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-[0.2em] mb-1">AI Chef is Cooking</h3>
+                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Culinary Synthesis</p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                    {steps.map((step, idx) => {
+                        const isCurrent = idx === currentStepIdx;
+                        const isCompleted = idx < currentStepIdx;
+                        return (
+                            <div 
+                                key={step.id} 
+                                className={`flex items-center gap-3 p-3 rounded-2xl border transition-all duration-300 ${
+                                    isCurrent 
+                                        ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-102" 
+                                        : isCompleted 
+                                            ? "border-emerald-500/20 bg-emerald-500/5 opacity-80" 
+                                            : "border-transparent opacity-40"
+                                }`}
+                            >
+                                <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                    isCurrent 
+                                        ? "bg-[var(--color-primary)] text-white animate-pulse" 
+                                        : isCompleted 
+                                            ? "bg-emerald-500 text-white" 
+                                            : "bg-[var(--color-divider)] text-[var(--color-text-muted)]"
+                                }`}>
+                                    {isCompleted ? "✓" : step.id}
+                                </div>
+                                <span className={`text-xs font-bold leading-none ${
+                                    isCurrent 
+                                        ? "text-[var(--color-text-main)]" 
+                                        : isCompleted 
+                                            ? "text-[var(--color-text-muted)] line-through decoration-emerald-500/20" 
+                                            : "text-[var(--color-text-muted)]"
+                                }`}>
+                                    {step.text}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-1.5 w-full bg-[var(--color-primary)]/10 rounded-full overflow-hidden relative mt-4 border border-[var(--color-primary)]/5">
+                    <div 
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-[var(--color-primary)] to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-500"
+                        style={{ width: `${((currentStepIdx + 1) / steps.length) * 100}%` }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function AIKitchen() {
     const { selectedProfile } = useProfile();
@@ -152,7 +236,9 @@ export default function AIKitchen() {
                 </div>
 
                 <div className="lg:col-span-7 print-container">
-                    {recipe ? (
+                    {loading ? (
+                        <ClinicalRecipeSimulator />
+                    ) : recipe ? (
                         <Card className="border-2 border-[var(--color-primary)]/20 rounded-[2rem] overflow-hidden shadow-xl bg-white dark:bg-white/5 animate-in zoom-in-95 fade-in duration-500 recipe-card">
                             {/* PDF/Print Header */}
                             <div className="print-header">

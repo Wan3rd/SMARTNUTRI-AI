@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw, Home, Calendar, ChefHat, User, Plus, Camera, Clock } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw, Home, Calendar, ChefHat, User, Plus, Camera, Clock, Utensils, Settings, History, Users } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,8 +8,10 @@ import { useLoading } from '../../context/LoadingContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
 import { useMealLoggerStore } from '../../context/MealLoggerContext';
+import { useAuth } from '../../context/AuthContext';
 
 export function Layout({ children }) {
+    const { user } = useAuth();
     // Start with false on mobile, true on desktop
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -37,13 +39,35 @@ export function Layout({ children }) {
         navigate(path);
     };
 
-    const navItems = [
-        { icon: Home, path: '/', label: 'Home' },
-        { icon: Calendar, path: '/calendar', label: 'Calendar' },
-        { isFab: true },
-        { icon: ChefHat, path: '/ai-kitchen', label: 'AI Kitchen' },
-        { icon: User, path: '/profile', label: 'Profile' },
-    ];
+    const getMobileNavItems = () => {
+        if (user?.role === 'admin') {
+            return [
+                { icon: Home, path: '/', label: 'Home' },
+                { icon: Users, path: '/admin/users', label: 'Users' },
+                { icon: History, path: '/admin/audit', label: 'Audit' },
+                { icon: Settings, path: '/settings', label: 'Settings' },
+            ];
+        }
+        if (user?.role === 'nutritionist') {
+            return [
+                { icon: Home, path: '/', label: 'Home' },
+                { icon: Utensils, path: '/meals', label: 'Meals' },
+                { icon: User, path: '/profile', label: 'Profile' },
+                { icon: Settings, path: '/settings', label: 'Settings' },
+            ];
+        }
+        return [
+            { icon: Home, path: '/', label: 'Home' },
+            { icon: Calendar, path: '/calendar', label: 'Calendar' },
+            { isFab: true },
+            { icon: ChefHat, path: '/ai-kitchen', label: 'AI Kitchen' },
+            { icon: User, path: '/profile', label: 'Profile' },
+        ];
+    };
+
+    const mobileNavItems = getMobileNavItems();
+
+
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)] overflow-x-hidden">
@@ -146,7 +170,7 @@ export function Layout({ children }) {
 
             {/* Mobile FAB Backdrop Dismiss Click */}
             {fabMenuOpen && (
-                <div 
+                <div
                     className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-in fade-in duration-200 lg:hidden"
                     onClick={() => setFabMenuOpen(false)}
                 />
@@ -160,22 +184,22 @@ export function Layout({ children }) {
                     !isMobile && sidebarOpen ? "lg:pl-64" : "pl-0"
                 )}>
                     {/* Unified Header */}
-                    <header 
+                    <header
                         className={cn(
                             "fixed top-0 z-30 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4 transition-all duration-300",
                             !isMobile && sidebarOpen ? "left-64 right-0" : "left-0 right-0"
                         )}
                         style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }}
                     >
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={toggleSidebar}
                             className="mr-2 sm:mr-3 h-9 w-9 sm:h-10 sm:w-10 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
                         >
                             {sidebarOpen ? (isMobile ? <Menu size={18} /> : <ChevronLeft size={20} />) : <Menu size={20} />}
                         </Button>
-                        
+
                         {!sidebarOpen && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
                                 <img src="/SmartNutri-logo.png" alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8 object-contain rounded-full" />
@@ -184,7 +208,7 @@ export function Layout({ children }) {
                                 </span>
                             </div>
                         )}
-                        
+
                         <div className="ml-auto flex items-center gap-2">
                             {/* Add other header actions here if needed */}
                         </div>
@@ -220,7 +244,7 @@ export function Layout({ children }) {
                                     <div className="text-center pb-1.5 border-b border-[var(--color-divider)] select-none">
                                         <span className="text-[10px] font-black uppercase text-[var(--color-primary)] tracking-widest">quick log options</span>
                                     </div>
-                                    
+
                                     <button
                                         onClick={() => {
                                             setAutoOpenWebcam(true);
@@ -237,7 +261,7 @@ export function Layout({ children }) {
                                             <span className="text-[8px] font-medium text-[var(--color-text-muted)] leading-none uppercase">Scan plate with camera</span>
                                         </div>
                                     </button>
-                                    
+
                                     <button
                                         onClick={() => {
                                             setAutoQuickLog(true);
@@ -258,7 +282,7 @@ export function Layout({ children }) {
                             )}
                         </AnimatePresence>
 
-                        {navItems.map((item, idx) => {
+                        {mobileNavItems.map((item, idx) => {
                             if (item.isFab) {
                                 return (
                                     <div key="fab" className="relative -top-4">
@@ -283,16 +307,16 @@ export function Layout({ children }) {
                                     onClick={() => handleNavClick(item.path)}
                                     className="flex flex-col items-center justify-center flex-1 h-full relative"
                                 >
-                                    <Icon 
-                                        size={20} 
-                                        className={isActive ? "text-[var(--color-primary)] transition-colors duration-200" : "text-[var(--color-text-muted)]"} 
+                                    <Icon
+                                        size={20}
+                                        className={isActive ? "text-[var(--color-primary)] transition-colors duration-200" : "text-[var(--color-text-muted)]"}
                                     />
                                     <span className={`text-[9px] font-black uppercase mt-1 tracking-wider ${isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}>
                                         {item.label}
                                     </span>
-                                    
+
                                     {isActive && (
-                                        <motion.div 
+                                        <motion.div
                                             layoutId="bottomTabIndicator"
                                             className="absolute bottom-0 w-8 h-[2px] bg-[var(--color-primary)] rounded-full"
                                             transition={{ type: "spring", stiffness: 380, damping: 30 }}

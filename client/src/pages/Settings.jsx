@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import Notification from '../components/common/Notification';
+import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Bell, Shield, Smartphone, Scale, UserCog, HelpCircle, ChevronRight, Key } from 'lucide-react';
@@ -14,7 +14,7 @@ import MaintenanceModeModal from '../admin/components/MaintenanceModeModal';
 export default function Settings() {
     const { user, updatePreferences } = useAuth();
     const { setTheme, theme } = useTheme();
-    const [message, setMessage] = useState({ type: 'success', text: '' });
+    const { showNotification } = useNotification();
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -40,12 +40,9 @@ export default function Settings() {
         const params = new URLSearchParams(location.search);
         if (params.get('reason') === 'force_reset') {
             setShowPasswordModal(true);
-            setMessage({
-                type: 'error',
-                text: 'Security Policy: An administrator has requested a mandatory password update for your account.'
-            });
+            showNotification('Security Policy: An administrator has requested a mandatory password update for your account.', 'error');
         }
-    }, [location]);
+    }, [location, showNotification]);
 
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -54,9 +51,9 @@ export default function Settings() {
         try {
             const res = await updatePreferences({ [key]: value });
             if (res.success) {
-                setMessage({ type: 'success', text: customMessage || 'Preference updated and saved' });
+                showNotification(customMessage || 'Preference updated and saved', 'success');
             } else {
-                setMessage({ type: 'error', text: 'Failed to sync preference with server' });
+                showNotification('Failed to sync preference with server', 'error');
             }
         } finally {
             setIsUpdating(false);
@@ -75,10 +72,10 @@ export default function Settings() {
         try {
             const res = await api.patch('/admin/maintenance', { enabled: !maintenanceMode });
             setMaintenanceMode(res.data.maintenanceMode);
-            setMessage({ type: 'success', text: res.data.message });
+            showNotification(res.data.message, 'success');
         } catch (err) {
             console.error(err);
-            setMessage({ type: 'error', text: 'Failed to toggle maintenance mode' });
+            showNotification('Failed to toggle maintenance mode', 'error');
         } finally {
             setMaintenanceLoading(false);
         }
@@ -283,14 +280,6 @@ export default function Settings() {
                 <p>SmartNutri-AI v1.2.0 • Clinical Engine</p>
                 <p>© 2026 SmartNutri Inc.</p>
             </div>
-
-            <Notification
-                key={message.text}
-                show={!!message.text}
-                type={message.type}
-                message={message.text}
-                onClose={() => setMessage({ ...message, text: '' })}
-            />
 
             <ChangePasswordModal
                 isOpen={showPasswordModal}
