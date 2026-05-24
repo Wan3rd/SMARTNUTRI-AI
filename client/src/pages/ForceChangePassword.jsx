@@ -29,8 +29,16 @@ export default function ForceChangePassword() {
         if (formData.newPassword !== formData.confirmPassword) {
             return setError("Passwords do not match");
         }
-        if (formData.newPassword.length < 8) {
-            return setError("Password must be at least 8 characters");
+
+        // Strong password policy validation
+        const password = formData.newPassword;
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasDigit = /[0-9]/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+        if (password.length < 8 || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+            return setError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
         }
 
         setLoading(true);

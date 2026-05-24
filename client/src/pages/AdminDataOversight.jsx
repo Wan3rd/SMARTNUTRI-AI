@@ -49,7 +49,7 @@ export default function AdminContentOversight() {
                 <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
                     <div>
                         <div className="font-black text-sm">{item.child_name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Parent: {item.user?.email}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">Parent: {item.users?.email || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'profiles', id: item.id, title: item.child_name })}
@@ -62,12 +62,13 @@ export default function AdminContentOversight() {
         }
         
         if (contentType === 'meals') {
+            const mealName = item.nutritionist_review?.meal_summary || item.ai_analysis?.meal_summary || item.ai_analysis?.items?.map(i => i.name).join(', ') || 'Unnamed Meal';
             return (
                 <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
                     <div>
-                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{item.food_name || 'Unnamed Meal'}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Profile: {item.profile?.child_name} ({item.profile?.user?.email})</div>
-                        <div className="text-[10px] text-[var(--color-text-muted)] mt-1 truncate max-w-xs">{item.notes}</div>
+                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{mealName}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">Profile: {item.profiles?.child_name || 'N/A'} ({item.profiles?.users?.email || 'N/A'})</div>
+                        <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-bold">Category: <span className="uppercase text-[var(--color-primary)]">{item.meal_category || 'other'}</span> | Logged: {item.logged_at ? new Date(item.logged_at).toLocaleDateString() : 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'meals', id: item.id, title: 'this meal log' })}
@@ -83,8 +84,8 @@ export default function AdminContentOversight() {
             return (
                 <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
                     <div>
-                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">Dx: {item.diagnosis}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Author: {item.nutritionist?.full_name} | Patient: {item.profile?.child_name}</div>
+                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">Dx: {item.diagnosis || 'No Diagnosis'}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">Author: {item.nutritionist?.full_name || 'Nutritionist'} | Patient: {item.profiles?.child_name || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'notes', id: item.id, title: 'this clinical note' })}
@@ -137,7 +138,7 @@ export default function AdminContentOversight() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-black tracking-widest uppercase text-xs hover:bg-[var(--color-secondary)] transition-all"
+                        className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-black tracking-widest uppercase text-xs hover:bg-[var(--color-primary-hover)] transition-all"
                     >
                         {loading ? 'Searching...' : 'Search'}
                     </button>

@@ -32,6 +32,7 @@ import AdminAuditLogs from './pages/AdminAuditLogs';
 import AdminAIHealth from './pages/AdminAIHealth';
 import AdminDataOversight from './pages/AdminDataOversight';
 
+import LandingPage from './pages/LandingPage';
 import config from '../../env_config';
 import Maintenance from './pages/Maintenance';
 
@@ -47,6 +48,7 @@ function AppContent() {
       <ScrollToTop />
       <Routes>
         {/* Public Routes - No Layout */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/onboarding" element={<Onboarding />} />
@@ -67,6 +69,11 @@ function AppContent() {
             <Layout>
               <Routes>
                 <Route path="/" element={
+                  user?.role === 'admin' ? <AdminDashboard /> :
+                    user?.role === 'nutritionist' ? <NutritionistDashboard /> :
+                      <ParentDashboard />
+                } />
+                <Route path="/dashboard" element={
                   user?.role === 'admin' ? <AdminDashboard /> :
                     user?.role === 'nutritionist' ? <NutritionistDashboard /> :
                       <ParentDashboard />

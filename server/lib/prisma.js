@@ -17,6 +17,29 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const connectionString = process.env.DATABASE_URL;
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prismaInstance = new PrismaClient({ adapter });
+
+// Enforce ORM-level immutability on audit_logs to guarantee HIPAA/DPA data integrity compliance
+const prisma = prismaInstance.$extends({
+    query: {
+        audit_logs: {
+            async update() {
+                throw new Error("Security Violation: audit_logs are immutable and cannot be updated.");
+            },
+            async updateMany() {
+                throw new Error("Security Violation: audit_logs are immutable and cannot be updated.");
+            },
+            async delete() {
+                throw new Error("Security Violation: audit_logs are immutable and cannot be deleted.");
+            },
+            async deleteMany() {
+                throw new Error("Security Violation: audit_logs are immutable and cannot be deleted.");
+            },
+            async upsert() {
+                throw new Error("Security Violation: audit_logs are immutable and cannot be modified.");
+            }
+        }
+    }
+});
 
 export default prisma;

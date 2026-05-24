@@ -55,3 +55,48 @@ export const sendResetPasswordEmail = async (email, token, fullName) => {
         return { success: false, error };
     }
 };
+
+export const sendOtpEmail = async (email, otpCode, fullName) => {
+    const msg = {
+        to: email,
+        from: FROM_EMAIL,
+        subject: 'Your SmartNutri-AI Verification Code',
+        html: `
+            <div style="font-family: 'Outfit', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #059669; font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.025em; margin: 0;">SmartNutri-AI</h1>
+                    <p style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.2em; margin: 4px 0 0 0;">Identity Verification Gateway</p>
+                </div>
+                
+                <p style="font-size: 16px; color: #475569; line-height: 1.6;">Hello ${fullName || 'Valued User'},</p>
+                <p style="font-size: 16px; color: #475569; line-height: 1.6;">Thank you for registering with SmartNutri-AI. To complete your clinical identity verification and finalize your registration, please enter the following 6-digit verification code:</p>
+                
+                <div style="margin: 36px 0; text-align: center;">
+                    <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 20px; padding: 24px 40px; display: inline-block; font-size: 36px; font-weight: 900; color: #059669; letter-spacing: 8px; font-family: 'Courier New', monospace; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);">
+                        ${otpCode}
+                    </div>
+                </div>
+                
+                <p style="font-size: 14px; color: #64748b; line-height: 1.6; text-align: center; margin-bottom: 32px;">This One-Time Password (OTP) is valid for <strong style="color: #059669;">2 minutes</strong> and can only be used once.</p>
+                
+                <p style="font-size: 11px; color: #94a3b8; line-height: 1.6; text-align: center;">For security reasons, never share this code with anyone. SmartNutri staff will never ask for your verification code.</p>
+                
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+                
+                <p style="font-size: 11px; color: #94a3b8; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">© 2026 SmartNutri-AI Clinical Station</p>
+            </div>
+        `,
+    };
+
+    try {
+        await sgMail.send(msg);
+        console.log(`OTP verification email sent to ${email}`);
+        return { success: true };
+    } catch (error) {
+        console.error('SendGrid OTP Send Error:', error);
+        if (error.response) {
+            console.error(error.response.body);
+        }
+        return { success: false, error };
+    }
+};

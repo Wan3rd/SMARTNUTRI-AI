@@ -165,6 +165,34 @@ export default function Onboarding() {
 
     const prevStep = () => setStep(prev => prev - 1);
 
+    const handleSkipOnboarding = async () => {
+        startLoading('Creating your Caregiver account...');
+        setError(null);
+        try {
+            // 1. If caregiver account isn't created, register now
+            if (registrationData && !user) {
+                const regRes = await register(registrationData);
+                if (!regRes.success) {
+                    setError(regRes.message || "Failed to create account. Please try again.");
+                    stopLoading();
+                    return;
+                }
+            }
+
+            // Clear temporary onboarding states
+            sessionStorage.removeItem('pendingRegistration');
+            sessionStorage.removeItem('onboardingProgress');
+
+            // Route to dashboard
+            navigate('/');
+        } catch (err) {
+            console.error("Skip onboarding failed:", err);
+            setError("Unable to complete account registration. Please check your connection and try again.");
+        } finally {
+            stopLoading();
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         startLoading('Initializing Clinical Profile...');
@@ -290,6 +318,20 @@ export default function Onboarding() {
 
                                 {step === 1 && (
                                     <div className="space-y-5">
+                                        <div className="p-4 bg-[var(--color-primary)]/5 rounded-2xl border border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="text-left">
+                                                <p className="text-xs font-black text-[var(--color-secondary)] uppercase">Don't have a child profile yet?</p>
+                                                <p className="text-[10px] text-[var(--color-text-muted)] font-semibold">You can set up your child's clinical details at any time in your dashboard.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleSkipOnboarding}
+                                                className="px-4 py-2.5 bg-white dark:bg-white/5 border border-[var(--color-divider)] text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] rounded-xl hover:bg-[var(--color-primary)] hover:text-white transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto active:scale-[0.95]"
+                                            >
+                                                Skip Setup for Now
+                                            </button>
+                                        </div>
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Child Name</label>

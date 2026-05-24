@@ -20,6 +20,51 @@ export const normalizeAllergenTerm = (term) => {
 };
 
 /**
+ * Dictionary mapping common allergen groups to their clinical and commercial derivatives.
+ */
+export const ALLERGEN_DERIVATIVES = {
+    dairy: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    milk: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    gluten: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    wheat: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    peanut: ['peanut', 'groundnut', 'arachis', 'peanut butter', 'peanut oil'],
+    egg: ['egg', 'mayonnaise', 'meringue', 'ovalbumin', 'custard', 'egg yolk', 'egg white'],
+    soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    fish: ['fish', 'salmon', 'tuna', 'cod', 'sardine', 'anchovy', 'mackerel', 'tilapia', 'trout', 'haddock', 'patis'],
+    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong']
+};
+
+/**
+ * Helper to determine if an allergen or derivative warning should be bypassed
+ * based on clinical exceptions (e.g. eggplant bypass for egg, peanut butter bypass for butter/dairy).
+ */
+const isAllergyBypassed = (allergenOrDeriv, itemName) => {
+    const lowerItem = String(itemName || '').toLowerCase();
+    const lowerAllergen = String(allergenOrDeriv || '').toLowerCase();
+    
+    // 1. Eggplant Egg Bypass
+    if (lowerAllergen === 'egg' && lowerItem.includes('eggplant')) {
+        return true;
+    }
+    // 2. Peanut Butter Dairy Bypass (Peanut butter is dairy-free despite the word "butter")
+    if (lowerAllergen === 'butter' && lowerItem.includes('peanut butter')) {
+        return true;
+    }
+    // 3. Non-dairy Milk Bypasses (Coconut milk, Soy milk, Almond milk, etc. are dairy-free)
+    if (lowerAllergen === 'milk' && (
+        lowerItem.includes('coconut milk') || 
+        lowerItem.includes('soy milk') || 
+        lowerItem.includes('almond milk') || 
+        lowerItem.includes('oat milk') || 
+        lowerItem.includes('rice milk')
+    )) {
+        return true;
+    }
+    return false;
+};
+
+/**
  * Evaluates a meal log against a set of nutrition rules.
  * @param {Object} mealLog - The incoming meal log object with ai_analysis
  * @param {Array} rules - Array of rule objects for the profile.
@@ -40,7 +85,7 @@ export const checkCompliance = (mealLog, rules = [], dailyTotals = {}, allergies
     const sanitizedAllergies = [];
     (allergies || []).forEach(a => {
         if (typeof a === 'string') {
-            a.split(',').forEach(sub => {
+            a.split(/[,/;]+/).forEach(sub => {
                 const cleaned = normalizeAllergenTerm(sub);
                 if (cleaned) sanitizedAllergies.push(cleaned);
             });
@@ -56,20 +101,46 @@ export const checkCompliance = (mealLog, rules = [], dailyTotals = {}, allergies
             const itemWords = itemName.split(/\s+/).map(w => normalizeAllergenTerm(w));
 
             sanitizedAllergies.forEach(allergen => {
+                // 1. Direct match: does the item contain the allergen term directly?
                 const isSubstr = itemName.includes(allergen);
                 const isWordMatch = itemWords.includes(allergen);
-                const isEggplantBypass = (allergen === 'egg' && itemName.includes('eggplant'));
+                const isBypassed = isAllergyBypassed(allergen, itemName);
 
-                const isAllergic = (isSubstr || isWordMatch) && !isEggplantBypass;
+                let isAllergic = (isSubstr || isWordMatch) && !isBypassed;
+
+                // 2. Semantic derivative match: does the item contain any derivatives of the allergen?
+                let matchedDerivative = null;
+                if (!isAllergic && ALLERGEN_DERIVATIVES[allergen]) {
+                    for (const deriv of ALLERGEN_DERIVATIVES[allergen]) {
+                        const isDerivSubstr = itemName.includes(deriv);
+                        const isDerivWordMatch = itemWords.includes(deriv);
+                        const isDerivBypassed = isAllergyBypassed(deriv, itemName);
+
+                        if ((isDerivSubstr || isDerivWordMatch) && !isDerivBypassed) {
+                            isAllergic = true;
+                            matchedDerivative = deriv;
+                            break;
+                        }
+                    }
+                }
 
                 if (isAllergic) {
+                    const warningLabel = matchedDerivative 
+                        ? `Allergy Warning: ${allergen.toUpperCase()} (${matchedDerivative.toUpperCase()})`
+                        : `Allergy Warning: ${allergen.toUpperCase()}`;
+                    
                     violations.push({
-                        rule: `Allergy Warning: ${allergen.toUpperCase()}`,
+                        rule: warningLabel,
                         category: 'Allergy',
                         actual: item.name,
                         limit: `Avoid ${allergen}`
                     });
-                    xaiMessages.push(`CRITICAL ALLERGY ALERT: This meal contains ${item.name}, which matches the child's recorded allergy to ${allergen}. Please do not serve this item.`);
+
+                    const alertMsg = matchedDerivative
+                        ? `CRITICAL ALLERGY ALERT: This meal contains ${item.name} (detected derivative: ${matchedDerivative.toUpperCase()}), which matches the child's recorded allergy to ${allergen.toUpperCase()}. Please do not serve this item.`
+                        : `CRITICAL ALLERGY ALERT: This meal contains ${item.name}, which matches the child's recorded allergy to ${allergen.toUpperCase()}. Please do not serve this item.`;
+                    
+                    xaiMessages.push(alertMsg);
                 }
             });
         });

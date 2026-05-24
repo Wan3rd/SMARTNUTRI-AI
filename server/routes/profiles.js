@@ -4,6 +4,7 @@ import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary } from '../lib/cloudinary.js';
 import { getGrowthStatus } from '../utils/growth.js';
 import { revalidateProfileLogs } from '../utils/compliance.js';
+import { logAuditAction } from '../lib/auditLogger.js';
 
 const router = express.Router();
 
@@ -459,6 +460,22 @@ router.get('/:id', verifyToken, async (req, res) => {
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized' });
+
+        // Log Protected Health Information (PHI) read access for HIPAA/DPA compliance
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: profile.user_id,
+            action: 'READ_PATIENT_PROFILE',
+            entityType: 'PROFILE',
+            entityId: id,
+            details: {
+                accessed_by: req.user.email,
+                role: req.user.role,
+                child_name: profile.child_name,
+                contains_medical_history: !!profile.medical_history
+            },
+            ipAddress: req.ip
+        });
 
         res.json(profile);
     } catch (err) {

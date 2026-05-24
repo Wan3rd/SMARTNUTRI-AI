@@ -4,6 +4,7 @@ import { verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { DEFAULT_MEAL_TEMPLATES } from '../data/default_meal_templates.js';
+import { logAuditAction } from '../lib/auditLogger.js';
 
 const router = express.Router();
 
@@ -1180,6 +1181,23 @@ router.get('/adime-notes/:profileId', verifyToken, async (req, res) => {
             where: { profile_id: req.params.profileId },
             orderBy: { created_at: 'desc' }
         });
+
+        // Log Protected Health Information (PHI) read access for HIPAA/DPA compliance
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: profile.user_id,
+            action: 'READ_ADIME_NOTES',
+            entityType: 'PROFILE',
+            entityId: req.params.profileId,
+            details: {
+                accessed_by: req.user.email,
+                role: req.user.role,
+                child_name: profile.child_name,
+                notes_count: notes.length
+            },
+            ipAddress: req.ip
+        });
+
         res.json(notes);
     } catch (err) {
         console.error(err);
@@ -1192,6 +1210,14 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
     const { profile_id, assessment, diagnosis, intervention, monitoring, evaluation } = req.body;
     try {
         if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+        
+        // Fetch parent user ID for targetId in audit logs
+        const profile = await prisma.profiles.findUnique({
+            where: { id: profile_id },
+            select: { user_id: true }
+        });
+        const parentUserId = profile?.user_id || null;
+
         const newNote = await prisma.adime_notes.create({
             data: {
                 profile_id,
@@ -1203,6 +1229,21 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
                 evaluation
             }
         });
+
+        // Log creation of clinical notes for HIPAA/DPA compliance
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: parentUserId,
+            action: 'CREATE_ADIME_NOTE',
+            entityType: 'ADIME_NOTES',
+            entityId: newNote.id,
+            details: {
+                created_by: req.user.email,
+                profile_id
+            },
+            ipAddress: req.ip
+        });
+
         res.status(201).json(newNote);
     } catch (err) {
         console.error(err);
@@ -1216,10 +1257,33 @@ router.patch('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) =
     try {
         const note = await prisma.adime_notes.findUnique({ where: { id: req.params.id } });
         if (!note || note.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
+        
+        // Fetch parent user ID for targetId in audit logs
+        const profile = await prisma.profiles.findUnique({
+            where: { id: note.profile_id },
+            select: { user_id: true }
+        });
+        const parentUserId = profile?.user_id || null;
+
         const updated = await prisma.adime_notes.update({
             where: { id: req.params.id },
             data: { assessment, diagnosis, intervention, monitoring, evaluation }
         });
+
+        // Log modification of clinical notes for HIPAA/DPA compliance
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: parentUserId,
+            action: 'UPDATE_ADIME_NOTE',
+            entityType: 'ADIME_NOTES',
+            entityId: req.params.id,
+            details: {
+                updated_by: req.user.email,
+                profile_id: note.profile_id
+            },
+            ipAddress: req.ip
+        });
+
         res.json(updated);
     } catch (err) {
         console.error(err);
@@ -1232,9 +1296,32 @@ router.delete('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) 
     try {
         const note = await prisma.adime_notes.findUnique({ where: { id: req.params.id } });
         if (!note || note.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
+        
+        // Fetch parent user ID for targetId in audit logs before deletion
+        const profile = await prisma.profiles.findUnique({
+            where: { id: note.profile_id },
+            select: { user_id: true }
+        });
+        const parentUserId = profile?.user_id || null;
+
         await prisma.adime_notes.delete({
             where: { id: req.params.id }
         });
+
+        // Log deletion of clinical notes for HIPAA/DPA compliance
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: parentUserId,
+            action: 'DELETE_ADIME_NOTE',
+            entityType: 'ADIME_NOTES',
+            entityId: req.params.id,
+            details: {
+                deleted_by: req.user.email,
+                profile_id: note.profile_id
+            },
+            ipAddress: req.ip
+        });
+
         res.json({ message: 'Clinical note deleted' });
     } catch (err) {
         console.error(err);

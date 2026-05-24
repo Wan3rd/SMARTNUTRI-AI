@@ -101,6 +101,46 @@ const runTests = () => {
         "Violations count:", result8.details?.violations?.length
     );
 
+    // Test 9: Semantic Dairy Derivative check (Child allergic to 'Dairy', meal has 'Parmesan Cheese')
+    const mockCheeseMeal = {
+        ai_analysis: {
+            items: [
+                { name: "Parmesan Cheese", calories: 110 }
+            ]
+        }
+    };
+    const dairyAllergiesTest = ["Dairy"];
+    const result9 = checkCompliance(mockCheeseMeal, [], {}, dairyAllergiesTest);
+    console.log("Test 9 (Dairy allergy vs Parmesan Cheese - Semantic Derivative check):", 
+        result9.status === 'flagged' && 
+        result9.compliance_score === 0 && 
+        result9.details.violations.length === 1 && 
+        result9.details.violations[0].rule.includes("DAIRY") &&
+        result9.details.violations[0].rule.includes("CHEESE")
+        ? "PASS" : "FAIL", 
+        "Violation:", result9.details?.violations?.[0]?.rule
+    );
+
+    // Test 10: Semantic Gluten Derivative check (Child allergic to 'Gluten', meal has 'French Bread')
+    const mockBreadMeal = {
+        ai_analysis: {
+            items: [
+                { name: "French Bread", calories: 150 }
+            ]
+        }
+    };
+    const glutenAllergiesTest = ["Gluten"];
+    const result10 = checkCompliance(mockBreadMeal, [], {}, glutenAllergiesTest);
+    console.log("Test 10 (Gluten allergy vs French Bread - Semantic Derivative check):", 
+        result10.status === 'flagged' && 
+        result10.compliance_score === 0 && 
+        result10.details.violations.length === 1 && 
+        result10.details.violations[0].rule.includes("GLUTEN") &&
+        result10.details.violations[0].rule.includes("BREAD")
+        ? "PASS" : "FAIL", 
+        "Violation:", result10.details?.violations?.[0]?.rule
+    );
+
     console.log("--- TESTS COMPLETE ---");
 };
 

@@ -546,10 +546,12 @@ export default function ParentDashboard() {
                                                         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
                                                         
                                                         {/* Dynamic HUD reading overlay */}
-                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-                                                            <span className="text-sm font-black tracking-tight text-[var(--color-secondary)] dark:text-white tabular-nums drop-shadow-[0_2px_4px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                                                {hydrationPercentage}%
-                                                            </span>
+                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20">
+                                                            <div className="px-2.5 py-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-sm border border-white/40 dark:border-white/10 flex items-center justify-center">
+                                                                <span className="text-[10px] font-black tracking-tight text-slate-800 dark:text-white tabular-nums">
+                                                                    {hydrationPercentage}%
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

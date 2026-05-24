@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary } from '../lib/cloudinary.js';
-import { sendResetPasswordEmail } from '../lib/mailer.js';
+import { sendResetPasswordEmail, sendOtpEmail } from '../lib/mailer.js';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -21,7 +21,12 @@ function validateEmail(email) {
     return typeof email === 'string' && EMAIL_REGEX.test(email);
 }
 function validatePassword(password) {
-    return typeof password === 'string' && password.length >= 8;
+    if (typeof password !== 'string' || password.length < 8) return false;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    return hasUppercase && hasLowercase && hasDigit && hasSpecial;
 }
 
 // CHECK EMAIL AVAILABILITY
@@ -40,6 +45,68 @@ router.get('/check-email', async (req, res) => {
     }
 });
 
+// Active OTP storage in memory
+const activeOtps = new Map();
+
+// SEND OTP EMAIL (via SendGrid)
+router.post('/send-otp', async (req, res) => {
+    const { email, fullName } = req.body;
+    if (!email || !validateEmail(email)) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
+
+    try {
+        // Generate 6-digit OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store on server with 2 minutes expiration
+        const expiresAt = Date.now() + 2 * 60 * 1000;
+        activeOtps.set(email.toLowerCase(), { otpCode, expiresAt });
+
+        // Dispatch via SendGrid
+        const mailResult = await sendOtpEmail(email.toLowerCase(), otpCode, fullName);
+        
+        if (mailResult.success) {
+            return res.json({ success: true, message: 'Verification OTP sent successfully' });
+        } else {
+            console.error("SendGrid failed to dispatch OTP:", mailResult.error);
+            return res.status(500).json({ 
+                message: 'Failed to send verification email. Please contact support or check your SENDGRID_API_KEY environment variable.' 
+            });
+        }
+    } catch (err) {
+        console.error("OTP send service error:", err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// VERIFY OTP
+router.post('/verify-otp', async (req, res) => {
+    const { email, otpCode } = req.body;
+    if (!email || !otpCode) {
+        return res.status(400).json({ message: 'Email and OTP code are required' });
+    }
+
+    const record = activeOtps.get(email.toLowerCase());
+    if (!record) {
+        return res.status(400).json({ message: 'No active verification code found for this email. Please request a new one.' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+        activeOtps.delete(email.toLowerCase());
+        return res.status(400).json({ message: 'Verification code has expired. Please click "Resend Code".' });
+    }
+
+    if (record.otpCode !== otpCode) {
+        return res.status(400).json({ message: 'Invalid verification code. Please check and try again.' });
+    }
+
+    // Verified! Clear code
+    activeOtps.delete(email.toLowerCase());
+    res.json({ success: true, message: 'Email verified successfully.' });
+});
+
+
 // REGISTER
 router.post('/register', upload.single('license'), async (req, res) => {
     const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
@@ -53,7 +120,7 @@ router.post('/register', upload.single('license'), async (req, res) => {
         return res.status(400).json({ message: 'Full name is required (minimum 2 characters)' });
     }
     if (!validatePassword(password)) {
-        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+        return res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
     }
     if (!role || !VALID_ROLES.includes(role)) {
         return res.status(400).json({ message: 'Role must be either "parent" or "nutritionist"' });
@@ -441,7 +508,7 @@ router.post('/reset-password', async (req, res) => {
         return res.status(400).json({ message: 'Reset token is required' });
     }
     if (!validatePassword(password)) {
-        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+        return res.status(400).json({ message: 'New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
     }
 
     try {
@@ -531,7 +598,7 @@ router.put('/change-password', verifyToken, authLimiter, async (req, res) => {
         return res.status(400).json({ message: 'Current password is required' });
     }
     if (!validatePassword(newPassword)) {
-        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+        return res.status(400).json({ message: 'New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
     }
 
     try {
@@ -594,7 +661,7 @@ router.post('/change-password-force', verifyToken, async (req, res) => {
     const { newPassword } = req.body;
 
     if (!validatePassword(newPassword)) {
-        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+        return res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
     }
 
     try {

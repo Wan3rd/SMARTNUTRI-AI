@@ -704,7 +704,7 @@ router.get('/content/search', verifyAdmin, async (req, res) => {
         if (type === 'profiles') {
             const results = await prisma.profiles.findMany({
                 where: { child_name: { contains: query, mode: 'insensitive' } },
-                include: { user: { select: { email: true, full_name: true } } },
+                include: { users: { select: { email: true, full_name: true } } },
                 take: 20
             });
             return res.json(results);
@@ -712,19 +712,33 @@ router.get('/content/search', verifyAdmin, async (req, res) => {
         
         if (type === 'meals') {
             const results = await prisma.meal_logs.findMany({
-                where: { OR: [{ food_name: { contains: query, mode: 'insensitive' } }, { notes: { contains: query, mode: 'insensitive' } }] },
-                include: { profile: { select: { child_name: true, user: { select: { email: true } } } } },
+                where: {
+                    OR: [
+                        { meal_category: { contains: query, mode: 'insensitive' } },
+                        { cooking_method: { contains: query, mode: 'insensitive' } },
+                        { supplements: { contains: query, mode: 'insensitive' } },
+                        { profiles: { child_name: { contains: query, mode: 'insensitive' } } }
+                    ]
+                },
+                include: { profiles: { select: { child_name: true, users: { select: { email: true } } } } },
                 take: 20
             });
             return res.json(results);
         }
 
         if (type === 'notes') {
-            const results = await prisma.clinical_notes.findMany({
-                where: { OR: [{ diagnosis: { contains: query, mode: 'insensitive' } }, { intervention: { contains: query, mode: 'insensitive' } }] },
+            const results = await prisma.adime_notes.findMany({
+                where: {
+                    OR: [
+                        { diagnosis: { contains: query, mode: 'insensitive' } },
+                        { intervention: { contains: query, mode: 'insensitive' } },
+                        { assessment: { contains: query, mode: 'insensitive' } },
+                        { monitoring: { contains: query, mode: 'insensitive' } }
+                    ]
+                },
                 include: { 
                     nutritionist: { select: { full_name: true } },
-                    profile: { select: { child_name: true } } 
+                    profiles: { select: { child_name: true } } 
                 },
                 take: 20
             });
@@ -749,7 +763,7 @@ router.delete('/content/:type/:id', verifyAdmin, async (req, res) => {
         } else if (type === 'meals') {
             deletedEntity = await prisma.meal_logs.delete({ where: { id } });
         } else if (type === 'notes') {
-            deletedEntity = await prisma.clinical_notes.delete({ where: { id } });
+            deletedEntity = await prisma.adime_notes.delete({ where: { id } });
         } else {
             return res.status(400).json({ message: 'Invalid content type' });
         }

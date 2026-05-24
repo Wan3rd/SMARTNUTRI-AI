@@ -52,7 +52,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     };
 
     const parentNavItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Calendar, label: 'Calendar', path: '/calendar' },
         { icon: Utensils, label: 'Daily Plan', path: '/daily-plan' },
         { icon: History, label: 'Meal History', path: '/meal-history' },
@@ -63,14 +63,14 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     ];
 
     const nutritionistNavItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Utensils, label: 'Meal Library', path: '/meals' },
         { icon: User, label: 'My Profile', path: '/profile' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 
     const adminNavItems = [
-        { icon: ShieldCheck, label: 'Oversight', path: '/' },
+        { icon: ShieldCheck, label: 'Oversight', path: '/dashboard' },
         { icon: Users, label: 'All Users', path: '/admin/users' },
         { icon: Database, label: 'Data Oversight', path: '/admin/data' },
         { icon: History, label: 'Audit Logs', path: '/admin/audit' },

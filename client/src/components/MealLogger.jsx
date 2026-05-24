@@ -13,6 +13,44 @@ import Notification from './common/Notification';
 import { useAuth } from '../context/AuthContext';
 import { cn, convertWater } from '../lib/utils';
 
+const ALLERGEN_DERIVATIVES = {
+    dairy: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    milk: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    gluten: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    wheat: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    peanut: ['peanut', 'groundnut', 'arachis', 'peanut butter', 'peanut oil'],
+    egg: ['egg', 'mayonnaise', 'meringue', 'ovalbumin', 'custard', 'egg yolk', 'egg white'],
+    soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    fish: ['fish', 'salmon', 'tuna', 'cod', 'sardine', 'anchovy', 'mackerel', 'tilapia', 'trout', 'haddock', 'patis'],
+    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong']
+};
+
+const isAllergyBypassed = (allergenOrDeriv, itemName) => {
+    const lowerItem = String(itemName || '').toLowerCase();
+    const lowerAllergen = String(allergenOrDeriv || '').toLowerCase();
+    
+    // 1. Eggplant Egg Bypass
+    if (lowerAllergen === 'egg' && lowerItem.includes('eggplant')) {
+        return true;
+    }
+    // 2. Peanut Butter Dairy Bypass (Peanut butter is dairy-free despite the word "butter")
+    if (lowerAllergen === 'butter' && lowerItem.includes('peanut butter')) {
+        return true;
+    }
+    // 3. Non-dairy Milk Bypasses (Coconut milk, Soy milk, Almond milk, etc. are dairy-free)
+    if (lowerAllergen === 'milk' && (
+        lowerItem.includes('coconut milk') || 
+        lowerItem.includes('soy milk') || 
+        lowerItem.includes('almond milk') || 
+        lowerItem.includes('oat milk') || 
+        lowerItem.includes('rice milk')
+    )) {
+        return true;
+    }
+    return false;
+};
+
 const COOKING_METHODS = [
     "Raw / Fresh", "Baked", "Blanched", "Boiled", "Braised / Stewed", "Broiled",
     "Deep Fried", "Fried / Pan-fried", "Grilled", "Microwaved", "Poached",
@@ -161,20 +199,53 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
     };
-
     // Clinical Allergy Awareness Logic
     const allergyWarnings = useMemo(() => {
         if (!allergies || allergies.length === 0 || !verifiedItems || verifiedItems.length === 0) return [];
 
         return verifiedItems.filter(item => {
             const itemName = item.name?.toLowerCase() || '';
-            return allergies.some(allergy => {
-                const allergen = allergy.toLowerCase().trim();
-                if (!allergen || allergen.length < 2) return false; // Avoid matching single letters
-                return itemName.includes(allergen);
+            return allergies.some(allergyRaw => {
+                // Split the allergy element by comma, slash, or semicolon to handle joint inputs like "milk/dairy"
+                const parts = String(allergyRaw || '').split(/[,/;]+/);
+                
+                return parts.some(part => {
+                    let allergen = part.toLowerCase()
+                        .replace(/\ballergy\b/g, '')
+                        .replace(/\ballergies\b/g, '')
+                        .replace(/\ballergic\b/g, '')
+                        .replace(/\bto\b/g, '')
+                        .trim();
+
+                    // Simple English plural stemming (matches backend stemmer)
+                    if (allergen.endsWith('ies')) {
+                        allergen = allergen.slice(0, -3) + 'y';
+                    } else if (allergen.endsWith('s') && !allergen.endsWith('ss') && !allergen.endsWith('us') && !allergen.endsWith('is') && !allergen.endsWith('as')) {
+                        allergen = allergen.slice(0, -1);
+                    }
+
+                    if (!allergen || allergen.length < 2) return false;
+
+                    // 1. Direct match with bypasses
+                    const isDirectMatch = itemName.includes(allergen);
+                    const isBypassed = isAllergyBypassed(allergen, itemName);
+                    if (isDirectMatch && !isBypassed) return true;
+
+                    // 2. Semantic derivative check
+                    if (ALLERGEN_DERIVATIVES[allergen]) {
+                        return ALLERGEN_DERIVATIVES[allergen].some(deriv => {
+                            const isDerivMatch = itemName.includes(deriv);
+                            const isDerivBypassed = isAllergyBypassed(deriv, itemName);
+                            return isDerivMatch && !isDerivBypassed;
+                        });
+                    }
+
+                    return false;
+                });
             });
         });
     }, [verifiedItems, allergies]);
+
     const fileInputRef = useRef(null);
     const fileAfterInputRef = useRef(null);
 
