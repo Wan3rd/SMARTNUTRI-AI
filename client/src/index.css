@@ -381,3 +381,84 @@ textarea {
   animation: wave-right 8s linear infinite;
   will-change: transform;
 }
+
+/* ── PREMIUM TRANSITION POLISH ── */
+
+/* Smooth global transitions for background/text/borders under normal changes */
+html,
+body,
+.Card,
+.glass,
+[class*="bg-"],
+[class*="dark:bg-"],
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+input,
+select,
+textarea,
+button {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure custom transitions (like height/width/transform transitions on divs) are fully preserved */
+[class*="transition-all"],
+[class*="transition-colors"],
+[class*="transition-opacity"],
+[class*="transition-transform"],
+.animate-wave-slow,
+.animate-wave-fast,
+.animate-spin,
+.animate-pulse,
+.recharts-wrapper,
+.recharts-wrapper * {
+  transition-property: height, width, transform, opacity, scale, rotate, translate !important;
+  transition-duration: inherit !important;
+  transition-timing-function: inherit !important;
+}
+
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* Micro-animations for Moon & Sun Icons */
+.theme-icon-rotate {
+  transition: transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.theme-button-hover:hover .theme-icon-rotate {
+  transform: rotate(45deg) scale(1.1);
+}
+
+.theme-button-active .theme-icon-rotate {
+  transform: rotate(360deg) scale(1.15) !important;
+}
+
+/* Premium Visual Wipe Customization for View Transitions API */
+::view-transition-old(root) {
+  animation: 350ms cubic-bezier(0.4, 0, 1, 1) both fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 350ms cubic-bezier(0, 0, 0.2, 1) both fade-in;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

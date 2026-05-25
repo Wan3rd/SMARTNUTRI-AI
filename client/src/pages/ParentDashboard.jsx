@@ -391,12 +391,12 @@ export default function ParentDashboard() {
                             >
                                 {allLogs.length > 0 && (
                                     <Card className={cn(
-                                        "border-2 relative overflow-hidden rounded-[2rem] shadow-xl transition-all duration-500 bg-white dark:bg-zinc-900/50 p-6 sm:p-8",
+                                        "border-2 border-[var(--color-divider)] relative overflow-hidden rounded-[2rem] shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5 p-6 sm:p-8",
                                         (latestMeal?.compliance_score || 100) >= 80 
-                                            ? 'border-emerald-500/20 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)] bg-gradient-to-br from-emerald-500/[0.02] to-teal-500/[0.01]' 
-                                            : 'border-amber-500/20 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)] bg-gradient-to-br from-amber-500/[0.02] to-orange-500/[0.01]'
+                                            ? 'dark:border-emerald-500/20 dark:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)] dark:bg-gradient-to-br dark:from-emerald-500/[0.02] dark:to-teal-500/[0.01]' 
+                                            : 'dark:border-amber-500/20 dark:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)] dark:bg-gradient-to-br dark:from-amber-500/[0.02] dark:to-orange-500/[0.01]'
                                     )}>
-                                        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
+                                        <div className="absolute inset-0 opacity-0 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
                                         <CardContent className="p-0 flex flex-col md:flex-row items-center gap-6 sm:gap-8 relative z-10">
                                             {/* Circular SVG HUD Ring */}
                                             <div className="relative flex items-center justify-center shrink-0 w-32 h-32 sm:w-36 sm:h-36">
@@ -498,8 +498,8 @@ export default function ParentDashboard() {
                                     const convGoal = convertWater(goalMl, user?.measurement_system);
                                     
                                     return (
-                                        <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-xl transition-all duration-500 bg-white dark:bg-zinc-900/50 p-6 sm:p-8 relative">
-                                            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
+                                        <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5 p-6 sm:p-8 relative">
+                                            <div className="absolute inset-0 opacity-0 dark:opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
                                             <CardContent className="p-0 flex flex-col sm:flex-row items-center gap-6 sm:gap-10 relative z-10">
                                                 
                                                 {/* Tumbler Water Glass Fluid Simulation */}
@@ -508,7 +508,7 @@ export default function ParentDashboard() {
                                                     <div className="absolute inset-[-10px] rounded-full blur-[25px] bg-sky-500/10 dark:bg-sky-500/5 animate-pulse" />
                                                     
                                                     {/* Tumbler Cup Container */}
-                                                    <div className="relative w-28 h-40 bg-slate-100/50 dark:bg-slate-800/20 rounded-b-[2rem] rounded-t-lg border-[3.5px] border-slate-300 dark:border-slate-700/80 overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.06)] flex items-end">
+                                                    <div className="relative w-28 h-40 bg-[var(--color-bg-page)] dark:bg-slate-800/20 rounded-b-[2rem] rounded-t-lg border-[3.5px] border-slate-300 dark:border-slate-700/80 overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.06)] flex items-end">
                                                         
                                                         {/* Animated wave elements container */}
                                                         <div 
@@ -578,10 +578,10 @@ export default function ParentDashboard() {
                                                     {/* Goal Status Numbers */}
                                                     <div className="flex items-center gap-3 flex-wrap">
                                                         <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-2xl sm:text-3xl font-black tabular-nums text-[var(--color-secondary)] dark:text-white leading-none">
+                                                            <span className="text-2xl sm:text-3xl font-black tabular-nums text-[var(--color-text-main)] leading-none">
                                                                 {formatValue(convCurrent.value, user?.nutrient_precision)}
                                                             </span>
-                                                            <span className="text-sm font-black text-[var(--color-text-muted)]">
+                                                            <span className="text-sm font-black text-slate-500 dark:text-slate-400">
                                                                 / {formatValue(convGoal.value, user?.nutrient_precision)} {convCurrent.unit}
                                                             </span>
                                                         </div>
@@ -595,7 +595,7 @@ export default function ParentDashboard() {
 
                                                     {/* Quick Log Controls */}
                                                     <div className="flex flex-wrap items-center gap-3.5 pt-1">
-                                                        <div className="flex items-center bg-slate-100 dark:bg-slate-800/40 rounded-2xl p-1 border border-[var(--color-divider)] shrink-0">
+                                                        <div className="flex items-center bg-[var(--color-bg-page)] dark:bg-slate-800/40 rounded-2xl p-1 border border-[var(--color-divider)] shrink-0">
                                                             <motion.button 
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => handleQuickWaterChange('decrement')}

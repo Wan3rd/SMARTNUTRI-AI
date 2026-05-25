@@ -147,6 +147,9 @@ export const AuthProvider = ({ children }) => {
             if (prefs.privacy_mode !== undefined) updatedUser.privacy_mode = prefs.privacy_mode;
             if (prefs.measurement_system) updatedUser.measurement_system = prefs.measurement_system;
             if (prefs.nutrient_precision) updatedUser.nutrient_precision = prefs.nutrient_precision;
+            if (prefs.notif_compliance !== undefined) updatedUser.notif_compliance = prefs.notif_compliance;
+            if (prefs.notif_reminders !== undefined) updatedUser.notif_reminders = prefs.notif_reminders;
+            if (prefs.research_anonymize !== undefined) updatedUser.research_anonymize = prefs.research_anonymize;
             
             updateUser(updatedUser);
             return { success: true };

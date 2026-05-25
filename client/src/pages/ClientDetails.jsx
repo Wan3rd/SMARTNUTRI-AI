@@ -610,6 +610,7 @@ export default function ClientDetails() {
 
     // --- Weekly Planning State ---
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    const [activePlannerDay, setActivePlannerDay] = useState(0);
     const weekDays = useMemo(() => {
         return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
     }, [currentWeekStart]);
@@ -991,6 +992,33 @@ export default function ClientDetails() {
         }
     };
 
+    const handleUnlinkClient = () => {
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Unlink Caregiver',
+            message: `Are you sure you want to unlink caregiver "${clientName || 'this caregiver'}"? This will immediately revoke your access to their profile and their children's data.`,
+            isDestructive: true,
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                try {
+                    startLoading('Unlinking caregiver...');
+                    const res = await api.delete(`/nutritionist/clients/${clientId}`);
+                    if (res.data.success) {
+                        showNotif(`Successfully unlinked caregiver "${clientName || 'caregiver'}".`);
+                        navigate('/dashboard');
+                    } else {
+                        showNotif(res.data.message || "Failed to unlink client connection.", "error");
+                    }
+                } catch (err) {
+                    console.error("Failed to unlink client connection:", err);
+                    showNotif(err.response?.data?.message || "An error occurred while trying to unlink this connection.", "error");
+                } finally {
+                    stopLoading();
+                }
+            }
+        });
+    };
+
     const fetchGrowthLogs = async (profileId) => {
         try {
             const res = await api.get(`/profiles/${profileId}/growth`);
@@ -1082,9 +1110,11 @@ export default function ClientDetails() {
                     await api.delete(`/profiles/vaccinations/${id}`);
                     setChildVaccinations(childVaccinations.filter(v => v.id !== id));
                     showNotif("Vaccination record removed");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Error deleting vaccine", err);
                     showNotif("Failed to delete vaccine", "error");
+                    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 }
             },
             isDestructive: true
@@ -1882,6 +1912,18 @@ export default function ClientDetails() {
                     Create Patient Profile
                 </Button>
             </Card>
+
+            <CreatePatientModal
+                isOpen={isAddProfileOpen}
+                onClose={() => setIsAddProfileOpen(false)}
+                parentId={clientId}
+                parentEmail={clientEmail}
+                parentName={clientName}
+                onClientAdded={() => {
+                    fetchProfiles();
+                    showNotif("Child profile added successfully!");
+                }}
+            />
         </div>
     );
 
@@ -1918,14 +1960,26 @@ export default function ClientDetails() {
             )}
 
             <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-500">
-                <header className="flex items-center gap-4">
-                    <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-                        <ArrowLeft size={24} />
-                    </Button>
-                    <div>
-                        <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
-                        <p className="text-xs sm:text-base text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
+                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
+                            <ArrowLeft size={24} />
+                        </Button>
+                        <div>
+                            <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
+                            <p className="text-xs sm:text-base text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
+                        </div>
                     </div>
+                    {!isLoading && (
+                        <button
+                            onClick={handleUnlinkClient}
+                            className="hidden sm:flex h-10 px-4 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/20 hover:border-red-500/50 rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] items-center justify-center gap-2 transition-all shadow-sm shrink-0 w-fit self-start sm:self-auto"
+                            title="Unlink Caregiver"
+                        >
+                            <Trash2 size={13} />
+                            Unlink Caregiver
+                        </button>
+                    )}
                 </header>
 
                 {profiles.length === 0 ? (
@@ -2038,7 +2092,7 @@ export default function ClientDetails() {
                                         {/* --- Grouped Clinical Modules (Pillars) --- */}
                                         <div className="flex flex-col gap-6 mb-8">
                                             {/* Pillar Switcher */}
-                                            <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-[var(--color-divider)] flex flex-wrap items-center justify-center gap-1 sm:justify-between shadow-inner">
+                                            <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-[var(--color-divider)] flex items-center justify-between gap-1 overflow-x-auto scrollbar-none pb-1.5 -mx-4 px-4 sm:mx-0 sm:px-1.5 sm:pb-1.5 shadow-inner whitespace-nowrap">
                                                 {[
                                                     { id: 'assessment', label: 'Assessment', icon: Activity, tabs: ['overview', 'history', 'insights'] },
                                                     { id: 'clinical', label: 'Clinical Care', icon: ShieldAlert, tabs: ['adime', 'rules', 'notes'] },
@@ -2058,7 +2112,7 @@ export default function ClientDetails() {
                                                             key={group.id}
                                                             onClick={() => setTab(group.tabs[0])}
                                                             className={cn(
-                                                                "flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-tight sm:tracking-widest text-[9px] sm:text-[10px]",
+                                                                "flex-shrink-0 min-w-[110px] sm:min-w-0 sm:flex-grow sm:flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-tight sm:tracking-widest text-[9px] sm:text-[10px]",
                                                                 isGroupActive
                                                                     ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10"
                                                                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
@@ -2086,7 +2140,7 @@ export default function ClientDetails() {
                                             </div>
 
                                             {/* Sub-Navigation Pills */}
-                                            <div className="flex flex-wrap items-center gap-2 px-1">
+                                            <div className="flex items-center gap-2 px-1 overflow-x-auto scrollbar-none pb-1 -mx-4 px-4 sm:mx-0 sm:px-1 whitespace-nowrap">
                                                 {(() => {
                                                     const currentGroup = [
                                                         {
@@ -2121,7 +2175,7 @@ export default function ClientDetails() {
                                                                 key={tab.id}
                                                                 onClick={() => setTab(tab.id)}
                                                                 className={cn(
-                                                                    "px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-sm",
+                                                                    "px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-sm flex-shrink-0",
                                                                     isTabActive
                                                                         ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-emerald-500/20"
                                                                         : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50"
@@ -3874,16 +3928,14 @@ export default function ClientDetails() {
                                                                                                     const cat = e.target.value;
                                                                                                     let unit = editRuleForm.rule_unit;
                                                                                                     if (cat === 'Calories') unit = 'kcal';
-                                                                                                    else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
-                                                                                                    else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                                                    else if (['Protein', 'Carbohydrates', 'Fats'].includes(cat)) unit = 'g';
                                                                                                     else if (cat === 'Fluid/Water') unit = 'ml';
-                                                                                                    else if (cat === 'Vitamin D') unit = 'mcg';
 
                                                                                                     setEditRuleForm({ ...editRuleForm, category: cat, rule_unit: unit });
                                                                                                 }}
                                                                                                 className="w-full p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] transition-all"
                                                                                             >
-                                                                                                {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
+                                                                                                {['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Fluid/Water', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
                                                                                             </select>
                                                                                         </div>
                                                                                         <div className="space-y-1">
@@ -3923,10 +3975,10 @@ export default function ClientDetails() {
                                                                                                     onChange={(e) => setEditRuleForm({ ...editRuleForm, rule_unit: e.target.value })}
                                                                                                     className={cn(
                                                                                                         "w-16 p-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-xs font-bold outline-none focus:border-[var(--color-primary)] text-center",
-                                                                                                        ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category) ? "opacity-50" : ""
+                                                                                                        ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fluid/Water'].includes(editRuleForm.category) ? "opacity-50" : ""
                                                                                                     )}
                                                                                                     placeholder="Unit"
-                                                                                                    disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fiber', 'Iron', 'Calcium', 'Fluid/Water', 'Added Sugars'].includes(editRuleForm.category)}
+                                                                                                    disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fluid/Water'].includes(editRuleForm.category)}
                                                                                                 />
                                                                                             </div>
                                                                                         </div>
@@ -4009,10 +4061,9 @@ export default function ClientDetails() {
                                                                                 let unit = 'g';
                                                                                 // Standard Clinical Units
                                                                                 if (cat === 'Calories') unit = 'kcal';
-                                                                                else if (['Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber'].includes(cat)) unit = 'g';
-                                                                                else if (['Sodium', 'Iron', 'Calcium', 'Potassium'].includes(cat)) unit = 'mg';
+                                                                                else if (['Protein', 'Carbohydrates', 'Fats'].includes(cat)) unit = 'g';
                                                                                 else if (cat === 'Fluid/Water') unit = 'ml';
-                                                                                else if (cat === 'Vitamin D') unit = 'mcg';
+                                                                                else if (cat === 'Other') unit = '';
 
                                                                                 setNewRule({ ...newRule, category: cat, rule_unit: unit });
                                                                             }}
@@ -4020,17 +4071,9 @@ export default function ClientDetails() {
                                                                             <option>Calories</option>
                                                                             <option>Protein</option>
                                                                             <option>Carbohydrates</option>
-                                                                            <option>Total Fat</option>
-                                                                            <option>Saturated Fat</option>
-                                                                            <option>Total Sugar</option>
-                                                                            <option>Added Sugars</option>
-                                                                            <option>Fiber</option>
-                                                                            <option>Sodium</option>
+                                                                            <option>Fats</option>
                                                                             <option>Fluid/Water</option>
-                                                                            <option>Iron</option>
-                                                                            <option>Calcium</option>
-                                                                            <option>Vitamin D</option>
-                                                                            <option>Potassium</option>
+                                                                            <option>Other</option>
                                                                         </select>
                                                                     </div>
                                                                     <div className="md:col-span-4">
@@ -4068,11 +4111,11 @@ export default function ClientDetails() {
                                                                             <select
                                                                                 className={cn(
                                                                                     "w-24 p-2 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-main)]",
-                                                                                    ['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                                                                    ['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fluid/Water'].includes(newRule.category) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                                                                                 )}
                                                                                 value={newRule.rule_unit}
                                                                                 onChange={(e) => setNewRule({ ...newRule, rule_unit: e.target.value })}
-                                                                                disabled={['Calories', 'Protein', 'Carbohydrates', 'Total Fat', 'Saturated Fat', 'Total Sugar', 'Added Sugars', 'Fiber', 'Sodium', 'Fluid/Water', 'Iron', 'Calcium', 'Vitamin D', 'Potassium'].includes(newRule.category)}
+                                                                                disabled={['Calories', 'Protein', 'Carbohydrates', 'Fats', 'Sugar', 'Sodium', 'Fluid/Water'].includes(newRule.category)}
                                                                             >
                                                                                 <option>kcal</option>
                                                                                 <option>g</option>
@@ -4212,9 +4255,9 @@ export default function ClientDetails() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* THE WEEKLY GRID */}
-                                                            <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden shadow-sm relative">
-                                                                {/* Scrolling Indicator for Desktop/Mobile */}
+                                                            {/* THE WEEKLY GRID - DESKTOP ONLY */}
+                                                            <div className="hidden md:block bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden shadow-sm relative">
+                                                                {/* Scrolling Indicator for Desktop */}
                                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none md:hidden">
                                                                     <div className="bg-[var(--color-primary)] text-white p-2 rounded-full shadow-lg animate-pulse">
                                                                         <ArrowLeft size={16} className="rotate-180" />
@@ -4330,6 +4373,121 @@ export default function ClientDetails() {
                                                                             ))}
                                                                         </tbody>
                                                                     </table>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* THE WEEKLY PLANNER - MOBILE ONLY */}
+                                                            <div className="block md:hidden space-y-4">
+                                                                {/* Day Selection Tab Strip */}
+                                                                <div className="flex gap-2 overflow-x-auto pb-2.5 -mx-4 px-4 scrollbar-none snap-x whitespace-nowrap">
+                                                                    {weekDays.map((day, i) => {
+                                                                        const isSelected = activePlannerDay === i;
+                                                                        const isToday = isSameDay(day, new Date());
+                                                                        const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), day));
+                                                                        const totalCal = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+                                                                        return (
+                                                                            <button
+                                                                                key={day.toString()}
+                                                                                onClick={() => setActivePlannerDay(i)}
+                                                                                className={cn(
+                                                                                    "flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all w-[72px] text-center select-none shadow-sm snap-start",
+                                                                                    isSelected 
+                                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20 scale-[1.02]" 
+                                                                                        : "bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50",
+                                                                                    isToday && !isSelected ? "border-[var(--color-primary)]/30" : ""
+                                                                                )}
+                                                                            >
+                                                                                <span className={cn("text-[9px] font-black uppercase tracking-wider block", isSelected ? "text-white/80" : "text-[var(--color-text-muted)]")}>{format(day, 'EEE')}</span>
+                                                                                <span className="text-sm font-black mt-0.5">{format(day, 'd')}</span>
+                                                                                {totalCal > 0 ? (
+                                                                                    <span className={cn(
+                                                                                        "text-[7px] font-black mt-1 px-1 py-0.5 rounded-md border tracking-tighter",
+                                                                                        isSelected
+                                                                                            ? "bg-white/20 text-white border-white/20"
+                                                                                            : "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20"
+                                                                                    )}>
+                                                                                        {totalCal} kcal
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-[7px] font-bold mt-1 opacity-40 uppercase tracking-tighter">0 kcal</span>
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+
+                                                                {/* Vertical schedule slots for active selected day */}
+                                                                <div className="space-y-4">
+                                                                    {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => {
+                                                                        const selectedDayDate = weekDays[activePlannerDay];
+                                                                        const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), selectedDayDate) && m.meal_type === type);
+                                                                        return (
+                                                                            <div key={type} className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] p-5 space-y-4 shadow-sm">
+                                                                                <div className="flex justify-between items-center border-b border-[var(--color-divider)] pb-3">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div className="h-8 w-8 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                                                                                            <Utensils size={14} />
+                                                                                        </div>
+                                                                                        <span className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-wider">{type}</span>
+                                                                                    </div>
+                                                                                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest bg-[var(--color-bg-page)] px-2.5 py-1 rounded-full border border-[var(--color-divider)]">
+                                                                                        {dayMeals.length} Scheduled
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                {dayMeals.length > 0 ? (
+                                                                                    <div className="space-y-3">
+                                                                                        {dayMeals.map(meal => (
+                                                                                            <div key={meal.id} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex justify-between items-center shadow-sm">
+                                                                                                <div className="min-w-0 pr-2">
+                                                                                                    <div className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight line-clamp-1">{meal.recipe_name}</div>
+                                                                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                                                        <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                                                                                            {meal.calories || '--'} kcal
+                                                                                                        </span>
+                                                                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
+                                                                                                            {meal.protein_g || '--'}g P
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                                                    <button
+                                                                                                        onClick={() => handleEditMeal(meal)}
+                                                                                                        className="p-2 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-xl transition-all border border-transparent hover:border-[var(--color-primary)]/20"
+                                                                                                        title="Edit Meal"
+                                                                                                    >
+                                                                                                        <Edit2 size={14} />
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        onClick={() => handleDeleteMeal(meal.id)}
+                                                                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all border border-transparent hover:border-red-100/20"
+                                                                                                        title="Delete Meal"
+                                                                                                    >
+                                                                                                        <Trash2 size={14} />
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="text-[10px] text-center text-[var(--color-text-muted)] italic py-2">
+                                                                                        No meal scheduled for this slot.
+                                                                                    </div>
+                                                                                )}
+
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setSelectedDateForMeal(format(selectedDayDate, 'yyyy-MM-dd'));
+                                                                                        setMealForm(prev => ({ ...prev, meal_type: type }));
+                                                                                        setIsMealModalOpen(true);
+                                                                                    }}
+                                                                                    className="w-full py-3.5 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--color-bg-page)]/50"
+                                                                                >
+                                                                                    <Plus size={14} /> Schedule {type}
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
 
@@ -4905,43 +5063,45 @@ export default function ClientDetails() {
                     maxWidth="max-w-4xl"
                 >
                     <div className="space-y-4">
-                        <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-[var(--color-divider)]">
-                                        <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date</th>
-                                        <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Weight (Δ)</th>
-                                        <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Height (Δ)</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[var(--color-divider)]">
-                                    {velocityStats.length > 0 ? velocityStats.map((stat, i) => (
-                                        <tr key={i} className="hover:bg-indigo-500/5 transition-colors">
-                                            <td className="px-4 py-4 text-xs font-black text-[var(--color-text-main)] uppercase">
-                                                {new Date(stat.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <div className="text-sm font-black text-[var(--color-secondary)]">{stat.weight} <span className="text-[10px] opacity-50 uppercase">kg</span></div>
-                                                <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.weightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                    {parseFloat(stat.weightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                    {parseFloat(stat.weightVel) > 0 ? '+' : ''}{stat.weightVel} kg/mo
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <div className="text-sm font-black text-[var(--color-secondary)]">{stat.height} <span className="text-[10px] opacity-50 uppercase">cm</span></div>
-                                                <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.heightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                    {parseFloat(stat.heightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                    {parseFloat(stat.heightVel) > 0 ? '+' : ''}{stat.heightVel} cm/mo
-                                                </div>
-                                            </td>
+                        <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-[var(--color-divider)]">
+                                            <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date</th>
+                                            <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Weight (Δ)</th>
+                                            <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Height (Δ)</th>
                                         </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan="3" className="px-4 py-20 text-center text-xs font-bold text-[var(--color-text-muted)] italic uppercase">No velocity data recorded.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--color-divider)]">
+                                        {velocityStats.length > 0 ? velocityStats.map((stat, i) => (
+                                            <tr key={i} className="hover:bg-indigo-500/5 transition-colors">
+                                                <td className="px-4 py-4 text-xs font-black text-[var(--color-text-main)] uppercase">
+                                                    {new Date(stat.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <div className="text-sm font-black text-[var(--color-secondary)]">{stat.weight} <span className="text-[10px] opacity-50 uppercase">kg</span></div>
+                                                    <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.weightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                        {parseFloat(stat.weightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                        {parseFloat(stat.weightVel) > 0 ? '+' : ''}{stat.weightVel} kg/mo
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <div className="text-sm font-black text-[var(--color-secondary)]">{stat.height} <span className="text-[10px] opacity-50 uppercase">cm</span></div>
+                                                    <div className={`text-[10px] font-black flex items-center justify-end gap-1 ${parseFloat(stat.heightVel) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                        {parseFloat(stat.heightVel) > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                        {parseFloat(stat.heightVel) > 0 ? '+' : ''}{stat.heightVel} cm/mo
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="3" className="px-4 py-20 text-center text-xs font-bold text-[var(--color-text-muted)] italic uppercase">No velocity data recorded.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <Button variant="outline" className="w-full font-black uppercase text-[10px] py-4 rounded-2xl" onClick={() => setIsVelocityModalOpen(false)}>Close Ledger</Button>
                     </div>

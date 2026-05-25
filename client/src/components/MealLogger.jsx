@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info } from 'lucide-react';
@@ -686,7 +687,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                 </div>
 
                 {status === 'idle' && !preview && recentLogs.length > 0 && (
-                    <div className="bg-gray-50 dark:bg-black/20 p-4 border-b border-[var(--color-divider)]">
+                    <div className="bg-[var(--color-bg-page)] dark:bg-white/5 p-4 border-b border-[var(--color-divider)]">
                         <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1">
                             <Clock size={12} /> Quick Re-log Recent Meal
                         </p>
@@ -901,23 +902,60 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                 </div>
                             </div>
 
+                            {allergyWarnings.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="p-4 bg-gradient-to-br from-rose-500/10 via-red-500/5 to-amber-500/5 dark:from-rose-500/20 dark:to-amber-500/10 border-2 border-red-500/30 rounded-2xl flex items-start gap-3 shadow-md animate-pulse"
+                                >
+                                    <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <h4 className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-wider">ALLERGEN DETECTED IN MEAL</h4>
+                                        <p className="text-[10px] text-red-700 dark:text-red-300 font-bold leading-relaxed">
+                                            The following detected items conflict with the child's recorded clinical allergies:
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 pt-1.5">
+                                            {allergyWarnings.map((warningItem, warningIdx) => (
+                                                <span key={warningIdx} className="px-2 py-0.5 bg-red-500 text-white rounded-lg text-[8px] font-black uppercase tracking-wider shadow-sm">
+                                                    {warningItem.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
                             <div className="space-y-4">
-                                {verifiedItems.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        onBlur={(e) => handleRowBlur(e, idx)}
-                                        className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-y-2 border-x-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-2xl shadow-sm transition-all duration-300 -mx-6 w-[calc(100%+3rem)] sm:w-full sm:mx-0 ${item.isUpdating ? 'opacity-60 scale-[0.98]' : 'hover:border-[var(--color-primary)]/30'}`}
-                                    >
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 relative">
-                                                    <input
-                                                        value={item.name}
-                                                        onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                        placeholder="Food name..."
-                                                        className="w-full p-2 sm:p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs sm:text-sm font-bold uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
-                                                    />
-                                                </div>
+                                {verifiedItems.map((item, idx) => {
+                                    const isAllergicItem = allergyWarnings.some(w => w.name?.toLowerCase() === item.name?.toLowerCase());
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onBlur={(e) => handleRowBlur(e, idx)}
+                                            className={`flex flex-col gap-3 p-4 bg-[var(--color-bg-card)] border-y-2 border-x-0 sm:border-2 rounded-none sm:rounded-2xl shadow-sm transition-all duration-300 -mx-6 w-[calc(100%+3rem)] sm:w-full sm:mx-0 ${
+                                                item.isUpdating ? 'opacity-60 scale-[0.98]' : ''
+                                            } ${
+                                                isAllergicItem 
+                                                    ? 'border-red-500/50 dark:border-red-500/40 bg-red-500/[0.01] dark:bg-red-500/[0.02] shadow-[0_0_12px_rgba(239,68,68,0.1)] hover:border-red-500' 
+                                                    : 'border-[var(--color-divider)] hover:border-[var(--color-primary)]/30'
+                                            }`}
+                                        >
+                                            <div className="flex flex-col gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            value={item.name}
+                                                            onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                                                            placeholder="Food name..."
+                                                            className="w-full p-2 sm:p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs sm:text-sm font-bold uppercase tracking-tight focus:border-[var(--color-primary)] outline-none transition-all"
+                                                        />
+                                                        {isAllergicItem && (
+                                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/30 text-[8px] font-black text-red-800 dark:text-red-400 uppercase tracking-widest mt-1.5 animate-pulse">
+                                                                <AlertCircle size={10} className="shrink-0 text-red-600 dark:text-red-400" />
+                                                                Matches child allergy
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 <button
                                                     onClick={() => handleDeleteItem(idx)}
                                                     className="p-2 sm:p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 transition-all active:scale-90"
@@ -1034,7 +1072,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                             )}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
 
                             <button
@@ -1134,20 +1173,6 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     />
                                     <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase">I have confirmed this meal data is correct</span>
                                 </label>
-
-                                {allergyWarnings.length > 0 && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border-2 border-red-200 dark:border-red-900/40 flex items-start gap-3 animate-pulse shadow-sm">
-                                        <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-200">
-                                            <AlertCircle size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-red-800 dark:text-red-200 uppercase tracking-tight">Clinical Allergy Warning!</p>
-                                            <p className="text-xs font-bold text-red-700 dark:text-red-300/80 mt-0.5 leading-relaxed">
-                                                The AI detected items that may contain allergens: <span className="underline decoration-red-400 decoration-2">{allergyWarnings.map(i => i.name).join(', ')}</span>. Please review carefully.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="flex gap-3 pt-2">

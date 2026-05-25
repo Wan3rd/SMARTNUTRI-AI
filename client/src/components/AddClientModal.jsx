@@ -80,11 +80,11 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
                             />
                             <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
                                 <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold leading-relaxed italic">
-                                    * A link request will be dispatched to this recipient. Upon confirmation, their children's clinical data will be accessible in your dashboard.
+                                    * The caregiver's profile will be instantly paired. Upon pairing, their children's clinical data will be fully accessible in your dashboard.
                                 </p>
                             </div>
                         </div>
-
+ 
                         <div className="flex gap-4 pt-4 border-t border-[var(--color-divider)]">
                             <Button
                                 type="button"
@@ -99,7 +99,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
                                 className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20"
                                 disabled={loading}
                             >
-                                {loading ? <Loader2 className="animate-spin" size={18} /> : 'Send Request'}
+                                {loading ? <Loader2 className="animate-spin" size={18} /> : 'Link Account'}
                             </Button>
                         </div>
                     </form>

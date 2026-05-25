@@ -29,7 +29,7 @@ const MONTHS = [
 ];
 const YEARS = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() - i).toString());
 
-export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
+export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId = null }) {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -135,18 +135,24 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
 
         try {
             const payload = {
+                parentId,
                 child_name: formData.childName,
                 date_of_birth: formData.dateOfBirth,
                 gender: formData.gender,
                 height_cm: formData.heightCm,
                 weight_kg: formData.weightKg,
-                activity_level: formData.activityLevel,
+                activity_level: formData.activityLevel.toLowerCase(),
                 allergies: formData.allergies,
                 dietary_preferences: formData.dietaryPreferences.join(', '),
                 vaccinations: formData.vaccinations
             };
 
-            await api.post('/profiles', payload);
+            if (parentId) {
+                await api.post('/nutritionist/create-client', payload);
+            } else {
+                await api.post('/profiles', payload);
+            }
+
             setMessage({ type: 'success', text: 'New clinical profile created!' });
             
             if (onChildAdded) onChildAdded();
@@ -156,7 +162,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                 setStep(1);
                 setFormData({
                     childName: '', dateOfBirth: '', gender: 'Male', heightCm: '', weightKg: '',
-                    activityLevel: 'moderate', allergies: [], dietaryPreferences: [], vaccinations: []
+                    activityLevel: 'Moderate', allergies: ['None'], dietaryPreferences: [], vaccinations: []
                 });
                 setMessage({ type: '', text: '' });
                 isSubmitting.current = false;

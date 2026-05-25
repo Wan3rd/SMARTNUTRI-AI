@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock, LogOut } from 'lucide-react';
+import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock, LogOut, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoading } from '../context/LoadingContext';
 import { cn } from '../lib/utils';
@@ -16,7 +16,7 @@ import ReviewLogModal from '../components/ReviewLogModal';
 import { useNotification } from '../context/NotificationContext';
 import { DashboardSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 import AnimatedNumber from '../components/common/AnimatedNumber';
-
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 
 export default function NutritionistDashboard() {
@@ -35,6 +35,66 @@ export default function NutritionistDashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [viewStatus, setViewStatus] = useState('active');
     const { showNotification } = useNotification();
+
+    // --- Long Press / Unlink Caregiver State & Refs ---
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, isDestructive: true });
+    const touchStartTimer = React.useRef(null);
+    const hasTriggeredLongPress = React.useRef(false);
+
+    const triggerQuickUnlink = (client) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Quick Unlink Connection',
+            message: `Are you sure you want to unlink caregiver "${client.full_name}" from your clinical station? This will immediately revoke access to their patient and child profiles.`,
+            isDestructive: true,
+            onConfirm: () => {
+                startLoading('Unlinking caregiver...');
+                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                api.delete(`/nutritionist/client/${client.id}`)
+                    .then(() => {
+                        showNotif(`Successfully unlinked caregiver "${client.full_name}".`);
+                        fetchData();
+                    })
+                    .catch((err) => {
+                        console.error("Failed to unlink client:", err);
+                        showNotif(err.response?.data?.message || "An error occurred while unlinking caregiver.", "error");
+                    })
+                    .finally(() => {
+                        stopLoading();
+                    });
+            }
+        });
+    };
+
+    const startPressTimer = (client) => {
+        hasTriggeredLongPress.current = false;
+        touchStartTimer.current = setTimeout(() => {
+            hasTriggeredLongPress.current = true;
+            if (navigator.vibrate) {
+                try {
+                    navigator.vibrate(50);
+                } catch (e) {}
+            }
+            triggerQuickUnlink(client);
+        }, 750); // 750ms hold
+    };
+
+    const cancelPressTimer = () => {
+        if (touchStartTimer.current) {
+            clearTimeout(touchStartTimer.current);
+            touchStartTimer.current = null;
+        }
+    };
+
+    const handleCardClick = (client, e) => {
+        if (hasTriggeredLongPress.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            hasTriggeredLongPress.current = false;
+            return;
+        }
+        navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } });
+    };
 
     const showNotif = (message, type = 'success') => {
         showNotification(message, type);
@@ -68,6 +128,8 @@ export default function NutritionistDashboard() {
             console.error("Failed to fetch nutritionist data", err);
         }
     };
+
+
 
     if (isInitialSync) return <DashboardSkeleton />;
 
@@ -319,9 +381,15 @@ export default function NutritionistDashboard() {
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     <Card
-                                        onClick={() => navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } })}
+                                        onTouchStart={() => startPressTimer(client)}
+                                        onTouchEnd={cancelPressTimer}
+                                        onTouchMove={cancelPressTimer}
+                                        onMouseDown={() => startPressTimer(client)}
+                                        onMouseUp={cancelPressTimer}
+                                        onMouseLeave={cancelPressTimer}
+                                        onClick={(e) => handleCardClick(client, e)}
                                         className={cn(
-                                            "h-full hover:shadow-lg transition-all cursor-pointer border-2 relative group rounded-[2rem] overflow-hidden",
+                                            "h-full hover:shadow-lg transition-all cursor-pointer border-2 relative group rounded-[2rem] overflow-hidden select-none",
                                             isArchived ? "border-dashed border-[var(--color-divider)] opacity-80 grayscale-[0.5]" : "border-[var(--color-divider)]"
                                         )}
                                     >
@@ -456,6 +524,15 @@ export default function NutritionistDashboard() {
                     fetchData();
                     showNotif("Review finalized and saved!");
                 }}
+            />
+
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmDialog.onConfirm}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                isDestructive={confirmDialog.isDestructive}
             />
         </div>
     );

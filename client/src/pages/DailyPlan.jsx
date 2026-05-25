@@ -259,11 +259,16 @@ export default function DailyPlan() {
                 <p className="text-[var(--color-text-muted)] mt-1 font-medium">Follow the prescribed food exchange list for {selectedProfile.child_name}. Tap any item to see swap options.</p>
 
                 {sugarLimit && (
-                    <div className="mt-4 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-900/30 p-3 rounded-xl">
-                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">Nutritionist Clinical Note</p>
-                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 leading-relaxed">
-                            {sugarLimit}
-                        </span>
+                    <div className="mt-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] p-4 flex gap-3.5 items-start">
+                        <div className="p-2.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-xl shrink-0">
+                            <Info size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em] mb-1">Nutritionist Clinical Note</p>
+                            <p className="text-sm font-bold text-[var(--color-text-main)] leading-relaxed italic">
+                                "{sugarLimit}"
+                            </p>
+                        </div>
                     </div>
                 )}
             </header>

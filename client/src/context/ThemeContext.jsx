@@ -45,18 +45,26 @@ export function ThemeProvider({
     }, [theme]);
 
     const setTheme = async (newTheme) => {
-        setThemeState(newTheme);
-        localStorage.setItem(storageKey, newTheme);
+        const updateTheme = async () => {
+            setThemeState(newTheme);
+            localStorage.setItem(storageKey, newTheme);
 
-        // Sync to Backend if logged in
-        if (user) {
-            try {
-                await api.put('/auth/theme', { theme: newTheme });
-                // Update AuthContext user object to keep it in sync
-                updateUser({ ...user, theme_preference: newTheme });
-            } catch (err) {
-                console.error('Failed to sync theme to backend:', err);
+            // Sync to Backend if logged in
+            if (user) {
+                try {
+                    await api.put('/auth/theme', { theme: newTheme });
+                    // Update AuthContext user object to keep it in sync
+                    updateUser({ ...user, theme_preference: newTheme });
+                } catch (err) {
+                    console.error('Failed to sync theme to backend:', err);
+                }
             }
+        };
+
+        if (document.startViewTransition) {
+            document.startViewTransition(updateTheme);
+        } else {
+            await updateTheme();
         }
     };
 

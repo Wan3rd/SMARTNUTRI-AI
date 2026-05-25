@@ -192,7 +192,10 @@ router.post('/register', upload.single('license'), async (req, res) => {
                 theme_preference: true,
                 privacy_mode: true,
                 measurement_system: true,
-                nutrient_precision: true
+                nutrient_precision: true,
+                notif_compliance: true,
+                notif_reminders: true,
+                research_anonymize: true
             }
         });
 
@@ -285,6 +288,9 @@ router.post('/login', loginLimiter, async (req, res) => {
                 privacy_mode: user.privacy_mode,
                 measurement_system: user.measurement_system,
                 nutrient_precision: user.nutrient_precision,
+                notif_compliance: user.notif_compliance ?? true,
+                notif_reminders: user.notif_reminders ?? true,
+                research_anonymize: user.research_anonymize ?? false,
                 profile_image_url: user.profile_image_url || null
             },
             token,
@@ -545,7 +551,7 @@ router.post('/reset-password', async (req, res) => {
 
 // UPDATE USER PREFERENCES
 router.put('/preferences', verifyToken, async (req, res) => {
-    const { theme, privacy_mode, measurement_system, nutrient_precision } = req.body;
+    const { theme, privacy_mode, measurement_system, nutrient_precision, notif_compliance, notif_reminders, research_anonymize } = req.body;
     try {
         const updateData = {};
         if (theme !== undefined) {
@@ -561,6 +567,9 @@ router.put('/preferences', verifyToken, async (req, res) => {
             if (!VALID_NUTRIENT_PRECISIONS.includes(nutrient_precision)) return res.status(400).json({ message: `Invalid nutrient precision. Must be one of: ${VALID_NUTRIENT_PRECISIONS.join(', ')}` });
             updateData.nutrient_precision = nutrient_precision;
         }
+        if (notif_compliance !== undefined) updateData.notif_compliance = !!notif_compliance;
+        if (notif_reminders !== undefined) updateData.notif_reminders = !!notif_reminders;
+        if (research_anonymize !== undefined) updateData.research_anonymize = !!research_anonymize;
 
         await prisma.users.update({
             where: { id: req.user.id },
@@ -708,6 +717,56 @@ router.post('/deactivate', verifyToken, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to deactivate account' });
+    }
+});
+
+// DATA EXPORT (Clinical History Download)
+router.get('/export-data', verifyToken, async (req, res) => {
+    try {
+        const parentUser = await prisma.users.findUnique({
+            where: { id: req.user.id },
+            include: {
+                profiles: {
+                    include: {
+                        growth_logs: {
+                            orderBy: { logged_at: 'desc' }
+                        },
+                        daily_logs: {
+                            orderBy: { date: 'desc' }
+                        },
+                        meal_logs: {
+                            orderBy: { logged_at: 'desc' }
+                        },
+                        meal_plans: {
+                            orderBy: { date: 'desc' }
+                        },
+                        portion_plans: true,
+                        profile_vaccinations: {
+                            include: { vaccination_types: true }
+                        },
+                        adime_notes: {
+                            orderBy: { created_at: 'desc' }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!parentUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Clean password hash for security before exporting
+        const { password_hash, ...safeData } = parentUser;
+
+        res.json({
+            exported_at: new Date().toISOString(),
+            engine_version: "SmartNutri-AI v1.2.0 (Clinical-Grade)",
+            data: safeData
+        });
+    } catch (err) {
+        console.error("Data export failed:", err);
+        res.status(500).json({ message: 'Failed to compile clinical export data' });
     }
 });
 

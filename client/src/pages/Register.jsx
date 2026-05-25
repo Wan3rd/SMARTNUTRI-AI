@@ -562,6 +562,14 @@ export default function Register() {
                                         </span>
                                     </div>
 
+                                    {/* Spam Check Notice */}
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-200/50 dark:border-amber-900/30">
+                                        <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 leading-normal text-center flex items-center justify-center gap-1.5">
+                                            <AlertCircle size={12} className="text-amber-500 shrink-0" />
+                                            Don't see the email? Please check your <strong className="font-black underline">Spam / Junk</strong> folder.
+                                        </p>
+                                    </div>
+
                                     {/* Actions */}
                                     <div className="flex flex-col gap-3">
                                         <Button

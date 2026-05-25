@@ -80,9 +80,10 @@ router.post('/invite', verifyToken, isNutritionist, async (req, res) => {
     }
 });
 
-// POST /create-client - Create a new parent and child profile and link them with full clinical profiling
+// POST /create-client - Create a new parent and child profile and link them with full clinical profiling, or add child to existing parent if parentId is provided
 router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
     const {
+        parentId,
         parent_name, parent_email,
         child_name, date_of_birth, gender,
         medical_history, family_history, food_intolerances, symptoms, medications, lifestyle_factors,
@@ -93,38 +94,49 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
 
     try {
         // Input Validation
-        if (!parent_email || typeof parent_email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email.toLowerCase())) {
-            return res.status(400).json({ message: 'A valid parent email address is required' });
-        }
         if (!child_name || typeof child_name !== 'string' || child_name.trim().length < 1) {
             return res.status(400).json({ message: 'Child name is required' });
         }
 
-        // 1. Check if parent email already exists
-        const existingUser = await prisma.users.findUnique({
-            where: { email: parent_email.toLowerCase() }
-        });
+        let user;
+        if (parentId) {
+            user = await prisma.users.findUnique({
+                where: { id: parentId }
+            });
+            if (!user) {
+                return res.status(404).json({ message: 'Parent user not found' });
+            }
+        } else {
+            if (!parent_email || typeof parent_email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email.toLowerCase())) {
+                return res.status(400).json({ message: 'A valid parent email address is required' });
+            }
 
-        if (existingUser) {
-            return res.status(400).json({ message: 'A user with this email already exists. Use the Link Client option instead.' });
-        }
-
-        // 2. Create Parent User with a default password
-        const salt = await bcrypt.genSalt(10);
-        const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
-
-        const result = await prisma.$transaction(async (tx) => {
-            const user = await tx.users.create({
-                data: {
-                    email: parent_email.toLowerCase(),
-                    password_hash: defaultPasswordHash,
-                    full_name: parent_name,
-                    role: 'parent',
-                    force_password_reset: true
-                }
+            // Check if parent email already exists
+            const existingUser = await prisma.users.findUnique({
+                where: { email: parent_email.toLowerCase() }
             });
 
-            // 3. Create Child Profile with Clinical Details
+            if (existingUser) {
+                user = existingUser;
+            } else {
+                // Create Parent User with a default password
+                const salt = await bcrypt.genSalt(10);
+                const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
+
+                user = await prisma.users.create({
+                    data: {
+                        email: parent_email.toLowerCase(),
+                        password_hash: defaultPasswordHash,
+                        full_name: parent_name,
+                        role: 'parent',
+                        force_password_reset: true
+                    }
+                });
+            }
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Create Child Profile with Clinical Details
             const profile = await tx.profiles.create({
                 data: {
                     users: { connect: { id: user.id } },
@@ -149,7 +161,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 }
             });
 
-            // 4. Create Initial Growth Log
+            // Create Initial Growth Log
             if (height_cm && weight_kg) {
                 await tx.growth_logs.create({
                     data: {
@@ -160,7 +172,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 });
             }
 
-            // 5. Add Vaccinations if provided
+            // Add Vaccinations if provided
             if (vaccinations && Array.isArray(vaccinations) && vaccinations.length > 0) {
                 const vaccinationData = vaccinations.map(v => ({
                     profile_id: profile.id,
@@ -174,14 +186,25 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 });
             }
 
-            // 6. Link to Nutritionist
-            await tx.nutritionist_clients.create({
-                data: {
-                    nutritionist_id: req.user.id,
-                    parent_id: user.id,
-                    status: 'active'
+            // Link to Nutritionist if not already linked
+            const existingLink = await tx.nutritionist_clients.findUnique({
+                where: {
+                    nutritionist_id_parent_id: {
+                        nutritionist_id: req.user.id,
+                        parent_id: user.id
+                    }
                 }
             });
+
+            if (!existingLink) {
+                await tx.nutritionist_clients.create({
+                    data: {
+                        nutritionist_id: req.user.id,
+                        parent_id: user.id,
+                        status: 'active'
+                    }
+                });
+            }
 
             return { user, profile };
         });
@@ -320,6 +343,38 @@ router.patch('/clients/:id/restore', verifyToken, isNutritionist, async (req, re
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to restore client account' });
+    }
+});
+
+// DELETE /clients/:id - Unlink a client connection completely
+router.delete('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        const link = await prisma.nutritionist_clients.findUnique({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: req.user.id,
+                    parent_id: req.params.id
+                }
+            }
+        });
+
+        if (!link) {
+            return res.status(404).json({ message: 'Client connection not found' });
+        }
+
+        await prisma.nutritionist_clients.delete({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: req.user.id,
+                    parent_id: req.params.id
+                }
+            }
+        });
+
+        res.json({ success: true, message: 'Client unlinked successfully' });
+    } catch (err) {
+        console.error("Failed to unlink client:", err);
+        res.status(500).json({ message: 'Failed to unlink client' });
     }
 });
 
@@ -512,40 +567,8 @@ router.get('/standards/:profileId', verifyToken, isNutritionist, async (req, res
             });
         }
 
-        // Add clinical templates (Iron, Calcium, Fiber, Water)
+        // Add clinical templates (Water)
         const ageGroup = age >= 1 && age <= 3 ? '1-3' : (age >= 4 && age <= 8 ? '4-8' : '9-13');
-
-        if (GLOBAL_LIMITS.IRON_MIN_MG[ageGroup]) {
-            templates.push({
-                name: `Clinical Iron (${GLOBAL_LIMITS.IRON_MIN_MG[ageGroup]}mg)`,
-                category: 'Iron',
-                rule_name: 'Iron Deficiency Prevention',
-                rule_type: 'min',
-                rule_value: GLOBAL_LIMITS.IRON_MIN_MG[ageGroup],
-                rule_unit: 'mg'
-            });
-        }
-
-        if (GLOBAL_LIMITS.CALCIUM_MIN_MG[ageGroup]) {
-            templates.push({
-                name: `Clinical Calcium (${GLOBAL_LIMITS.CALCIUM_MIN_MG[ageGroup]}mg)`,
-                category: 'Calcium',
-                rule_name: 'Bone Growth Support',
-                rule_type: 'min',
-                rule_value: GLOBAL_LIMITS.CALCIUM_MIN_MG[ageGroup],
-                rule_unit: 'mg'
-            });
-        }
-
-        const fiberGoal = typeof GLOBAL_LIMITS.FIBER_MIN_G === 'function' ? GLOBAL_LIMITS.FIBER_MIN_G(age) : 20;
-        templates.push({
-            name: `Clinical Fiber (${fiberGoal}g)`,
-            category: 'Fiber',
-            rule_name: 'GI Health Goal',
-            rule_type: 'min',
-            rule_value: fiberGoal,
-            rule_unit: 'g'
-        });
 
         if (GLOBAL_LIMITS.WATER_MIN_ML[ageGroup]) {
             templates.push({
@@ -557,16 +580,6 @@ router.get('/standards/:profileId', verifyToken, isNutritionist, async (req, res
                 rule_unit: 'ml'
             });
         }
-
-        // Add sugar limit template (WHO)
-        templates.push({
-            name: 'WHO Sugar Limit (Max 25g)',
-            category: 'Added Sugars',
-            rule_name: 'Added Sugar Limit',
-            rule_type: 'max',
-            rule_value: 25,
-            rule_unit: 'g'
-        });
 
         res.json(templates);
     } catch (err) {
