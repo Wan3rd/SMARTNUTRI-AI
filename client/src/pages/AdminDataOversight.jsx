@@ -46,14 +46,14 @@ export default function AdminContentOversight() {
     const renderResultCard = (item) => {
         if (contentType === 'profiles') {
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
-                    <div>
-                        <div className="font-black text-sm">{item.child_name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Parent: {item.users?.email || 'N/A'}</div>
+                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{item.child_name}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Parent: {item.users?.email || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'profiles', id: item.id, title: item.child_name })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors"
+                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -64,15 +64,15 @@ export default function AdminContentOversight() {
         if (contentType === 'meals') {
             const mealName = item.nutritionist_review?.meal_summary || item.ai_analysis?.meal_summary || item.ai_analysis?.items?.map(i => i.name).join(', ') || 'Unnamed Meal';
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
-                    <div>
+                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                    <div className="min-w-0">
                         <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{mealName}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Profile: {item.profiles?.child_name || 'N/A'} ({item.profiles?.users?.email || 'N/A'})</div>
-                        <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-bold">Category: <span className="uppercase text-[var(--color-primary)]">{item.meal_category || 'other'}</span> | Logged: {item.logged_at ? new Date(item.logged_at).toLocaleDateString() : 'N/A'}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Profile: {item.profiles?.child_name || 'N/A'} ({item.profiles?.users?.email || 'N/A'})</div>
+                        <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-bold truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Category: <span className="uppercase text-[var(--color-primary)]">{item.meal_category || 'other'}</span> | Logged: {item.logged_at ? new Date(item.logged_at).toLocaleDateString() : 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'meals', id: item.id, title: 'this meal log' })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors"
+                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -82,14 +82,14 @@ export default function AdminContentOversight() {
 
         if (contentType === 'notes') {
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between">
-                    <div>
+                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                    <div className="min-w-0">
                         <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">Dx: {item.diagnosis || 'No Diagnosis'}</div>
-                        <div className="text-xs text-[var(--color-text-muted)]">Author: {item.nutritionist?.full_name || 'Nutritionist'} | Patient: {item.profiles?.child_name || 'N/A'}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Author: {item.nutritionist?.full_name || 'Nutritionist'} | Patient: {item.profiles?.child_name || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'notes', id: item.id, title: 'this clinical note' })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors"
+                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
                         <Trash2 size={16} />
                     </button>

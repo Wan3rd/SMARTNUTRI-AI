@@ -4,6 +4,7 @@ import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, Hi
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
 import { useProfile } from '../../context/ProfileContext';
 import ConfirmDialog from '../common/ConfirmDialog';
 import api from '../../lib/api';
@@ -82,15 +83,17 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
 
     return (
         <>
-            <aside
+            <motion.aside
+                initial={false}
+                animate={{ 
+                    x: isOpen ? 0 : "-100%",
+                    width: isMobile ? '18rem' : '16rem'
+                }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                 className={cn(
-                    "flex flex-col border-r border-[var(--color-divider)] bg-[var(--color-bg-card)] transition-all duration-300 ease-in-out z-50 overflow-hidden fixed inset-y-0 left-0",
-                    isMobile
-                        ? "w-72 shadow-2xl rounded-r-3xl"
-                        : "h-screen w-64",
-                    !isOpen && "-translate-x-full"
+                    "flex flex-col border-r border-[var(--color-divider)] bg-[var(--color-bg-card)] z-50 overflow-hidden fixed inset-y-0 left-0",
+                    isMobile ? "shadow-2xl rounded-r-3xl" : "h-screen"
                 )}
-                style={{ width: isMobile ? '18rem' : '16rem' }}
             >
                 <div className="flex flex-col h-full w-full flex-shrink-0 overflow-y-auto custom-scrollbar p-5 sm:p-6">
                     <div className="mb-6 flex items-center justify-between gap-2">
@@ -248,7 +251,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                         </div>
                     </div>
                 </div>
-            </aside>
+            </motion.aside>
 
             <ConfirmDialog
                 isOpen={showLogoutConfirm}

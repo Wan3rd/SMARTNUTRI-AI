@@ -161,12 +161,18 @@ export function Layout({ children }) {
             </AnimatePresence>
 
             {/* Mobile Sidebar Overlay */}
-            {isMobile && sidebarOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            <AnimatePresence>
+                {isMobile && sidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Mobile FAB Backdrop Dismiss Click */}
             {fabMenuOpen && (
@@ -179,16 +185,22 @@ export function Layout({ children }) {
             <div className="flex">
                 <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
 
-                <div className={cn(
-                    "flex-1 min-w-0 transition-all duration-400 ease-in-out",
-                    !isMobile && sidebarOpen ? "lg:pl-64" : "pl-0"
-                )}>
+                <motion.div 
+                    initial={false}
+                    animate={{
+                        paddingLeft: !isMobile && sidebarOpen ? '16rem' : '0rem'
+                    }}
+                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                    className="flex-1 min-w-0"
+                >
                     {/* Unified Header */}
-                    <header
-                        className={cn(
-                            "fixed top-0 z-30 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4 transition-all duration-300",
-                            !isMobile && sidebarOpen ? "left-64 right-0" : "left-0 right-0"
-                        )}
+                    <motion.header
+                        initial={false}
+                        animate={{
+                            left: !isMobile && sidebarOpen ? '16rem' : '0rem'
+                        }}
+                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                        className="fixed top-0 right-0 z-30 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4"
                         style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }}
                     >
                         <Button
@@ -210,9 +222,8 @@ export function Layout({ children }) {
                         )}
 
                         <div className="ml-auto flex items-center gap-2">
-                            {/* Add other header actions here if needed */}
                         </div>
-                    </header>
+                    </motion.header>
 
                     {/* Header Spacer to prevent content from going under fixed header */}
                     <div style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }} />
@@ -225,7 +236,7 @@ export function Layout({ children }) {
                             {children}
                         </div>
                     </main>
-                </div>
+                </motion.div>
             </div>
 
             {/* ── ERGONOMIC MOBILE BOTTOM NAVIGATION BAR & FAB (lg:hidden) ── */}

@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Brain, ShieldAlert, Sparkles, ShieldCheck, Heart, ArrowRight, Activity, Users, FileCheck, Sun, Moon } from 'lucide-react';
+import { Brain, ShieldAlert, Sparkles, ShieldCheck, Heart, ArrowRight, Activity, Users, FileCheck, Sun, Moon, Mail, Copy, Send, CheckCircle2, MessageSquare, Clock, GlobeLock, X } from 'lucide-react';
 import { Card } from '../components/common/Card';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LandingPage() {
     const { user } = useAuth();
@@ -16,6 +17,42 @@ export default function LandingPage() {
         message: 'Allergy Warning: DAIRY (MARGARINE)',
         bypass: false
     });
+    
+    const [contactForm, setContactForm] = useState({ name: '', email: '', role: 'caregiver', subject: '', message: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleContactSubmit = (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        // Simulate a tiny network delay for UX
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setShowSuccessModal(true);
+        }, 600);
+    };
+
+    const getMailtoLink = () => {
+        const body = `Name: ${contactForm.name}%0D%0ARole: ${contactForm.role}%0D%0A%0D%0A${contactForm.message}`;
+        return `mailto:snutri244@gmail.com?subject=${encodeURIComponent(contactForm.subject)}&body=${body}`;
+    };
+
+    const getClipboardText = () => {
+        return `Subject: ${contactForm.subject}\nName: ${contactForm.name}\nRole: ${contactForm.role}\nMessage:\n${contactForm.message}`;
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(getClipboardText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    
+    const handleCopyEmail = () => {
+        navigator.clipboard.writeText('snutri244@gmail.com');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -317,8 +354,153 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Contact Us Section */}
+            <section className="bg-[var(--color-bg-page)] border-t border-[var(--color-divider)] py-20 relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-primary)]/5 pointer-events-none" />
+                <div className="max-w-7xl mx-auto px-6 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">
+                        {/* Left Column: Support Info */}
+                        <div className="lg:col-span-5 space-y-8">
+                            <div className="space-y-4">
+                                <div className="h-10 w-10 bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center rounded-2xl">
+                                    <MessageSquare size={20} />
+                                </div>
+                                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[var(--color-text-main)] uppercase">
+                                    Get in <span className="text-[var(--color-primary)]">Touch</span>
+                                </h2>
+                                <p className="text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                    Have a question about pediatric clinical deployments, platform integrations, or need caregiver support? Our team is here to assist you.
+                                </p>
+                            </div>
+
+                            <div className="space-y-6 pt-4">
+                                {/* Official Email Card */}
+                                <div className="p-6 rounded-3xl bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] flex items-center justify-between group hover:border-[var(--color-primary)]/50 transition-all shadow-lg shadow-[var(--color-primary)]/5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 rounded-2xl bg-[var(--color-primary)] text-white flex items-center justify-center shadow-md">
+                                            <Mail size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest mb-0.5">Official Support</p>
+                                            <p className="text-sm font-bold text-[var(--color-text-main)]">snutri244@gmail.com</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={handleCopyEmail}
+                                        className="h-10 w-10 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] text-[var(--color-text-muted)] flex items-center justify-center hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] transition-all active:scale-95"
+                                        title="Copy Email Address"
+                                    >
+                                        {copied ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Copy size={18} />}
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] space-y-3">
+                                        <Clock size={18} className="text-amber-500" />
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Response Time</p>
+                                            <p className="text-xs font-bold text-[var(--color-text-main)] mt-1">Within 24 Hours</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] space-y-3">
+                                        <GlobeLock size={18} className="text-blue-500" />
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Data Privacy</p>
+                                            <p className="text-xs font-bold text-[var(--color-text-main)] mt-1">Fully Secured</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Column: Contact Form */}
+                        <div className="lg:col-span-7">
+                            <Card className="p-6 sm:p-8 rounded-[2.5rem] bg-[var(--color-bg-card)]/80 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl shadow-[var(--color-primary)]/10">
+                                <form onSubmit={handleContactSubmit} className="space-y-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Full Name</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                placeholder="Dr. Jane Doe"
+                                                value={contactForm.name}
+                                                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Email Address</label>
+                                            <input 
+                                                required
+                                                type="email" 
+                                                placeholder="jane@hospital.org"
+                                                value={contactForm.email}
+                                                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Role / Identity</label>
+                                            <select 
+                                                value={contactForm.role}
+                                                onChange={(e) => setContactForm({ ...contactForm, role: e.target.value })}
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                            >
+                                                <option value="caregiver">Caregiver / Parent</option>
+                                                <option value="nutritionist">Clinical Nutritionist</option>
+                                                <option value="institution">Healthcare Institution</option>
+                                                <option value="general">General Inquiry</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Subject</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                placeholder="How can we help?"
+                                                value={contactForm.subject}
+                                                onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Message</label>
+                                        <textarea 
+                                            required
+                                            rows={4}
+                                            placeholder="Write your message here..."
+                                            value={contactForm.message}
+                                            onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                                            className="w-full p-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium resize-none custom-scrollbar"
+                                        />
+                                    </div>
+
+                                    <button 
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-xl shadow-[var(--color-primary)]/20 hover:scale-[1.01] transition-all disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? (
+                                            <Activity size={18} className="animate-pulse" />
+                                        ) : (
+                                            <>Submit Ticket <Send size={16} /></>
+                                        )}
+                                    </button>
+                                </form>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer */}
-            <footer className="w-full border-t border-[var(--color-divider)] bg-[var(--color-bg-card)] py-12 text-center text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest">
+            <footer className="w-full border-t border-[var(--color-divider)] bg-[var(--color-bg-card)] py-12 text-center text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest relative z-10">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <p>© {new Date().getFullYear()} SmartNutri-AI. All rights reserved.</p>
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -327,6 +509,60 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
+
+            {/* Success Modal */}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative"
+                        >
+                            <button 
+                                onClick={() => setShowSuccessModal(false)}
+                                className="absolute top-6 right-6 h-8 w-8 rounded-full bg-[var(--color-bg-page)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                            
+                            <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                <CheckCircle2 size={32} />
+                            </div>
+                            
+                            <div className="text-center space-y-2 mb-8">
+                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Message Ready</h3>
+                                <p className="text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                    Your message has been formatted. Choose how you'd like to dispatch it to our official support channel.
+                                </p>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <a 
+                                    href={getMailtoLink()}
+                                    onClick={() => setShowSuccessModal(false)}
+                                    className="w-full h-12 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 transition-all hover:-translate-y-0.5"
+                                >
+                                    <Send size={14} /> Send via Mail App
+                                </a>
+                                <button 
+                                    onClick={handleCopy}
+                                    className="w-full h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] text-[var(--color-text-main)] rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+                                >
+                                    {copied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />} 
+                                    {copied ? 'Copied to Clipboard!' : 'Copy Message Details'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

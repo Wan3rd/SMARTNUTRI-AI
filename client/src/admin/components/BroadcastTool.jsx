@@ -127,8 +127,8 @@ export default function BroadcastTool() {
                                     className="w-full px-4 py-2.5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all font-bold text-sm text-[var(--color-text-main)]"
                                 />
                             </div>
-                            <div className="flex gap-4">
-                                <div className="flex-1 space-y-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Target Audience</label>
                                     <select
                                         value={broadcast.target_role}
@@ -140,7 +140,7 @@ export default function BroadcastTool() {
                                         <option value="parent">Parents Only</option>
                                     </select>
                                 </div>
-                                <div className="flex-1 space-y-1">
+                                <div className="space-y-1">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Priority Level</label>
                                     <select
                                         value={broadcast.priority}
@@ -195,22 +195,22 @@ export default function BroadcastTool() {
                         <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-6">Active & Past Broadcasts</h4>
                         <div className="space-y-3">
                             {announcements.map(ann => (
-                                <div key={ann.id} className="flex items-center justify-between p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${ann.priority === 'critical' ? 'bg-rose-500/10 text-rose-500' :
+                                <div key={ann.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all gap-4">
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${ann.priority === 'critical' ? 'bg-rose-500/10 text-rose-500' :
                                                 ann.priority === 'high' ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
                                             }`}>
                                             <Megaphone size={14} />
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[11px] font-black text-[var(--color-text-main)]">{ann.title}</span>
+                                        <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-[11px] font-black text-[var(--color-text-main)] truncate max-w-[200px] sm:max-w-md">{ann.title}</span>
                                                 <span className="text-[8px] font-bold px-2 py-0.5 bg-zinc-100 dark:bg-white/5 rounded-full text-[var(--color-text-muted)] uppercase tracking-tighter">To: {ann.target_role}</span>
                                             </div>
                                             <p className="text-[10px] text-[var(--color-text-muted)] font-medium mt-0.5">{new Date(ann.created_at).toLocaleDateString()} • {ann.admin?.full_name}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity self-end sm:self-auto shrink-0">
                                         <button
                                             onClick={() => startEditAnnouncement(ann)}
                                             className="p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-xl transition-all text-[var(--color-text-muted)] hover:text-blue-500"

@@ -538,6 +538,35 @@ export default function AdminUsersList() {
                                             </button>
                                         )}
                                         {currentUser?.id !== user.id && (
+                                            <div className="relative" ref={activeDropdown === user.id ? dropdownRef : null}>
+                                                <button
+                                                    onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)}
+                                                    className="p-2 hover:bg-[var(--color-bg-page)] rounded-lg transition-all text-[var(--color-text-muted)] hover:text-blue-500"
+                                                >
+                                                    <UserCog size={16} />
+                                                </button>
+
+                                                {activeDropdown === user.id && (
+                                                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-[150] p-2 animate-in fade-in slide-in-from-bottom-2">
+                                                        <div className="px-3 py-2 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest border-b border-[var(--color-divider)] mb-1">Select Authority Level</div>
+                                                        {[
+                                                            { id: 'parent', label: 'Parent / Caregiver', color: 'text-emerald-500' },
+                                                            { id: 'nutritionist', label: 'Clinical Nutritionist', color: 'text-blue-500' }
+                                                        ].map(r => (
+                                                            <button
+                                                                key={r.id}
+                                                                onClick={() => handleRoleChange(user.id, r.id)}
+                                                                className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[var(--color-bg-page)] flex items-center justify-between group/opt ${user.role === r.id ? 'bg-[var(--color-bg-page)]' : 'text-[var(--color-text-muted)]'}`}
+                                                            >
+                                                                <span className={user.role === r.id ? r.color : ''}>{r.label}</span>
+                                                                {user.role === r.id && <CheckCircle2 size={12} className={r.color} />}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {currentUser?.id !== user.id && (
                                             <button
                                                 onClick={() => setConfirmSuspend({ isOpen: true, userId: user.id, currentStatus: user.is_suspended })}
                                                 className={`p-2 rounded-lg transition-all ${user.is_suspended ? 'text-amber-500 bg-amber-500/10' : 'text-[var(--color-text-muted)] hover:text-amber-500 hover:bg-amber-500/10'}`}

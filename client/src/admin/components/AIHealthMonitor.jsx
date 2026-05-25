@@ -85,11 +85,11 @@ export default function AIHealthMonitor({ stats }) {
 
             <div className="p-6 bg-[var(--color-bg-page)] border-t border-[var(--color-divider)]">
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4">Key Rotation Burnout Tracking</div>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {failuresByKey.map((fails, index) => (
-                        <div key={index} className="flex-1 p-4 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] flex items-center justify-between shadow-sm">
+                        <div key={index} className="p-4 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs ${lastUsedKeyIndex === index ? 'bg-violet-500 text-white' : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)]'}`}>
+                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${lastUsedKeyIndex === index ? 'bg-violet-500 text-white' : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)]'}`}>
                                     #{index + 1}
                                 </div>
                                 <div className="flex flex-col">
@@ -97,7 +97,7 @@ export default function AIHealthMonitor({ stats }) {
                                     <span className="text-[9px] font-bold text-[var(--color-text-muted)]">{lastUsedKeyIndex === index ? 'Currently Active' : 'Standby / Exhausted'}</span>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end">
+                            <div className="flex flex-col items-end shrink-0 pl-2">
                                 <span className={`text-sm font-black ${fails > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>{fails}</span>
                                 <span className="text-[8px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Rate Limits / Fails</span>
                             </div>
