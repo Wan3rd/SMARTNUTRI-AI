@@ -48,7 +48,8 @@ export default function AdminUsersList() {
     }, [searchQuery]);
 
     useEffect(() => {
-        fetchUsers();
+        const controller = new AbortController();
+        fetchUsers(controller.signal);
 
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -56,10 +57,13 @@ export default function AdminUsersList() {
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            controller.abort();
+        };
     }, [page, roleFilter, statusFilter, debouncedSearch]);
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (signal) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -69,18 +73,29 @@ export default function AdminUsersList() {
                 role: roleFilter,
                 status: statusFilter
             });
-            const res = await api.get(`/admin/users?${params.toString()}`);
-            setUsers(res.data.data);
-            setTotalPages(res.data.meta.totalPages);
+            const res = await api.get(`/admin/users?${params.toString()}`, { signal });
+            setUsers(res.data?.data || []);
+            setTotalPages(res.data?.meta?.totalPages || 1);
         } catch (err) {
+            if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+                return;
+            }
             console.error("Failed to fetch users", err);
+            setMessage({ type: 'error', text: 'Failed to retrieve directory data. Please reload.' });
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleSelectUser = (id) => setSelectedUsers(p => p.includes(id) ? p.filter(uid => uid !== id) : [...p, id]);
-    const selectAllUsers = () => setSelectedUsers(selectedUsers.length === users.length && users.length > 0 ? [] : users.map(u => u.id));
+    const toggleSelectUser = (id) => {
+        if (id === currentUser?.id) return;
+        setSelectedUsers(p => p.includes(id) ? p.filter(uid => uid !== id) : [...p, id]);
+    };
+    const selectAllUsers = () => {
+        const selectableUsers = users.filter(u => u.id !== currentUser?.id);
+        const allSelected = selectableUsers.length > 0 && selectableUsers.every(u => selectedUsers.includes(u.id));
+        setSelectedUsers(allSelected ? [] : selectableUsers.map(u => u.id));
+    };
 
     const handleBulkSuspendAction = async () => {
         const { isSuspend } = confirmBulkSuspend;
@@ -116,7 +131,20 @@ export default function AdminUsersList() {
 
     const exportCSV = () => {
         const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Joined Date', 'Suspended', 'Forced Reset'];
-        const rows = users.map(u => [u.id, u.full_name, u.email, u.role, u.status || 'verified', new Date(u.created_at).toLocaleDateString(), u.is_suspended, u.force_password_reset]);
+        const escapeCSVValue = (val) => {
+            if (val === undefined || val === null) return '""';
+            return `"${String(val).replace(/"/g, '""')}"`;
+        };
+        const rows = users.map(u => [
+            escapeCSVValue(u.id),
+            escapeCSVValue(u.full_name),
+            escapeCSVValue(u.email),
+            escapeCSVValue(u.role),
+            escapeCSVValue(u.status || 'verified'),
+            escapeCSVValue(new Date(u.created_at).toLocaleDateString()),
+            escapeCSVValue(u.is_suspended),
+            escapeCSVValue(u.force_password_reset)
+        ]);
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
@@ -257,7 +285,10 @@ export default function AdminUsersList() {
                 <div className="flex flex-col sm:flex-row gap-2 px-2 lg:px-0 flex-1">
                     <select 
                         value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value)}
+                        onChange={(e) => {
+                            setRoleFilter(e.target.value);
+                            setPage(1);
+                        }}
                         className="flex-1 w-full px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors border lg:border-0 border-[var(--color-divider)] lg:border-r"
                     >
                         <option value="all">All Roles</option>
@@ -268,7 +299,10 @@ export default function AdminUsersList() {
 
                     <select 
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => {
+                            setStatusFilter(e.target.value);
+                            setPage(1);
+                        }}
                         className="flex-1 w-full px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] cursor-pointer hover:text-[var(--color-primary)] transition-colors border lg:border-0 border-[var(--color-divider)] lg:border-r"
                     >
                         <option value="all">All Status</option>
@@ -285,8 +319,16 @@ export default function AdminUsersList() {
                         placeholder="Search directory by name or email..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)] lg:border-l outline-none font-bold text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50"
+                        className="w-full pl-11 pr-10 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)] lg:border-l outline-none font-bold text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50"
                     />
+                    {searchQuery && (
+                        <button 
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                        >
+                            <XCircle size={14} className="opacity-60 hover:opacity-100 transition-opacity" />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -313,7 +355,7 @@ export default function AdminUsersList() {
                             <thead>
                                 <tr className="bg-[var(--color-bg-page)] text-left border-b border-[var(--color-divider)]">
                                     <th className="px-6 py-5 w-12">
-                                        <input type="checkbox" onChange={selectAllUsers} checked={users.length > 0 && selectedUsers.length === users.length} className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
+                                        <input type="checkbox" onChange={selectAllUsers} checked={users.length > 0 && users.filter(u => u.id !== currentUser?.id).length > 0 && users.filter(u => u.id !== currentUser?.id).every(u => selectedUsers.includes(u.id))} className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
                                     </th>
                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">User Identity</th>
                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Role</th>
@@ -349,7 +391,13 @@ export default function AdminUsersList() {
                                         onClick={() => fetchDeepDetails(user.id)}
                                     >
                                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                            <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => toggleSelectUser(user.id)} className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedUsers.includes(user.id)} 
+                                                onChange={() => toggleSelectUser(user.id)} 
+                                                disabled={user.id === currentUser?.id}
+                                                className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] disabled:opacity-30 disabled:cursor-not-allowed" 
+                                            />
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -541,7 +589,8 @@ export default function AdminUsersList() {
                                             checked={selectedUsers.includes(user.id)}
                                             onChange={() => toggleSelectUser(user.id)}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="w-5 h-5 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] animate-scale-up"
+                                            disabled={user.id === currentUser?.id}
+                                            className="w-5 h-5 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] disabled:opacity-30 disabled:cursor-not-allowed animate-scale-up"
                                         />
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] overflow-hidden shrink-0">
