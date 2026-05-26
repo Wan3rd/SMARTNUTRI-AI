@@ -198,13 +198,15 @@ export default function Settings() {
                     active: user?.privacy_mode,
                     onToggle: () => handlePreferenceChange('privacy_mode', !user?.privacy_mode, `Privacy mode ${!user?.privacy_mode ? 'enabled' : 'disabled'}`)
                 },
-                {
-                    label: "Academic Research Mode",
-                    desc: "Anonymize patient identity tags on exported data logs",
-                    toggle: true,
-                    active: user?.research_anonymize,
-                    onToggle: () => handlePreferenceChange('research_anonymize', !user?.research_anonymize, `Research de-identification ${!user?.research_anonymize ? 'enabled' : 'disabled'}`)
-                }
+                ...(user?.role !== 'admin' ? [
+                    {
+                        label: "Academic Research Mode",
+                        desc: "Anonymize patient identity tags on exported data logs",
+                        toggle: true,
+                        active: user?.research_anonymize,
+                        onToggle: () => handlePreferenceChange('research_anonymize', !user?.research_anonymize, `Research de-identification ${!user?.research_anonymize ? 'enabled' : 'disabled'}`)
+                    }
+                ] : [])
             ]
         },
         // Clinical sections hidden for Admins
