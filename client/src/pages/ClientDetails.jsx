@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, 
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown } from 'lucide-react';
+import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -18,6 +18,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import ReviewLogModal from '../components/ReviewLogModal';
 import CreatePatientModal from '../components/CreatePatientModal';
 import { ClientDetailsSkeleton, SkeletonLoader } from '../components/SkeletonShell';
+import InsightsTab from './ClientDetails/components/InsightsTab';
 
 // Stable default for the portion exchange matrix — used in fetchPortionPlan to
 // avoid the stale-closure bug that blanks out the grid when switching clients.
@@ -27,6 +28,37 @@ const DEFAULT_PORTION_MATRIX = [
     { meal_type: 'Lunch', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
     { meal_type: 'PM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
     { meal_type: 'Dinner', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+];
+
+const ALLERGY_OPTIONS = [
+    "None",
+    "Peanuts",
+    "Tree Nuts",
+    "Milk/Dairy",
+    "Eggs",
+    "Wheat/Gluten",
+    "Soy",
+    "Fish",
+    "Shellfish",
+    "Sesame",
+    "Mustard",
+    "Sulfites",
+    "Corn",
+    "Celery",
+    "Lupin",
+    "Molluscs",
+    "Garlic",
+    "Onions",
+    "Chocolate/Cocoa",
+    "Strawberries",
+    "Citrus Fruits",
+    "Kiwi",
+    "Pineapple",
+    "Honey",
+    "Beef",
+    "Chicken",
+    "Pork",
+    "Food Dyes/Additives"
 ];
 
 // Global CSS Overrides for Quill Toolbar Visibility
@@ -325,8 +357,7 @@ export default function ClientDetails() {
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
     const [isMobileDateDropdownOpen, setIsMobileDateDropdownOpen] = useState(false);
 
-    // --- Insights State ---
-    const [reportData, setReportData] = useState(null);
+
 
     // --- Notes State ---
     const [notes, setNotes] = useState([]);
@@ -895,6 +926,7 @@ export default function ClientDetails() {
     const [isVelocityModalOpen, setIsVelocityModalOpen] = useState(false);
 
     const [clinicalForm, setClinicalForm] = useState({});
+    const [isAllergyDropdownOpen, setIsAllergyDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (selectedProfile) {
@@ -1044,13 +1076,10 @@ export default function ClientDetails() {
         if (selectedProfile && activeTab === 'plan') {
             fetchMealPlan(selectedProfile.id);
         }
-        if (selectedProfile && activeTab === 'insights') {
-            fetchReportData(selectedProfile.id);
-        }
         if (selectedProfile && activeTab === 'notes') {
             fetchNotes(selectedProfile.id);
         }
-        if (selectedProfile && (activeTab === 'history' || activeTab === 'review')) {
+        if (selectedProfile && (activeTab === 'history' || activeTab === 'review' || activeTab === 'insights')) {
             fetchLogs(selectedProfile.id);
         }
         if (selectedProfile && activeTab === 'adime') {
@@ -1589,14 +1618,7 @@ export default function ClientDetails() {
         });
     };
 
-    const fetchReportData = async (profileId) => {
-        try {
-            const res = await api.get(`/reports/compliance/${profileId}`);
-            setReportData(res.data);
-        } catch (err) {
-            console.error("Error fetching report data", err);
-        }
-    };
+
 
     const fetchMealPlan = async (profileId) => {
         try {
@@ -2165,7 +2187,7 @@ export default function ClientDetails() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    
+
                                                     {/* Active Living Pulse Ring Indicator */}
                                                     {isSelected && (
                                                         <div className="absolute inset-0 rounded-full ring-[3px] ring-white/30 dark:ring-emerald-400/30 animate-pulse pointer-events-none -m-0.5" />
@@ -2207,10 +2229,10 @@ export default function ClientDetails() {
                                                         >
                                                             {/* Glow Effect */}
                                                             <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/5 to-transparent rounded-2xl pointer-events-none" />
-                                                            
+
                                                             {/* Caret Arrow */}
                                                             <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/90 dark:bg-slate-900/90 border-l border-b border-white/40 dark:border-white/10 rotate-45" />
-                                                            
+
                                                             {/* Detailed Pediatric Metadata */}
                                                             <div className="relative z-10 space-y-1">
                                                                 <p className="font-black text-xs uppercase tracking-tight text-[var(--color-text-main)] truncate leading-none">
@@ -2799,26 +2821,96 @@ export default function ClientDetails() {
                                                                             </h4>
                                                                             {isClinicalEditing ? (
                                                                                 <div className="space-y-4">
-                                                                                    <div className="flex flex-wrap gap-2">
-                                                                                        {["None", "Peanuts", "Dairy", "Eggs", "Gluten", "Soy", "Fish", "Shellfish"].map(allergy => (
-                                                                                            <button
-                                                                                                key={allergy}
-                                                                                                onClick={() => {
-                                                                                                    const current = clinicalForm.allergies || [];
-                                                                                                    const updated = current.includes(allergy)
-                                                                                                        ? current.filter(a => a !== allergy)
-                                                                                                        : [...current, allergy];
-                                                                                                    setClinicalForm({ ...clinicalForm, allergies: updated });
-                                                                                                }}
-                                                                                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${(clinicalForm.allergies || []).includes(allergy)
-                                                                                                    ? 'bg-red-500 text-white border-red-500'
-                                                                                                    : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-red-500'
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {allergy}
-                                                                                            </button>
-                                                                                        ))}
+                                                                                    <div className="relative">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => setIsAllergyDropdownOpen(!isAllergyDropdownOpen)}
+                                                                                            className={cn(
+                                                                                                "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
+                                                                                                isAllergyDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
+                                                                                            )}
+                                                                                        >
+                                                                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
+                                                                                                <Plus size={14} className="inline mr-2" /> <span className="truncate">Add Allergy...</span>
+                                                                                            </span>
+                                                                                            <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)] flex-shrink-0", isAllergyDropdownOpen && "rotate-180")} />
+                                                                                        </button>
+
+                                                                                        {isAllergyDropdownOpen && (
+                                                                                            <>
+                                                                                                <div
+                                                                                                    className="fixed inset-0 z-40"
+                                                                                                    onClick={() => setIsAllergyDropdownOpen(false)}
+                                                                                                />
+                                                                                                <motion.div
+                                                                                                    initial={{ opacity: 0, y: -10 }}
+                                                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                                                    className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                                                                                >
+                                                                                                    {ALLERGY_OPTIONS.map(option => {
+                                                                                                        const current = clinicalForm.allergies || [];
+                                                                                                        const isSelected = current.includes(option);
+                                                                                                        if (isSelected) return null;
+
+                                                                                                        return (
+                                                                                                            <button
+                                                                                                                key={option}
+                                                                                                                type="button"
+                                                                                                                onClick={() => {
+                                                                                                                    if (option === 'None') {
+                                                                                                                        setClinicalForm({ ...clinicalForm, allergies: ['None'] });
+                                                                                                                    } else {
+                                                                                                                        let newAllergies = current.filter(a => a !== 'None');
+                                                                                                                        newAllergies.push(option);
+                                                                                                                        setClinicalForm({ ...clinicalForm, allergies: newAllergies });
+                                                                                                                    }
+                                                                                                                    setIsAllergyDropdownOpen(false);
+                                                                                                                }}
+                                                                                                                className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
+                                                                                                            >
+                                                                                                                {option}
+                                                                                                            </button>
+                                                                                                        );
+                                                                                                    })}
+                                                                                                    {ALLERGY_OPTIONS.every(o => (clinicalForm.allergies || []).includes(o)) && (
+                                                                                                        <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                                                                                                            All allergies selected
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                </motion.div>
+                                                                                            </>
+                                                                                        )}
                                                                                     </div>
+
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {((clinicalForm.allergies || []).filter(Boolean).length === 0 || ((clinicalForm.allergies || []).filter(Boolean).length === 1 && (clinicalForm.allergies || []).filter(Boolean)[0] === "None")) ? (
+                                                                                            <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
+                                                                                        ) : (
+                                                                                            (clinicalForm.allergies || []).filter(Boolean).map((allergy, idx) => (
+                                                                                                <div
+                                                                                                    key={`${allergy}-${idx}`}
+                                                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
+                                                                                                        ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
+                                                                                                        : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
+                                                                                                        }`}
+                                                                                                >
+                                                                                                    {allergy}
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        onClick={() => {
+                                                                                                            const current = clinicalForm.allergies || [];
+                                                                                                            const updated = current.filter(a => a !== allergy);
+                                                                                                            setClinicalForm({ ...clinicalForm, allergies: updated });
+                                                                                                        }}
+                                                                                                        className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
+                                                                                                    >
+                                                                                                        <X size={10} />
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            ))
+                                                                                        )}
+                                                                                    </div>
+
                                                                                     <textarea
                                                                                         className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-medium focus:border-red-500 outline-none min-h-[80px]"
                                                                                         value={clinicalForm.food_intolerances}
@@ -2829,9 +2921,21 @@ export default function ClientDetails() {
                                                                             ) : (
                                                                                 <div className="space-y-3">
                                                                                     <div className="flex flex-wrap gap-2">
-                                                                                        {(selectedProfile.allergies?.filter(Boolean) || []).length > 0 ? selectedProfile.allergies.filter(Boolean).map((a, idx) => (
-                                                                                            <span key={`${a}-${idx}`} className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-black uppercase border border-red-100 dark:border-red-800/30">{a}</span>
-                                                                                        )) : <span className="text-sm text-[var(--color-text-muted)] italic">None recorded</span>}
+                                                                                        {((selectedProfile.allergies || []).filter(Boolean).length === 0 || ((selectedProfile.allergies || []).filter(Boolean).length === 1 && (selectedProfile.allergies || []).filter(Boolean)[0] === "None")) ? (
+                                                                                            <span className="px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-black uppercase border border-green-100 dark:border-green-900/30">None</span>
+                                                                                        ) : (
+                                                                                            (selectedProfile.allergies || []).filter(Boolean).map((a, idx) => (
+                                                                                                <span
+                                                                                                    key={`${a}-${idx}`}
+                                                                                                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase border ${a === 'None'
+                                                                                                        ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-800/30'
+                                                                                                        : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/30'
+                                                                                                        }`}
+                                                                                                >
+                                                                                                    {a}
+                                                                                                </span>
+                                                                                            ))
+                                                                                        )}
                                                                                     </div>
                                                                                     {selectedProfile.food_intolerances && (
                                                                                         <p className="text-sm text-[var(--color-text-main)] font-medium italic border-l-4 border-red-200 pl-3">
@@ -3995,85 +4099,9 @@ export default function ClientDetails() {
                                                         </>
                                                     )}
 
-
-
                                                     {/* TAB: INSIGHTS */}
-                                                    {activeTab === 'insights' && reportData && (
-                                                        <div className="space-y-6 animate-in fade-in duration-300">
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">Compliance Rate (30 Days)</p>
-                                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] mt-2 tracking-tighter">{reportData.summary.complianceRate}%</p>
-                                                                </div>
-                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-secondary)] transition-colors">Total Meals Logged</p>
-                                                                    <p className="text-3xl sm:text-4xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter">{reportData.summary.totalLogs}</p>
-                                                                </div>
-                                                                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                                                                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-red-500 transition-colors">Flagged Interactions</p>
-                                                                    <p className="text-3xl sm:text-4xl font-black text-red-500 mt-2 tracking-tighter">{reportData.summary.flaggedCount}</p>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="p-4 sm:p-8 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5">
-                                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                                                                    <h3 className="font-black text-sm sm:text-base uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2">
-                                                                        <Activity size={18} className="text-[var(--color-primary)]" />
-                                                                        Health Score & Compliance Trend
-                                                                    </h3>
-                                                                    <div className="flex gap-2">
-                                                                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Compliance
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="h-[250px] sm:h-[350px] w-full min-h-[250px] flex flex-col" style={{ minWidth: 0 }}>
-                                                                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
-                                                                        <LineChart
-                                                                            data={logs.slice().reverse()}
-                                                                            margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-                                                                        >
-                                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" opacity={0.5} />
-                                                                            <XAxis
-                                                                                dataKey="logged_at"
-                                                                                stroke="var(--color-text-muted)"
-                                                                                fontSize={10}
-                                                                                tickLine={false}
-                                                                                axisLine={false}
-                                                                                interval={window.innerWidth < 640 ? 5 : 2}
-                                                                                tickFormatter={(val) => new Date(val).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                                            />
-                                                                            <YAxis
-                                                                                stroke="var(--color-text-muted)"
-                                                                                fontSize={10}
-                                                                                tickLine={false}
-                                                                                axisLine={false}
-                                                                                domain={[0, 100]}
-                                                                            />
-                                                                            <Tooltip
-                                                                                contentStyle={{
-                                                                                    backgroundColor: 'var(--color-bg-card)',
-                                                                                    borderColor: 'var(--color-divider)',
-                                                                                    borderRadius: '12px',
-                                                                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                                                                                    fontSize: '11px',
-                                                                                    fontWeight: 'bold'
-                                                                                }}
-                                                                            />
-                                                                            <Line
-                                                                                type="monotone"
-                                                                                dataKey="compliance_score"
-                                                                                name="Compliance"
-                                                                                stroke="var(--color-primary)"
-                                                                                strokeWidth={4}
-                                                                                dot={{ r: 0 }}
-                                                                                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-primary)' }}
-                                                                            />
-                                                                        </LineChart>
-                                                                    </ResponsiveContainer>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                    {activeTab === 'insights' && (
+                                                        <InsightsTab selectedProfile={selectedProfile} logs={logs} />
                                                     )}
 
                                                     {/* TAB 2: RULES */}

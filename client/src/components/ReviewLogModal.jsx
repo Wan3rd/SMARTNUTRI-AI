@@ -424,6 +424,14 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     <div className="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-rose-200 dark:border-rose-500/30 shadow-sm transition-colors uppercase">
                                         <AlertTriangle size={14} className="text-rose-500" /> REJECTED / ACTION REQUIRED
                                     </div>
+                                ) : log.status === 'pending' ? (
+                                    <div className="bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-orange-200 dark:border-orange-500/30 shadow-sm transition-colors uppercase animate-pulse">
+                                        <AlertTriangle size={14} className="text-orange-500" /> PENDING CLINICAL REVIEW
+                                    </div>
+                                ) : (log.status === 'verified' || log.status === 'reviewed') ? (
+                                    <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-emerald-200 dark:border-emerald-500/30 shadow-sm transition-colors">
+                                        <CheckCircle size={14} /> CLINICALLY VERIFIED
+                                    </div>
                                 ) : log.is_parent_verified ? (
                                     <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-emerald-200 dark:border-emerald-500/30 shadow-sm transition-colors">
                                         <CheckCircle size={14} /> VERIFIED BY CAREGIVER
