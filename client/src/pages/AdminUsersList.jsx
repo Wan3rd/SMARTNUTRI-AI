@@ -323,7 +323,26 @@ export default function AdminUsersList() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--color-divider)]">
-                                {filteredUsers.map(user => (
+                                {loading ? (
+                                    Array(5).fill(0).map((_, i) => (
+                                        <tr key={i} className="animate-pulse">
+                                            <td className="px-6 py-4"><div className="h-4 w-4 bg-gray-200 dark:bg-white/10 rounded"></div></td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-gray-200 dark:bg-white/10 shrink-0"></div>
+                                                    <div className="space-y-2 w-32">
+                                                        <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-full"></div>
+                                                        <div className="h-2 bg-gray-200 dark:bg-white/5 rounded w-2/3"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4"><div className="h-5 bg-gray-200 dark:bg-white/10 rounded-lg w-20"></div></td>
+                                            <td className="px-6 py-4"><div className="h-5 bg-gray-200 dark:bg-white/10 rounded-full w-16"></div></td>
+                                            <td className="px-6 py-4"><div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-24"></div></td>
+                                            <td className="px-6 py-4"><div className="h-8 bg-gray-200 dark:bg-white/10 rounded-lg w-28 ml-auto"></div></td>
+                                        </tr>
+                                    ))
+                                ) : filteredUsers.map(user => (
                                     <tr
                                         key={user.id}
                                         className="hover:bg-[var(--color-bg-page)]/50 transition-colors group cursor-pointer"
@@ -485,12 +504,35 @@ export default function AdminUsersList() {
                             </tbody>
                         </table>
                     </div>
-                    {filteredUsers.length === 0 && (
+                    {!loading && filteredUsers.length === 0 && (
                         <div className="p-20 text-center text-[var(--color-text-muted)] italic font-medium">No accounts found matching your criteria.</div>
                     )}
 
                     <div className="lg:hidden divide-y divide-[var(--color-divider)]">
-                        {filteredUsers.map(user => (
+                        {loading ? (
+                            Array(5).fill(0).map((_, i) => (
+                                <div key={i} className="p-5 animate-pulse flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-white/10"></div>
+                                            <div className="h-10 w-10 rounded-xl bg-gray-200 dark:bg-white/10 shrink-0"></div>
+                                            <div className="space-y-2 w-28">
+                                                <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-full"></div>
+                                                <div className="h-2.5 bg-gray-200 dark:bg-white/5 rounded w-2/3"></div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 flex flex-col items-end">
+                                            <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-12"></div>
+                                            <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-16"></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-[var(--color-divider)]">
+                                        <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-20"></div>
+                                        <div className="h-8 bg-gray-200 dark:bg-white/10 rounded-lg w-32"></div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : filteredUsers.map(user => (
                             <div key={user.id} className="p-4 bg-[var(--color-bg-card)] flex flex-col gap-4 active:bg-gray-50 transition-colors" onClick={() => fetchDeepDetails(user.id)}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
