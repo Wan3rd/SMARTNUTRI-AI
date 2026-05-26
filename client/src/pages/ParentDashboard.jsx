@@ -263,7 +263,10 @@ export default function ParentDashboard() {
                         <MealLogger 
                             key={selectedProfile.id} 
                             profileId={selectedProfile.id} 
-                            onLogged={fetchLogs} 
+                            onLogged={() => {
+                                fetchLogs();
+                                fetchDailyLog();
+                            }}
                             recentLogs={recentLogs} 
                             allergies={selectedProfile.allergies || []}
                         />
@@ -275,26 +278,26 @@ export default function ParentDashboard() {
                                 <Activity size={16} className="text-[var(--color-primary)]" />
                                 Daily Nutritional Goal
                             </h3>
-                            {rules.length > 0 ? (
-                                <div className="space-y-5">
-                                    {renderProgressBar('Calories', todayIntake.calories, getRuleForCategory('calories'), 'kcal')}
-                                    {(() => {
-                                        const waterRule = getRuleForCategory('water') || { rule_value: 1500, rule_type: 'min' };
-                                        const convCurrent = convertWater(totalIntakeMl, user?.measurement_system);
-                                        const convGoal = convertWater(parseFloat(waterRule.rule_value), user?.measurement_system);
-                                        const modifiedRule = { ...waterRule, rule_value: convGoal.value };
-                                        return renderProgressBar('Hydration', convCurrent.value, modifiedRule, convCurrent.unit, 'blue');
-                                    })()}
-                                    {renderProgressBar('Protein', todayIntake.protein, getRuleForCategory('protein'), 'g')}
-                                    {renderProgressBar('Sodium', todayIntake.sodium, getRuleForCategory('sodium'), 'mg')}
-                                    {renderProgressBar('Sugar', todayIntake.sugar, getRuleForCategory('sugar'), 'g')}
-                                    {renderProgressBar('Fats', todayIntake.fat, getRuleForCategory('fats'), 'g')}
-                                </div>
-                            ) : (
-                                <div className="p-8 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
-                                    <p className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-widest">No clinical targets set</p>
-                                </div>
-                            )}
+                            <div className="space-y-5">
+                                {rules.length > 0 && renderProgressBar('Calories', todayIntake.calories, getRuleForCategory('calories'), 'kcal')}
+                                {(() => {
+                                    const waterRule = getRuleForCategory('water') || { rule_value: 1500, rule_type: 'min' };
+                                    const convCurrent = convertWater(totalIntakeMl, user?.measurement_system);
+                                    const convGoal = convertWater(parseFloat(waterRule.rule_value), user?.measurement_system);
+                                    const modifiedRule = { ...waterRule, rule_value: convGoal.value };
+                                    return renderProgressBar('Hydration', convCurrent.value, modifiedRule, convCurrent.unit, 'blue');
+                                })()}
+                                {rules.length > 0 && renderProgressBar('Protein', todayIntake.protein, getRuleForCategory('protein'), 'g')}
+                                {rules.length > 0 && renderProgressBar('Sodium', todayIntake.sodium, getRuleForCategory('sodium'), 'mg')}
+                                {rules.length > 0 && renderProgressBar('Sugar', todayIntake.sugar, getRuleForCategory('sugar'), 'g')}
+                                {rules.length > 0 && renderProgressBar('Fats', todayIntake.fat, getRuleForCategory('fats'), 'g')}
+                                
+                                {rules.length === 0 && (
+                                    <div className="p-4 bg-zinc-50 dark:bg-white/[0.02] rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
+                                        <p className="text-[9px] text-[var(--color-text-muted)] font-black uppercase tracking-widest">No other clinical targets prescribed</p>
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
