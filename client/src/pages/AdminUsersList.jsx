@@ -719,6 +719,7 @@ export default function AdminUsersList() {
                 selectedUserDetails={selectedUserDetails} 
                 currentUser={currentUser} 
                 onClose={() => setSelectedUserDetails(null)} 
+                loading={detailsLoading}
             />
 
             <CreateUserModal 

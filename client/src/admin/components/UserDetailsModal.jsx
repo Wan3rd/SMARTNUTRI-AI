@@ -4,15 +4,40 @@ import { Button } from '../../components/common/Button';
 import { User, XCircle, Shield, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export default function UserDetailsModal({ selectedUserDetails, currentUser, onClose }) {
+export default function UserDetailsModal({ selectedUserDetails, currentUser, onClose, loading }) {
     useEffect(() => {
-        if (selectedUserDetails) {
+        if (selectedUserDetails || loading) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
         }
         return () => { document.body.style.overflow = 'unset'; };
-    }, [selectedUserDetails]);
+    }, [selectedUserDetails, loading]);
+
+    if (loading) {
+        return (
+            <div
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-6 animate-in fade-in duration-300"
+                onClick={onClose}
+            >
+                <Card
+                    className="max-w-md w-full border-2 border-[var(--color-divider)] rounded-[3rem] overflow-hidden shadow-2xl bg-[var(--color-bg-card)] flex flex-col items-center justify-center p-12 text-center relative gap-6"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="relative flex items-center justify-center">
+                        <div className="absolute inset-0 rounded-full bg-[var(--color-primary)]/10 blur-xl animate-pulse scale-150" />
+                        <div className="h-20 w-20 rounded-[2rem] bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center animate-spin-slow shadow-lg shadow-[var(--color-primary)]/5 border-2 border-[var(--color-primary)]/20">
+                            <User size={36} className="animate-pulse" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-black uppercase tracking-[0.2em] text-[var(--color-text-main)] animate-pulse">Retrieving Profile</h3>
+                        <p className="text-xs font-bold text-[var(--color-text-muted)] tracking-wider">Synchronizing secure data packets from platform ledger...</p>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     if (!selectedUserDetails) return null;
 
