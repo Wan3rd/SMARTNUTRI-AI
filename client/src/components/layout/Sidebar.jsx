@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database, RefreshCw, Quote } from 'lucide-react';
+import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database, RefreshCw, Quote, Activity } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -142,7 +142,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
         { icon: Users, label: 'All Users', path: '/admin/users' },
         { icon: Database, label: 'Data Oversight', path: '/admin/data' },
         { icon: History, label: 'Audit Logs', path: '/admin/audit' },
-        { icon: BrainCircuit, label: 'AI Monitor', path: '/admin/ai-health' },
+        { icon: Activity, label: 'System Telemetry', path: '/admin/telemetry' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 

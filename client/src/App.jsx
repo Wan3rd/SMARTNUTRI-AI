@@ -29,7 +29,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsersList from './pages/AdminUsersList';
 import AdminAuditLogs from './pages/AdminAuditLogs';
-import AdminAIHealth from './pages/AdminAIHealth';
+import AdminTelemetry from './pages/AdminTelemetry';
 import AdminDataOversight from './pages/AdminDataOversight';
 
 import LandingPage from './pages/LandingPage';
@@ -111,9 +111,9 @@ function AppContent() {
                     <AdminAuditLogs />
                   </ProtectedRoute>
                 } />
-                <Route path="/admin/ai-health" element={
+                <Route path="/admin/telemetry" element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminAIHealth />
+                    <AdminTelemetry />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/data" element={
