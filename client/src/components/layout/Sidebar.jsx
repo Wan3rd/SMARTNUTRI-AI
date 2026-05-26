@@ -1,13 +1,36 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database } from 'lucide-react';
+import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database, RefreshCw, Quote } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfile } from '../../context/ProfileContext';
 import ConfirmDialog from '../common/ConfirmDialog';
 import api from '../../lib/api';
+
+const HEALTH_QUOTES = [
+    { content: "Let food be thy medicine and medicine be thy food.", author: "Hippocrates" },
+    { content: "It is health that is real wealth and not pieces of gold and silver.", author: "Mahatma Gandhi" },
+    { content: "To keep the body in good health is a duty... otherwise we shall not be able to keep our mind strong and clear.", author: "Buddha" },
+    { content: "He who has health has hope; and he who has hope has everything.", author: "Arabian Proverb" },
+    { content: "Take care of your body. It's the only place you have to live.", author: "Jim Rohn" },
+    { content: "Nurturing yourself is not selfish, it's essential to your survival and your well-being.", author: "Renee Peterson Trudeau" },
+    { content: "Health is a state of complete physical, mental and social well-being.", author: "World Health Organization" },
+    { content: "Healthy eating is a way of life, not a temporary diet.", author: "Unknown" },
+    { content: "Every time you eat or drink, you are either feeding disease or fighting it.", author: "Heather Morgan" },
+    { content: "Happiness is the highest form of health.", author: "Dalai Lama" },
+    { content: "The food you eat can be either the safest and most powerful form of medicine or the slowest form of poison.", author: "Ann Wigmore" },
+    { content: "Good health is not something we can buy. However, it can be an extremely valuable savings account.", author: "Anne Wilson Schaef" },
+    { content: "A healthy outside starts from the inside.", author: "Robert Urich" },
+    { content: "Eat food. Not too much. Mostly plants.", author: "Michael Pollan" },
+    { content: "Wellness is a connection of path, plate, and purpose.", author: "Unknown" },
+    { content: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
+    { content: "Your body holds deep wisdom. Trust in it. Learn from it. Nourish it.", author: "Unknown" },
+    { content: "An investment in health always pays the best interest.", author: "Unknown" },
+    { content: "The groundwork of all happiness is health.", author: "Leigh Hunt" },
+    { content: "A fit, healthy body—that is the best fashion statement.", author: "Jess C. Scott" }
+];
 
 export function Sidebar({ isOpen, onClose, isMobile }) {
     const { user, logout } = useAuth();
@@ -16,6 +39,9 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
     const [newReviewsCount, setNewReviewsCount] = React.useState(0);
+    const [dailyQuote, setDailyQuote] = React.useState(null);
+    const [quoteLoading, setQuoteLoading] = React.useState(false);
+    const [quoteError, setQuoteError] = React.useState(false);
 
     React.useEffect(() => {
         const fetchReviewCount = async () => {
@@ -23,8 +49,8 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                 try {
                     const res = await api.get(`/logs/profile/${selectedProfile.id}`);
                     const seenReviews = JSON.parse(localStorage.getItem('seen_meal_reviews') || '[]');
-                    const count = res.data.filter(log => 
-                        (log.status === 'reviewed' || log.status === 'verified') && 
+                    const count = res.data.filter(log =>
+                        (log.status === 'reviewed' || log.status === 'verified') &&
                         !seenReviews.includes(log.id)
                     ).length;
                     setNewReviewsCount(count);
@@ -34,15 +60,56 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
             }
         };
         fetchReviewCount();
-        const interval = setInterval(fetchReviewCount, 30000); // Check every 30s
-        
+        const interval = setInterval(fetchReviewCount, 30000);
         window.addEventListener('seen-reviews-updated', fetchReviewCount);
-        
         return () => {
             clearInterval(interval);
             window.removeEventListener('seen-reviews-updated', fetchReviewCount);
         };
     }, [selectedProfile?.id, user?.role]);
+
+    const fetchQuote = React.useCallback(async (force = false) => {
+        const today = new Date().toISOString().split('T')[0];
+        const cached = JSON.parse(localStorage.getItem('smartnutri_daily_quote') || 'null');
+        
+        // If not force-refresh and we have a valid cached quote for today, use it
+        if (!force && cached && cached.date === today) {
+            setDailyQuote(cached);
+            return;
+        }
+
+        setQuoteLoading(true);
+        setQuoteError(false);
+
+        // Add a premium micro-interaction feel: simulate a 350ms loading skeleton transition on manual refresh
+        if (force) {
+            await new Promise(resolve => setTimeout(resolve, 350));
+        }
+
+        try {
+            // Find a quote that is different from the currently displayed one to guarantee it changes
+            const currentContent = cached?.content;
+            let availableQuotes = HEALTH_QUOTES;
+            if (currentContent) {
+                availableQuotes = HEALTH_QUOTES.filter(q => q.content !== currentContent);
+            }
+            if (availableQuotes.length === 0) {
+                availableQuotes = HEALTH_QUOTES;
+            }
+
+            const randomQuote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+            const quote = { content: randomQuote.content, author: randomQuote.author, date: today };
+            
+            localStorage.setItem('smartnutri_daily_quote', JSON.stringify(quote));
+            setDailyQuote(quote);
+        } catch {
+            setQuoteError(true);
+        } finally {
+            setQuoteLoading(false);
+        }
+    }, []);
+
+    React.useEffect(() => { fetchQuote(); }, [fetchQuote]);
 
     const handleLogout = () => {
         logout();
@@ -244,10 +311,71 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                         </button>
                     </nav>
 
-                    <div className="mt-auto">
-                        <div className="rounded-xl bg-[var(--color-primary)]/5 p-4">
-                            <p className="text-xs font-medium text-[var(--color-secondary)]">Daily Quote</p>
-                            <p className="mt-1 text-xs text-[var(--color-text-muted)]">"Apple a day keeps the doctor away."</p>
+                    <div className="mt-auto pt-4">
+                        <div className="rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-primary)]/5 border border-[var(--color-primary)]/15 p-4 relative overflow-hidden">
+                            {/* Decorative background quote mark */}
+                            <div className="absolute -top-2 -right-1 opacity-[0.06] pointer-events-none">
+                                <Quote size={64} className="text-[var(--color-primary)]" />
+                            </div>
+
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-1.5">
+                                    <Quote size={12} className="text-[var(--color-primary)]" />
+                                    <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">Daily Quote</span>
+                                </div>
+                                <button
+                                    onClick={() => fetchQuote(true)}
+                                    disabled={quoteLoading}
+                                    className="h-6 w-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all disabled:opacity-40"
+                                    title="Refresh quote"
+                                >
+                                    <RefreshCw size={11} className={cn(quoteLoading && 'animate-spin')} />
+                                </button>
+                            </div>
+
+                            <AnimatePresence mode="wait">
+                                {quoteLoading ? (
+                                    <motion.div
+                                        key="loading"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="space-y-2"
+                                    >
+                                        <div className="h-3 bg-[var(--color-primary)]/15 rounded-full animate-pulse w-full" />
+                                        <div className="h-3 bg-[var(--color-primary)]/10 rounded-full animate-pulse w-4/5" />
+                                        <div className="h-3 bg-[var(--color-primary)]/10 rounded-full animate-pulse w-3/5" />
+                                        <div className="h-2 bg-[var(--color-primary)]/10 rounded-full animate-pulse w-2/5 mt-3" />
+                                    </motion.div>
+                                ) : quoteError ? (
+                                    <motion.div
+                                        key="error"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        <p className="text-[11px] text-[var(--color-text-muted)] italic leading-relaxed">
+                                            "Let food be thy medicine and medicine be thy food."
+                                        </p>
+                                        <p className="text-[10px] font-black text-[var(--color-primary)]/60 mt-2 uppercase tracking-widest">— Hippocrates</p>
+                                    </motion.div>
+                                ) : dailyQuote ? (
+                                    <motion.div
+                                        key={dailyQuote.content}
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -6 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic">
+                                            &ldquo;{dailyQuote.content}&rdquo;
+                                        </p>
+                                        <p className="text-[10px] font-black text-[var(--color-primary)]/70 mt-2 uppercase tracking-widest">
+                                            — {dailyQuote.author}
+                                        </p>
+                                    </motion.div>
+                                ) : null}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>

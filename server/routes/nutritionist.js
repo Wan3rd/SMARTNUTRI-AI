@@ -1519,7 +1519,7 @@ router.post('/plan/apply-template', verifyToken, isNutritionist, async (req, res
 // GET /portion-templates - Get all templates for the nutritionist
 router.get('/portion-templates', verifyToken, isNutritionist, async (req, res) => {
     try {
-        const templates = await prisma.portion_templates.findMany({
+        let templates = await prisma.portion_templates.findMany({
             where: {
                 OR: [
                     { nutritionist_id: req.user.id },
@@ -1528,9 +1528,74 @@ router.get('/portion-templates', verifyToken, isNutritionist, async (req, res) =
             },
             orderBy: { created_at: 'desc' }
         });
+
+        // Auto-seed universal portion templates if none exist in the database (similar to meal templates auto-seeding)
+        const universalCount = await prisma.portion_templates.count({
+            where: { nutritionist_id: null }
+        });
+
+        if (universalCount === 0) {
+            console.log("Auto-seeding universal clinical portion templates...");
+            const defaultPortionTemplates = [
+                {
+                    template_name: "Toddler Balanced Template (1-2 years)",
+                    matrix: [
+                        { meal_type: 'Breakfast', vegetables: '', fruit: '1/2 pc', milk: '1 cup', rice: '1/2 cup', meat: '1/2 exchange', fat: '1 tsp', sugar: '' },
+                        { meal_type: 'AM Snack',  vegetables: '', fruit: '1/2 pc', milk: '1/2 cup', rice: '1/4 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Lunch',     vegetables: '1/2 cup', fruit: '', milk: '', rice: '1/2 cup', meat: '1 exchange', fat: '1 tsp', sugar: '' },
+                        { meal_type: 'PM Snack',  vegetables: '', fruit: '', milk: '1/2 cup', rice: '1/4 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Dinner',    vegetables: '1/2 cup', fruit: '', milk: '', rice: '1/2 cup', meat: '1 exchange', fat: '1 tsp', sugar: '' },
+                    ]
+                },
+                {
+                    template_name: "Preschooler Balanced Template (3-5 years)",
+                    matrix: [
+                        { meal_type: 'Breakfast', vegetables: '', fruit: '1 pc', milk: '1 cup', rice: '1 cup', meat: '1 exchange', fat: '1 tsp', sugar: '' },
+                        { meal_type: 'AM Snack',  vegetables: '', fruit: '1 pc', milk: '', rice: '1/2 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Lunch',     vegetables: '1/2 cup', fruit: '', milk: '', rice: '1 cup', meat: '1.5 exchanges', fat: '1 tsp', sugar: '' },
+                        { meal_type: 'PM Snack',  vegetables: '', fruit: '', milk: '1 cup', rice: '1/2 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Dinner',    vegetables: '1/2 cup', fruit: '', milk: '', rice: '1 cup', meat: '1 exchange', fat: '1 tsp', sugar: '' },
+                    ]
+                },
+                {
+                    template_name: "Grade-Schooler Balanced Template (6-9 years)",
+                    matrix: [
+                        { meal_type: 'Breakfast', vegetables: '', fruit: '1 pc', milk: '1 cup', rice: '1.5 cups', meat: '1.5 exchanges', fat: '2 tsp', sugar: '' },
+                        { meal_type: 'AM Snack',  vegetables: '', fruit: '1 pc', milk: '', rice: '1 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Lunch',     vegetables: '1 cup', fruit: '', milk: '', rice: '1.5 cups', meat: '2 exchanges', fat: '2 tsp', sugar: '' },
+                        { meal_type: 'PM Snack',  vegetables: '', fruit: '', milk: '1 cup', rice: '1 cup', meat: '', fat: '', sugar: '' },
+                        { meal_type: 'Dinner',    vegetables: '1 cup', fruit: '', milk: '', rice: '1.5 cups', meat: '1.5 exchanges', fat: '2 tsp', sugar: '' },
+                    ]
+                }
+            ];
+
+            await prisma.$transaction(
+                defaultPortionTemplates.map(t => 
+                    prisma.portion_templates.create({
+                        data: {
+                            nutritionist_id: null,
+                            template_name: t.template_name,
+                            matrix: t.matrix
+                        }
+                    })
+                )
+            );
+
+            // Re-fetch templates
+            templates = await prisma.portion_templates.findMany({
+                where: {
+                    OR: [
+                        { nutritionist_id: req.user.id },
+                        { nutritionist_id: null }
+                    ]
+                },
+                orderBy: { created_at: 'desc' }
+            });
+        }
+
         res.json(templates);
     } catch (err) {
-        console.error(err);
+        console.error("Error fetching portion templates:", err);
         res.status(500).json({ message: 'Server Error' });
     }
 });

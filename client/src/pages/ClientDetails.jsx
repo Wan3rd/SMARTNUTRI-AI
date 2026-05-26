@@ -23,10 +23,10 @@ import { ClientDetailsSkeleton, SkeletonLoader } from '../components/SkeletonShe
 // avoid the stale-closure bug that blanks out the grid when switching clients.
 const DEFAULT_PORTION_MATRIX = [
     { meal_type: 'Breakfast', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
-    { meal_type: 'AM Snack',  vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
-    { meal_type: 'Lunch',     vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
-    { meal_type: 'PM Snack',  vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
-    { meal_type: 'Dinner',    vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+    { meal_type: 'AM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+    { meal_type: 'Lunch', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+    { meal_type: 'PM Snack', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
+    { meal_type: 'Dinner', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
 ];
 
 // Global CSS Overrides for Quill Toolbar Visibility
@@ -110,6 +110,22 @@ const quillStyles = `
   }
   .ql-editor > *:last-child {
     margin-bottom: 0 !important;
+  }
+  
+  @media (max-width: 640px) {
+    .ql-editor {
+      min-height: 180px !important;
+      padding: 12px 14px !important;
+    }
+    .ql-toolbar.ql-snow {
+      padding: 6px !important;
+      flex-wrap: wrap !important;
+      display: flex !important;
+    }
+    .ql-toolbar.ql-snow .ql-formats {
+      margin-right: 4px !important;
+      margin-bottom: 4px !important;
+    }
   }
 `;
 
@@ -464,10 +480,10 @@ export default function ClientDetails() {
     // Meal Templates & Grid Editing
     const [editingMeal, setEditingMeal] = useState(null); // { id, recipe_name, calories, protein_g, carbs_g, fats_g, meal_type }
     const [isMealEditModalOpen, setIsMealEditModalOpen] = useState(false);
-    
+
     const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = useState(false);
     const [newTemplateForm, setNewTemplateForm] = useState({ name: '', description: '', target_age: '' });
-    
+
     const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null); // template object from DB
     const [newTemplateName, setNewTemplateName] = useState("");
@@ -1626,7 +1642,7 @@ export default function ClientDetails() {
             showNotif("Template name is required", "error");
             return;
         }
-        
+
         const days = {
             "Monday": [],
             "Tuesday": [],
@@ -1637,7 +1653,7 @@ export default function ClientDetails() {
             "Sunday": []
         };
         const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        
+
         mealPlan.forEach(meal => {
             const dateObj = parseISO(meal.date);
             const matchedDayIndex = weekDays.findIndex(day => isSameDay(day, dateObj));
@@ -3158,9 +3174,9 @@ export default function ClientDetails() {
                                                                                     <div className={cn(
                                                                                         "w-3 h-3 rounded-full border-2 shadow-sm",
                                                                                         selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'danger' ? 'bg-red-500' :
-                                                                                        selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'warning' ? 'bg-amber-500' :
-                                                                                        selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'success' ? 'bg-emerald-500' :
-                                                                                        'bg-gray-300'
+                                                                                            selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'warning' ? 'bg-amber-500' :
+                                                                                                selectedHistoryDate && dayStatuses[selectedHistoryDate] === 'success' ? 'bg-emerald-500' :
+                                                                                                    'bg-gray-300'
                                                                                     )} />
                                                                                     <div className="text-left">
                                                                                         <span className="text-xs font-black tracking-tight text-[var(--color-text-main)]">
@@ -3207,9 +3223,9 @@ export default function ClientDetails() {
                                                                                                         <div className={cn(
                                                                                                             "w-2.5 h-2.5 rounded-full border border-white/20",
                                                                                                             dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                                            dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                                            dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                                            'bg-gray-300'
+                                                                                                                dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                                    dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                                        'bg-gray-300'
                                                                                                         )} />
                                                                                                         <span>{date}</span>
                                                                                                     </div>
@@ -3236,7 +3252,7 @@ export default function ClientDetails() {
                                                                                     const dateObj = new Date(date);
                                                                                     const monthStr = dateObj.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
                                                                                     const dayStr = dateObj.getDate();
-                                                                                    
+
                                                                                     return (
                                                                                         <button
                                                                                             key={date}
@@ -3259,9 +3275,9 @@ export default function ClientDetails() {
                                                                                                 "w-1.5 h-1.5 rounded-full border-xs",
                                                                                                 isSelected ? "border-white/30" : "border-white dark:border-zinc-800",
                                                                                                 dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                                dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                                dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                                'bg-gray-300'
+                                                                                                    dayStatuses[date] === 'warning' ? 'bg-amber-500' :
+                                                                                                        dayStatuses[date] === 'success' ? 'bg-emerald-500' :
+                                                                                                            'bg-gray-300'
                                                                                             )} />
                                                                                         </button>
                                                                                     );
@@ -3272,140 +3288,140 @@ export default function ClientDetails() {
                                                                     </div>
                                                                 </div>
 
-                                                            {/* RIGHT CONTENT: DAILY LOGS */}
-                                                            <div className="flex-grow space-y-8">
-                                                                {selectedHistoryDate && (
-                                                                    <>
-                                                                        {/* DAILY SUMMARY CARD */}
-                                                                        <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
-                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                                                                <div>
-                                                                                    <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
-                                                                                    <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
-                                                                                </div>
-                                                                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                                                                    <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
-                                                                                        <Activity size={12} />
-                                                                                        <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
+                                                                {/* RIGHT CONTENT: DAILY LOGS */}
+                                                                <div className="flex-grow space-y-8">
+                                                                    {selectedHistoryDate && (
+                                                                        <>
+                                                                            {/* DAILY SUMMARY CARD */}
+                                                                            <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                                                    <div>
+                                                                                        <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
+                                                                                        <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
                                                                                     </div>
-                                                                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
+                                                                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                                                                        <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                                                                            <Activity size={12} />
+                                                                                            <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
+                                                                                        </div>
+                                                                                        {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
+                                                                                                className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                            >
+                                                                                                <Check size={12} className="mr-1" />
+                                                                                                Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                                            </Button>
+                                                                                        )}
                                                                                         <Button
                                                                                             variant="ghost"
-                                                                                            onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
-                                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                            onClick={() => handleClearLogsForDay(selectedHistoryDate)}
+                                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
                                                                                         >
-                                                                                            <Check size={12} className="mr-1" />
-                                                                                            Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                                            <Trash2 size={12} className="mr-1 group-hover:scale-110" />
+                                                                                            Clear Day
                                                                                         </Button>
-                                                                                    )}
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        onClick={() => handleClearLogsForDay(selectedHistoryDate)}
-                                                                                        className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
-                                                                                    >
-                                                                                        <Trash2 size={12} className="mr-1 group-hover:scale-110" />
-                                                                                        Clear Day
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            {/* VIOLATIONS ALERT PANEL */}
-                                                                            {dailyViolations.length > 0 && (
-                                                                                <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
-                                                                                    <div className="flex items-center gap-2 mb-1 px-1">
-                                                                                        <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                                                                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
-                                                                                    </div>
-                                                                                    <div className="flex flex-wrap gap-2 px-1">
-                                                                                        {dailyViolations.map((v, i) => (
-                                                                                            <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                                                <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
-                                                                                                <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
-                                                                                                <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
-                                                                                                <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
-                                                                                            </div>
-                                                                                        ))}
                                                                                     </div>
                                                                                 </div>
-                                                                            )}
 
-                                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                                                {[
-                                                                                    { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
-                                                                                    { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
-                                                                                    { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
-                                                                                    { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
-                                                                                ].map((stat, idx) => (
-                                                                                    <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                                                        <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
-                                                                                        <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* MEAL LIST */}
-                                                                        <div className="space-y-4">
-                                                                            <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
-                                                                                <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Sequence</h4>
-                                                                                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">{logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured</span>
-                                                                            </div>
-
-                                                                            <div className="grid grid-cols-1 gap-3">
-                                                                                {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
-                                                                                    <div
-                                                                                        key={log.id}
-                                                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                                                        className="group relative bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex h-24 md:h-40 cursor-pointer shadow-sm hover:shadow-md"
-                                                                                    >
-                                                                                        <div className="w-24 md:w-48 h-full relative overflow-hidden flex-shrink-0">
-                                                                                            <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                                                                            <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded-md text-[7px] font-black text-white uppercase tracking-widest">
-                                                                                                {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                                            </div>
+                                                                                {/* VIOLATIONS ALERT PANEL */}
+                                                                                {dailyViolations.length > 0 && (
+                                                                                    <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
+                                                                                        <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                            <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
+                                                                                            <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
                                                                                         </div>
-                                                                                        <div className="p-3 sm:p-6 flex-grow flex flex-col justify-between min-w-0">
-                                                                                            <div>
-                                                                                                <div className="flex items-center justify-between mb-0.5 gap-2">
-                                                                                                    <h5 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
-                                                                                                    <div className={cn(
-                                                                                                        "px-1.5 py-0.5 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
-                                                                                                        (log.status === 'verified' || log.status === 'reviewed') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50' : 
-                                                                                                        log.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50' :
-                                                                                                        'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50'
-                                                                                                    )}>
-                                                                                                        {(log.status === 'verified' || log.status === 'reviewed') ? 'Verified' : log.status === 'rejected' ? 'Correction Requested' : 'Pending'}
-                                                                                                    </div>
+                                                                                        <div className="flex flex-wrap gap-2 px-1">
+                                                                                            {dailyViolations.map((v, i) => (
+                                                                                                <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                                                    <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                                                                    <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
+                                                                                                    <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
                                                                                                 </div>
-                                                                                                <p className="text-[10px] sm:text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
-                                                                                                    {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || "Meal Entry"}
-                                                                                                </p>
-                                                                                                <div className="flex gap-3 mt-1.5">
-                                                                                                    <div className="flex flex-col">
-                                                                                                        <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cals</span>
-                                                                                                        <span className="text-[10px] font-black text-[var(--color-text-main)]">{log.total_calories || 0}</span>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                                    {[
+                                                                                        { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                                                                        { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                                                                        { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                                                                        { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                                                                    ].map((stat, idx) => (
+                                                                                        <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
+                                                                                            <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* MEAL LIST */}
+                                                                            <div className="space-y-4">
+                                                                                <div className="flex items-center justify-between border-b-2 border-[var(--color-divider)] pb-4">
+                                                                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Meal Sequence</h4>
+                                                                                    <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">{logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).length} Entries Captured</span>
+                                                                                </div>
+
+                                                                                <div className="grid grid-cols-1 gap-3">
+                                                                                    {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
+                                                                                        <div
+                                                                                            key={log.id}
+                                                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                                            className="group relative bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex h-24 md:h-40 cursor-pointer shadow-sm hover:shadow-md"
+                                                                                        >
+                                                                                            <div className="w-24 md:w-48 h-full relative overflow-hidden flex-shrink-0">
+                                                                                                <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                                                                <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded-md text-[7px] font-black text-white uppercase tracking-widest">
+                                                                                                    {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className="p-3 sm:p-6 flex-grow flex flex-col justify-between min-w-0">
+                                                                                                <div>
+                                                                                                    <div className="flex items-center justify-between mb-0.5 gap-2">
+                                                                                                        <h5 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
+                                                                                                        <div className={cn(
+                                                                                                            "px-1.5 py-0.5 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
+                                                                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50' :
+                                                                                                                log.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50' :
+                                                                                                                    'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50'
+                                                                                                        )}>
+                                                                                                            {(log.status === 'verified' || log.status === 'reviewed') ? 'Verified' : log.status === 'rejected' ? 'Correction Requested' : 'Pending'}
+                                                                                                        </div>
                                                                                                     </div>
-                                                                                                    <div className="flex flex-col">
-                                                                                                        <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cons</span>
-                                                                                                        <span className="text-[10px] font-black text-blue-600">
-                                                                                                            {log.consumption_percent === 100 ? 'Full' :
-                                                                                                                log.consumption_percent === 75 ? '3/4' :
-                                                                                                                    log.consumption_percent === 50 ? '1/2' :
-                                                                                                                        log.consumption_percent === 25 ? '1/4' :
-                                                                                                                            'None'}
-                                                                                                        </span>
+                                                                                                    <p className="text-[10px] sm:text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
+                                                                                                        {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || "Meal Entry"}
+                                                                                                    </p>
+                                                                                                    <div className="flex gap-3 mt-1.5">
+                                                                                                        <div className="flex flex-col">
+                                                                                                            <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cals</span>
+                                                                                                            <span className="text-[10px] font-black text-[var(--color-text-main)]">{log.total_calories || 0}</span>
+                                                                                                        </div>
+                                                                                                        <div className="flex flex-col">
+                                                                                                            <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Cons</span>
+                                                                                                            <span className="text-[10px] font-black text-blue-600">
+                                                                                                                {log.consumption_percent === 100 ? 'Full' :
+                                                                                                                    log.consumption_percent === 75 ? '3/4' :
+                                                                                                                        log.consumption_percent === 50 ? '1/2' :
+                                                                                                                            log.consumption_percent === 25 ? '1/4' :
+                                                                                                                                'None'}
+                                                                                                            </span>
+                                                                                                        </div>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                ))}
+                                                                                    ))}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </>
-                                                                )}
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
                                                         );
                                                     })()}
 
@@ -3495,7 +3511,7 @@ export default function ClientDetails() {
                                                                                         <p className="text-sm font-bold text-[var(--color-text-main)] line-clamp-1">
                                                                                             {log.nutritionist_review?.meal_summary || log.ai_analysis?.meal_summary || 'Meal Log'}
                                                                                         </p>
-                                                                                        
+
                                                                                         {/* Clinician feedback comment */}
                                                                                         <div className="p-2.5 bg-rose-100/40 dark:bg-rose-950/20 border-l-2 border-rose-500 rounded-r-xl">
                                                                                             <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest mb-0.5">Your Feedback:</p>
@@ -3520,10 +3536,10 @@ export default function ClientDetails() {
 
                                                     {activeTab === 'adime' && (
                                                         <>
-                                                            <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                                                                <div className="flex justify-between items-center mb-4">
-                                                                    <h3 className="font-bold text-lg text-[var(--color-secondary)] flex items-center gap-2">
-                                                                        <MessageSquare size={20} className="text-blue-600" /> Professional Clinical Note (ADIME)
+                                                            <div className="bg-blue-50 dark:bg-blue-900/10 p-4 sm:p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                                                                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
+                                                                    <h3 className="font-bold text-base sm:text-lg text-[var(--color-secondary)] flex items-center gap-2">
+                                                                        <MessageSquare size={18} className="text-blue-600 shrink-0" /> ADIME Clinical Note
                                                                     </h3>
 
                                                                     <div className="flex items-center gap-3">
@@ -3543,7 +3559,43 @@ export default function ClientDetails() {
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="flex flex-wrap gap-2 mb-6">
+
+                                                                {/* Mobile Viewport: Space-Saving Template Selector Dropdown */}
+                                                                <div className="sm:hidden mb-6 space-y-1.5">
+                                                                    <div className="relative">
+                                                                        <select
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value;
+                                                                                if (val === 'copy_forward') {
+                                                                                    handleCopyLastAdime();
+                                                                                } else if (val) {
+                                                                                    handleApplyAdimeTemplate(val);
+                                                                                }
+                                                                                e.target.value = ''; // Reset selection
+                                                                            }}
+                                                                            className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-white dark:bg-slate-900 text-xs font-bold text-blue-600 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer appearance-none shadow-sm"
+                                                                            defaultValue=""
+                                                                        >
+                                                                            <option value="" disabled>Choose ADIME Template...</option>
+                                                                            {CLINICAL_ADIME_TEMPLATES.map(t => (
+                                                                                <option key={t.name} value={t.content} className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200">
+                                                                                    + {t.name}
+                                                                                </option>
+                                                                            ))}
+                                                                            {adimeNotes.length > 0 && (
+                                                                                <option value="copy_forward" className="bg-white dark:bg-slate-950 text-emerald-600 dark:text-emerald-400">
+                                                                                    📋 Copy Forward (Last Note)
+                                                                                </option>
+                                                                            )}
+                                                                        </select>
+                                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600 dark:text-blue-400">
+                                                                            <ChevronDown size={14} />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Desktop Viewport: Standard Flex-Wrap Buttons */}
+                                                                <div className="hidden sm:flex flex-wrap gap-2 mb-6">
                                                                     <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest self-center mr-2">Quick Templates:</span>
                                                                     {CLINICAL_ADIME_TEMPLATES.map(t => (
                                                                         <button
@@ -4192,47 +4244,49 @@ export default function ClientDetails() {
                                                                             >
                                                                                 <ListFilter size={18} /> Load Template
                                                                             </Button>
-                                                                            <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl opacity-0 invisible group-hover/meal-template:opacity-100 group-hover/meal-template:visible transition-all z-50 overflow-hidden">
-                                                                                <div className="px-3 py-2 bg-[var(--color-primary)]/10 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-1">
-                                                                                    <span>🍽️ Weekly Meal Templates</span>
-                                                                                </div>
-                                                                                <div className="max-h-80 overflow-y-auto scrollbar-thin">
-                                                                                    {mealTemplates.map(t => (
-                                                                                        <div
-                                                                                            key={t.id}
-                                                                                            className="p-3 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
-                                                                                            onClick={() => handleApplyMealTemplate(t.id)}
-                                                                                        >
-                                                                                            <div className="flex-grow min-w-0">
-                                                                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                                                                    <span className="text-xs font-black text-[var(--color-text-main)] group-hover/mitem:text-[var(--color-primary)] transition-colors line-clamp-1">{t.name}</span>
-                                                                                                    {t.is_default && (
-                                                                                                        <span className="px-1.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] font-black uppercase tracking-wider rounded-md border border-[var(--color-primary)]/20 shrink-0">Starter</span>
-                                                                                                    )}
+                                                                            <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/meal-template:opacity-100 group-hover/meal-template:visible transition-all z-50">
+                                                                                <div className="bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl overflow-hidden">
+                                                                                    <div className="px-3 py-2 bg-[var(--color-primary)]/10 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-1">
+                                                                                        <span>🍽️ Weekly Meal Templates</span>
+                                                                                    </div>
+                                                                                    <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                                                                                        {mealTemplates.map(t => (
+                                                                                            <div
+                                                                                                key={t.id}
+                                                                                                className="p-3 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
+                                                                                                onClick={() => handleApplyMealTemplate(t.id)}
+                                                                                            >
+                                                                                                <div className="flex-grow min-w-0">
+                                                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                                        <span className="text-xs font-black text-[var(--color-text-main)] group-hover/mitem:text-[var(--color-primary)] transition-colors line-clamp-1">{t.name}</span>
+                                                                                                        {t.is_default && (
+                                                                                                            <span className="px-1.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] font-black uppercase tracking-wider rounded-md border border-[var(--color-primary)]/20 shrink-0">Starter</span>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                    <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
                                                                                                 </div>
-                                                                                                <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
+                                                                                                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/mitem:opacity-100 transition-opacity">
+                                                                                                    <button
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            handleOpenTemplateEditor(t);
+                                                                                                        }}
+                                                                                                        className="p-1 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors"
+                                                                                                        title="Edit Template"
+                                                                                                    >
+                                                                                                        <Edit2 size={12} />
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        onClick={(e) => handleDeleteMealTemplate(t.id, e)}
+                                                                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                                                        title="Delete Template"
+                                                                                                    >
+                                                                                                        <Trash2 size={12} />
+                                                                                                    </button>
+                                                                                                </div>
                                                                                             </div>
-                                                                                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/mitem:opacity-100 transition-opacity">
-                                                                                                <button
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        handleOpenTemplateEditor(t);
-                                                                                                    }}
-                                                                                                    className="p-1 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors"
-                                                                                                    title="Edit Template"
-                                                                                                >
-                                                                                                    <Edit2 size={12} />
-                                                                                                </button>
-                                                                                                <button
-                                                                                                    onClick={(e) => handleDeleteMealTemplate(t.id, e)}
-                                                                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                                                                    title="Delete Template"
-                                                                                                >
-                                                                                                    <Trash2 size={12} />
-                                                                                                </button>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
+                                                                                        ))}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -4391,8 +4445,8 @@ export default function ClientDetails() {
                                                                                 onClick={() => setActivePlannerDay(i)}
                                                                                 className={cn(
                                                                                     "flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all w-[72px] text-center select-none shadow-sm snap-start",
-                                                                                    isSelected 
-                                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20 scale-[1.02]" 
+                                                                                    isSelected
+                                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20 scale-[1.02]"
                                                                                         : "bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50",
                                                                                     isToday && !isSelected ? "border-[var(--color-primary)]/30" : ""
                                                                                 )}
@@ -4528,50 +4582,52 @@ export default function ClientDetails() {
                                                                                 <Button variant="outline" className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent">
                                                                                     <ListFilter size={14} /> Load Template
                                                                                 </Button>
-                                                                                <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50 overflow-hidden">
-                                                                                    <div className="max-h-80 overflow-y-auto scrollbar-thin">
-                                                                                        {universalTemplates.length > 0 && (
-                                                                                            <div>
-                                                                                                <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-b border-[var(--color-divider)] text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                                                                                                    <span>🌿 Clinical Standards</span>
-                                                                                                </div>
-                                                                                                {universalTemplates.map(t => (
-                                                                                                    <div 
-                                                                                                        key={t.id} 
-                                                                                                        className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors" 
-                                                                                                        onClick={() => applyPortionTemplate(t)}
-                                                                                                    >
-                                                                                                        <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
-                                                                                                        <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-tight rounded-md border border-emerald-200 dark:border-emerald-800/20">
-                                                                                                            Universal
-                                                                                                        </span>
+                                                                                <div className="absolute top-full right-0 pt-2 w-72 opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50">
+                                                                                    <div className="bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl overflow-hidden">
+                                                                                        <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                                                                                            {universalTemplates.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-b border-[var(--color-divider)] text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                                                                                        <span>🌿 Clinical Standards</span>
                                                                                                     </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        )}
-                                                                                        
-                                                                                        {customTemplates.length > 0 && (
-                                                                                            <div>
-                                                                                                <div className="px-3 py-2 bg-[var(--color-bg-page)]/80 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1">
-                                                                                                    <span>👤 Your Saved Templates</span>
-                                                                                                </div>
-                                                                                                {customTemplates.map(t => (
-                                                                                                    <div 
-                                                                                                        key={t.id} 
-                                                                                                        className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] last:border-b-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors" 
-                                                                                                        onClick={() => applyPortionTemplate(t)}
-                                                                                                    >
-                                                                                                        <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
-                                                                                                        <button 
-                                                                                                            onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }} 
-                                                                                                            className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md"
+                                                                                                    {universalTemplates.map(t => (
+                                                                                                        <div
+                                                                                                            key={t.id}
+                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors"
+                                                                                                            onClick={() => applyPortionTemplate(t)}
                                                                                                         >
-                                                                                                            <Trash2 size={12} />
-                                                                                                        </button>
+                                                                                                            <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
+                                                                                                            <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-tight rounded-md border border-emerald-200 dark:border-emerald-800/20">
+                                                                                                                Universal
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {customTemplates.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="px-3 py-2 bg-[var(--color-bg-page)]/80 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1">
+                                                                                                        <span>👤 Your Saved Templates</span>
                                                                                                     </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        )}
+                                                                                                    {customTemplates.map(t => (
+                                                                                                        <div
+                                                                                                            key={t.id}
+                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] last:border-b-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors"
+                                                                                                            onClick={() => applyPortionTemplate(t)}
+                                                                                                        >
+                                                                                                            <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
+                                                                                                            <button
+                                                                                                                onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }}
+                                                                                                                className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md"
+                                                                                                            >
+                                                                                                                <Trash2 size={12} />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>

@@ -168,7 +168,7 @@ export function Layout({ children }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-[45] bg-black/50 backdrop-blur-sm"
                         onClick={() => setSidebarOpen(false)}
                     />
                 )}
@@ -177,7 +177,7 @@ export function Layout({ children }) {
             {/* Mobile FAB Backdrop Dismiss Click */}
             {fabMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-in fade-in duration-200 lg:hidden"
+                    className="fixed inset-0 z-[45] bg-black/25 backdrop-blur-[2px] animate-in fade-in duration-200 lg:hidden"
                     onClick={() => setFabMenuOpen(false)}
                 />
             )}
@@ -193,14 +193,13 @@ export function Layout({ children }) {
                     transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                     className="flex-1 min-w-0"
                 >
-                    {/* Unified Header */}
                     <motion.header
                         initial={false}
                         animate={{
                             left: !isMobile && sidebarOpen ? '16rem' : '0rem'
                         }}
                         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="fixed top-0 right-0 z-30 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4"
+                        className="fixed top-0 right-0 z-40 flex items-center border-b border-[var(--color-divider)] bg-[var(--color-bg-card)]/80 backdrop-blur-md px-3 sm:px-4"
                         style={{ height: isMobile ? 'var(--header-height-mobile)' : 'var(--header-height)' }}
                     >
                         <Button
@@ -241,7 +240,7 @@ export function Layout({ children }) {
 
             {/* ── ERGONOMIC MOBILE BOTTOM NAVIGATION BAR & FAB (lg:hidden) ── */}
             {isMobile && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-bg-card)]/80 backdrop-blur-lg border-t border-[var(--color-divider)] px-4 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
+                <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-bg-card)]/80 backdrop-blur-lg border-t border-[var(--color-divider)] px-4 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
                     <div className="flex items-center justify-between max-w-md mx-auto relative h-12">
                         {/* Speed Dial Quick Actions overlay floating menu */}
                         <AnimatePresence>
@@ -250,7 +249,7 @@ export function Layout({ children }) {
                                     initial={{ opacity: 0, y: 15, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                                    className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-[var(--color-bg-card)]/90 backdrop-blur-xl border border-[var(--color-divider)] p-4 rounded-3xl shadow-2xl flex flex-col gap-3 w-56 z-50"
+                                    className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-[var(--color-bg-card)]/90 backdrop-blur-xl border border-[var(--color-divider)] p-4 rounded-3xl shadow-2xl flex flex-col gap-3 w-56 z-[60]"
                                 >
                                     <div className="text-center pb-1.5 border-b border-[var(--color-divider)] select-none">
                                         <span className="text-[10px] font-black uppercase text-[var(--color-primary)] tracking-widest">quick log options</span>
