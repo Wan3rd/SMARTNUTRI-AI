@@ -393,9 +393,15 @@ export default function ParentDashboard() {
                                     <Card className={cn(
                                         "border-2 border-[var(--color-divider)] relative overflow-hidden rounded-[2rem] shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5 p-6 sm:p-8",
                                         (latestMeal?.compliance_score || 100) >= 80 
-                                            ? 'dark:border-emerald-500/20 dark:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)] dark:bg-gradient-to-br dark:from-emerald-500/[0.02] dark:to-teal-500/[0.01]' 
-                                            : 'dark:border-amber-500/20 dark:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)] dark:bg-gradient-to-br dark:from-amber-500/[0.02] dark:to-orange-500/[0.01]'
+                                            ? 'dark:border-emerald-500/20 dark:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)]' 
+                                            : 'dark:border-amber-500/20 dark:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)]'
                                     )}>
+                                        <div className={cn(
+                                            "absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-500 bg-gradient-to-br",
+                                            (latestMeal?.compliance_score || 100) >= 80 
+                                                ? 'from-emerald-500/[0.02] to-teal-500/[0.01]' 
+                                                : 'from-amber-500/[0.02] to-orange-500/[0.01]'
+                                        )} />
                                         <div className="absolute inset-0 opacity-0 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
                                         <CardContent className="p-0 flex flex-col md:flex-row items-center gap-6 sm:gap-8 relative z-10">
                                             {/* Circular SVG HUD Ring */}
