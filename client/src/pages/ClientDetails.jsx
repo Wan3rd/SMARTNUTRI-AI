@@ -276,14 +276,15 @@ export default function ClientDetails() {
     const handleApplyAdimeTemplate = (templateContent) => {
         setNewAdime(prev => {
             const current = prev.assessment || '';
-            // Check if current content is effectively empty
-            const isEmpty = !current || current === '<p><br></p>' || current === '<p></p>' || current.trim() === '';
+            // Robust check to see if the HTML is effectively empty (stripping tags, NBSP, and whitespace)
+            const cleanText = current.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+            const isEmpty = cleanText.length === 0;
 
             return {
                 ...prev,
                 assessment: isEmpty
                     ? templateContent
-                    : current + '<br/>' + templateContent
+                    : current.trim() + '<br/>' + templateContent
             };
         });
         showNotif("Clinical template applied");
@@ -332,6 +333,8 @@ export default function ClientDetails() {
     const [newNote, setNewNote] = useState('');
     const [adimeNotes, setAdimeNotes] = useState([]);
     const [savingAdime, setSavingAdime] = useState(false);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [hoveredProfileId, setHoveredProfileId] = useState(null);
     const [newAdime, setNewAdime] = useState({
         assessment: '',
         diagnosis: '',
@@ -464,6 +467,90 @@ export default function ClientDetails() {
     useEffect(() => {
         setSearchParams({ tab: activeTab }, { replace: true });
     }, [activeTab, setSearchParams]);
+
+    // Apply native hover tooltips to all ReactQuill style bar toolbar controls dynamically
+    useEffect(() => {
+        const tooltipMap = {
+            '.ql-bold': 'Bold (Ctrl+B)',
+            '.ql-italic': 'Italic (Ctrl+I)',
+            '.ql-underline': 'Underline (Ctrl+U)',
+            '.ql-strike': 'Strikethrough',
+            '.ql-blockquote': 'Block Quote',
+            '.ql-code-block': 'Code Block',
+            '.ql-list[value="ordered"]': 'Numbered List',
+            '.ql-list[value="bullet"]': 'Bullet List',
+            '.ql-header[value="1"]': 'Heading 1',
+            '.ql-header[value="2"]': 'Heading 2',
+            '.ql-header[value="3"]': 'Heading 3',
+            '.ql-script[value="sub"]': 'Subscript',
+            '.ql-script[value="super"]': 'Superscript',
+            '.ql-indent[value="-1"]': 'Decrease Indent',
+            '.ql-indent[value="+1"]': 'Increase Indent',
+            '.ql-direction[value="rtl"]': 'Text Direction',
+            '.ql-link': 'Insert Link',
+            '.ql-image': 'Insert Image',
+            '.ql-video': 'Insert Video',
+            '.ql-clean': 'Clear Formatting',
+            '.ql-font': 'Font Family',
+            '.ql-size': 'Text Size',
+            '.ql-color': 'Text Color',
+            '.ql-background': 'Highlight Color',
+            '.ql-align': 'Alignment'
+        };
+
+        const addQuillTooltips = () => {
+            const toolbarElements = document.querySelectorAll('.ql-toolbar');
+            toolbarElements.forEach(toolbar => {
+                Object.entries(tooltipMap).forEach(([selector, tooltipText]) => {
+                    const elements = toolbar.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        if (el && !el.getAttribute('title')) {
+                            el.setAttribute('title', tooltipText);
+                            el.setAttribute('aria-label', tooltipText);
+                        }
+                    });
+                });
+
+                // Fallback for custom/unmapped buttons
+                const buttons = toolbar.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    if (!btn.getAttribute('title')) {
+                        const classes = Array.from(btn.classList);
+                        const qlClass = classes.find(c => c.startsWith('ql-'));
+                        if (qlClass) {
+                            const name = qlClass.replace('ql-', '');
+                            const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+                            btn.setAttribute('title', capitalized);
+                        }
+                    }
+                });
+
+                // Fallback for custom/unmapped select pickers
+                const pickers = toolbar.querySelectorAll('.ql-picker');
+                pickers.forEach(picker => {
+                    if (!picker.getAttribute('title')) {
+                        const classes = Array.from(picker.classList);
+                        const qlClass = classes.find(c => c.startsWith('ql-'));
+                        if (qlClass) {
+                            const name = qlClass.replace('ql-', '');
+                            const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+                            picker.setAttribute('title', capitalized);
+                        }
+                    }
+                });
+            });
+        };
+
+        // Run immediately and set safe deferred triggers to catch all rendering completions
+        addQuillTooltips();
+        const timer = setTimeout(addQuillTooltips, 200);
+        const timer2 = setTimeout(addQuillTooltips, 800);
+
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(timer2);
+        };
+    }, [activeTab]);
     const [mealPlan, setMealPlan] = useState([]);
     const [portionMatrix, setPortionMatrix] = useState([
         { meal_type: 'Breakfast', vegetables: '', fruit: '', milk: '', rice: '', meat: '', fat: '', sugar: '' },
@@ -1349,6 +1436,7 @@ export default function ClientDetails() {
     };
 
     const fetchLogs = async (profileId) => {
+        setLogsLoading(true);
         try {
             // Fetch logs for the selected profile
             const res = await api.get(`/logs/profile/${profileId}`);
@@ -1361,6 +1449,8 @@ export default function ClientDetails() {
             }
         } catch (err) {
             console.error("Error fetching logs", err);
+        } finally {
+            setLogsLoading(false);
         }
     };
 
@@ -1424,7 +1514,7 @@ export default function ClientDetails() {
 
     const handleAddNote = async (e) => {
         e.preventDefault();
-        if (!newNote.trim()) return;
+        if (!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0) return;
 
         setSavingNote(true);
 
@@ -1468,7 +1558,7 @@ export default function ClientDetails() {
 
     const handleUpdateNote = async (e) => {
         e.preventDefault();
-        if (!editNoteForm.trim()) return;
+        if (!editNoteForm || editNoteForm.replace(/<[^>]*>/g, '').trim().length === 0) return;
         try {
             await api.patch(`/notes/${editingNoteId}`, { content: editNoteForm });
             setEditingNoteId(null);
@@ -1981,6 +2071,14 @@ export default function ClientDetails() {
                         <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
                             <ArrowLeft size={24} />
                         </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
+                            className="hidden lg:flex p-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-xl transition-all"
+                            title={isSidebarMinimized ? "Show Family Roster" : "Hide Family Roster"}
+                        >
+                            {isSidebarMinimized ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+                        </Button>
                         <div>
                             <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
                             <p className="text-xs sm:text-base text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
@@ -2005,18 +2103,18 @@ export default function ClientDetails() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start w-full max-w-full">
+                    <div className={cn("flex flex-col lg:flex-row items-start w-full max-w-full transition-all duration-300", isSidebarMinimized ? "lg:gap-4" : "gap-4 lg:gap-8")}>
                         {/* Left Sidebar: Profiles (Command Center) */}
-                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full", isSidebarMinimized ? "lg:w-[72px]" : "lg:w-72")}>
+                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full lg:relative lg:z-40", isSidebarMinimized ? "lg:w-[60px]" : "lg:w-72")}>
                             <div className="sticky top-[72px] lg:top-8 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-2 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
-                                <div className="flex items-center justify-between mb-4">
+                                <div className={cn("flex items-center justify-between", isSidebarMinimized ? "mb-0" : "mb-4")}>
                                     <h3 className={cn("font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] flex items-center gap-2 transition-opacity duration-200", isSidebarMinimized ? "lg:opacity-0 lg:w-0 lg:overflow-hidden lg:m-0" : "opacity-100 w-auto")}>
                                         <Users size={14} className="text-[var(--color-primary)] shrink-0" />
                                         <span>Family Profiles</span>
                                     </h3>
                                     <button
                                         onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
-                                        className="hidden lg:flex p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg transition-colors shrink-0"
+                                        className={cn("hidden lg:flex p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg transition-colors shrink-0", isSidebarMinimized && "lg:hidden")}
                                         title={isSidebarMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
                                     >
                                         {isSidebarMinimized ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
@@ -2030,6 +2128,8 @@ export default function ClientDetails() {
                                             <div
                                                 key={profile.id}
                                                 onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
+                                                onMouseEnter={() => setHoveredProfileId(profile.id)}
+                                                onMouseLeave={() => setHoveredProfileId(null)}
                                                 className={cn(
                                                     "h-[52px] rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 snap-start flex items-center",
                                                     isSelected
@@ -2038,7 +2138,6 @@ export default function ClientDetails() {
                                                     "w-[52px] sm:w-[200px] justify-center sm:justify-start px-0 sm:px-3 gap-0 sm:gap-2.5",
                                                     isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center lg:gap-0" : "lg:w-full"
                                                 )}
-                                                title={isSidebarMinimized ? profile.child_name : undefined}
                                             >
                                                 {pendingCount > 0 && (
                                                     <div className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
@@ -2051,31 +2150,86 @@ export default function ClientDetails() {
                                                         </span>
                                                     </div>
                                                 )}
-                                                <div className={cn(
-                                                    "h-9 w-9 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-colors",
-                                                    isSelected ? 'border-white/40 bg-white/20' : 'border-[var(--color-divider)] bg-white/10'
-                                                )}>
-                                                    {profile.profile_image_url ? (
-                                                        <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
-                                                    ) : (
-                                                        <div className="h-full w-full flex items-center justify-center">
-                                                            <User size={18} className={isSelected ? 'text-white' : 'text-[var(--color-text-main)]'} />
-                                                        </div>
+                                                <div className="relative shrink-0">
+                                                    <div className={cn(
+                                                        "h-9 w-9 rounded-full overflow-hidden flex-shrink-0 border-2 transition-all duration-300",
+                                                        isSelected
+                                                            ? 'border-transparent ring-2 ring-white/80 dark:ring-emerald-400/80 ring-offset-1 ring-offset-[var(--color-primary)] dark:ring-offset-slate-900 scale-105 shadow-md bg-white/20'
+                                                            : 'border-[var(--color-divider)] bg-white/10'
+                                                    )}>
+                                                        {profile.profile_image_url ? (
+                                                            <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center">
+                                                                <User size={18} className={isSelected ? 'text-white' : 'text-[var(--color-text-main)]'} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Active Living Pulse Ring Indicator */}
+                                                    {isSelected && (
+                                                        <div className="absolute inset-0 rounded-full ring-[3px] ring-white/30 dark:ring-emerald-400/30 animate-pulse pointer-events-none -m-0.5" />
                                                     )}
                                                 </div>
-                                                <div className={cn("min-w-0 flex-1 flex-col justify-center hidden sm:flex", isSidebarMinimized && "lg:hidden")}>
-                                                    <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
-                                                        {profile.child_name}
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className={cn("text-[8px] font-bold uppercase tracking-wider", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
-                                                            {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}Y • {profile.gender.charAt(0)}
-                                                        </div>
-                                                        <div className={cn("text-[8px] font-black", isSelected ? 'text-white/90' : 'text-[var(--color-primary)]')}>
-                                                            {profile.weight_kg || '--'}KG
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <AnimatePresence initial={false}>
+                                                    {!isSidebarMinimized && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, width: 0, x: -10 }}
+                                                            animate={{ opacity: 1, width: 'auto', x: 0 }}
+                                                            exit={{ opacity: 0, width: 0, x: -10 }}
+                                                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                            className="min-w-0 flex-1 flex-col justify-center hidden sm:flex overflow-hidden"
+                                                        >
+                                                            <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
+                                                                {profile.child_name}
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className={cn("text-[8px] font-bold uppercase tracking-wider whitespace-nowrap", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
+                                                                    {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}Y • {profile.gender.charAt(0)}
+                                                                </div>
+                                                                <div className={cn("text-[8px] font-black whitespace-nowrap", isSelected ? 'text-white/90' : 'text-[var(--color-primary)]')}>
+                                                                    {profile.weight_kg || '--'}KG
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                {/* Premium Glassmorphic Hover Tooltip */}
+                                                <AnimatePresence>
+                                                    {isSidebarMinimized && hoveredProfileId === profile.id && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                                                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                                                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                                                            className="absolute left-[64px] top-1/2 -translate-y-1/2 hidden lg:flex flex-col min-w-[140px] p-3 rounded-2xl border border-white/40 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-2xl z-50 text-left pointer-events-none"
+                                                        >
+                                                            {/* Glow Effect */}
+                                                            <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/5 to-transparent rounded-2xl pointer-events-none" />
+                                                            
+                                                            {/* Caret Arrow */}
+                                                            <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/90 dark:bg-slate-900/90 border-l border-b border-white/40 dark:border-white/10 rotate-45" />
+                                                            
+                                                            {/* Detailed Pediatric Metadata */}
+                                                            <div className="relative z-10 space-y-1">
+                                                                <p className="font-black text-xs uppercase tracking-tight text-[var(--color-text-main)] truncate leading-none">
+                                                                    {profile.child_name}
+                                                                </p>
+                                                                <div className="flex items-center gap-1.5 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none pt-0.5">
+                                                                    <span>{new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()} Yrs</span>
+                                                                    <span>•</span>
+                                                                    <span className="text-[var(--color-primary)]">{profile.weight_kg || '--'} kg</span>
+                                                                </div>
+                                                                {pendingCount > 0 && (
+                                                                    <span className="inline-block mt-1 px-1.5 py-0.5 bg-orange-500/10 text-orange-500 rounded-md text-[8px] font-black uppercase tracking-wider leading-none">
+                                                                        ⚠️ {pendingCount} Pending
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         );
                                     })}
@@ -2091,7 +2245,19 @@ export default function ClientDetails() {
                                         <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform shrink-0">
                                             <Plus size={16} strokeWidth={3} />
                                         </div>
-                                        <span className={cn("text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] hidden sm:block", isSidebarMinimized && "lg:hidden")}>Add New</span>
+                                        <AnimatePresence initial={false}>
+                                            {!isSidebarMinimized && (
+                                                <motion.span
+                                                    initial={{ opacity: 0, width: 0, x: -10 }}
+                                                    animate={{ opacity: 1, width: 'auto', x: 0 }}
+                                                    exit={{ opacity: 0, width: 0, x: -10 }}
+                                                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                    className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] hidden sm:block overflow-hidden whitespace-nowrap"
+                                                >
+                                                    Add New
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
                                     </button>
                                 </div>
                             </div>
@@ -2106,7 +2272,7 @@ export default function ClientDetails() {
                                     </CardHeader>
                                     <CardContent>
                                         {/* --- Grouped Clinical Modules (Pillars) --- */}
-                                        <div className="flex flex-col gap-6 mb-8">
+                                        <div className="flex flex-col gap-3.5 mb-4">
                                             {/* Pillar Switcher */}
                                             <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-[var(--color-divider)] flex items-center justify-between gap-1 overflow-x-auto scrollbar-none pb-1.5 -mx-4 px-4 sm:mx-0 sm:px-1.5 sm:pb-1.5 shadow-inner whitespace-nowrap">
                                                 {[
@@ -2221,35 +2387,6 @@ export default function ClientDetails() {
                                                     transition={{ duration: 0.22, ease: 'easeInOut' }}
                                                 >
 
-                                                    {/* SHARED CLINICAL TOOLS & REFERENCE (ADIME, Notes) */}
-                                                    {(activeTab === 'adime' || activeTab === 'notes') && (
-                                                        <div className="space-y-6 mb-8 animate-in slide-in-from-top-4 duration-500">
-                                                            {/* ULTIMATE PROFESSIONAL SHARED TOOLBAR (Only for ADIME & Notes) */}
-                                                            <div className="sticky top-0 z-20 my-4 bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-primary)]/40 shadow-xl overflow-hidden flex flex-wrap items-center justify-center p-1.5 gap-1 sm:gap-2">
-                                                                <div className="flex items-center gap-2 px-2 sm:px-3 border-r border-[var(--color-divider)]">
-                                                                    <div className={`w-2 h-2 rounded-full ${focusedField ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                                                                    <span className="text-[9px] sm:text-[10px] font-black text-[var(--color-secondary)] uppercase tracking-tighter sm:tracking-widest whitespace-nowrap truncate max-w-[120px] sm:max-w-none">
-                                                                        {focusedField ? `Editor: ${focusedField}` : 'Click to type'}
-                                                                    </span>
-                                                                </div>
-
-                                                                <div className="flex items-center gap-1">
-                                                                    <button type="button" onClick={() => applyFormat('bold')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bold (Ctrl+B)">
-                                                                        <Bold size={18} strokeWidth={2.5} />
-                                                                    </button>
-                                                                    <button type="button" onClick={() => applyFormat('italic')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Italic (Ctrl+I)">
-                                                                        <Italic size={18} strokeWidth={2.5} />
-                                                                    </button>
-                                                                    <button type="button" onClick={() => applyFormat('list', 'bullet')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Bulleted List (Ctrl+Shift+8)">
-                                                                        <List size={18} strokeWidth={2.5} />
-                                                                    </button>
-                                                                    <button type="button" onClick={() => applyFormat('list', 'ordered')} className="p-2 hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors text-[var(--color-text-main)] cursor-pointer" title="Numbered List (Ctrl+Shift+7)">
-                                                                        <ListOrdered size={18} strokeWidth={2.5} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
 
                                                     {/* TAB 1: OVERVIEW */}
                                                     {activeTab === 'overview' && (
@@ -3106,6 +3243,15 @@ export default function ClientDetails() {
 
                                                     {/* TAB: LOG HISTORY (Date-Grouped) */}
                                                     {activeTab === 'history' && (() => {
+                                                        if (logsLoading) {
+                                                            return (
+                                                                <div className="flex flex-col items-center justify-center min-h-[400px] w-full space-y-4">
+                                                                    <div className="w-8 h-8 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin" />
+                                                                    <p className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] animate-pulse">Loading clinical history...</p>
+                                                                </div>
+                                                            );
+                                                        }
+
                                                         const uniqueDates = Object.keys(logs.reduce((acc, log) => {
                                                             const date = new Date(log.logged_at).toLocaleDateString();
                                                             acc[date] = true;
@@ -3560,8 +3706,8 @@ export default function ClientDetails() {
                                                                 </div>
 
 
-                                                                {/* Mobile Viewport: Space-Saving Template Selector Dropdown */}
-                                                                <div className="sm:hidden mb-6 space-y-1.5">
+                                                                {/* Unified Template Selector Dropdown */}
+                                                                <div className="mb-6 space-y-1.5 w-full sm:max-w-xs">
                                                                     <div className="relative">
                                                                         <select
                                                                             onChange={(e) => {
@@ -3583,7 +3729,7 @@ export default function ClientDetails() {
                                                                                 </option>
                                                                             ))}
                                                                             {adimeNotes.length > 0 && (
-                                                                                <option value="copy_forward" className="bg-white dark:bg-slate-950 text-emerald-600 dark:text-emerald-400">
+                                                                                <option value="copy_forward" className="bg-white dark:bg-slate-950 text-emerald-600 dark:text-emerald-400 font-bold">
                                                                                     📋 Copy Forward (Last Note)
                                                                                 </option>
                                                                             )}
@@ -3592,30 +3738,6 @@ export default function ClientDetails() {
                                                                             <ChevronDown size={14} />
                                                                         </div>
                                                                     </div>
-                                                                </div>
-
-                                                                {/* Desktop Viewport: Standard Flex-Wrap Buttons */}
-                                                                <div className="hidden sm:flex flex-wrap gap-2 mb-6">
-                                                                    <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest self-center mr-2">Quick Templates:</span>
-                                                                    {CLINICAL_ADIME_TEMPLATES.map(t => (
-                                                                        <button
-                                                                            key={t.name}
-                                                                            type="button"
-                                                                            onClick={() => handleApplyAdimeTemplate(t.content)}
-                                                                            className="px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-600 text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                                                        >
-                                                                            + {t.name}
-                                                                        </button>
-                                                                    ))}
-                                                                    {adimeNotes.length > 0 && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={handleCopyLastAdime}
-                                                                            className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-white text-emerald-600 text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
-                                                                        >
-                                                                            <ArrowLeft size={10} className="rotate-90" /> Copy Forward
-                                                                        </button>
-                                                                    )}
                                                                 </div>
 
                                                                 <form onSubmit={handleAddAdimeNote} className="space-y-6">
@@ -3781,12 +3903,12 @@ export default function ClientDetails() {
                                                                             value={newNote}
                                                                             onChange={setNewNote}
                                                                             onFocus={() => setFocusedField('notes')}
-                                                                            modules={{ toolbar: false }}
+                                                                            modules={{ toolbar: true }}
                                                                             placeholder="Add a new observation, milestone, or follow-up note..."
                                                                         />
                                                                     </div>
                                                                     <div className="flex justify-end pt-2">
-                                                                        <Button type="submit" disabled={!newNote.trim()} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
+                                                                        <Button type="submit" disabled={!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
                                                                             Save Clinical Note
                                                                         </Button>
                                                                     </div>
@@ -3801,13 +3923,13 @@ export default function ClientDetails() {
                                                                     notes.map(note => (
                                                                         <div key={note.id} className={cn(
                                                                             "p-5 border rounded-xl relative group hover:shadow-md transition-all",
-                                                                            note.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
+                                                                            note.is_pinned ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800/40' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
                                                                             note.is_optimistic && "opacity-50 grayscale pointer-events-none"
                                                                         )}>
                                                                             {note.is_optimistic ? (
                                                                                 <span className="absolute top-2 right-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 animate-pulse">Syncing...</span>
                                                                             ) : note.is_pinned && (
-                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 uppercase flex items-center gap-1">📌 Pinned</span>
+                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 dark:text-yellow-400 uppercase flex items-center gap-1">📌 Pinned</span>
                                                                             )}
 
                                                                             {editingNoteId === note.id ? (
@@ -3817,12 +3939,12 @@ export default function ClientDetails() {
                                                                                             theme="snow"
                                                                                             value={editNoteForm}
                                                                                             onChange={setEditNoteForm}
-                                                                                            modules={{ toolbar: false }}
+                                                                                            modules={{ toolbar: true }}
                                                                                         />
                                                                                     </div>
                                                                                     <div className="flex justify-end gap-2">
                                                                                         <Button variant="ghost" type="button" onClick={() => setEditingNoteId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                                        <Button type="submit" className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
+                                                                                        <Button type="submit" disabled={!editNoteForm || editNoteForm.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
                                                                                     </div>
                                                                                 </form>
                                                                             ) : (
@@ -3849,7 +3971,7 @@ export default function ClientDetails() {
                                                                                             <Button
                                                                                                 variant="ghost"
                                                                                                 onClick={() => api.patch(`/notes/${note.id}/pin`, { is_pinned: !note.is_pinned }).then(() => fetchNotes(selectedProfile.id))}
-                                                                                                className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
+                                                                                                className={`h-8 w-8 p-0 rounded-full transition-colors ${note.is_pinned ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-950/40' : 'text-gray-400 hover:text-[var(--color-primary)]'}`}
                                                                                                 title={note.is_pinned ? "Unpin" : "Pin Note"}
                                                                                             >
                                                                                                 <Plus size={16} className={note.is_pinned ? "rotate-45" : ""} />
