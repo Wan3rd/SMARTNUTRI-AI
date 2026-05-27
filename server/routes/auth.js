@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
-import { upload, cloudinary } from '../lib/cloudinary.js';
+import { upload, cloudinary, deleteCloudinaryAsset } from '../lib/cloudinary.js';
 import { sendResetPasswordEmail, sendOtpEmail } from '../lib/mailer.js';
 import crypto from 'crypto';
 
@@ -108,7 +108,15 @@ router.post('/verify-otp', async (req, res) => {
 
 
 // REGISTER
-router.post('/register', upload.single('license'), async (req, res) => {
+router.post('/register', (req, res, next) => {
+    upload.single('license')(req, res, (err) => {
+        if (err) {
+            console.error('Register Multer Error:', err);
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
     const email = req.body.email?.toLowerCase();
 
@@ -378,7 +386,7 @@ router.post('/photo', verifyToken, (req, res, next) => {
     upload.single('photo')(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
-            return res.status(500).json({ message: 'File processing failed', error: err.message });
+            return res.status(400).json({ message: 'File processing failed', error: err.message });
         }
         next();
     });
@@ -387,6 +395,11 @@ router.post('/photo', verifyToken, (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
+
+        // Fetch current user details to check for an existing avatar to delete
+        const currentUser = await prisma.users.findUnique({
+            where: { id: req.user.id }
+        });
 
         // Upload to Cloudinary from memory buffer
         const uploadFromBuffer = () => {
@@ -406,6 +419,11 @@ router.post('/photo', verifyToken, (req, res, next) => {
         };
 
         const result = await uploadFromBuffer();
+
+        // Clean up old profile picture from Cloudinary to avoid storage leaks
+        if (currentUser && currentUser.profile_image_url) {
+            deleteCloudinaryAsset(currentUser.profile_image_url).catch(e => console.error("Cloudinary old avatar cleanup failed:", e));
+        }
 
         const updatedUser = await prisma.users.update({
             where: { id: req.user.id },
@@ -427,7 +445,7 @@ router.post('/license-image', verifyToken, (req, res, next) => {
     upload.single('license')(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
-            return res.status(500).json({ message: 'File processing failed', error: err.message });
+            return res.status(400).json({ message: 'File processing failed', error: err.message });
         }
         next();
     });
@@ -436,6 +454,11 @@ router.post('/license-image', verifyToken, (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ message: 'No license image uploaded' });
         }
+
+        // Fetch current user details to check for an existing license image to delete
+        const currentUser = await prisma.users.findUnique({
+            where: { id: req.user.id }
+        });
 
         // Upload to Cloudinary from memory buffer
         const uploadFromBuffer = () => {
@@ -455,6 +478,11 @@ router.post('/license-image', verifyToken, (req, res, next) => {
         };
 
         const result = await uploadFromBuffer();
+
+        // Clean up old license document from Cloudinary to avoid storage leaks
+        if (currentUser && currentUser.license_image_url) {
+            deleteCloudinaryAsset(currentUser.license_image_url).catch(e => console.error("Cloudinary old license cleanup failed:", e));
+        }
 
         const updatedUser = await prisma.users.update({
             where: { id: req.user.id },

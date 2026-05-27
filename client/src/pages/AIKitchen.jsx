@@ -90,6 +90,80 @@ function ClinicalRecipeSimulator() {
     );
 }
 
+// Helper to convert OKLCH color strings to standard RGB/RGBA strings
+function replaceOklchWithRgb(str) {
+    if (typeof str !== 'string' || !str.includes('oklch')) {
+        return str;
+    }
+    
+    return str.replace(/oklch\(\s*([0-9.]+%?)\s+([0-9.]+%?)\s+([0-9.]+(?:deg|rad|grad|turn)?)\s*(?:\/\s*([0-9.]+%?))?\s*\)/g, (match, lStr, cStr, hStr, aStr) => {
+        try {
+            // Parse L
+            let l = lStr.endsWith('%') ? parseFloat(lStr) / 100 : parseFloat(lStr);
+            // Parse C
+            let c = cStr.endsWith('%') ? parseFloat(cStr) / 100 : parseFloat(cStr);
+            
+            // Parse H
+            let h = 0;
+            if (hStr.endsWith('deg')) {
+                h = parseFloat(hStr);
+            } else if (hStr.endsWith('rad')) {
+                h = parseFloat(hStr) * (180 / Math.PI);
+            } else if (hStr.endsWith('grad')) {
+                h = parseFloat(hStr) * 0.9;
+            } else if (hStr.endsWith('turn')) {
+                h = parseFloat(hStr) * 360;
+            } else {
+                h = parseFloat(hStr); // default to degrees
+            }
+            
+            // Parse A (alpha)
+            let a = 1;
+            if (aStr !== undefined) {
+                a = aStr.endsWith('%') ? parseFloat(aStr) / 100 : parseFloat(aStr);
+            }
+            
+            // Convert OKLCH to RGB
+            const hRad = (h * Math.PI) / 180;
+            const oklab_a = c * Math.cos(hRad);
+            const oklab_b = c * Math.sin(hRad);
+            
+            // OKLab to LMS
+            const l_ = l + 0.3963377774 * oklab_a + 0.2158037573 * oklab_b;
+            const m_ = l - 0.1055613458 * oklab_a - 0.0638541728 * oklab_b;
+            const s_ = l - 0.0894841775 * oklab_a - 1.2914855480 * oklab_b;
+            
+            // LMS to linear
+            const l_lin = l_ * l_ * l_;
+            const m_lin = m_ * m_ * m_;
+            const s_lin = s_ * s_ * s_;
+            
+            // LMS linear to sRGB linear
+            let r_lin = +4.0767416621 * l_lin - 3.3077115913 * m_lin + 0.2309699292 * s_lin;
+            let g_lin = -1.2684380046 * l_lin + 2.6097574011 * m_lin - 0.3413193965 * s_lin;
+            let b_lin = -0.0041960863 * l_lin - 0.7034186147 * m_lin + 1.7076147010 * s_lin;
+            
+            // Gamma correction function
+            const gamma = (val) => {
+                return val <= 0.0031308 ? 12.92 * val : 1.055 * Math.pow(val, 1 / 2.4) - 0.055;
+            };
+            
+            let r = Math.round(Math.max(0, Math.min(1, gamma(r_lin))) * 255);
+            let g = Math.round(Math.max(0, Math.min(1, gamma(g_lin))) * 255);
+            let b = Math.round(Math.max(0, Math.min(1, gamma(b_lin))) * 255);
+            
+            if (a === 1) {
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                return `rgba(${r}, ${g}, ${b}, ${a})`;
+            }
+        } catch (e) {
+            console.warn("Failed to parse oklch color:", match, e);
+            return 'rgb(255, 255, 255)'; // Safe white fallback on error
+        }
+    });
+}
+
 export default function AIKitchen() {
     const { selectedProfile } = useProfile();
     const [cravings, setCravings] = useState('');
@@ -97,6 +171,113 @@ export default function AIKitchen() {
     const [includeSteps, setIncludeSteps] = useState(false);
     const [loading, setLoading] = useState(false);
     const [recipe, setRecipe] = useState('');
+    const [exportingPDF, setExportingPDF] = useState(false);
+
+    const downloadPDF = async () => {
+        const element = document.getElementById('printable-recipe-card');
+        if (!element) {
+            alert("Error: Recipe card element not found.");
+            return;
+        }
+
+        setExportingPDF(true);
+        const originalGetComputedStyle = window.getComputedStyle;
+        try {
+            // Temporarily monkey-patch window.getComputedStyle to translate oklch to rgb/rgba
+            window.getComputedStyle = function(elt, pseudoElt) {
+                const style = originalGetComputedStyle(elt, pseudoElt);
+                return new Proxy(style, {
+                    get(target, prop) {
+                        // Bypass Proxy 'receiver' to prevent native prototype getter "Illegal invocation" errors
+                        const val = target[prop];
+                        
+                        // Handle style.getPropertyValue(...) method
+                        if (prop === 'getPropertyValue') {
+                            return function(propertyName) {
+                                const originalValue = target.getPropertyValue(propertyName);
+                                return replaceOklchWithRgb(originalValue);
+                            };
+                        }
+                        
+                        // Handle direct property accesses like style.color, style.backgroundColor, style.borderColor, etc.
+                        if (typeof val === 'string') {
+                            return replaceOklchWithRgb(val);
+                        }
+                        
+                        // If it's a function (like item, namedItem, etc.), bind it to the target
+                        if (typeof val === 'function') {
+                            return val.bind(target);
+                        }
+                        
+                        return val;
+                    }
+                });
+            };
+
+            // Dynamically import libraries to optimize initial bundle size
+            const [html2canvasModule, jspdfModule] = await Promise.all([
+                import('html2canvas'),
+                import('jspdf')
+            ]);
+
+            const html2canvasFn = html2canvasModule.default || html2canvasModule;
+            if (typeof html2canvasFn !== 'function') {
+                throw new Error("html2canvas library failed to initialize correctly.");
+            }
+
+            const canvas = await html2canvasFn(element, {
+                scale: 2, // 2x is highly crisp and avoids maximum canvas size limit issues in browsers
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: true,
+                onclone: (clonedDoc) => {
+                    const clonedHeader = clonedDoc.querySelector('.pdf-only-header');
+                    if (clonedHeader) {
+                        clonedHeader.style.display = 'block';
+                    }
+                    const clonedActions = clonedDoc.querySelectorAll('.pdf-no-export');
+                    clonedActions.forEach(el => {
+                        if (el) el.style.display = 'none';
+                    });
+                    const clonedCard = clonedDoc.getElementById('printable-recipe-card');
+                    if (clonedCard) {
+                        clonedCard.style.boxShadow = 'none';
+                        clonedCard.style.border = '1px solid #059669';
+                        clonedCard.style.borderRadius = '1.5rem';
+                        clonedCard.style.background = '#ffffff';
+                        clonedCard.style.color = '#0f172a';
+                        clonedCard.style.padding = '40px';
+                    }
+                }
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Resolve the constructor function for jsPDF dynamically
+            const jsPDFClass = jspdfModule.jsPDF || jspdfModule.default || jspdfModule;
+            const pdf = new jsPDFClass({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const margin = 15; // 15mm margins
+            const contentWidth = pdfWidth - (margin * 2);
+            const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight, '', 'FAST');
+            
+            const childName = selectedProfile?.child_name ? selectedProfile.child_name.replace(/\s+/g, '_') : 'Patient';
+            pdf.save(`SmartNutri_Recipe_${childName}.pdf`);
+        } catch (error) {
+            console.error("PDF compilation failed:", error);
+            alert("Failed to export PDF: " + error.message);
+        } finally {
+            window.getComputedStyle = originalGetComputedStyle;
+            setExportingPDF(false);
+        }
+    };
 
     const calculateAge = (dob) => {
         if (!dob) return "7-12";
@@ -105,33 +286,45 @@ export default function AIKitchen() {
     };
 
     const handleGenerate = async () => {
-        if (!cravings) return;
+        if (!cravings || !selectedProfile?.id) return;
         setLoading(true);
         setRecipe('');
         try {
-            const age = calculateAge(selectedProfile?.date_of_birth);
-            const autoAvoid = selectedProfile?.allergies || selectedProfile?.dislikes || 'None';
-
-            const prompt = `I need a creative recipe idea for a child (aged ${age}). 
-            Child Context: Weighs ${selectedProfile?.weight || 'average'}kg. 
-            Cravings/Ingredients: ${cravings}. 
-            Known Allergies/Profile Dislikes: ${autoAvoid}.
-            Additional Dislikes to avoid: ${dislikes || 'None'}.
-            Provide a name for the dish (keep it simple dish name but easy to understand), a short description, and key ingredients. The meal should be suitable for a child aged ${age}. Keep it healthy. Use simple words and provide only foods that area easy to do and possible. Also keep it short as possible. Give a proper layout on your prompt so that it is easy to read and understand${includeSteps ? " Also provide step-by-step cooking instructions." : ""}`;
-
-            const res = await api.post('/ai/generate', { prompt });
+            const res = await api.post('/ai/generate', {
+                profileId: selectedProfile.id,
+                cravings,
+                dislikes,
+                includeSteps
+            });
             setRecipe(res.data.output);
         } catch (err) {
             console.error(err);
-            setRecipe(err.response?.data?.error || "The AI Chef is taking a nap. Try again later!");
+            setRecipe(err.response?.data?.error || err.response?.data?.message || "The AI Chef is taking a nap. Try again later!");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
-            <header className="px-2">
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 relative">
+            {/* High-DPI PDF Generation Premium Overlay Spinner */}
+            {exportingPDF && (
+                <div className="fixed inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-md z-50 flex items-center justify-center animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-zinc-900 border border-[var(--color-primary)]/20 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center justify-center gap-4 max-w-xs text-center border-2 border-emerald-500/20">
+                        {/* Premium Ring Spinner */}
+                        <div className="relative flex items-center justify-center">
+                            <div className="absolute h-12 w-12 rounded-full border-4 border-[var(--color-primary)]/10 animate-pulse" />
+                            <div className="h-10 w-10 border-4 border-[var(--color-primary)]/20 border-t-[var(--color-primary)] rounded-full animate-spin" />
+                            <ChefHat className="absolute text-[var(--color-primary)] animate-pulse" size={16} />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Securing Clinical Record</h4>
+                            <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest mt-1">Compiling High-DPI PDF Document...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <header className="px-2 no-print">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="h-12 w-12 bg-[var(--color-primary)] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/20 animate-bounce-slow">
                         <ChefHat size={28} />
@@ -145,7 +338,7 @@ export default function AIKitchen() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-5 space-y-6">
+                <div className="lg:col-span-5 space-y-6 no-print">
                     <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm bg-[var(--color-bg-card)] transition-colors">
                         <CardHeader className="bg-[var(--color-bg-page)]/50 dark:bg-black/20 border-b border-[var(--color-divider)] p-6">
                             <CardTitle className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest flex items-center gap-2">
@@ -217,7 +410,7 @@ export default function AIKitchen() {
                             <Button
                                 className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl shadow-lg shadow-[var(--color-primary)]/20 font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:scale-100"
                                 onClick={handleGenerate}
-                                disabled={loading || !cravings}
+                                disabled={loading || !cravings || !selectedProfile?.id}
                             >
                                 {loading ? (
                                     <>
@@ -239,22 +432,25 @@ export default function AIKitchen() {
                     {loading ? (
                         <ClinicalRecipeSimulator />
                     ) : recipe ? (
-                        <Card className="border-2 border-[var(--color-primary)]/20 rounded-[2rem] overflow-hidden shadow-xl bg-white dark:bg-white/5 animate-in zoom-in-95 fade-in duration-500 recipe-card">
-                            {/* PDF/Print Header */}
-                            <div className="print-header">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <img src="/SmartNutri-logo.png" alt="Logo" className="h-8 w-8" />
-                                        <span className="text-xl font-black text-[#064e3b] uppercase tracking-tighter">SmartNutri</span>
+                        <Card id="printable-recipe-card" className="border-2 border-[var(--color-primary)]/20 rounded-[2rem] overflow-hidden shadow-xl bg-white dark:bg-white/5 animate-in zoom-in-95 fade-in duration-500 recipe-card">
+                            {/* Premium Clinical PDF Header (displayed during pdf-export clone only) */}
+                            <div className="pdf-only-header" style={{ display: 'none', borderBottom: '2px solid #059669', paddingBottom: '15px', marginBottom: '20px' }}>
+                                <div className="flex items-center justify-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ background: '#059669', color: '#ffffff', borderRadius: '8px', padding: '6px 8px', fontWeight: '900', fontSize: '14px' }}>SN</div>
+                                        <div>
+                                            <span className="text-lg font-black text-[#064e3b] uppercase tracking-tighter" style={{ color: '#064e3b', fontWeight: '900', fontSize: '18px' }}>SmartNutri-AI</span>
+                                            <p style={{ margin: 0, fontSize: '8px', fontWeight: 'bold', color: '#059669', letterSpacing: '1px', textTransform: 'uppercase' }}>Clinical Pediatric Care</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Clinical Recipe Record</p>
-                                        <p className="text-xs font-bold text-gray-800 uppercase tracking-tight">{selectedProfile?.child_name || 'Patient'} • {new Date().toLocaleDateString()}</p>
+                                    <div className="text-right" style={{ textAlign: 'right' }}>
+                                        <p style={{ margin: 0, fontSize: '9px', fontWeight: 'bold', color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>Clinical Recipe Record</p>
+                                        <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>{selectedProfile?.child_name || 'Patient'} • {new Date().toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <CardHeader className="bg-gradient-to-r from-[var(--color-primary)] to-emerald-700 p-6 sm:p-8 no-print">
+                            <CardHeader className="bg-gradient-to-r from-[var(--color-primary)] to-emerald-700 p-6 sm:p-8 pdf-no-export">
                                 <CardTitle className="flex items-center gap-3 text-white uppercase tracking-widest text-base font-black">
                                     <Utensils size={20} /> Chef's Suggestion
                                 </CardTitle>
@@ -268,10 +464,16 @@ export default function AIKitchen() {
                                 ">
                                     <ReactMarkdown>{recipe}</ReactMarkdown>
                                 </div>
-                                <div className="mt-10 pt-8 border-t-2 border-[var(--color-divider)] flex justify-between items-center no-print">
+                                <div className="mt-10 pt-8 border-t-2 border-[var(--color-divider)] flex justify-between items-center pdf-no-export">
                                     <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Pediatric Culinary Guidance</p>
-                                    <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-[var(--color-primary)]" onClick={() => window.print()}>
-                                        Save as PDF
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-[10px] font-black uppercase tracking-widest hover:text-[var(--color-primary)] disabled:opacity-50" 
+                                        onClick={downloadPDF}
+                                        disabled={exportingPDF}
+                                    >
+                                        {exportingPDF ? 'Generating...' : 'Save as PDF'}
                                     </Button>
                                 </div>
                             </CardContent>

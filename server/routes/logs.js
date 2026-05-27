@@ -12,10 +12,23 @@ const router = express.Router();
 
 // MULTER Config (Memory storage to pass buffer to Cloudinary/AI)
 const storage = multer.memoryStorage();
+
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+const fileFilter = (req, file, cb) => {
+    if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed for meal logs.'), false);
+    }
+};
+
 const upload = multer({
     storage,
+    fileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB max per file
 });
+
 
 // CLOUDINARY Config
 cloudinary.config({
@@ -64,7 +77,15 @@ async function analyzeImage(imageBase64) {
 }
 
 // POST /logs/upload - Simple image upload without AI analysis
-router.post('/upload', verifyToken, upload.single('image'), async (req, res) => {
+router.post('/upload', verifyToken, (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error('Meal upload error:', err);
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No image uploaded' });
     }
@@ -85,7 +106,15 @@ router.post('/upload', verifyToken, upload.single('image'), async (req, res) => 
 });
 
 // POST /logs/analyze - Upload image and analyze ONLY (Human-in-the-loop step 1)
-router.post('/analyze', verifyToken, upload.single('image'), async (req, res) => {
+router.post('/analyze', verifyToken, (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error('Meal analyze upload error:', err);
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No image uploaded' });
     }
@@ -284,78 +313,81 @@ router.post('/', verifyToken, async (req, res) => {
             profile.allergies || []
         );
 
-        // 4. Save to Database
-        const newLog = await prisma.meal_logs.create({
-            data: {
-                profiles: { connect: { id: profile_id } },
-                image_url,
-                image_after_url,
-                cooking_method: sanitizeCookingMethod(cooking_method),
-                ai_analysis: finalizedAnalysis,
-                status: 'pending',
-                compliance_status: complianceResult.status,
-                compliance_score: complianceResult.compliance_score,
-                violation_details: complianceResult.details,
-                water_ml: water_ml ? parseInt(water_ml) : 0,
-                supplements: supplements || '',
-                physical_activity: physical_activity || '',
-                serving_spoon_used: serving_spoon_used || false,
-                is_parent_verified: is_parent_verified || false,
-                hidden_ingredients: hidden_ingredients || '',
-                consumption_percent: finalizedAnalysis.plate_waste || 100,
-                total_calories: finalizedAnalysis.total_calories_est || 0,
-                total_protein_g: finalizedAnalysis.macros_est?.protein_g || 0,
-                total_carbs_g: finalizedAnalysis.macros_est?.carbs_g || 0,
-                total_fat_g: finalizedAnalysis.macros_est?.fat_g || 0,
-                total_sugar_g: finalizedAnalysis.macros_est?.sugar_g || 0,
-                total_sodium_mg: finalizedAnalysis.macros_est?.sodium_mg || 0,
-                meal_category: meal_category || 'other',
-                logged_at: logged_at ? new Date(logged_at) : new Date()
-            }
-        });
+        // 4. Save to Database & Auto-fulfill Adherence Logs atomically
+        const newLog = await prisma.$transaction(async (tx) => {
+            const log = await tx.meal_logs.create({
+                data: {
+                    profiles: { connect: { id: profile_id } },
+                    image_url,
+                    image_after_url,
+                    cooking_method: sanitizeCookingMethod(cooking_method),
+                    ai_analysis: finalizedAnalysis,
+                    status: 'pending',
+                    compliance_status: complianceResult.status,
+                    compliance_score: complianceResult.compliance_score,
+                    violation_details: complianceResult.details,
+                    water_ml: water_ml ? parseInt(water_ml) : 0,
+                    supplements: supplements || '',
+                    physical_activity: physical_activity || '',
+                    serving_spoon_used: serving_spoon_used || false,
+                    is_parent_verified: is_parent_verified || false,
+                    hidden_ingredients: hidden_ingredients || '',
+                    consumption_percent: finalizedAnalysis.plate_waste || 100,
+                    total_calories: finalizedAnalysis.total_calories_est || 0,
+                    total_protein_g: finalizedAnalysis.macros_est?.protein_g || 0,
+                    total_carbs_g: finalizedAnalysis.macros_est?.carbs_g || 0,
+                    total_fat_g: finalizedAnalysis.macros_est?.fat_g || 0,
+                    total_sugar_g: finalizedAnalysis.macros_est?.sugar_g || 0,
+                    total_sodium_mg: finalizedAnalysis.macros_est?.sodium_mg || 0,
+                    meal_category: meal_category || 'other',
+                    logged_at: logged_at ? new Date(logged_at) : new Date()
+                }
+            });
 
-        // 5. Auto-fulfill Adherence Logs based on AI Food Exchanges
-        if (finalizedAnalysis.food_exchanges && meal_category) {
-            let mappedMealType = 'Breakfast';
-            const logHour = logged_at ? new Date(logged_at).getHours() : new Date().getHours();
-            
-            if (meal_category.toLowerCase() === 'breakfast') mappedMealType = 'Breakfast';
-            else if (meal_category.toLowerCase() === 'lunch') mappedMealType = 'Lunch';
-            else if (meal_category.toLowerCase() === 'dinner') mappedMealType = 'Dinner';
-            else if (meal_category.toLowerCase().includes('snack')) {
-                mappedMealType = logHour < 14 ? 'AM Snack' : 'PM Snack';
-            }
+            // 5. Auto-fulfill Adherence Logs based on AI Food Exchanges
+            if (finalizedAnalysis.food_exchanges && meal_category) {
+                let mappedMealType = 'Breakfast';
+                const logHour = logged_at ? new Date(logged_at).getHours() : new Date().getHours();
+                
+                if (meal_category.toLowerCase() === 'breakfast') mappedMealType = 'Breakfast';
+                else if (meal_category.toLowerCase() === 'lunch') mappedMealType = 'Lunch';
+                else if (meal_category.toLowerCase() === 'dinner') mappedMealType = 'Dinner';
+                else if (meal_category.toLowerCase().includes('snack')) {
+                    mappedMealType = logHour < 14 ? 'AM Snack' : 'PM Snack';
+                }
 
-            const logDate = (logged_at ? new Date(logged_at) : new Date()).toISOString().split('T')[0];
+                const logDate = (logged_at ? new Date(logged_at) : new Date()).toISOString().split('T')[0];
 
-            const adherenceOperations = [];
-            for (const cat of ['vegetables', 'fruit', 'milk', 'rice', 'meat', 'fat']) {
-                if (finalizedAnalysis.food_exchanges[cat] > 0) {
-                    adherenceOperations.push(prisma.daily_adherence_logs.upsert({
-                        where: {
-                            profile_id_date_meal_type_category: {
+                const adherenceOperations = [];
+                for (const cat of ['vegetables', 'fruit', 'milk', 'rice', 'meat', 'fat']) {
+                    if (finalizedAnalysis.food_exchanges[cat] > 0) {
+                        adherenceOperations.push(tx.daily_adherence_logs.upsert({
+                            where: {
+                                profile_id_date_meal_type_category: {
+                                    profile_id: profile_id,
+                                    date: new Date(logDate),
+                                    meal_type: mappedMealType,
+                                    category: cat
+                                }
+                            },
+                            update: { completed: true, updated_at: new Date() },
+                            create: {
                                 profile_id: profile_id,
                                 date: new Date(logDate),
                                 meal_type: mappedMealType,
-                                category: cat
+                                category: cat,
+                                completed: true
                             }
-                        },
-                        update: { completed: true, updated_at: new Date() },
-                        create: {
-                            profile_id: profile_id,
-                            date: new Date(logDate),
-                            meal_type: mappedMealType,
-                            category: cat,
-                            completed: true
-                        }
-                    }));
+                        }));
+                    }
+                }
+                if (adherenceOperations.length > 0) {
+                    await Promise.all(adherenceOperations);
                 }
             }
-            if (adherenceOperations.length > 0) {
-                // Execute without blocking the log creation return
-                Promise.all(adherenceOperations).catch(e => console.error("Auto-fulfill error:", e));
-            }
-        }
+
+            return log;
+        });
 
         res.status(201).json(newLog);
 

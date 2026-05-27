@@ -1,6 +1,6 @@
 import express from 'express';
-
 import dotenv from 'dotenv';
+import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { analyzeMealImage, callGemini } from '../services/gemini.js';
 
@@ -48,9 +48,62 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
 });
 
 router.post('/generate', verifyToken, async (req, res) => {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+    const { profileId, cravings, dislikes, includeSteps } = req.body;
+    
+    if (!profileId || typeof profileId !== 'string') {
+        return res.status(400).json({ error: "profileId is required and must be a string." });
+    }
+
     try {
+        // Fetch child profile details from database
+        const profile = await prisma.profiles.findUnique({
+            where: { id: profileId }
+        });
+
+        if (!profile) {
+            return res.status(404).json({ error: "Child profile not found." });
+        }
+
+        // Verify that requesting user is authorized (parent owner, admin, or linked active nutritionist)
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+            }));
+
+        if (!isAuthorized) {
+            return res.status(403).json({ error: "Unauthorized access to child profile." });
+        }
+
+        // Calculate child's age in a birthday-aware manner
+        const dob = profile.date_of_birth ? new Date(profile.date_of_birth) : null;
+        let ageText = 'average age';
+        if (dob) {
+            const now = new Date();
+            let age = now.getFullYear() - dob.getFullYear();
+            const hasBirthdayPassed = now.getMonth() > dob.getMonth() ||
+                (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+            if (!hasBirthdayPassed) age--;
+            ageText = `${age} years old`;
+        }
+
+        // Sanitize incoming cravings/dislikes strings before combining into prompt
+        const safeCravings = cravings ? String(cravings).replace(/<[^>]*>/g, '').trim().slice(0, 200) : 'None';
+        const safeDislikes = dislikes ? String(dislikes).replace(/<[^>]*>/g, '').trim().slice(0, 200) : 'None';
+        
+        const allergiesList = (profile.allergies && profile.allergies.length > 0) 
+            ? profile.allergies.join(', ') 
+            : 'None';
+        const autoAvoid = profile.dietary_preferences 
+            ? `${allergiesList}, ${profile.dietary_preferences}` 
+            : allergiesList;
+
+        const prompt = `I need a creative recipe idea for a child (aged ${ageText}). 
+        Child Context: Weighs ${profile.weight_kg || 'average'}kg. 
+        Cravings/Ingredients: ${safeCravings}. 
+        Known Allergies/Profile Dislikes: ${autoAvoid}.
+        Additional Dislikes to avoid: ${safeDislikes}.
+        Provide a name for the dish (keep it simple dish name but easy to understand), a short description, and key ingredients. The meal should be suitable for a child aged ${ageText}. Keep it healthy. Use simple words and provide only foods that are easy to do and possible. Also keep it short as possible. Give a proper layout so that it is easy to read and understand${includeSteps ? " Also provide step-by-step cooking instructions." : ""}`;
+
         const output = await callGemini(prompt);
         res.json({ output });
     } catch (err) {
@@ -60,3 +113,4 @@ router.post('/generate', verifyToken, async (req, res) => {
 });
 
 export default router;
+

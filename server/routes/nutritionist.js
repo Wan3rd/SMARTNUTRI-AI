@@ -97,45 +97,46 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
         if (!child_name || typeof child_name !== 'string' || child_name.trim().length < 1) {
             return res.status(400).json({ message: 'Child name is required' });
         }
-
-        let user;
-        if (parentId) {
-            user = await prisma.users.findUnique({
-                where: { id: parentId }
-            });
-            if (!user) {
-                return res.status(404).json({ message: 'Parent user not found' });
-            }
-        } else {
-            if (!parent_email || typeof parent_email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email.toLowerCase())) {
-                return res.status(400).json({ message: 'A valid parent email address is required' });
-            }
-
-            // Check if parent email already exists
-            const existingUser = await prisma.users.findUnique({
-                where: { email: parent_email.toLowerCase() }
-            });
-
-            if (existingUser) {
-                user = existingUser;
-            } else {
-                // Create Parent User with a default password
-                const salt = await bcrypt.genSalt(10);
-                const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
-
-                user = await prisma.users.create({
-                    data: {
-                        email: parent_email.toLowerCase(),
-                        password_hash: defaultPasswordHash,
-                        full_name: parent_name,
-                        role: 'parent',
-                        force_password_reset: true
-                    }
-                });
-            }
+        if (!parentId && (!parent_email || typeof parent_email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email.toLowerCase()))) {
+            return res.status(400).json({ message: 'A valid parent email address is required' });
         }
 
         const result = await prisma.$transaction(async (tx) => {
+            let user;
+            if (parentId) {
+                user = await tx.users.findUnique({
+                    where: { id: parentId }
+                });
+                if (!user) {
+                    const error = new Error('Parent user not found');
+                    error.statusCode = 404;
+                    throw error;
+                }
+            } else {
+                // Check if parent email already exists
+                const existingUser = await tx.users.findUnique({
+                    where: { email: parent_email.toLowerCase() }
+                });
+
+                if (existingUser) {
+                    user = existingUser;
+                } else {
+                    // Create Parent User with a default password
+                    const salt = await bcrypt.genSalt(10);
+                    const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
+
+                    user = await tx.users.create({
+                        data: {
+                            email: parent_email.toLowerCase(),
+                            password_hash: defaultPasswordHash,
+                            full_name: parent_name,
+                            role: 'parent',
+                            force_password_reset: true
+                        }
+                    });
+                }
+            }
+
             // Create Child Profile with Clinical Details
             const profile = await tx.profiles.create({
                 data: {
@@ -213,6 +214,9 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
 
     } catch (err) {
         console.error(err);
+        if (err.statusCode) {
+            return res.status(err.statusCode).json({ message: err.message });
+        }
         res.status(500).json({ message: 'Server Error' });
     }
 });

@@ -1,7 +1,7 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
-import { upload, cloudinary } from '../lib/cloudinary.js';
+import { upload, cloudinary, deleteCloudinaryAsset } from '../lib/cloudinary.js';
 import { getGrowthStatus } from '../utils/growth.js';
 import { revalidateProfileLogs } from '../utils/compliance.js';
 import { logAuditAction } from '../lib/auditLogger.js';
@@ -579,7 +579,7 @@ router.post('/:id/photo', verifyToken, (req, res, next) => {
     upload.single('photo')(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
-            return res.status(500).json({ message: 'File processing failed', error: err.message });
+            return res.status(400).json({ message: 'File processing failed', error: err.message });
         }
         next();
     });
@@ -620,6 +620,11 @@ router.post('/:id/photo', verifyToken, (req, res, next) => {
 
         const result = await uploadFromBuffer();
 
+        // Clean up old profile photo from Cloudinary to avoid storage leaks
+        if (profile.profile_image_url) {
+            deleteCloudinaryAsset(profile.profile_image_url).catch(e => console.error("Cloudinary old photo cleanup failed:", e));
+        }
+
         const updatedProfile = await prisma.profiles.update({
             where: { id: id },
             data: {
@@ -651,6 +656,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
         // Ownership Check: Only the parent who owns the profile can delete it
         if (profile.user_id !== req.user.id) {
             return res.status(403).json({ message: 'Unauthorized: You can only delete your own child profiles' });
+        }
+
+        // Delete the profile photo from Cloudinary if it exists to avoid storage leaks
+        if (profile.profile_image_url) {
+            deleteCloudinaryAsset(profile.profile_image_url).catch(e => console.error("Cloudinary profile photo cleanup failed on delete:", e));
         }
 
         // Delete the profile (Cascade delete handles associated logs, vaccinations, etc.)
