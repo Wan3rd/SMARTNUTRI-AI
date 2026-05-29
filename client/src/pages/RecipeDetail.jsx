@@ -21,7 +21,7 @@ export default function RecipeDetail() {
                 setRecipe(res.data);
             } catch (err) {
                 console.error("Failed to fetch recipe info", err);
-                showNotification("Failed to load recipe details. Please try again.", "error");
+                showNotification(err.response?.data?.message || "Failed to load recipe details. Please try again.", "error");
             } finally {
                 setLoading(false);
             }

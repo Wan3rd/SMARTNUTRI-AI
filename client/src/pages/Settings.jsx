@@ -88,7 +88,7 @@ export default function Settings() {
             showNotification(res.data.message, 'success');
         } catch (err) {
             console.error(err);
-            showNotification('Failed to toggle maintenance mode', 'error');
+            showNotification(err.response?.data?.message || 'Failed to toggle maintenance mode', 'error');
         } finally {
             setMaintenanceLoading(false);
         }
@@ -146,7 +146,7 @@ export default function Settings() {
             }
         } catch (err) {
             console.error("Export failed:", err);
-            showNotification('Failed to export clinical data. Please try again.', 'error');
+            showNotification(err.response?.data?.message || 'Failed to export clinical data. Please try again.', 'error');
         }
     };
 
@@ -158,7 +158,7 @@ export default function Settings() {
             setIsPrinting(true);
         } catch (err) {
             console.error("Failed to compile print records:", err);
-            showNotification('Failed to compile pediatrician report details.', 'error');
+            showNotification(err.response?.data?.message || 'Failed to compile pediatrician report details.', 'error');
         }
     };
 

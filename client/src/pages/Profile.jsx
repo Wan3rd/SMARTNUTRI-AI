@@ -523,7 +523,7 @@ export default function Profile() {
             showNotification('Vaccination record added', 'success');
         } catch (err) {
             console.error("Error adding vaccine", err);
-            showNotification('Failed to add immunization record', 'error');
+            showNotification(err.response?.data?.message || 'Failed to add immunization record', 'error');
         }
     };
 
@@ -539,6 +539,7 @@ export default function Profile() {
                     showNotification('Removed', 'success');
                 } catch (err) {
                     console.error("Error deleting vaccine", err);
+                    showNotification(err.response?.data?.message || 'Failed to delete vaccine', 'error');
                 }
             },
             isDestructive: true
@@ -650,6 +651,7 @@ export default function Profile() {
             setImageToCrop(null);
         } catch (err) {
             console.error("Error uploading photo", err);
+            showNotification(err.response?.data?.message || 'Failed to upload photo', 'error');
         } finally {
             setIsUploadingPhoto(false);
         }
@@ -682,6 +684,7 @@ export default function Profile() {
             showNotification('Profile deleted successfully', 'success');
         } catch (err) {
             console.error('Delete error:', err);
+            showNotification(err.response?.data?.message || 'Failed to delete profile', 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -722,7 +725,7 @@ export default function Profile() {
             setIsEditing(false);
         } catch (err) {
             console.error(err);
-            showNotification('Failed to update clinical profile data', 'error');
+            showNotification(err.response?.data?.message || 'Failed to update clinical profile data', 'error');
         } finally {
             setSaving(false);
         }

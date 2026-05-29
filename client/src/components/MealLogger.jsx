@@ -298,7 +298,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
             setCropImage(null);
         } catch (e) {
             console.error(e);
-            showNotif("Failed to crop image", "error");
+            showNotif(e.message || "Failed to crop image", "error");
         }
     };
 
@@ -576,6 +576,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         } catch (err) {
             console.error(err);
             setStatus('error');
+            showNotif(err.response?.data?.message || 'Failed to save meal log', 'error');
         } finally {
             setLoading(false);
         }

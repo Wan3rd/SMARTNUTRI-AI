@@ -646,7 +646,7 @@ export default function ClientDetails() {
             showNotif("Template saved successfully");
         } catch (err) {
             console.error(err);
-            showNotif("Failed to save template", "error");
+            showNotif(err.response?.data?.message || "Failed to save template", "error");
         }
     };
 
@@ -672,7 +672,7 @@ export default function ClientDetails() {
             showNotif("Template deleted");
         } catch (err) {
             console.error(err);
-            showNotif("Failed to delete template", "error");
+            showNotif(err.response?.data?.message || "Failed to delete template", "error");
         } finally {
             setTemplateToDelete(null);
         }
@@ -718,7 +718,7 @@ export default function ClientDetails() {
             await fetchPortionPlan(selectedProfile.id);
         } catch (err) {
             console.error(err);
-            showNotif("Failed to save portion plan", "error");
+            showNotif(err.response?.data?.message || "Failed to save portion plan", "error");
         } finally {
             setIsSavingPortions(false);
         }
@@ -1055,7 +1055,7 @@ export default function ClientDetails() {
             showNotif(`Verified ${pendingIds.length} logs for ${date}`);
         } catch (err) {
             console.error("Batch verify failed", err);
-            showNotif("Failed to batch verify logs", "error");
+            showNotif(err.response?.data?.message || "Failed to batch verify logs", "error");
         }
     };
 
@@ -1068,7 +1068,7 @@ export default function ClientDetails() {
             showNotif("Clinical profile updated successfully!");
         } catch (err) {
             console.error("Failed to update clinical profile", err);
-            showNotif("Failed to update profile", "error");
+            showNotif(err.response?.data?.message || "Failed to update profile", "error");
         }
     };
 
@@ -1118,7 +1118,7 @@ export default function ClientDetails() {
             showNotif("Account restored successfully!");
         } catch (err) {
             console.error("Restore failed", err);
-            showNotif("Failed to restore account", "error");
+            showNotif(err.response?.data?.message || "Failed to restore account", "error");
         } finally {
             stopLoading();
         }
@@ -1177,7 +1177,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Delete growth log failed", err);
-                    showNotif("Failed to delete record", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete record", "error");
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 }
             }
@@ -1197,7 +1197,7 @@ export default function ClientDetails() {
             showNotif("Growth record updated successfully!");
         } catch (err) {
             console.error("Failed to update growth log", err);
-            showNotif("Failed to update record", "error");
+            showNotif(err.response?.data?.message || "Failed to update record", "error");
         }
     };
 
@@ -1228,7 +1228,7 @@ export default function ClientDetails() {
             showNotif("Vaccination record added!");
         } catch (err) {
             console.error("Error adding vaccine", err);
-            showNotif("Failed to add vaccine", "error");
+            showNotif(err.response?.data?.message || "Failed to add vaccine", "error");
         }
     };
 
@@ -1245,7 +1245,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Error deleting vaccine", err);
-                    showNotif("Failed to delete vaccine", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete vaccine", "error");
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 }
             },
@@ -1264,7 +1264,7 @@ export default function ClientDetails() {
             showNotif("Growth data updated!");
         } catch (err) {
             console.error("Failed to add growth log", err);
-            showNotif("Failed to save data", "error");
+            showNotif(err.response?.data?.message || "Failed to save data", "error");
         }
     };
 
@@ -1277,7 +1277,7 @@ export default function ClientDetails() {
             showNotif("ADIME clinical record updated");
         } catch (err) {
             console.error("Error updating ADIME", err);
-            showNotif("Failed to update ADIME record", "error");
+            showNotif(err.response?.data?.message || "Failed to update ADIME record", "error");
         }
     };
 
@@ -1294,7 +1294,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Error deleting ADIME", err);
-                    showNotif("Failed to delete ADIME record", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete ADIME record", "error");
                 }
             },
             isDestructive: true
@@ -1360,7 +1360,7 @@ export default function ClientDetails() {
             setSyncStatus({ type: 'idle', lastSaved: null });
         } catch (err) {
             console.error("Failed to add clinical note", err);
-            showNotif("Failed to save note", "error");
+            showNotif(err.response?.data?.message || "Failed to save note", "error");
             // Rollback
             setAdimeNotes(prev => prev.filter(n => n.id !== tempId));
             setNewAdime(backupData);
@@ -1505,7 +1505,7 @@ export default function ClientDetails() {
                     showNotif("Meal log deleted");
                 } catch (err) {
                     console.error("Failed to delete log", err);
-                    showNotif("Failed to delete log", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete log", "error");
                 }
             },
             isDestructive: true
@@ -1534,7 +1534,7 @@ export default function ClientDetails() {
                     }
                 } catch (err) {
                     console.error("Failed to clear logs for day", err);
-                    showNotif("Failed to clear logs", "error");
+                    showNotif(err.response?.data?.message || "Failed to clear logs", "error");
                 }
             },
             isDestructive: true
@@ -1575,7 +1575,7 @@ export default function ClientDetails() {
             setSyncStatus({ type: 'idle', lastSaved: null });
         } catch (err) {
             console.error("Failed to add note", err);
-            showNotif("Failed to save note", "error");
+            showNotif(err.response?.data?.message || "Failed to save note", "error");
             // Rollback optimistic update
             setNotes(prev => prev.filter(n => n.id !== tempNote.id));
             setNewNote(originalContent);
@@ -1595,7 +1595,7 @@ export default function ClientDetails() {
             showNotif("Observation note updated");
         } catch (err) {
             console.error("Error updating note", err);
-            showNotif("Failed to update note", "error");
+            showNotif(err.response?.data?.message || "Failed to update note", "error");
         }
     };
 
@@ -1611,7 +1611,7 @@ export default function ClientDetails() {
                     showNotif("Observation note deleted");
                 } catch (err) {
                     console.error("Error deleting note", err);
-                    showNotif("Failed to delete note", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete note", "error");
                 }
             },
             isDestructive: true
@@ -1643,7 +1643,7 @@ export default function ClientDetails() {
             showNotif("Meal added to plan!");
         } catch (err) {
             console.error("Failed to add meal", err);
-            showNotif("Failed to add meal", "error");
+            showNotif(err.response?.data?.message || "Failed to add meal", "error");
         }
     };
 
@@ -1660,7 +1660,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to delete meal", err);
-                    showNotif("Failed to delete meal", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete meal", "error");
                 }
             },
             isDestructive: true
@@ -1680,7 +1680,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to clear plan", err);
-                    showNotif("Failed to clear plan", "error");
+                    showNotif(err.response?.data?.message || "Failed to clear plan", "error");
                 }
             },
             isDestructive: true
@@ -1705,7 +1705,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to apply template", err);
-                    showNotif("Failed to apply weekly template", "error");
+                    showNotif(err.response?.data?.message || "Failed to apply weekly template", "error");
                 }
             }
         });
@@ -1745,7 +1745,7 @@ export default function ClientDetails() {
             }
         } catch (err) {
             console.error("Failed to update meal", err);
-            showNotif("Failed to update meal", "error");
+            showNotif(err.response?.data?.message || "Failed to update meal", "error");
         }
     };
 
@@ -1795,7 +1795,7 @@ export default function ClientDetails() {
             fetchMealTemplates();
         } catch (err) {
             console.error("Failed to save template", err);
-            showNotif("Failed to save template", "error");
+            showNotif(err.response?.data?.message || "Failed to save template", "error");
         }
     };
 
@@ -1821,7 +1821,7 @@ export default function ClientDetails() {
             fetchMealTemplates();
         } catch (err) {
             console.error("Failed to update template", err);
-            showNotif("Failed to update template", "error");
+            showNotif(err.response?.data?.message || "Failed to update template", "error");
         }
     };
 
@@ -1839,7 +1839,7 @@ export default function ClientDetails() {
                     fetchMealTemplates();
                 } catch (err) {
                     console.error("Failed to delete template", err);
-                    showNotif("Failed to delete template", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete template", "error");
                 }
             },
             isDestructive: true
@@ -1857,7 +1857,7 @@ export default function ClientDetails() {
                 fetchMealPlan(selectedProfile.id);
             } catch (err) {
                 console.error("Failed to generate plan", err);
-                showNotif("Failed to generate plan. Please try again.", "error");
+                showNotif(err.response?.data?.message || "Failed to generate plan. Please try again.", "error");
             } finally {
                 setGeneratingPlan(false);
             }
@@ -2000,7 +2000,7 @@ export default function ClientDetails() {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                 } catch (err) {
                     console.error("Failed to delete rule", err);
-                    showNotif("Failed to delete rule", "error");
+                    showNotif(err.response?.data?.message || "Failed to delete rule", "error");
                 }
             },
             isDestructive: true

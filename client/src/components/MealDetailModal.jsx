@@ -168,7 +168,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
             }
         } catch (err) {
             console.error(err);
-            setNotif({ show: true, message: "Failed to delete log. Please try again.", type: 'error' });
+            setNotif({ show: true, message: err.response?.data?.message || "Failed to delete log. Please try again.", type: 'error' });
             setIsDeleting(false);
             setShowConfirm(false);
         }

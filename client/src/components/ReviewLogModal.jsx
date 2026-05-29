@@ -153,7 +153,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             }, 1000);
         } catch (err) {
             console.error("Failed to submit review", err);
-            showNotif("Failed to save review. Please try again.", "error");
+            showNotif(err.response?.data?.message || "Failed to save review. Please try again.", "error");
         } finally {
             setLoading(false);
         }
@@ -175,7 +175,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             onReviewComplete?.(); // Refresh data in background
         } catch (err) {
             console.error("Failed to save draft", err);
-            showNotif("Failed to save progress", "error");
+            showNotif(err.response?.data?.message || "Failed to save progress", "error");
         } finally {
             setLoading(false);
         }
@@ -204,7 +204,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
             }, 1000);
         } catch (err) {
             console.error("Failed to reject log", err);
-            showNotif("Failed to process rejection", "error");
+            showNotif(err.response?.data?.message || "Failed to process rejection", "error");
         } finally {
             setLoading(false);
         }
