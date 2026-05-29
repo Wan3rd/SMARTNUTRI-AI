@@ -559,7 +559,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                 is_parent_verified: suppData.isParentVerified,
                 hidden_ingredients: suppData.hiddenIngredients,
                 meal_category: suppData.mealCategory,
-                logged_at: suppData.loggedAt
+                logged_at: suppData.loggedAt ? new Date(suppData.loggedAt).toISOString() : new Date().toISOString()
             });
 
             setStatus('done');
