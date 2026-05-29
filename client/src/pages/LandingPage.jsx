@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Brain, ShieldAlert, Sparkles, ShieldCheck, Heart, ArrowRight, Activity, Users, FileCheck, Sun, Moon, Mail, Copy, Send, CheckCircle2, MessageSquare, Clock, GlobeLock, X } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { motion, AnimatePresence } from 'framer-motion';
+import config from '@config';
 
 export default function LandingPage() {
     const { user } = useAuth();
@@ -19,27 +20,70 @@ export default function LandingPage() {
     });
     
     const [contactForm, setContactForm] = useState({ name: '', email: '', role: 'caregiver', subject: '', message: '' });
+    const [submittedForm, setSubmittedForm] = useState({ name: '', email: '', role: 'caregiver', subject: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    const handleContactSubmit = (e) => {
+    const handleContactSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        // Simulate a tiny network delay for UX
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setShowSuccessModal(true);
-        }, 600);
-    };
+        
+        try {
+            const apiUrl = config?.server?.apiUrl || 'http://localhost:5000/api';
+            const response = await fetch(`${apiUrl}/support/ticket`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(contactForm)
+            });
 
-    const getMailtoLink = () => {
-        const body = `Name: ${contactForm.name}%0D%0ARole: ${contactForm.role}%0D%0A%0D%0A${contactForm.message}`;
-        return `mailto:snutri244@gmail.com?subject=${encodeURIComponent(contactForm.subject)}&body=${body}`;
+            const data = await response.json();
+
+            if (response.ok) {
+                // Keep record of submitted data for copy options
+                setSubmittedForm({ ...contactForm });
+                setShowSuccessModal(true);
+                // Clear active fields
+                setContactForm({ name: '', email: '', role: 'caregiver', subject: '', message: '' });
+            } else {
+                alert(data.error || 'Failed to submit ticket. Please check your inputs.');
+            }
+        } catch (err) {
+            console.error('Error submitting support ticket:', err);
+            alert('A network error occurred. Please try again or email us directly at snutri244@gmail.com.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const getClipboardText = () => {
-        return `Subject: ${contactForm.subject}\nName: ${contactForm.name}\nRole: ${contactForm.role}\nMessage:\n${contactForm.message}`;
+        const border = "==================================================";
+        const subBorder = "--------------------------------------------------";
+        const dateStr = new Date().toLocaleString();
+        
+        return `${border}
+SMARTNUTRI-AI SUPPORT TICKET RECEIPT
+${border}
+Ticket Status:  SUBMITTED (AUTO-DISPATCHED)
+Date Submitted: ${dateStr}
+Support Inbox:  snutri244@gmail.com
+${subBorder}
+SENDER DETAILS:
+  Name:  ${submittedForm.name}
+  Email: ${submittedForm.email || 'N/A'}
+  Role:  ${submittedForm.role.toUpperCase()}
+
+TICKET DETAILS:
+  Subject: ${submittedForm.subject}
+  
+MESSAGE BODY:
+${submittedForm.message}
+${subBorder}
+Thank you for reaching out to SmartNutri-AI. 
+Your inquiry is safely queued in our clinical queue.
+${border}`;
     };
 
     const handleCopy = () => {
@@ -503,7 +547,15 @@ export default function LandingPage() {
             <footer className="w-full border-t border-[var(--color-divider)] bg-[var(--color-bg-card)] py-12 text-center text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-widest relative z-10">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <p>© {new Date().getFullYear()} SmartNutri-AI. All rights reserved.</p>
-                    <div className="flex flex-wrap gap-4 justify-center">
+                    <div className="flex flex-wrap gap-4 justify-center items-center">
+                        <a 
+                            href={config?.server?.apiUrl ? config.server.apiUrl.replace('/api', '/system-updates') : 'http://localhost:5000/system-updates'}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white rounded-full text-[9px] transition-all flex items-center gap-1.5 shrink-0"
+                        >
+                            <Sparkles size={10} /> See System Updates
+                        </a>
                         <span className="px-3 py-1 bg-zinc-100 dark:bg-white/5 border border-[var(--color-divider)] rounded-full text-[9px]">HIPAA Compliant</span>
                         <span className="px-3 py-1 bg-zinc-100 dark:bg-white/5 border border-[var(--color-divider)] rounded-full text-[9px]">RA 10173 Compliant</span>
                     </div>
@@ -537,26 +589,25 @@ export default function LandingPage() {
                             </div>
                             
                             <div className="text-center space-y-2 mb-8">
-                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Message Ready</h3>
+                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Ticket Submitted</h3>
                                 <p className="text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
-                                    Your message has been formatted. Choose how you'd like to dispatch it to our official support channel.
+                                    Thank you! Your support ticket has been automatically sent to our official support channel. We will get back to you shortly.
                                 </p>
                             </div>
                             
                             <div className="space-y-3">
-                                <a 
-                                    href={getMailtoLink()}
+                                <button 
                                     onClick={() => setShowSuccessModal(false)}
                                     className="w-full h-12 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 transition-all hover:-translate-y-0.5"
                                 >
-                                    <Send size={14} /> Send via Mail App
-                                </a>
+                                    Done
+                                </button>
                                 <button 
                                     onClick={handleCopy}
                                     className="w-full h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] text-[var(--color-text-main)] rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
                                 >
                                     {copied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />} 
-                                    {copied ? 'Copied to Clipboard!' : 'Copy Message Details'}
+                                    {copied ? 'Receipt Copied!' : 'Copy Ticket Receipt'}
                                 </button>
                             </div>
                         </motion.div>

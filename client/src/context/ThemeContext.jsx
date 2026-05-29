@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useAuth } from './AuthContext';
 import api from '../lib/api';
 
@@ -45,15 +46,15 @@ export function ThemeProvider({
     }, [theme]);
 
     const setTheme = async (newTheme) => {
-        const updateTheme = async () => {
+        const updateTheme = () => {
             setThemeState(newTheme);
             localStorage.setItem(storageKey, newTheme);
+        };
 
-            // Sync to Backend if logged in
+        const syncBackend = async () => {
             if (user) {
                 try {
                     await api.put('/auth/theme', { theme: newTheme });
-                    // Update AuthContext user object to keep it in sync
                     updateUser({ ...user, theme_preference: newTheme });
                 } catch (err) {
                     console.error('Failed to sync theme to backend:', err);
@@ -62,9 +63,39 @@ export function ThemeProvider({
         };
 
         if (document.startViewTransition) {
-            document.startViewTransition(updateTheme);
+            const root = window.document.documentElement;
+            
+            // Temporarily disable CSS transitions/animations to prevent paint lag during screenshot capture
+            root.classList.add("no-transition");
+
+            const transition = document.startViewTransition(() => {
+                flushSync(() => {
+                    updateTheme();
+                });
+            });
+
+            try {
+                await transition.finished;
+            } catch (err) {
+                console.error("View transition failed:", err);
+            } finally {
+                root.classList.remove("no-transition");
+            }
+
+            // Sync to backend asynchronously
+            syncBackend();
         } else {
-            await updateTheme();
+            // Fallback for browsers that do not support View Transitions
+            const root = window.document.documentElement;
+            root.classList.add("no-transition");
+            
+            updateTheme();
+            
+            requestAnimationFrame(() => {
+                root.classList.remove("no-transition");
+            });
+
+            await syncBackend();
         }
     };
 

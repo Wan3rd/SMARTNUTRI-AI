@@ -446,6 +446,7 @@ button {
 .no-transition,
 .no-transition * {
   transition: none !important;
+  animation: none !important;
 }
 
 /* Micro-animations for Moon & Sun Icons */

@@ -6,6 +6,14 @@ import cookieParser from 'cookie-parser';
 import config from '../env_config.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import rateLimit from 'express-rate-limit';
+import { sendSupportTicketEmail } from './lib/mailer.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profiles.js';
@@ -118,6 +126,55 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/rules', rulesRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/system-updates', (req, res) => {
+    const pathsToTry = [
+        path.join(__dirname, '../SYSTEM_HISTORY_AND_UPDATES.html'),
+        path.join(process.cwd(), 'SYSTEM_HISTORY_AND_UPDATES.html'),
+        path.join(__dirname, 'SYSTEM_HISTORY_AND_UPDATES.html'),
+        path.join(process.cwd(), 'server/SYSTEM_HISTORY_AND_UPDATES.html')
+    ];
+
+    for (const p of pathsToTry) {
+        if (fs.existsSync(p)) {
+            return res.sendFile(path.resolve(p));
+        }
+    }
+
+    console.error(`[System Updates] SYSTEM_HISTORY_AND_UPDATES.html not found. Tried paths:`, pathsToTry);
+    res.status(404).send('System updates file not found.');
+});
+
+// Ticket endpoint rate limiter: Max 5 tickets per hour per IP
+const ticketLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
+    message: { error: 'Too many support tickets submitted from this IP. Please try again in an hour or contact us directly at snutri244@gmail.com.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Auto-dispatch support tickets to mailer
+app.post('/api/support/ticket', ticketLimiter, async (req, res) => {
+    try {
+        const { name, email, role, subject, message } = req.body;
+        
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({ error: 'All fields (name, email, subject, message) are required.' });
+        }
+
+        const mailResult = await sendSupportTicketEmail({ name, email, role, subject, message });
+
+        if (mailResult.success) {
+            return res.status(200).json({ message: 'Support ticket successfully dispatched.' });
+        } else {
+            return res.status(500).json({ error: 'Failed to send support ticket. Please contact support or check your SENDGRID_API_KEY environment variable.' });
+        }
+    } catch (err) {
+        console.error('Support ticket route error:', err);
+        res.status(500).json({ error: 'Server error processing support ticket.' });
+    }
+});
 
 app.get('/', (req, res) => {
     res.send('SmartNutri-AI API is running...');
