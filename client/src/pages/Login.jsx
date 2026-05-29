@@ -24,8 +24,24 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError(null);
+
+        // Frontend validation before hitting the API
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!formData.email.trim()) {
+            setError('Email address is required.');
+            return;
+        }
+        if (!emailRegex.test(formData.email.trim())) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+        if (!formData.password.trim()) {
+            setError('Password is required.');
+            return;
+        }
+
+        setLoading(true);
 
         const res = await login(formData.email, formData.password, rememberMe);
 

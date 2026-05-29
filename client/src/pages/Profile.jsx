@@ -272,7 +272,7 @@ export default function Profile() {
             setNutriEditing(false);
         } catch (err) {
             console.error(err);
-            showNotification('Failed to synchronize clinical profile', 'error');
+            showNotification(err.response?.data?.message || 'Failed to synchronize clinical profile', 'error');
         } finally {
             setNutriSaving(false);
         }
@@ -298,7 +298,7 @@ export default function Profile() {
             setParentEditing(false);
         } catch (err) {
             console.error(err);
-            showNotification('Failed to update account details', 'error');
+            showNotification(err.response?.data?.message || 'Failed to update account details', 'error');
         } finally {
             setParentSaving(false);
         }

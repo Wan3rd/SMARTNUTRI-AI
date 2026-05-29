@@ -48,6 +48,11 @@ router.post('/', verifyToken, async (req, res) => {
     } = req.body;
 
     try {
+        // Name Validation
+        if (!child_name || typeof child_name !== 'string' || child_name.trim().length < 1 || child_name.trim().length > 100) {
+            return res.status(400).json({ message: "Child name is required and must be 1–100 characters" });
+        }
+
         // Biometric Validation
         if (date_of_birth && date_of_birth !== '') {
             const dob = new Date(date_of_birth);
@@ -343,6 +348,30 @@ router.post('/:id/growth', verifyToken, async (req, res) => {
 router.patch('/growth-record/:logId', verifyToken, async (req, res) => {
     const { logId } = req.params;
     const { height_cm, weight_kg, logged_at } = req.body;
+
+    // --- Input Validation (before any DB query) ---
+    if (height_cm !== undefined && height_cm !== null && height_cm !== '') {
+        const h = parseFloat(height_cm);
+        if (isNaN(h) || h < 10 || h > 250) {
+            return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
+        }
+    }
+    if (weight_kg !== undefined && weight_kg !== null && weight_kg !== '') {
+        const w = parseFloat(weight_kg);
+        if (isNaN(w) || w < 1 || w > 300) {
+            return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
+        }
+    }
+    if (logged_at !== undefined && logged_at !== null) {
+        const d = new Date(logged_at);
+        if (isNaN(d.getTime())) {
+            return res.status(400).json({ message: 'Invalid logged_at date format' });
+        }
+        if (d > new Date()) {
+            return res.status(400).json({ message: 'logged_at cannot be in the future' });
+        }
+    }
+
     try {
         const log = await prisma.growth_logs.findUnique({ 
             where: { id: logId },

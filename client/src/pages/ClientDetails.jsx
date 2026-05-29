@@ -1948,6 +1948,21 @@ export default function ClientDetails() {
 
     const handleAddRule = async (e) => {
         e.preventDefault();
+
+        // --- Frontend Validation ---
+        if (!newRule.rule_name || newRule.rule_name.trim().length === 0) {
+            showNotif("Rule name is required.", "error");
+            return;
+        }
+        if (!newRule.rule_value || isNaN(parseFloat(newRule.rule_value)) || parseFloat(newRule.rule_value) <= 0) {
+            showNotif("Please enter a valid positive number for the rule value.", "error");
+            return;
+        }
+        if (!['min', 'max', 'range'].includes(newRule.rule_type)) {
+            showNotif("Invalid rule type selected.", "error");
+            return;
+        }
+
         try {
             const definition = newRule.rule_definition || `${newRule.rule_type === 'max' ? 'Max' : 'Min'} ${newRule.rule_value}${newRule.rule_unit}`;
 
@@ -1968,7 +1983,7 @@ export default function ClientDetails() {
             showNotif("Rule added successfully!");
         } catch (err) {
             console.error("Failed to add rule", err);
-            showNotif("Failed to add rule", "error");
+            showNotif(err.response?.data?.message || "Failed to add rule", "error");
         }
     };
 
@@ -1994,6 +2009,21 @@ export default function ClientDetails() {
 
     const handleUpdateRule = async (e) => {
         e.preventDefault();
+
+        // --- Frontend Validation ---
+        if (!editRuleForm.rule_name || editRuleForm.rule_name.trim().length === 0) {
+            showNotif("Rule name is required.", "error");
+            return;
+        }
+        if (!editRuleForm.rule_value || isNaN(parseFloat(editRuleForm.rule_value)) || parseFloat(editRuleForm.rule_value) <= 0) {
+            showNotif("Please enter a valid positive number for the rule value.", "error");
+            return;
+        }
+        if (!['min', 'max', 'range'].includes(editRuleForm.rule_type)) {
+            showNotif("Invalid rule type selected.", "error");
+            return;
+        }
+
         try {
             const definition = editRuleForm.rule_definition || `${editRuleForm.rule_type === 'max' ? 'Max' : 'Min'} ${editRuleForm.rule_value}${editRuleForm.rule_unit}`;
 
@@ -2007,7 +2037,7 @@ export default function ClientDetails() {
             showNotif("Rule updated successfully!");
         } catch (err) {
             console.error("Failed to update rule", err);
-            showNotif("Failed to update rule", "error");
+            showNotif(err.response?.data?.message || "Failed to update rule", "error");
         }
     };
 

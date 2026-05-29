@@ -329,15 +329,48 @@ router.get('/me', verifyToken, async (req, res) => {
 // UPDATE PROFILE
 router.put('/profile', verifyToken, async (req, res) => {
     const { full_name, phone, specialization, license_no, clinic, profile_image_url } = req.body;
+
+    // --- Input Validation ---
+    if (full_name !== undefined && full_name !== null && full_name !== '') {
+        if (typeof full_name !== 'string' || full_name.trim().length < 2 || full_name.trim().length > 100) {
+            return res.status(400).json({ message: 'Full name must be between 2 and 100 characters' });
+        }
+    }
+    if (phone !== undefined && phone !== null && phone !== '') {
+        if (typeof phone !== 'string' || !/^\+?[\d\s\-().]{6,20}$/.test(phone)) {
+            return res.status(400).json({ message: 'Invalid phone number format' });
+        }
+    }
+    if (specialization !== undefined && specialization !== null && specialization !== '') {
+        if (typeof specialization !== 'string' || specialization.trim().length > 150) {
+            return res.status(400).json({ message: 'Specialization must be 150 characters or less' });
+        }
+    }
+    if (license_no !== undefined && license_no !== null && license_no !== '') {
+        if (typeof license_no !== 'string' || license_no.trim().length > 50) {
+            return res.status(400).json({ message: 'License number must be 50 characters or less' });
+        }
+    }
+    if (clinic !== undefined && clinic !== null && clinic !== '') {
+        if (typeof clinic !== 'string' || clinic.trim().length > 150) {
+            return res.status(400).json({ message: 'Clinic name must be 150 characters or less' });
+        }
+    }
+    if (profile_image_url !== undefined && profile_image_url !== null && profile_image_url !== '') {
+        if (typeof profile_image_url !== 'string' || !profile_image_url.startsWith('https://')) {
+            return res.status(400).json({ message: 'Profile image URL must be a valid HTTPS URL' });
+        }
+    }
+
     try {
         const updatedUser = await prisma.users.update({
             where: { id: req.user.id },
             data: {
-                full_name,
-                phone,
-                specialization,
-                license_no,
-                clinic,
+                full_name: full_name !== undefined ? full_name.trim() : undefined,
+                phone: phone !== undefined ? (phone === '' ? null : phone.trim()) : undefined,
+                specialization: specialization !== undefined ? (specialization === '' ? null : specialization.trim()) : undefined,
+                license_no: license_no !== undefined ? (license_no === '' ? null : license_no.trim()) : undefined,
+                clinic: clinic !== undefined ? (clinic === '' ? null : clinic.trim()) : undefined,
                 profile_image_url
             }
         });
@@ -613,6 +646,12 @@ router.put('/preferences', verifyToken, async (req, res) => {
 // UPDATE THEME PREFERENCE
 router.put('/theme', verifyToken, async (req, res) => {
     const { theme } = req.body;
+
+    // Validate against the same allowed list used by /preferences
+    if (!theme || !VALID_THEMES.includes(theme)) {
+        return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
+    }
+
     try {
         await prisma.users.update({
             where: { id: req.user.id },

@@ -34,6 +34,16 @@ const checkProfileAccess = async (req, profileId) => {
 // POST /invite - Link a parent to this nutritionist by email
 router.post('/invite', verifyToken, isNutritionist, async (req, res) => {
     const { email } = req.body;
+
+    // --- Input Validation (MUST happen before .toLowerCase() to prevent server crash) ---
+    if (!email || typeof email !== 'string' || email.trim().length === 0) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(email.trim())) {
+        return res.status(400).json({ message: 'Please enter a valid email address' });
+    }
+
     try {
         // 1. Find the parent user
         const user = await prisma.users.findUnique({
@@ -632,6 +642,13 @@ router.get('/logs/pending', verifyToken, isNutritionist, async (req, res) => {
 // PATCH /logs/:id/review - Provide nutritionist feedback
 router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) => {
     const { nutritionist_review, status } = req.body;
+
+    // --- Input Validation ---
+    const VALID_REVIEW_STATUSES = ['reviewed', 'approved', 'rejected'];
+    if (status && !VALID_REVIEW_STATUSES.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Must be one of: ${VALID_REVIEW_STATUSES.join(', ')}` });
+    }
+
     try {
         const log = await prisma.meal_logs.findUnique({
             where: { id: req.params.id },
@@ -746,6 +763,12 @@ router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res)
     // Validate input first before any DB calls
     if (!logIds || !Array.isArray(logIds) || logIds.length === 0) {
         return res.status(400).json({ message: 'logIds must be a non-empty array' });
+    }
+    if (logIds.length > 100) {
+        return res.status(400).json({ message: 'Cannot verify more than 100 logs at once' });
+    }
+    if (!logIds.every(id => typeof id === 'string' && id.trim().length > 0)) {
+        return res.status(400).json({ message: 'All log IDs must be valid non-empty strings' });
     }
 
     try {

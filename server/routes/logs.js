@@ -550,6 +550,20 @@ router.patch('/:id', verifyToken, async (req, res) => {
         image_after_url
     } = req.body;
 
+    // --- Input Validation (before DB query) ---
+    if (water_ml !== undefined && water_ml !== null) {
+        const w = parseInt(water_ml);
+        if (isNaN(w) || w < 0 || w > 10000) {
+            return res.status(400).json({ message: 'water_ml must be between 0 and 10000 ml' });
+        }
+    }
+    if (consumption_percent !== undefined && consumption_percent !== null) {
+        const c = parseInt(consumption_percent);
+        if (isNaN(c) || c < 0 || c > 100) {
+            return res.status(400).json({ message: 'consumption_percent must be between 0 and 100' });
+        }
+    }
+
     try {
         const log = await prisma.meal_logs.findUnique({
             where: { id },

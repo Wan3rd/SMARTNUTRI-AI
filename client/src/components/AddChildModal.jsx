@@ -73,12 +73,14 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
             }
         }
         if (targetStep >= 2) {
-            if (!formData.heightCm || parseFloat(formData.heightCm) <= 0) {
-                setMessage({ type: 'error', text: "Please enter a valid height (cm)." });
+            const h = parseFloat(formData.heightCm);
+            const w = parseFloat(formData.weightKg);
+            if (!formData.heightCm || isNaN(h) || h < 30 || h > 250) {
+                setMessage({ type: 'error', text: "Please enter a valid height between 30 and 250 cm." });
                 return false;
             }
-            if (!formData.weightKg || parseFloat(formData.weightKg) <= 0) {
-                setMessage({ type: 'error', text: "Please enter a valid weight (kg)." });
+            if (!formData.weightKg || isNaN(w) || w < 1 || w > 300) {
+                setMessage({ type: 'error', text: "Please enter a valid weight between 1 and 300 kg." });
                 return false;
             }
         }
