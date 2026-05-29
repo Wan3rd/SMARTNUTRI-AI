@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle, ChefHat } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle, ChefHat, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -14,6 +14,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const [showConfirm, setShowConfirm] = useState(false);
     const [nutritionist, setNutritionist] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
+    const [previewImage, setPreviewImage] = useState(null);
 
     // Editable state for parent resubmission
     const [isEditing, setIsEditing] = useState(false);
@@ -203,6 +204,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const ComplianceIcon = complianceBadge.icon;
 
     return (
+        <>
         <div 
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in transition-all duration-300"
             onClick={onClose}
@@ -341,7 +343,10 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest pl-1">Before Meal</p>
-                            <div className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group">
+                            <div
+                                className="relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group cursor-zoom-in"
+                                onClick={() => setPreviewImage(log.image_url)}
+                            >
                                 <img
                                     src={log.image_url}
                                     alt="Before"
@@ -352,6 +357,11 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                         <ComplianceIcon size={12} />
                                         {complianceBadge.label}
                                     </span>
+                                </div>
+                                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all">
+                                    <div className="bg-black/60 backdrop-blur-md text-white p-1.5 rounded-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest">
+                                        <Eye size={12} /> Preview
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -405,13 +415,23 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                     />
                                 </div>
                             ) : (
-                                <div className={`relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group flex items-center justify-center transition-all duration-300 ${log.image_after_url ? 'h-48 sm:h-64 w-full' : 'h-16 sm:h-64 w-full'}`}>
+                                <div
+                                    className={`relative rounded-2xl overflow-hidden bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-inner group flex items-center justify-center transition-all duration-300 ${log.image_after_url ? 'h-48 sm:h-64 w-full cursor-zoom-in' : 'h-16 sm:h-64 w-full'}`}
+                                    onClick={() => log.image_after_url && setPreviewImage(log.image_after_url)}
+                                >
                                     {log.image_after_url ? (
-                                        <img
-                                            src={log.image_after_url}
-                                            alt="After"
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
-                                        />
+                                        <>
+                                            <img
+                                                src={log.image_after_url}
+                                                alt="After"
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
+                                            />
+                                            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all">
+                                                <div className="bg-black/60 backdrop-blur-md text-white p-1.5 rounded-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest">
+                                                    <Eye size={12} /> Preview
+                                                </div>
+                                            </div>
+                                        </>
                                     ) : (
                                         <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-3 p-4">
                                             <div className="h-8 w-8 sm:h-12 sm:w-12 bg-gray-100 dark:bg-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-400 flex-shrink-0">
@@ -856,5 +876,32 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 onClose={() => setNotif({ ...notif, show: false })}
             />
         </div>
+
+            {/* Image Preview Lightbox */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    {/* Close button */}
+                    <button
+                        onClick={() => setPreviewImage(null)}
+                        className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white p-2.5 rounded-full transition-all z-10"
+                    >
+                        <X size={20} />
+                    </button>
+                    {/* Hint */}
+                    <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/15 px-4 py-1.5 rounded-full pointer-events-none">
+                        <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Tap anywhere to close</p>
+                    </div>
+                    <img
+                        src={previewImage}
+                        alt="Preview"
+                        className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl select-none"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
+        </>
     );
 }

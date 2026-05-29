@@ -18,6 +18,14 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [isScrolled, setIsScrolled] = useState(false);
     const scrollRef = useRef(null);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    const handleImageScroll = (e) => {
+        const scrollLeft = e.currentTarget.scrollLeft;
+        const cardWidth = e.currentTarget.clientWidth * 0.85; // card takes 85% width
+        const newIndex = Math.round(scrollLeft / cardWidth);
+        setActiveImageIndex(Math.min(1, Math.max(0, newIndex)));
+    };
 
     useEffect(() => {
         const el = scrollRef.current;
@@ -254,7 +262,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     return (
         <AnimatePresence>
-            <div key="modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-hidden" onClick={(e) => {
+            <div key="modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md overflow-hidden" onClick={(e) => {
                 if (e.target === e.currentTarget) handleDismiss();
             }}>
                 <motion.div
@@ -262,7 +270,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="w-full max-w-6xl relative h-full sm:h-[90vh] flex shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transition-all duration-500"
+                    className="w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transition-all duration-500"
                 >
                     {/* Left Side: Images & Profile (Dark Theme) */}
                     <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide shrink-0">
@@ -322,9 +330,10 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             whileHover={{ rotate: 90, scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={onClose}
-                            className="absolute right-4 top-4 lg:right-6 lg:top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all z-50 bg-[var(--color-bg-page)] rounded-full p-2 shadow-lg border-2 border-[var(--color-divider)] hidden lg:flex"
+                            className="absolute right-4 top-4 lg:right-6 lg:top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all z-50 bg-[var(--color-bg-card)]/80 backdrop-blur-md rounded-full p-2.5 shadow-xl border-2 border-[var(--color-divider)] flex items-center justify-center cursor-pointer"
+                            aria-label="Close Modal"
                         >
-                            <X size={20} />
+                            <X size={18} />
                         </motion.button>
 
                         {/* #6: Sticky Glassmorphic Patient Header */}
@@ -358,14 +367,14 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                         <div ref={scrollRef} className="flex-1 overflow-y-auto p-0 lg:p-12 scrollbar-thin scrollbar-thumb-[var(--color-divider)] scrollbar-track-transparent">
                             {/* MOBILE ONLY: Compact Horizontal Image Swipe (Before & After) */}
-                            <div className="flex lg:hidden flex-col w-full shrink-0 bg-zinc-950/5 border-b border-[var(--color-divider)]">
-                                <div className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20 backdrop-blur-sm">
+                            <div className="relative flex lg:hidden flex-col w-full shrink-0 bg-zinc-950/5 border-b border-[var(--color-divider)]">
+                                <div 
+                                    onScroll={handleImageScroll}
+                                    className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20 backdrop-blur-sm"
+                                >
                                     <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl snap-center transition-all active:scale-95">
                                         <img onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
                                         <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">Before</div>
-                                        <button onClick={onClose} className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white p-2 rounded-full border border-white/20 z-50 shadow-2xl">
-                                            <X size={16} />
-                                        </button>
                                     </div>
                                     
                                     {log.image_after_url && (
@@ -375,15 +384,15 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                                         </div>
                                     )}
-                                    
-                                    {/* Swipe Indicator (Visible only if there's an after image) */}
-                                    {log.image_after_url && (
-                                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 pointer-events-none">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-sm" />
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 shadow-sm" />
-                                        </div>
-                                    )}
                                 </div>
+                                
+                                {/* Dynamic Page Dot Indicators (Visible only if after-meal image exists) */}
+                                {log.image_after_url && (
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-none">
+                                        <div className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${activeImageIndex === 0 ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40'}`} />
+                                        <div className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${activeImageIndex === 1 ? 'w-3.5 bg-white' : 'w-1.5 bg-white/40'}`} />
+                                    </div>
+                                )}
                                 
                                 {/* Patient Quick Bar (Mobile) */}
                                 <div className="px-5 py-4 bg-[var(--color-bg-card)]">
@@ -425,33 +434,35 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     </motion.div>
                                 )}
 
-                                <motion.div variants={itemVariants} className="flex justify-between items-start">
+                                <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                                 <div>
-                                    <h2 className="text-xl sm:text-3xl font-black text-[var(--color-secondary)] tracking-tight mb-2 uppercase">
+                                    <h2 className="text-xl sm:text-3xl font-black text-[var(--color-secondary)] tracking-tight mb-1.5 uppercase leading-tight">
                                         {log.meal_category === 'Other' ? 'Dietary' : log.meal_category || 'Meal'} Assessment
                                     </h2>
-                                    <p className="text-sm font-bold text-[var(--color-text-muted)] flex items-center gap-2">
-                                        <Activity size={14} className="text-[var(--color-primary)]" />
-                                        Logged {new Date(log.logged_at).toLocaleString()}
+                                    <p className="text-[10px] sm:text-sm font-bold text-[var(--color-text-muted)] flex items-center gap-1.5 whitespace-nowrap">
+                                        <Activity size={12} className="text-[var(--color-primary)] shrink-0" />
+                                        Logged {new Date(log.logged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(log.logged_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                     </p>
                                 </div>
-                                {log.status === 'rejected' ? (
-                                    <div className="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-rose-200 dark:border-rose-500/30 shadow-sm transition-colors uppercase">
-                                        <AlertTriangle size={14} className="text-rose-500" /> REJECTED / ACTION REQUIRED
-                                    </div>
-                                ) : log.status === 'pending' ? (
-                                    <div className="bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-orange-200 dark:border-orange-500/30 shadow-sm transition-colors uppercase animate-pulse">
-                                        <AlertTriangle size={14} className="text-orange-500" /> PENDING CLINICAL REVIEW
-                                    </div>
-                                ) : (log.status === 'verified' || log.status === 'reviewed') ? (
-                                    <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-emerald-200 dark:border-emerald-500/30 shadow-sm transition-colors">
-                                        <CheckCircle size={14} /> CLINICALLY VERIFIED
-                                    </div>
-                                ) : log.is_parent_verified ? (
-                                    <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-emerald-200 dark:border-emerald-500/30 shadow-sm transition-colors">
-                                        <CheckCircle size={14} /> VERIFIED BY CAREGIVER
-                                    </div>
-                                ) : null}
+                                <div className="flex-shrink-0">
+                                    {log.status === 'rejected' ? (
+                                        <div className="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black inline-flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30 shadow-sm uppercase">
+                                            <AlertTriangle size={12} className="text-rose-500" /> Action Required
+                                        </div>
+                                    ) : log.status === 'pending' ? (
+                                        <div className="bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black inline-flex items-center gap-1.5 border border-orange-200 dark:border-orange-500/30 shadow-sm uppercase animate-pulse">
+                                            <AlertTriangle size={12} className="text-orange-500" /> Pending Review
+                                        </div>
+                                    ) : (log.status === 'verified' || log.status === 'reviewed') ? (
+                                        <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black inline-flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm">
+                                            <CheckCircle size={12} /> Clinically Verified
+                                        </div>
+                                    ) : log.is_parent_verified ? (
+                                        <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black inline-flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm">
+                                            <CheckCircle size={12} /> Verified by Caregiver
+                                        </div>
+                                    ) : null}
+                                </div>
                             </motion.div>
 
 
@@ -678,43 +689,63 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     onChange={(e) => setReview(e.target.value)}
                                 />
                             </motion.div>
-
                             {/* Actions (Sticky Bar on Mobile) */}
                              <motion.div 
                                 variants={itemVariants} 
-                                className="sticky bottom-0 lg:static bg-[var(--color-bg-card)]/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none -mx-5 px-5 py-6 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] flex flex-col-reverse sm:flex-row gap-4 z-40"
+                                className="sticky bottom-0 lg:static bg-[var(--color-bg-card)]/90 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none -mx-5 px-5 py-4 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] space-y-2.5 lg:space-y-0 z-40"
                              >
-                                <div className="flex flex-1 gap-2">
-                                    <Button type="button" variant="outline" className="flex-1 h-12 lg:h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)] transition-all" onClick={handleDismiss}>
+                                {/* Primary: Verify Meal — full width on mobile, equal on desktop */}
+                                <Button
+                                    onClick={handleApprove}
+                                    disabled={loading}
+                                    className="w-full lg:hidden h-13 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 active:scale-95 transition-all border-none flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircle size={15} />
+                                    {loading ? 'Processing...' : 'Verify Meal'}
+                                </Button>
+
+                                {/* Secondary row on mobile / all buttons on desktop */}
+                                <div className="flex gap-2 lg:gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={loading}
+                                        className="flex-1 h-12 lg:h-13 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-[var(--color-text-muted)] border-[var(--color-divider)] hover:bg-[var(--color-divider)]/60 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                        onClick={handleDismiss}
+                                    >
+                                        <X size={13} />
                                         Dismiss
                                     </Button>
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
-                                        className="flex-1 h-12 lg:h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-red-500 border-red-500/20 dark:border-red-500/40 hover:bg-red-500/10 transition-all" 
-                                        onClick={handleReject}
-                                        disabled={loading}
-                                    >
-                                        Reject
-                                    </Button>
-                                </div>
-                                <div className="flex-[2] flex gap-2">
                                     <Button
-                                        onClick={handleSaveDraft}
-                                        className="flex-1 h-12 lg:h-14 rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-xl transition-all border-none"
+                                        type="button"
                                         disabled={loading}
+                                        className="flex-1 h-12 lg:h-13 rounded-2xl bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-lg active:scale-95 transition-all border-none flex items-center justify-center gap-1.5"
+                                        onClick={handleSaveDraft}
                                     >
+                                        <Save size={13} />
                                         Draft
                                     </Button>
                                     <Button
-                                        onClick={handleApprove}
-                                        className="flex-[1.5] h-12 lg:h-14 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-1 transition-all border-none animate-pulse-slow"
+                                        type="button"
+                                        variant="secondary"
                                         disabled={loading}
+                                        className="flex-1 h-12 lg:h-13 rounded-2xl font-black uppercase tracking-widest text-[10px] lg:text-xs text-red-500 border-red-400/30 dark:border-red-500/40 hover:bg-red-500/10 dark:hover:bg-red-500/15 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                        onClick={handleReject}
                                     >
+                                        <AlertTriangle size={13} />
+                                        Reject
+                                    </Button>
+                                    {/* Verify — desktop only (hidden on mobile, shown above instead) */}
+                                    <Button
+                                        onClick={handleApprove}
+                                        disabled={loading}
+                                        className="hidden lg:flex flex-1 h-12 lg:h-13 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 active:scale-95 transition-all border-none items-center justify-center gap-1.5"
+                                    >
+                                        <CheckCircle size={13} />
                                         {loading ? 'Processing...' : 'Verify Meal'}
                                     </Button>
                                 </div>
-                            </motion.div>
+                             </motion.div>
                             </div>
                         </div>
                     </div>

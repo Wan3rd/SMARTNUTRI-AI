@@ -285,34 +285,34 @@ export default function MealHistory() {
             </div>
 
             {/* Filters Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[var(--color-bg-card)] p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                <div className="relative col-span-1 md:col-span-2">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={18} />
+            <div className="bg-[var(--color-bg-card)] p-3 sm:p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm space-y-2 md:space-y-0 md:grid md:grid-cols-4 md:gap-4">
+                {/* Search — full width on mobile, 2-col span on desktop */}
+                <div className="relative md:col-span-2">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={15} />
                     <input
                         type="text"
                         placeholder="Search meals or ingredients..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-xs sm:text-sm font-medium"
                     />
                 </div>
-                <div>
+                {/* Dropdowns — side-by-side on mobile, 1-col each on desktop */}
+                <div className="grid grid-cols-2 gap-2 md:contents">
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-black uppercase tracking-tight"
+                        className="w-full px-3 py-2.5 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-[10px] sm:text-xs font-black uppercase tracking-tight"
                     >
                         <option value="all">All Reviews</option>
                         <option value="reviewed">Expert Reviewed</option>
                         <option value="pending">Awaiting Review</option>
                         <option value="rejected">Correction Needed</option>
                     </select>
-                </div>
-                <div>
                     <select
                         value={complianceFilter}
                         onChange={(e) => setComplianceFilter(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-sm font-black uppercase tracking-tight"
+                        className="w-full px-3 py-2.5 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] focus:border-[var(--color-primary)] outline-none transition-all text-[10px] sm:text-xs font-black uppercase tracking-tight"
                     >
                         <option value="all">All Compliance</option>
                         <option value="compliant">Compliant Only</option>
@@ -376,51 +376,49 @@ export default function MealHistory() {
                     {selectedHistoryDate && (
                         <>
                             {/* DAILY SUMMARY CARD */}
-                            <div className="p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div className="p-4 sm:p-6 bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
                                     <div>
-                                        <h3 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest">Daily Clinical Summary</h3>
-                                        <p className="text-[11px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter mt-1">
+                                        <h3 className="text-xs sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-widest">Daily Clinical Summary</h3>
+                                        <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter mt-0.5">
                                             {new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Clinical Tracking Active</span>
-                                        </div>
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-500/20 shrink-0">
+                                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Tracking Active</span>
                                     </div>
                                 </div>
 
                                 {/* VIOLATIONS ALERT PANEL */}
                                 {dailyViolations.length > 0 && (
-                                    <div className="mb-6 p-4 bg-rose-50/50 dark:bg-rose-500/5 border-2 border-rose-100 dark:border-rose-500/20 rounded-2xl animate-in fade-in duration-500">
-                                        <div className="flex items-center gap-2 mb-3">
+                                    <div className="mb-4 p-3 bg-rose-50/50 dark:bg-rose-500/5 border-2 border-rose-100 dark:border-rose-500/20 rounded-2xl animate-in fade-in duration-500">
+                                        <div className="flex items-center gap-2 mb-2">
                                             <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                                             <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Clinical Limit Alerts</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex flex-wrap gap-2">
                                             {dailyViolations.map((v, i) => (
-                                                <div key={i} className="text-[11px] font-black flex items-center bg-[var(--color-bg-page)] px-4 py-2 rounded-2xl border-2 border-[var(--color-divider)] shadow-sm">
-                                                    <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                    <span className="text-[var(--color-danger)] mr-1.5 uppercase tracking-tight">{v.name}</span>
                                                     <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
-                                                    <span className="mx-3 text-[var(--color-text-muted)] opacity-30">/</span>
-                                                    <span className="text-[10px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
+                                                    <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                                     {[
                                         { label: 'Total Calories', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
                                         { label: 'Total Protein', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
                                         { label: 'Total Carb', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
                                         { label: 'Total Fat', value: filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
                                     ].map((stat, idx) => (
-                                        <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
-                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">{stat.label}</div>
-                                            <div className={`text-2xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-xs opacity-70">{stat.unit}</span></div>
+                                        <div key={idx} className="p-3 sm:p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)]/30 transition-all">
+                                            <div className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 sm:mb-2">{stat.label}</div>
+                                            <div className={`text-xl sm:text-2xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
                                         </div>
                                     ))}
                                 </div>
@@ -435,56 +433,56 @@ export default function MealHistory() {
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 gap-3">
                                     {filteredLogs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate)
                                         .sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))
                                         .map(log => (
                                         <div 
                                             key={log.id} 
                                             onClick={() => setSelectedLog(log)}
-                                            className="group relative bg-[var(--color-bg-card)] rounded-[2.5rem] border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-col md:flex-row h-auto md:h-44 cursor-pointer"
+                                            className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-row cursor-pointer"
                                         >
-                                            <div className="w-full md:w-56 h-44 md:h-auto relative overflow-hidden flex-shrink-0">
+                                            {/* Meal image - compact fixed width on mobile */}
+                                            <div className="w-24 sm:w-44 md:w-56 flex-shrink-0 relative overflow-hidden">
                                                 <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                                <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-xl text-[10px] font-black text-white uppercase tracking-widest">
+                                                <div className="absolute top-2 left-2 sm:top-4 sm:left-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[8px] sm:text-[10px] font-black text-white uppercase tracking-widest">
                                                     {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
-                                                <div className={`absolute bottom-4 left-4 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg ${
+                                                <div className={`absolute bottom-2 left-2 sm:bottom-4 sm:left-4 px-2 py-1 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-lg ${
                                                     log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
                                                 }`}>
-                                                    {log.compliance_status === 'flagged' ? 'Flagged' : 'Compliant'}
+                                                    {log.compliance_status === 'flagged' ? 'Flagged' : 'OK'}
                                                 </div>
                                             </div>
-                                            <div className="p-6 flex-grow flex flex-col justify-between">
+                                            {/* Meal info */}
+                                            <div className="p-3 sm:p-5 flex-grow flex flex-col justify-between min-w-0">
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h5 className="text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight">{log.meal_category}</h5>
+                                                    <div className="flex items-start justify-between mb-1 gap-2">
+                                                        <h5 className="text-xs sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
                                                         {(() => {
                                                             const badge = getStatusBadge(log.status);
                                                             return (
-                                                                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badge.color}`}>
+                                                                <div className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shrink-0 ${badge.color}`}>
                                                                     {badge.label}
                                                                 </div>
                                                             );
                                                         })()}
                                                     </div>
-                                                    <h3 className="text-lg font-black text-[var(--color-text-main)] line-clamp-1 uppercase">
+                                                    <h3 className="text-sm sm:text-base font-black text-[var(--color-text-main)] line-clamp-1 uppercase">
                                                         {log.nutritionist_review?.title || log.ai_analysis?.meal_summary || "Meal Log Entry"}
                                                     </h3>
-                                                    <div className="flex gap-6 mt-4">
+                                                    <div className="flex gap-3 sm:gap-6 mt-2 sm:mt-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calories</span>
-                                                            <span className="text-sm font-black text-[var(--color-text-main)]">{log.total_calories || 0} <span className="text-[10px] opacity-60">kcal</span></span>
+                                                            <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-0.5">Cal</span>
+                                                            <span className="text-xs sm:text-sm font-black text-[var(--color-text-main)]">{log.total_calories || 0} <span className="text-[9px] opacity-60">kcal</span></span>
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Protein</span>
-                                                            <span className="text-sm font-black text-blue-600">{log.total_protein_g || 0} <span className="text-[10px] opacity-60">g</span></span>
+                                                            <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-0.5">Pro</span>
+                                                            <span className="text-xs sm:text-sm font-black text-blue-600">{log.total_protein_g || 0} <span className="text-[9px] opacity-60">g</span></span>
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Consumption</span>
-                                                            <span className="text-sm font-black text-orange-600">
-                                                                {log.consumption_percent || 100}%
-                                                            </span>
+                                                            <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-0.5">Ate</span>
+                                                            <span className="text-xs sm:text-sm font-black text-orange-600">{log.consumption_percent || 100}%</span>
                                                         </div>
                                                     </div>
                                                 </div>

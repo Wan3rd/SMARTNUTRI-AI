@@ -227,7 +227,7 @@ export function Layout({ children }) {
             {/* Mobile FAB Backdrop Dismiss Click */}
             {fabMenuOpen && (
                 <div
-                    className="fixed inset-0 z-[45] bg-black/25 backdrop-blur-[2px] animate-in fade-in duration-200 lg:hidden"
+                    className="fixed inset-0 z-[35] bg-black/20 animate-in fade-in duration-200 lg:hidden"
                     onClick={() => setFabMenuOpen(false)}
                 />
             )}
@@ -290,7 +290,7 @@ export function Layout({ children }) {
 
             {/* ── ERGONOMIC MOBILE BOTTOM NAVIGATION BAR & FAB (lg:hidden) ── */}
             {isMobile && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-bg-card)]/80 backdrop-blur-lg border-t border-[var(--color-divider)] px-4 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
+                <div className="fixed bottom-0 left-0 right-0 z-[40] bg-[var(--color-bg-card)]/80 backdrop-blur-lg border-t border-[var(--color-divider)] px-4 pb-[env(safe-area-inset-bottom)] pt-2 lg:hidden">
                     <div className="flex items-center justify-between max-w-md mx-auto relative h-12">
                         {/* Speed Dial Quick Actions overlay floating menu */}
                         <AnimatePresence>
