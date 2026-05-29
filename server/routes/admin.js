@@ -45,43 +45,102 @@ router.get('/stats', verifyAdmin, async (req, res) => {
             console.error("OS telemetry failed, fallback metrics used:", osErr);
         }
 
-        // 3. 30-Day Daily Trends compilation (PostgreSQL DATE_TRUNC)
+        // 3. Dynamic Trends compilation (PostgreSQL DATE_TRUNC)
+        const range = req.query.range || 'month'; // 'week' | 'month' | 'year'
         let userTrendsRaw = [];
         let mealTrendsRaw = [];
+        let trends = [];
+
+        let numUnits = 30;
+        if (range === 'week') {
+            numUnits = 7;
+        } else if (range === 'year') {
+            numUnits = 12;
+        }
+
         try {
-            userTrendsRaw = await prisma.$queryRaw`
-                SELECT DATE_TRUNC('day', created_at) as day, COUNT(id)::int as count
-                FROM users
-                WHERE created_at >= NOW() - INTERVAL '30 days'
-                GROUP BY DATE_TRUNC('day', created_at)
-                ORDER BY day ASC
-            `;
-            mealTrendsRaw = await prisma.$queryRaw`
-                SELECT DATE_TRUNC('day', logged_at) as day, COUNT(id)::int as count
-                FROM meal_logs
-                WHERE logged_at >= NOW() - INTERVAL '30 days'
-                GROUP BY DATE_TRUNC('day', logged_at)
-                ORDER BY day ASC
-            `;
+            if (range === 'year') {
+                userTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('month', created_at) as day, COUNT(id)::int as count
+                    FROM users
+                    WHERE created_at >= NOW() - INTERVAL '12 months'
+                    GROUP BY DATE_TRUNC('month', created_at)
+                    ORDER BY day ASC
+                `;
+                mealTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('month', logged_at) as day, COUNT(id)::int as count
+                    FROM meal_logs
+                    WHERE logged_at >= NOW() - INTERVAL '12 months'
+                    GROUP BY DATE_TRUNC('month', logged_at)
+                    ORDER BY day ASC
+                `;
+            } else if (range === 'week') {
+                userTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('day', created_at) as day, COUNT(id)::int as count
+                    FROM users
+                    WHERE created_at >= NOW() - INTERVAL '7 days'
+                    GROUP BY DATE_TRUNC('day', created_at)
+                    ORDER BY day ASC
+                `;
+                mealTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('day', logged_at) as day, COUNT(id)::int as count
+                    FROM meal_logs
+                    WHERE logged_at >= NOW() - INTERVAL '7 days'
+                    GROUP BY DATE_TRUNC('day', logged_at)
+                    ORDER BY day ASC
+                `;
+            } else {
+                // Default 'month'
+                userTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('day', created_at) as day, COUNT(id)::int as count
+                    FROM users
+                    WHERE created_at >= NOW() - INTERVAL '30 days'
+                    GROUP BY DATE_TRUNC('day', created_at)
+                    ORDER BY day ASC
+                `;
+                mealTrendsRaw = await prisma.$queryRaw`
+                    SELECT DATE_TRUNC('day', logged_at) as day, COUNT(id)::int as count
+                    FROM meal_logs
+                    WHERE logged_at >= NOW() - INTERVAL '30 days'
+                    GROUP BY DATE_TRUNC('day', logged_at)
+                    ORDER BY day ASC
+                `;
+            }
         } catch (rawErr) {
             console.warn("Fallback to raw query grouping bypass:", rawErr);
         }
 
-        // Generate complete continuous 30-day time-series to prevent frontend data gaps
-        const trends = Array.from({ length: 30 }, (_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (29 - i));
-            return {
-                date: d.toISOString().split('T')[0],
-                users: 0,
-                meals: 0
-            };
-        });
+        // Generate complete continuous time-series to prevent frontend data gaps
+        if (range === 'year') {
+            trends = Array.from({ length: 12 }, (_, i) => {
+                const d = new Date();
+                d.setDate(1); // Set to 1st to avoid overflow issues (e.g. Feb 30th)
+                d.setMonth(d.getMonth() - (11 - i));
+                return {
+                    date: d.toISOString().slice(0, 7), // "YYYY-MM"
+                    users: 0,
+                    meals: 0
+                };
+            });
+        } else {
+            trends = Array.from({ length: numUnits }, (_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (numUnits - 1 - i));
+                return {
+                    date: d.toISOString().split('T')[0], // "YYYY-MM-DD"
+                    users: 0,
+                    meals: 0
+                };
+            });
+        }
 
         if (Array.isArray(userTrendsRaw)) {
             userTrendsRaw.forEach(row => {
                 if (!row?.day) return;
-                const dateStr = new Date(row.day).toISOString().split('T')[0];
+                const d = new Date(row.day);
+                const dateStr = range === 'year' 
+                    ? d.toISOString().slice(0, 7) // "YYYY-MM"
+                    : d.toISOString().split('T')[0]; // "YYYY-MM-DD"
                 const match = trends.find(t => t.date === dateStr);
                 if (match) match.users = row.count || 0;
             });
@@ -90,7 +149,10 @@ router.get('/stats', verifyAdmin, async (req, res) => {
         if (Array.isArray(mealTrendsRaw)) {
             mealTrendsRaw.forEach(row => {
                 if (!row?.day) return;
-                const dateStr = new Date(row.day).toISOString().split('T')[0];
+                const d = new Date(row.day);
+                const dateStr = range === 'year' 
+                    ? d.toISOString().slice(0, 7) // "YYYY-MM"
+                    : d.toISOString().split('T')[0]; // "YYYY-MM-DD"
                 const match = trends.find(t => t.date === dateStr);
                 if (match) match.meals = row.count || 0;
             });
@@ -114,6 +176,7 @@ router.get('/stats', verifyAdmin, async (req, res) => {
             totalMealsLogged: totalLogs,
             aiHealth: aiStats,
             dailyTrends: trends,
+            compiledAt: new Date().toISOString(),
             anomalousSpikes: {
                 recentLogsCount,
                 threshold: 30,
@@ -128,6 +191,67 @@ router.get('/stats', verifyAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /admin/diagnostics - Dependency self-test diagnostics suite
+router.get('/diagnostics', verifyAdmin, async (req, res) => {
+    try {
+        const results = {
+            database: { status: 'testing', latency: 0, error: null },
+            gemini: { status: 'testing', latency: 0, error: null },
+            cloudinary: { status: 'testing', error: null }
+        };
+
+        // 1. Prisma DB Ping Test
+        const dbStart = Date.now();
+        try {
+            await prisma.$executeRaw`SELECT 1`;
+            results.database.latency = Date.now() - dbStart;
+            results.database.status = 'healthy';
+        } catch (dbErr) {
+            results.database.status = 'failed';
+            results.database.error = dbErr.message || 'Database query timed out';
+        }
+
+        // 2. Gemini AI Connection Test
+        const geminiStart = Date.now();
+        try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error("GEMINI_API_KEY environment variable is not defined");
+            }
+            
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+            const testRes = await fetch(testUrl);
+            if (!testRes.ok) {
+                throw new Error(`Google API returned status code ${testRes.status}`);
+            }
+            results.gemini.latency = Date.now() - geminiStart;
+            results.gemini.status = 'healthy';
+        } catch (geminiErr) {
+            results.gemini.status = 'failed';
+            results.gemini.error = geminiErr.message || 'API key authorization failed';
+        }
+
+        // 3. Cloudinary Configuration Test
+        try {
+            const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+            const apiKey = process.env.CLOUDINARY_API_KEY;
+            const apiSecret = process.env.CLOUDINARY_API_SECRET;
+            if (!cloudName || !apiKey || !apiSecret) {
+                throw new Error("Cloudinary tokens are incomplete or missing in .env config");
+            }
+            results.cloudinary.status = 'healthy';
+        } catch (cloudErr) {
+            results.cloudinary.status = 'failed';
+            results.cloudinary.error = cloudErr.message || 'Cloudinary credentials missing';
+        }
+
+        res.json(results);
+    } catch (err) {
+        console.error("Platform self-diagnostics failed:", err);
+        res.status(500).json({ message: 'Diagnostics Suite failed to compile' });
     }
 });
 

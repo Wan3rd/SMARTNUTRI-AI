@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/common/Card';
 import { ShieldCheck, Activity, Cpu, HardDrive, Database, AlertTriangle, CheckCircle2, MessageSquare, BrainCircuit, RefreshCw, KeySquare, ServerCrash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import AIHealthMonitor from '../admin/components/AIHealthMonitor';
+import PlatformDiagnostics from '../admin/components/PlatformDiagnostics';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // Custom SVG Circular Telemetry Dial Component
 const TelemetryDial = ({ value, label, unit, icon: Icon, color, max = 100 }) => {
@@ -64,68 +67,175 @@ const TelemetryDial = ({ value, label, unit, icon: Icon, color, max = 100 }) => 
     );
 };
 
-// Custom Premium Timeline Sparkline Component
-const TelemetryChart = ({ data, keyName, label, color }) => {
+// Custom Glassmorphic Chart Tooltip
+const CustomTooltip = ({ active, payload, label, keyName, colorName, range }) => {
+    if (active && payload && payload.length) {
+        const val = payload[0].value;
+        const formatRangeDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            if (range === 'year') {
+                const parts = dateStr.split('-');
+                if (parts.length === 2) {
+                    const d = new Date(parts[0], parts[1] - 1, 1);
+                    return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                }
+            } else {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                }
+            }
+            return dateStr;
+        };
+
+        return (
+            <div className="backdrop-blur-md bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/50 dark:border-white/10 rounded-2xl p-4 shadow-2xl text-left select-none animate-in fade-in zoom-in-95 duration-200">
+                <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1.5">
+                    {formatRangeDate(label)}
+                </p>
+                <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-zinc-900" style={{ backgroundColor: colorName }} />
+                    <span className="text-sm font-black text-[var(--color-text-main)] tabular-nums">
+                        {val.toLocaleString()} <span className="text-[10px] font-extrabold text-[var(--color-text-muted)] uppercase tracking-wide">{keyName === 'users' ? 'Sign-ups' : 'Logs'}</span>
+                    </span>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
+// Premium Interactive Telemetry Chart Component
+const TelemetryChart = ({ data, keyName, label, color, range }) => {
     if (!data || data.length === 0) return null;
-    const maxVal = Math.max(...data.map(d => d[keyName] || 0), 1);
+
+    // Calculate dynamic period statistics
+    const total = data.reduce((sum, d) => sum + (d[keyName] || 0), 0);
+    const average = (total / data.length).toFixed(1);
     
-    // Generate precise SVG path points
-    const points = data.map((d, index) => {
-        const x = (index / (data.length - 1)) * 500;
-        const y = 140 - ((d[keyName] || 0) / maxVal) * 110 - 15;
-        return `${x},${y}`;
+    let peakVal = 0;
+    let peakDate = 'N/A';
+    data.forEach(d => {
+        const val = d[keyName] || 0;
+        if (val > peakVal) {
+            peakVal = val;
+            peakDate = d.date || 'N/A';
+        }
     });
-    
-    const pathD = `M ${points.join(' L ')}`;
+
+    const formatPeakDate = (dateStr) => {
+        if (!dateStr || dateStr === 'N/A') return 'N/A';
+        if (range === 'year') {
+            const parts = dateStr.split('-');
+            if (parts.length === 2) {
+                const d = new Date(parts[0], parts[1] - 1, 1);
+                return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+            }
+        } else {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            }
+        }
+        return dateStr;
+    };
+
+    const formatXAxis = (tickItem) => {
+        if (!tickItem) return '';
+        if (range === 'year') {
+            const parts = tickItem.split('-');
+            if (parts.length === 2) {
+                const d = new Date(parts[0], parts[1] - 1, 1);
+                return d.toLocaleDateString(undefined, { month: 'short' });
+            }
+        } else {
+            const d = new Date(tickItem);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            }
+        }
+        return tickItem;
+    };
+
+    const rangeText = range === 'week' ? '7 Days' : range === 'year' ? '12 Months' : '30 Days';
 
     return (
-        <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden bg-[var(--color-bg-card)] p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
+        <Card className="border-2 border-[var(--color-divider)] rounded-[2.2rem] overflow-hidden bg-[var(--color-bg-card)] p-6 sm:p-8 shadow-sm hover:shadow-lg transition-all duration-300">
+            {/* Chart Title and Header */}
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">Observability Range: 30 Days</span>
+                    <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">Observability Range: {rangeText}</span>
                     <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight mt-0.5">{label}</h3>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-divider)] text-[9px] font-black uppercase text-[var(--color-text-main)]">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-divider)] text-[9px] font-black uppercase text-[var(--color-text-main)] select-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-ping" />
                     <span>Live Tracking</span>
                 </div>
             </div>
-            
-            <div className="relative w-full h-36">
-                <svg className="w-full h-full overflow-visible select-none" viewBox="0 0 500 140" preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id={`chart-grad-${keyName}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={color} stopOpacity="0.15" />
-                            <stop offset="100%" stopColor={color} stopOpacity="0" />
-                        </linearGradient>
-                    </defs>
-                    
-                    {/* Horizontal Grid lines */}
-                    <line x1="0" y1="20" x2="500" y2="20" className="stroke-zinc-100 dark:stroke-white/5" strokeWidth="1" strokeDasharray="4 4" />
-                    <line x1="0" y1="70" x2="500" y2="70" className="stroke-zinc-100 dark:stroke-white/5" strokeWidth="1" strokeDasharray="4 4" />
-                    <line x1="0" y1="120" x2="500" y2="120" className="stroke-zinc-100 dark:stroke-white/5" strokeWidth="1" strokeDasharray="4 4" />
-                    
-                    {/* Gradient Fill under Path */}
-                    <path
-                        d={`${pathD} L 500,140 L 0,140 Z`}
-                        fill={`url(#chart-grad-${keyName})`}
-                    />
-                    
-                    {/* Main stroke line */}
-                    <path
-                        d={pathD}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                </svg>
+
+            {/* KPI Metrics Insights Grid */}
+            <div className="grid grid-cols-3 gap-4 mb-8 border-b border-[var(--color-divider)] pb-6 select-none">
+                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Sum Total</span>
+                    <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] mt-1 block tabular-nums">{total.toLocaleString()}</span>
+                </div>
+                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">{range === 'year' ? 'Monthly Avg' : 'Daily Avg'}</span>
+                    <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] mt-1 block tabular-nums">{average}</span>
+                </div>
+                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Record Peak</span>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 mt-1">
+                        <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] tabular-nums">{peakVal}</span>
+                        {peakVal > 0 && (
+                            <span className="text-[8px] font-black text-[var(--color-primary)] uppercase bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-full truncate">
+                                {formatPeakDate(peakDate)}
+                            </span>
+                        )}
+                    </div>
+                </div>
             </div>
-            <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mt-3">
-                <span>{data[0]?.date}</span>
-                <span>{data[Math.floor(data.length / 2)]?.date}</span>
-                <span>{data[data.length - 1]?.date}</span>
+            
+            {/* Interactive Area Chart */}
+            <div className="w-full h-44 select-none">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id={`chart-grad-${keyName}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+                                <stop offset="95%" stopColor={color} stopOpacity={0.0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(226, 232, 240, 0.1)" />
+                        <XAxis 
+                            dataKey="date" 
+                            tickLine={false} 
+                            axisLine={false} 
+                            tickFormatter={formatXAxis}
+                            tick={{ fill: 'var(--color-text-muted)', fontSize: 8, fontWeight: 900 }}
+                            dy={10}
+                        />
+                        <YAxis 
+                            tickLine={false} 
+                            axisLine={false} 
+                            tick={{ fill: 'var(--color-text-muted)', fontSize: 8, fontWeight: 900 }}
+                            dx={-5}
+                        />
+                        <Tooltip 
+                            content={<CustomTooltip keyName={keyName} colorName={color} range={range} />} 
+                            cursor={{ stroke: color, strokeWidth: 1.5, strokeDasharray: '4 4' }}
+                        />
+                        <Area 
+                            type="monotone" 
+                            dataKey={keyName} 
+                            stroke={color} 
+                            strokeWidth={3} 
+                            fillOpacity={1} 
+                            fill={`url(#chart-grad-${keyName})`}
+                            activeDot={{ r: 5, strokeWidth: 2, className: 'fill-white dark:fill-zinc-950 stroke-[var(--color-primary)]' }}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </Card>
     );
@@ -135,17 +245,21 @@ export default function AdminTelemetry() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('server'); // 'server' or 'ai'
+    const [range, setRange] = useState('month'); // 'week' | 'month' | 'year'
 
     useEffect(() => {
-        fetchTelemetry();
+        fetchTelemetry(range);
         // Live polling every 5 seconds to keep dashboard dials animated and active
-        const interval = setInterval(fetchTelemetry, 5000);
+        const interval = setInterval(() => {
+            fetchTelemetry(range, true);
+        }, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [range]);
 
-    const fetchTelemetry = async () => {
+    const fetchTelemetry = async (activeRange, isPolling = false) => {
+        if (!isPolling && !stats) setLoading(true);
         try {
-            const res = await api.get('/admin/stats');
+            const res = await api.get(`/admin/stats?range=${activeRange}`);
             setStats(res.data);
         } catch (err) {
             console.error("Failed to fetch administrative telemetry:", err);
@@ -174,8 +288,14 @@ export default function AdminTelemetry() {
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight">System Telemetry</h1>
                     </div>
-                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium max-w-lg">
-                        Real-time dashboard monitoring database latency, server computational loads, and Gemini key health.
+                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium max-w-lg flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>Real-time dashboard monitoring database latency, server computational loads, and Gemini key health.</span>
+                        {stats?.compiledAt && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-2 py-0.5 rounded-md border border-[var(--color-primary)]/20 shadow-sm shrink-0">
+                                <span className="w-1 h-1 rounded-full bg-[var(--color-primary)] animate-ping" />
+                                Synced: {new Date(stats.compiledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                        )}
                     </p>
                 </div>
 
@@ -260,21 +380,62 @@ export default function AdminTelemetry() {
                             />
                         </div>
 
+                        {/* Interactive Growth Range Selector Panel */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] p-5 rounded-[2rem] shadow-sm select-none">
+                            <div>
+                                <h3 className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-wider">Metrics Growth & Workloads</h3>
+                                <p className="text-[10px] text-[var(--color-text-muted)] font-semibold uppercase tracking-widest mt-1">
+                                    Analyze user acquisition velocity and logging volume trends
+                                </p>
+                            </div>
+                            <div className="flex p-1 bg-[var(--color-divider)] dark:bg-white/5 rounded-xl border border-[var(--color-divider)] shadow-inner">
+                                <button
+                                    onClick={() => setRange('week')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${range === 'week'
+                                        ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
+                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    Week
+                                </button>
+                                <button
+                                    onClick={() => setRange('month')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${range === 'month'
+                                        ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
+                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    Month
+                                </button>
+                                <button
+                                    onClick={() => setRange('year')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${range === 'year'
+                                        ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
+                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    Year
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Interactive Growth/Activity Trends */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <TelemetryChart
                                 data={stats?.dailyTrends}
                                 keyName="users"
-                                label="Daily User Registrations (30d)"
+                                label={range === 'year' ? "Monthly User Registrations" : "Daily User Registrations"}
                                 color="#3b82f6"
+                                range={range}
                             />
                             <TelemetryChart
                                 data={stats?.dailyTrends}
                                 keyName="meals"
-                                label="Daily Pediatric Meal Logs (30d)"
+                                label={range === 'year' ? "Monthly Pediatric Meal Logs" : "Daily Pediatric Meal Logs"}
                                 color="#8b5cf6"
+                                range={range}
                             />
                         </div>
+
+                        {/* Platform Self-Test Diagnostics */}
+                        <PlatformDiagnostics />
                     </motion.div>
                 ) : (
                     <motion.div
