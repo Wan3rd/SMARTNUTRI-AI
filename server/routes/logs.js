@@ -253,12 +253,8 @@ router.post('/', verifyToken, async (req, res) => {
             }));
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot log meals for this profile' });
-        // 1. Parse Hidden Ingredients if any
-        const { parseTextToNutrients } = await import('../services/gemini.js');
-        const hiddenItems = await parseTextToNutrients(hidden_ingredients);
-        const safeHiddenItems = Array.isArray(hiddenItems) ? hiddenItems : (hiddenItems?.items ? hiddenItems.items : []);
-
-        const allItems = [...(ai_analysis.items || []), ...safeHiddenItems];
+        // Save hidden ingredients as a text comment/note without parsing or adding to meal items
+        const allItems = ai_analysis.items || [];
 
         // 2. Recalculate using DOST-FNRI Local FCT mappings
         const { recalculateMealTotals } = await import('../utils/fct.js');
@@ -455,14 +451,26 @@ router.delete('/bulk/day/:profileId/:date', verifyToken, async (req, res) => {
         const startOfDay = new Date(`${date}T00:00:00.000Z`);
         const endOfDay = new Date(`${date}T23:59:59.999Z`);
 
-        const result = await prisma.meal_logs.deleteMany({
-            where: {
-                profile_id: profileId,
-                logged_at: {
-                    gte: startOfDay,
-                    lte: endOfDay
+        const result = await prisma.$transaction(async (tx) => {
+            // Delete daily portion adherence logs for this date
+            await tx.daily_adherence_logs.deleteMany({
+                where: {
+                    profile_id: profileId,
+                    date: new Date(date)
                 }
-            }
+            });
+
+            // Delete meal logs
+            const deleteCount = await tx.meal_logs.deleteMany({
+                where: {
+                    profile_id: profileId,
+                    logged_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                }
+            });
+            return deleteCount;
         });
 
         res.json({ message: `Successfully cleared ${result.count} logs for ${date}`, count: result.count });
@@ -489,8 +497,34 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: Cannot delete this log' });
 
-        await prisma.meal_logs.delete({
-            where: { id }
+        // Get adherence info to clean it up
+        let mappedMealType = 'Breakfast';
+        const logHour = new Date(log.logged_at).getHours();
+        const meal_category = log.meal_category || 'other';
+        
+        if (meal_category.toLowerCase() === 'breakfast') mappedMealType = 'Breakfast';
+        else if (meal_category.toLowerCase() === 'lunch') mappedMealType = 'Lunch';
+        else if (meal_category.toLowerCase() === 'dinner') mappedMealType = 'Dinner';
+        else if (meal_category.toLowerCase().includes('snack')) {
+            mappedMealType = logHour < 14 ? 'AM Snack' : 'PM Snack';
+        }
+
+        const logDate = new Date(log.logged_at).toISOString().split('T')[0];
+
+        await prisma.$transaction(async (tx) => {
+            // Delete daily portion adherence logs for this specific meal type and date
+            await tx.daily_adherence_logs.deleteMany({
+                where: {
+                    profile_id: log.profile_id,
+                    date: new Date(logDate),
+                    meal_type: mappedMealType
+                }
+            });
+
+            // Delete the meal log itself
+            await tx.meal_logs.delete({
+                where: { id }
+            });
         });
         res.json({ message: 'Log deleted successfully' });
     } catch (err) {
@@ -545,30 +579,19 @@ router.patch('/:id', verifyToken, async (req, res) => {
             dataToUpdate.status = 'pending';
         }
 
-        // Recalculate nutrients if consumption_percent or hidden_ingredients changes
         let updatedAnalysis = log.ai_analysis ? { ...log.ai_analysis } : { items: [] };
         let hiddenIngredientsChanged = hidden_ingredients !== undefined && hidden_ingredients !== log.hidden_ingredients;
         let consumptionChanged = consumption_percent !== undefined && consumption_percent !== log.consumption_percent;
 
-        if (hiddenIngredientsChanged || consumptionChanged) {
+        // If the caregiver comment (hidden_ingredients) changes, update it directly without touching macros
+        if (hiddenIngredientsChanged) {
+            dataToUpdate.hidden_ingredients = hidden_ingredients;
+        }
+
+        // Only recalculate nutrients when physical food consumption (consumption_percent) is explicitly changed
+        if (consumptionChanged) {
             let itemsToRecalculate = [...(updatedAnalysis.items || [])];
-
-            if (hiddenIngredientsChanged) {
-                dataToUpdate.hidden_ingredients = hidden_ingredients;
-
-                // Parse new hidden ingredients if provided and not empty
-                let safeHiddenItems = [];
-                if (hidden_ingredients && hidden_ingredients.trim().length > 0) {
-                    const { parseTextToNutrients } = await import('../services/gemini.js');
-                    const hiddenItems = await parseTextToNutrients(hidden_ingredients);
-                    safeHiddenItems = Array.isArray(hiddenItems) ? hiddenItems : (hiddenItems?.items ? hiddenItems.items : []);
-                }
-
-                // Append the new hidden items
-                itemsToRecalculate = [...itemsToRecalculate, ...safeHiddenItems];
-            }
-
-            const newPlateWaste = consumption_percent !== undefined ? parseInt(consumption_percent) : (updatedAnalysis.plate_waste ?? 100);
+            const newPlateWaste = parseInt(consumption_percent);
             updatedAnalysis.plate_waste = newPlateWaste;
             dataToUpdate.consumption_percent = newPlateWaste;
 
@@ -577,12 +600,12 @@ router.patch('/:id', verifyToken, async (req, res) => {
             updatedAnalysis = { ...updatedAnalysis, ...finalizedAnalysis };
 
             dataToUpdate.ai_analysis = updatedAnalysis;
-            dataToUpdate.total_calories = updatedAnalysis.total_calories_est || 0;
-            dataToUpdate.total_protein_g = updatedAnalysis.macros_est?.protein_g || 0;
-            dataToUpdate.total_carbs_g = updatedAnalysis.macros_est?.carbs_g || 0;
-            dataToUpdate.total_fat_g = updatedAnalysis.macros_est?.fat_g || 0;
-            dataToUpdate.total_sugar_g = updatedAnalysis.macros_est?.sugar_g || 0;
-            dataToUpdate.total_sodium_mg = updatedAnalysis.macros_est?.sodium_mg || 0;
+            dataToUpdate.total_calories = finalizedAnalysis.total_calories_est || 0;
+            dataToUpdate.total_protein_g = finalizedAnalysis.macros_est?.protein_g || 0;
+            dataToUpdate.total_carbs_g = finalizedAnalysis.macros_est?.carbs_g || 0;
+            dataToUpdate.total_fat_g = finalizedAnalysis.macros_est?.fat_g || 0;
+            dataToUpdate.total_sugar_g = finalizedAnalysis.macros_est?.sugar_g || 0;
+            dataToUpdate.total_sodium_mg = finalizedAnalysis.macros_est?.sodium_mg || 0;
         }
 
         // Recalculate daily compliance

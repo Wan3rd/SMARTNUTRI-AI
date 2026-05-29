@@ -18,7 +18,7 @@ const PDRI_ENERGY_PROTEIN = {
  * @returns {Object} { energy, protein }
  */
 export const getPDRITargets = (age, gender) => {
-    const g = gender.toLowerCase() === 'male' ? 'male' : 'female';
+    const g = (gender && String(gender).toLowerCase() === 'male') ? 'male' : 'female';
 
     if (age >= 1 && age <= 2) return PDRI_ENERGY_PROTEIN['1-2'][g];
     if (age >= 3 && age <= 5) return PDRI_ENERGY_PROTEIN['3-5'][g];
@@ -54,7 +54,7 @@ const WHO_WFA_MEDIAN = {
  * @returns {number|null} 
  */
 export const getWHOMedianWeight = (ageMonths, gender) => {
-    const g = gender.toLowerCase() === 'male' ? 'male' : 'female';
+    const g = (gender && String(gender).toLowerCase() === 'male') ? 'male' : 'female';
     const nearestMonth = Object.keys(WHO_WFA_MEDIAN[g]).reduce((prev, curr) => {
         return (Math.abs(curr - ageMonths) < Math.abs(prev - ageMonths) ? curr : prev);
     });

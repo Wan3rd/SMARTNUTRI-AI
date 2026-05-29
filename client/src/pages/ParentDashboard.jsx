@@ -45,6 +45,21 @@ export default function ParentDashboard() {
     }, []);
 
     useEffect(() => {
+        const handleLogReviewed = (e) => {
+            if (selectedProfile && e.detail?.childName === selectedProfile.child_name) {
+                console.log("[Dashboard] Real-time review event received, updating active logs...");
+                fetchLogs();
+                fetchDailyLog();
+            }
+        };
+
+        window.addEventListener('meal-log-reviewed', handleLogReviewed);
+        return () => {
+            window.removeEventListener('meal-log-reviewed', handleLogReviewed);
+        };
+    }, [selectedProfile?.id, filterTab]);
+
+    useEffect(() => {
         const loadDashboardData = async () => {
             if (selectedProfile) {
                 await Promise.all([fetchLogs(), fetchRules(), fetchDailyLog()]);

@@ -88,14 +88,14 @@ router.get('/search', verifyToken, async (req, res) => {
 
         // Map to consistent format for Frontend
         const formatted = recipes.map(r => ({
-            id: r.uri.split('#recipe_')[1], // Extract ID from URI
+            id: r.uri ? (r.uri.split('#recipe_')[1] || r.uri.split('#')[1] || r.uri) : 'unknown',
             title: r.label,
-            image: r.images.REGULAR?.url || r.image, // Edamam image
+            image: r.images?.REGULAR?.url || r.image, // Safe image fallback
             nutrition: {
-                calories: Math.round(r.calories / r.yield),
-                protein: Math.round(r.totalNutrients.PROCNT.quantity / r.yield) + 'g',
-                carbs: Math.round(r.totalNutrients.CHOCDF.quantity / r.yield) + 'g',
-                fat: Math.round(r.totalNutrients.FAT.quantity / r.yield) + 'g',
+                calories: Math.round((r.calories || 0) / (r.yield || 1)),
+                protein: Math.round((r.totalNutrients?.PROCNT?.quantity || 0) / (r.yield || 1)) + 'g',
+                carbs: Math.round((r.totalNutrients?.CHOCDF?.quantity || 0) / (r.yield || 1)) + 'g',
+                fat: Math.round((r.totalNutrients?.FAT?.quantity || 0) / (r.yield || 1)) + 'g',
             }
         }));
 
@@ -162,22 +162,22 @@ router.get('/:id', verifyToken, async (req, res) => {
         // Format to match old Spoonacular structure for Frontend compatibility
         const formatted = {
             title: r.label,
-            image: r.images.LARGE?.url || r.image,
+            image: r.images?.LARGE?.url || r.images?.REGULAR?.url || r.image,
             readyInMinutes: r.totalTime || 15,
             servings: r.yield,
             summary: "Delicious healthy recipe from Edamam.",
-            extendedIngredients: r.ingredientLines.map((line, i) => ({ id: i, original: line })),
+            extendedIngredients: (r.ingredientLines || []).map((line, i) => ({ id: i, original: line })),
             instructions: `See full instructions at: ${r.url}`,
             sourceUrl: r.url,
             nutrition: {
                 nutrients: [
-                    { name: 'Calories', amount: Math.round(r.calories / r.yield), unit: 'kcal' },
-                    { name: 'Protein', amount: Math.round(r.totalNutrients.PROCNT.quantity / r.yield), unit: 'g' },
-                    { name: 'Carbohydrates', amount: Math.round(r.totalNutrients.CHOCDF?.quantity / r.yield || 0), unit: 'g' },
-                    { name: 'Fat', amount: Math.round(r.totalNutrients.FAT?.quantity / r.yield || 0), unit: 'g' },
-                    { name: 'Fiber', amount: Math.round(r.totalNutrients.FIBTG?.quantity / r.yield || 0), unit: 'g' },
-                    { name: 'Sugar', amount: Math.round(r.totalNutrients.SUGAR?.quantity / r.yield || 0), unit: 'g' },
-                    { name: 'Sodium', amount: Math.round(r.totalNutrients.NA?.quantity / r.yield || 0), unit: 'mg' },
+                    { name: 'Calories', amount: Math.round((r.calories || 0) / (r.yield || 1)), unit: 'kcal' },
+                    { name: 'Protein', amount: Math.round((r.totalNutrients?.PROCNT?.quantity || 0) / (r.yield || 1)), unit: 'g' },
+                    { name: 'Carbohydrates', amount: Math.round((r.totalNutrients?.CHOCDF?.quantity || 0) / (r.yield || 1)), unit: 'g' },
+                    { name: 'Fat', amount: Math.round((r.totalNutrients?.FAT?.quantity || 0) / (r.yield || 1)), unit: 'g' },
+                    { name: 'Fiber', amount: Math.round((r.totalNutrients?.FIBTG?.quantity || 0) / (r.yield || 1)), unit: 'g' },
+                    { name: 'Sugar', amount: Math.round((r.totalNutrients?.SUGAR?.quantity || 0) / (r.yield || 1)), unit: 'g' },
+                    { name: 'Sodium', amount: Math.round((r.totalNutrients?.NA?.quantity || 0) / (r.yield || 1)), unit: 'mg' },
                 ]
             }
         };
@@ -315,11 +315,11 @@ router.post('/generate', verifyToken, async (req, res) => {
                                 date: date,
                                 meal_type: t.type,
                                 recipe_name: r.label,
-                                calories: Math.round(r.calories / r.yield),
-                                protein_g: Math.round((r.totalNutrients.PROCNT?.quantity || 0) / r.yield),
-                                carbs_g: Math.round((r.totalNutrients.CHOCDF?.quantity || 0) / r.yield),
-                                fats_g: Math.round((r.totalNutrients.FAT?.quantity || 0) / r.yield),
-                                image_url: r.images.SMALL?.url || r.image,
+                                calories: Math.round((r.calories || 0) / (r.yield || 1)),
+                                protein_g: Math.round((r.totalNutrients?.PROCNT?.quantity || 0) / (r.yield || 1)),
+                                carbs_g: Math.round((r.totalNutrients?.CHOCDF?.quantity || 0) / (r.yield || 1)),
+                                fats_g: Math.round((r.totalNutrients?.FAT?.quantity || 0) / (r.yield || 1)),
+                                image_url: r.images?.SMALL?.url || r.images?.REGULAR?.url || r.image,
                                 recipe_id: recipeId
                             }
                         });
@@ -432,11 +432,11 @@ router.post('/generate/day', verifyToken, async (req, res) => {
                             date: new Date(targetDateStr),
                             meal_type: t.type,
                             recipe_name: r.label,
-                            calories: Math.round(r.calories / r.yield),
-                            protein_g: Math.round((r.totalNutrients.PROCNT?.quantity || 0) / r.yield),
-                            carbs_g: Math.round((r.totalNutrients.CHOCDF?.quantity || 0) / r.yield),
-                            fats_g: Math.round((r.totalNutrients.FAT?.quantity || 0) / r.yield),
-                            image_url: r.images.SMALL?.url || r.image,
+                            calories: Math.round((r.calories || 0) / (r.yield || 1)),
+                            protein_g: Math.round((r.totalNutrients?.PROCNT?.quantity || 0) / (r.yield || 1)),
+                            carbs_g: Math.round((r.totalNutrients?.CHOCDF?.quantity || 0) / (r.yield || 1)),
+                            fats_g: Math.round((r.totalNutrients?.FAT?.quantity || 0) / (r.yield || 1)),
+                            image_url: r.images?.SMALL?.url || r.images?.REGULAR?.url || r.image,
                             recipe_id: recipeId
                         }
                     });

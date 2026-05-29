@@ -425,8 +425,9 @@ export const revalidateProfileLogs = async (prisma, profileId) => {
 
         for (const log of dayLogs) {
             const result = checkCompliance(log, rules, dailyTotals, allergies);
+            const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
+            const kcal = analysis ? (analysis.total_calories_est || analysis.nutrition?.calories || 0) : 0;
 
-            
             // Collect the update
             updates.push(prisma.meal_logs.update({
                 where: { id: log.id },
@@ -434,19 +435,18 @@ export const revalidateProfileLogs = async (prisma, profileId) => {
                     compliance_status: result.status,
                     compliance_score: result.compliance_score,
                     violation_details: result.details,
-                    total_calories: log.total_calories || result.total_calories || 0 // Keep existing or use calc
+                    total_calories: log.total_calories || kcal || 0 // Keep existing or use calc fallback
                 }
             }));
 
             // Update daily totals for the NEXT log of the same day
-            const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
             if (analysis) {
-                dailyTotals.calories += (log.total_calories || 0);
-                dailyTotals.protein += (log.total_protein_g || 0);
-                dailyTotals.carbs += (log.total_carbs_g || 0);
-                dailyTotals.fat += (log.total_fat_g || 0);
-                dailyTotals.sugar += (log.total_sugar_g || 0);
-                dailyTotals.sodium += (log.total_sodium_mg || 0);
+                dailyTotals.calories += (log.total_calories || kcal || 0);
+                dailyTotals.protein += (log.total_protein_g || analysis.macros_est?.protein_g || 0);
+                dailyTotals.carbs += (log.total_carbs_g || analysis.macros_est?.carbs_g || 0);
+                dailyTotals.fat += (log.total_fat_g || analysis.macros_est?.fat_g || 0);
+                dailyTotals.sugar += (log.total_sugar_g || analysis.macros_est?.sugar_g || 0);
+                dailyTotals.sodium += (log.total_sodium_mg || analysis.macros_est?.sodium_mg || 0);
             }
         }
     }

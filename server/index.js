@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import prisma from './lib/prisma.js';
 import cookieParser from 'cookie-parser';
 import config from '../env_config.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profiles.js';
@@ -23,6 +25,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const server = createServer(app);
 
 // Middleware
 const allowedOrigins = [
@@ -30,6 +33,34 @@ const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:3000"
 ];
+
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+        credentials: true
+    }
+});
+
+io.on('connection', (socket) => {
+    console.log(`[Socket.io] New client connected: ${socket.id}`);
+
+    socket.on('join', (userId) => {
+        if (userId) {
+            socket.join(userId);
+            console.log(`[Socket.io] Socket ${socket.id} joined room (userId): ${userId}`);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+    });
+});
+
+// Expose io instance to all express request routers
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -93,7 +124,7 @@ app.get('/', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 
     // KEEP-ALIVE: Self-ping every 14 minutes to prevent Render spin-down

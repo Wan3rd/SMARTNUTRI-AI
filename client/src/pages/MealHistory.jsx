@@ -50,6 +50,21 @@ export default function MealHistory() {
     }, [selectedProfile?.id, profileLoading]);
 
     useEffect(() => {
+        const handleLogReviewed = (e) => {
+            if (selectedProfile && e.detail?.childName === selectedProfile.child_name) {
+                console.log("[MealHistory] Real-time review event received, updating history logs...");
+                fetchLogs();
+                fetchRules();
+            }
+        };
+
+        window.addEventListener('meal-log-reviewed', handleLogReviewed);
+        return () => {
+            window.removeEventListener('meal-log-reviewed', handleLogReviewed);
+        };
+    }, [selectedProfile?.id]);
+
+    useEffect(() => {
         applyFilters();
     }, [logs, statusFilter, complianceFilter, searchQuery, dateRange]);
 

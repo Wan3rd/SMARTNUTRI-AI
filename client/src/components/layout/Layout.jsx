@@ -9,6 +9,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
 import { useMealLoggerStore } from '../../context/MealLoggerContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import { io } from 'socket.io-client';
 
 export function Layout({ children }) {
     const { user } = useAuth();
@@ -20,6 +22,54 @@ export function Layout({ children }) {
     const { selectedProfile } = useProfile();
     const { setAutoOpenWebcam, setAutoQuickLog } = useMealLoggerStore();
     const [fabMenuOpen, setFabMenuOpen] = useState(false);
+    const { showNotification } = useNotification();
+
+    useEffect(() => {
+        if (!user) return;
+
+        // Secure connection path: localhost construct fallback or production origin
+        const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5000' 
+            : window.location.origin;
+
+        console.log(`[WebSocket] Connecting to SmartNutri-AI backend: ${socketUrl}`);
+        const socket = io(socketUrl, {
+            withCredentials: true
+        });
+
+        socket.on('connect', () => {
+            console.log('[WebSocket] Connection established successfully! Socket ID:', socket.id);
+            // Join user-specific private room
+            socket.emit('join', user.id);
+        });
+
+        // Listen for targeted clinical review alerts
+        socket.on('meal-review-updated', (data) => {
+            console.log('[WebSocket] Real-time review alert received:', data);
+            
+            const actionText = data.status === 'verified' 
+                ? 'verified' 
+                : (data.status === 'rejected' ? 'flagged for correction' : 'reviewed');
+                
+            const alertType = data.status === 'rejected' ? 'error' : (data.status === 'verified' ? 'success' : 'info');
+            const messageText = `${data.childName}'s ${data.mealCategory} has been ${actionText} by your nutritionist.`;
+            
+            showNotification(messageText, alertType, 6000);
+
+            // Dispatch global event for instant background dashboard reloads
+            const event = new CustomEvent('meal-log-reviewed', { detail: data });
+            window.dispatchEvent(event);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('[WebSocket] Client disconnected from server');
+        });
+
+        return () => {
+            console.log('[WebSocket] Disconnecting client socket...');
+            socket.disconnect();
+        };
+    }, [user, showNotification]);
 
     useEffect(() => {
         const handleResize = () => {

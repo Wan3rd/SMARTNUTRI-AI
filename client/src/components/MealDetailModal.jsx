@@ -212,7 +212,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 onClick={(e) => e.stopPropagation()}
             >
                 {(isResubmitting || isDeleting) && (
-                    <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden sm:rounded-[2.5rem]">
+                    <div className="fixed inset-0 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-xl z-[60] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden">
                         {/* Ambient Glowing Orbs */}
                         <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[60px] animate-pulse" />
                         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />

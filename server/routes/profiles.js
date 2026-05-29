@@ -8,6 +8,20 @@ import { logAuditAction } from '../lib/auditLogger.js';
 
 const router = express.Router();
 
+const safeParseInt = (val) => {
+    if (val === null || val === '') return null;
+    if (val === undefined) return undefined;
+    const parsed = parseInt(val);
+    return isNaN(parsed) ? null : parsed;
+};
+
+const safeParseFloat = (val) => {
+    if (val === null || val === '') return null;
+    if (val === undefined) return undefined;
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? null : parsed;
+};
+
 // Get all profiles for logged in user
 router.get('/', verifyToken, async (req, res) => {
     try {
@@ -35,20 +49,20 @@ router.post('/', verifyToken, async (req, res) => {
 
     try {
         // Biometric Validation
-        if (date_of_birth) {
+        if (date_of_birth && date_of_birth !== '') {
             const dob = new Date(date_of_birth);
             if (isNaN(dob.getTime())) return res.status(400).json({ message: 'Invalid date_of_birth format' });
             if (dob > new Date()) return res.status(400).json({ message: 'date_of_birth cannot be in the future' });
         }
-        if (height_cm !== undefined && height_cm !== null) {
+        if (height_cm !== undefined && height_cm !== null && height_cm !== '') {
             const h = parseFloat(height_cm);
             if (isNaN(h) || h < 10 || h > 250) return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
         }
-        if (weight_kg !== undefined && weight_kg !== null) {
+        if (weight_kg !== undefined && weight_kg !== null && weight_kg !== '') {
             const w = parseFloat(weight_kg);
             if (isNaN(w) || w < 1 || w > 300) return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
         }
-        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null) {
+        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null && bristol_stool_scale !== '') {
             const bss = parseInt(bristol_stool_scale);
             if (isNaN(bss) || bss < 1 || bss > 7) return res.status(400).json({ message: 'bristol_stool_scale must be between 1 and 7' });
         }
@@ -58,10 +72,10 @@ router.post('/', verifyToken, async (req, res) => {
                 data: {
                     users: { connect: { id: req.user.id } },
                     child_name,
-                    date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
+                    date_of_birth: (date_of_birth && date_of_birth !== '') ? new Date(date_of_birth) : null,
                     gender,
-                    height_cm: height_cm ? parseFloat(height_cm) : null,
-                    weight_kg: weight_kg ? parseFloat(weight_kg) : null,
+                    height_cm: (height_cm && height_cm !== '') ? parseFloat(height_cm) : null,
+                    weight_kg: (weight_kg && weight_kg !== '') ? parseFloat(weight_kg) : null,
                     allergies: Array.isArray(allergies)
                         ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
                         : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []),
@@ -69,13 +83,13 @@ router.post('/', verifyToken, async (req, res) => {
                     vaccinations: typeof vaccinations === 'string' ? vaccinations : null, // Legacy support
                     medications,
                     weigh_in_conditions,
-                    bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : null,
+                    bristol_stool_scale: (bristol_stool_scale && bristol_stool_scale !== '') ? parseInt(bristol_stool_scale) : null,
                     medical_history: medical_history || '',
                     family_history: family_history || '',
                     food_intolerances: food_intolerances || '',
                     symptoms: symptoms || '',
                     lifestyle_factors: lifestyle_factors || '',
-                    waist_circumference: waist_circumference ? parseFloat(waist_circumference) : null,
+                    waist_circumference: (waist_circumference && waist_circumference !== '') ? parseFloat(waist_circumference) : null,
                     weighing_time,
                     is_fasting: is_fasting || false,
                     is_post_voiding: is_post_voiding || false
@@ -122,20 +136,20 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     try {
         // Biometric Validation
-        if (date_of_birth) {
+        if (date_of_birth && date_of_birth !== '') {
             const dob = new Date(date_of_birth);
             if (isNaN(dob.getTime())) return res.status(400).json({ message: 'Invalid date_of_birth format' });
             if (dob > new Date()) return res.status(400).json({ message: 'date_of_birth cannot be in the future' });
         }
-        if (height_cm !== undefined && height_cm !== null) {
+        if (height_cm !== undefined && height_cm !== null && height_cm !== '') {
             const h = parseFloat(height_cm);
             if (isNaN(h) || h < 10 || h > 250) return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
         }
-        if (weight_kg !== undefined && weight_kg !== null) {
+        if (weight_kg !== undefined && weight_kg !== null && weight_kg !== '') {
             const w = parseFloat(weight_kg);
             if (isNaN(w) || w < 1 || w > 300) return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
         }
-        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null) {
+        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null && bristol_stool_scale !== '') {
             const bss = parseInt(bristol_stool_scale);
             if (isNaN(bss) || bss < 1 || bss > 7) return res.status(400).json({ message: 'bristol_stool_scale must be between 1 and 7' });
         }
@@ -157,30 +171,30 @@ router.put('/:id', verifyToken, async (req, res) => {
             },
             data: {
                 child_name,
-                date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+                date_of_birth: (date_of_birth === null || date_of_birth === '') ? null : (date_of_birth !== undefined ? new Date(date_of_birth) : undefined),
                 gender,
-                height_cm: height_cm ? parseFloat(height_cm) : undefined,
-                weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
+                height_cm: safeParseFloat(height_cm),
+                weight_kg: safeParseFloat(weight_kg),
                 allergies: allergies !== undefined
                     ? (Array.isArray(allergies)
                         ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
                         : (allergies ? String(allergies).split(',').map(s => s.trim()).filter(Boolean) : []))
                     : undefined,
                 dietary_preferences,
-                calories_target: calories_target ? parseInt(calories_target) : undefined,
-                protein_target: protein_target ? parseInt(protein_target) : undefined,
-                carbs_target: carbs_target ? parseInt(carbs_target) : undefined,
-                fat_target: fat_target ? parseInt(fat_target) : undefined,
+                calories_target: safeParseInt(calories_target),
+                protein_target: safeParseInt(protein_target),
+                carbs_target: safeParseInt(carbs_target),
+                fat_target: safeParseInt(fat_target),
                 vaccinations,
                 medications,
                 weigh_in_conditions,
-                bristol_stool_scale: bristol_stool_scale ? parseInt(bristol_stool_scale) : undefined,
+                bristol_stool_scale: safeParseInt(bristol_stool_scale),
                 medical_history,
                 family_history,
                 food_intolerances,
                 symptoms,
                 lifestyle_factors,
-                waist_circumference: waist_circumference ? parseFloat(waist_circumference) : undefined,
+                waist_circumference: safeParseFloat(waist_circumference),
                 weighing_time,
                 is_fasting: is_fasting !== undefined ? is_fasting : undefined,
                 is_post_voiding: is_post_voiding !== undefined ? is_post_voiding : undefined

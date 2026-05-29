@@ -129,7 +129,7 @@ function normalCDF(x) {
  * Gets growth clinical status based on WHO Z-scores
  */
 export const getGrowthStatus = (ageMonths, gender, weightKg, heightCm) => {
-    const g = gender.toLowerCase() === 'male' ? 'male' : 'female';
+    const g = (gender && String(gender).toLowerCase() === 'male') ? 'male' : 'female';
     
     const wfaData = interpolateLMS(ageMonths, WFA_LMS[g]);
     const hfaData = interpolateLMS(ageMonths, HFA_LMS[g]);

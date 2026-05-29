@@ -638,9 +638,12 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
             select: { 
                 profile_id: true, 
                 logged_at: true,
+                meal_category: true,
                 profiles: {
                     select: {
-                        allergies: true
+                        allergies: true,
+                        child_name: true,
+                        user_id: true
                     }
                 }
             }
@@ -717,6 +720,18 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
                 total_sodium_mg: macros.sodium_mg || 0
             }
         });
+
+        // Emit real-time WebSocket alert to the parent's private room
+        if (req.io && log.profiles?.user_id) {
+            req.io.to(log.profiles.user_id).emit('meal-review-updated', {
+                logId: req.params.id,
+                childName: log.profiles.child_name,
+                mealCategory: log.meal_category || 'Meal',
+                status: status || 'reviewed',
+                comment: nutritionist_review?.comment || ''
+            });
+        }
+
         res.json(updatedLog);
     } catch (err) {
         console.error(err);
@@ -737,7 +752,17 @@ router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res)
         // Fetch all logs in the batch to get their profile IDs
         const logs = await prisma.meal_logs.findMany({
             where: { id: { in: logIds } },
-            select: { id: true, profile_id: true }
+            select: { 
+                id: true, 
+                profile_id: true,
+                meal_category: true,
+                profiles: {
+                    select: {
+                        child_name: true,
+                        user_id: true
+                    }
+                }
+            }
         });
 
         if (logs.length === 0) {
@@ -758,6 +783,21 @@ router.patch('/logs/batch-verify', verifyToken, isNutritionist, async (req, res)
             where: { id: { in: verifiedIds } },
             data: { status: 'verified' }
         });
+
+        // Emit real-time WebSocket alert for each batch-verified log to the parents
+        if (req.io) {
+            logs.forEach(l => {
+                if (l.profiles?.user_id) {
+                    req.io.to(l.profiles.user_id).emit('meal-review-updated', {
+                        logId: l.id,
+                        childName: l.profiles.child_name,
+                        mealCategory: l.meal_category || 'Meal',
+                        status: 'verified',
+                        comment: 'Batch verified by clinician'
+                    });
+                }
+            });
+        }
 
         res.json({ message: 'Logs verified successfully', verifiedCount: verifiedIds.length });
     } catch (err) {

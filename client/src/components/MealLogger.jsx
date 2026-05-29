@@ -620,7 +620,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
         <Card ref={cardRef} className={`border-2 border-[var(--color-primary)]/20 relative overflow-hidden transition-all duration-500 ${(status === 'saving' || status === 'syncing') ? 'min-h-[480px]' : ''}`}>
             <CardContent className="p-0">
                 {(status === 'saving' || status === 'syncing') && (
-                    <div className="absolute inset-0 bg-zinc-50/90 dark:bg-zinc-950/95 backdrop-blur-2xl z-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500 select-none overflow-hidden rounded-xl border border-[var(--color-primary)]/20 shadow-2xl">
+                    <div className="absolute inset-0 bg-zinc-50/90 dark:bg-zinc-950/95 backdrop-blur-2xl z-20 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500 select-none overflow-hidden rounded-xl border border-[var(--color-primary)]/20 shadow-2xl">
                         {/* Glassmorphic Grid Pattern Overlay */}
                         <div className="absolute inset-0 opacity-15 dark:opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
 

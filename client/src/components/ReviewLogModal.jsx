@@ -84,9 +84,16 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [isOpen]);
 
     useEffect(() => {
+        if (!isOpen) {
+            setNotif({ show: false, message: '', type: 'success' });
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
         if (log) {
             setReview(log.nutritionist_review?.comment || '');
             setEditedAnalysis(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+            setNotif({ show: false, message: '', type: 'success' });
         }
     }, [log]);
 
@@ -136,9 +143,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 status: 'verified'
             });
             showNotif("Meal log successfully verified", "success");
+            
+            // Premium Sequence: Close modal first, then update background data after animation
             setTimeout(() => {
-                onReviewComplete?.();
                 onClose();
+                setTimeout(() => {
+                    onReviewComplete?.();
+                }, 300); // Wait for exit animation to complete
             }, 1000);
         } catch (err) {
             console.error("Failed to submit review", err);
@@ -183,9 +194,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 status: 'rejected'
             });
             showNotif("Meal log rejected", "info");
+            
+            // Premium Sequence: Close modal first, then update background data after animation
             setTimeout(() => {
-                onReviewComplete?.();
                 onClose();
+                setTimeout(() => {
+                    onReviewComplete?.();
+                }, 300); // Wait for exit animation to complete
             }, 1000);
         } catch (err) {
             console.error("Failed to reject log", err);
@@ -704,8 +719,6 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                         </div>
                     </div>
                 </motion.div>
-            </div>
-
             {/* Image Preview Overlay */}
             <AnimatePresence>
                 {previewImage && (
@@ -781,6 +794,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
                 isDestructive={true}
             />
+            </div>
         </AnimatePresence>
     );
 }

@@ -147,8 +147,8 @@ export const generateText = async (prompt) => {
  */
 export const analyzeMealImage = async (imageBase64, prompt) => {
     const raw = await callGemini(prompt, imageBase64);
-    // Extract JSON from markdown if present
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    // Extract JSON array or object from markdown if present
+    const jsonMatch = raw.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Failed to parse AI output as JSON");
     return JSON.parse(jsonMatch[0]);
 };
