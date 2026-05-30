@@ -120,15 +120,15 @@ export default function ParentDashboard() {
 
     const handleQuickWaterChange = async (action) => {
         if (!selectedProfile) return;
-        
+
         // Optimistic UI update
         const prevGlasses = dailyLog?.water_intake_glasses || 0;
         let newGlasses = prevGlasses;
         if (action === 'increment') newGlasses += 1;
         else if (action === 'decrement' && prevGlasses > 0) newGlasses -= 1;
-        
+
         setDailyLog(prev => ({ ...prev, water_intake_glasses: newGlasses }));
-        
+
         try {
             await api.post('/progress/water', { action, profileId: selectedProfile.id });
         } catch (err) {
@@ -185,7 +185,7 @@ export default function ParentDashboard() {
 
         const isMax = rule.rule_type?.toLowerCase() === 'max';
         const percentage = Math.min((current / goal) * 100, 100);
-        
+
         let barColor = 'bg-gradient-to-r from-emerald-500 to-green-400';
         let badgeStyle = '';
         let badgeLabel = '';
@@ -232,13 +232,13 @@ export default function ParentDashboard() {
                             <span className="text-[10px] text-red-500 font-bold animate-pulse">⚠️ OVER</span>
                         )}
                     </div>
-                    <span className={cn("text-xs sm:text-sm font-black tabular-nums flex items-baseline gap-0.5", 
-                        (isMax && current > goal) ? 'text-red-500 font-extrabold' : 
-                        (!isMax && current >= goal) ? 'text-emerald-500' : 'text-[var(--color-primary)]'
+                    <span className={cn("text-xs sm:text-sm font-black tabular-nums flex items-baseline gap-0.5",
+                        (isMax && current > goal) ? 'text-red-500 font-extrabold' :
+                            (!isMax && current >= goal) ? 'text-emerald-500' : 'text-[var(--color-primary)]'
                     )}>
-                        {formatValue(current, user?.nutrient_precision)} 
-                        <span className="opacity-50 text-[10px] px-0.5">/</span> 
-                        {formatValue(goal, user?.nutrient_precision)} 
+                        {formatValue(current, user?.nutrient_precision)}
+                        <span className="opacity-50 text-[10px] px-0.5">/</span>
+                        {formatValue(goal, user?.nutrient_precision)}
                         <span className="text-[10px] opacity-70 uppercase pl-0.5">{unit}</span>
                     </span>
                 </div>
@@ -272,17 +272,17 @@ export default function ParentDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left: Logger & Clinical Target */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="lg:col-span-7 space-y-4">
 
                     {selectedProfile && (
-                        <MealLogger 
-                            key={selectedProfile.id} 
-                            profileId={selectedProfile.id} 
+                        <MealLogger
+                            key={selectedProfile.id}
+                            profileId={selectedProfile.id}
                             onLogged={() => {
                                 fetchLogs();
                                 fetchDailyLog();
                             }}
-                            recentLogs={recentLogs} 
+                            recentLogs={recentLogs}
                             allergies={selectedProfile.allergies || []}
                         />
                     )}
@@ -306,7 +306,7 @@ export default function ParentDashboard() {
                                 {rules.length > 0 && renderProgressBar('Sodium', todayIntake.sodium, getRuleForCategory('sodium'), 'mg')}
                                 {rules.length > 0 && renderProgressBar('Sugar', todayIntake.sugar, getRuleForCategory('sugar'), 'g')}
                                 {rules.length > 0 && renderProgressBar('Fats', todayIntake.fat, getRuleForCategory('fats'), 'g')}
-                                
+
                                 {rules.length === 0 && (
                                     <div className="p-4 bg-zinc-50 dark:bg-white/[0.02] rounded-2xl border-2 border-dashed border-[var(--color-divider)] text-center">
                                         <p className="text-[9px] text-[var(--color-text-muted)] font-black uppercase tracking-widest">No other clinical targets prescribed</p>
@@ -318,7 +318,7 @@ export default function ParentDashboard() {
                 </div>
 
                 {/* Right: Insights & Expert Feedback */}
-                <div className="lg:col-span-5 space-y-6">
+                <div className="lg:col-span-5 space-y-4">
                     {/* Assigned Nutritionist Card */}
                     <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm group hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5">
                         <CardContent className="p-0">
@@ -328,7 +328,7 @@ export default function ParentDashboard() {
                                     <BadgeCheck size={12} className="text-white" />
                                 </div>
                             </div>
-                             <div className="p-4 sm:p-5 flex flex-row items-center gap-4">
+                            <div className="p-4 sm:p-5 flex flex-row items-center gap-4">
                                 <div className="relative flex-shrink-0">
                                     <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center shadow-inner relative z-10">
                                         {assignedNutritionist?.profile_image_url ? (
@@ -355,7 +355,7 @@ export default function ParentDashboard() {
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="px-5 pb-5">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                                     <div className="flex items-center gap-2.5 p-2 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)]">
@@ -375,6 +375,14 @@ export default function ParentDashboard() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Section Label */}
+                    <div className="flex items-center gap-2 px-1 pt-1">
+                        <Activity size={13} className="text-[var(--color-primary)] shrink-0" />
+                        <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">
+                            Clinical Development Tracking &amp; Expert Logs
+                        </p>
+                    </div>
 
                     {/* Tab Switcher */}
                     <div className="flex p-1.5 bg-[var(--color-divider)] dark:bg-white/5 rounded-[22px] border border-[var(--color-divider)] shadow-inner">
@@ -410,14 +418,14 @@ export default function ParentDashboard() {
                                 {allLogs.length > 0 && (
                                     <Card className={cn(
                                         "border-2 border-[var(--color-divider)] relative overflow-hidden rounded-[2rem] shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5 p-6 sm:p-8",
-                                        (latestMeal?.compliance_score || 100) >= 80 
-                                            ? 'dark:border-emerald-500/20 dark:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)]' 
+                                        (latestMeal?.compliance_score || 100) >= 80
+                                            ? 'dark:border-emerald-500/20 dark:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)]'
                                             : 'dark:border-amber-500/20 dark:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)]'
                                     )}>
                                         <div className={cn(
                                             "absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-500 bg-gradient-to-br",
-                                            (latestMeal?.compliance_score || 100) >= 80 
-                                                ? 'from-emerald-500/[0.02] to-teal-500/[0.01]' 
+                                            (latestMeal?.compliance_score || 100) >= 80
+                                                ? 'from-emerald-500/[0.02] to-teal-500/[0.01]'
                                                 : 'from-amber-500/[0.02] to-orange-500/[0.01]'
                                         )} />
                                         <div className="absolute inset-0 opacity-0 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
@@ -427,11 +435,11 @@ export default function ParentDashboard() {
                                                 {/* Background soft pulse aura */}
                                                 <div className={cn(
                                                     "absolute inset-2 rounded-full blur-[20px] transition-all duration-1000",
-                                                    (latestMeal?.compliance_score || 100) >= 80 
-                                                        ? 'bg-emerald-500/20 dark:bg-emerald-500/10 animate-pulse' 
+                                                    (latestMeal?.compliance_score || 100) >= 80
+                                                        ? 'bg-emerald-500/20 dark:bg-emerald-500/10 animate-pulse'
                                                         : 'bg-amber-500/20 dark:bg-amber-500/10 animate-pulse'
                                                 )} />
-                                                
+
                                                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                                                     {/* Outer Dotted rotating HUD line */}
                                                     <circle
@@ -496,7 +504,7 @@ export default function ParentDashboard() {
                                                         {(latestMeal?.compliance_score || 100) >= 80 ? 'Optimal Intake Level' : 'Review & Adjust Plan'}
                                                     </h4>
                                                     <p className="text-xs font-medium text-[var(--color-text-muted)] mt-1.5 leading-relaxed max-w-sm">
-                                                        {(latestMeal?.compliance_score || 100) >= 80 
+                                                        {(latestMeal?.compliance_score || 100) >= 80
                                                             ? 'Your child is maintaining outstanding compliance with all active nutritionist goals and clinical parameters today.'
                                                             : 'Some intake indicators have departed from standard clinical targets. Check details and recommendations below.'}
                                                     </p>
@@ -517,33 +525,33 @@ export default function ParentDashboard() {
                                     const waterRule = getRuleForCategory('water') || { rule_value: 1500, rule_type: 'min' };
                                     const goalMl = parseFloat(waterRule.rule_value) || 1500;
                                     const hydrationPercentage = Math.min(Math.round((totalIntakeMl / goalMl) * 100), 100);
-                                    
+
                                     const convCurrent = convertWater(totalIntakeMl, user?.measurement_system);
                                     const convGoal = convertWater(goalMl, user?.measurement_system);
-                                    
+
                                     return (
                                         <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5 p-6 sm:p-8 relative">
                                             <div className="absolute inset-0 opacity-0 dark:opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--color-primary) 0.75px, transparent 0.75px)', backgroundSize: '12px 12px' }} />
                                             <CardContent className="p-0 flex flex-col sm:flex-row items-center gap-6 sm:gap-10 relative z-10">
-                                                
+
                                                 {/* Tumbler Water Glass Fluid Simulation */}
                                                 <div className="relative flex items-center justify-center shrink-0">
                                                     {/* Background light aura */}
                                                     <div className="absolute inset-[-10px] rounded-full blur-[25px] bg-sky-500/10 dark:bg-sky-500/5 animate-pulse" />
-                                                    
+
                                                     {/* Tumbler Cup Container */}
                                                     <div className="relative w-28 h-40 bg-[var(--color-bg-page)] dark:bg-slate-800/20 rounded-b-[2rem] rounded-t-lg border-[3.5px] border-slate-300 dark:border-slate-700/80 overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.06)] flex items-end">
-                                                        
+
                                                         {/* Animated wave elements container */}
-                                                        <div 
-                                                            className="w-full absolute bottom-0 left-0 transition-all duration-1000 ease-out" 
+                                                        <div
+                                                            className="w-full absolute bottom-0 left-0 transition-all duration-1000 ease-out"
                                                             style={{ height: `${hydrationPercentage}%` }}
                                                         >
                                                             {/* Slow overlapping wave */}
                                                             {hydrationPercentage > 0 && (
-                                                                <svg 
-                                                                    className="absolute top-[-23px] left-0 w-[200%] h-6 text-sky-400/40 dark:text-sky-500/30 fill-current animate-wave-slow pointer-events-none" 
-                                                                    viewBox="0 0 1200 120" 
+                                                                <svg
+                                                                    className="absolute top-[-23px] left-0 w-[200%] h-6 text-sky-400/40 dark:text-sky-500/30 fill-current animate-wave-slow pointer-events-none"
+                                                                    viewBox="0 0 1200 120"
                                                                     preserveAspectRatio="none"
                                                                 >
                                                                     <path d="M0,60 C150,100 350,20 500,60 C650,100 850,20 1000,60 C1150,100 1350,20 1500,60 L1500,120 L0,120 Z" />
@@ -551,9 +559,9 @@ export default function ParentDashboard() {
                                                             )}
                                                             {/* Fast wave */}
                                                             {hydrationPercentage > 0 && (
-                                                                <svg 
-                                                                    className="absolute top-[-23px] left-0 w-[300%] h-6 text-blue-500/60 dark:text-cyan-400/50 fill-current animate-wave-fast pointer-events-none" 
-                                                                    viewBox="0 0 1200 120" 
+                                                                <svg
+                                                                    className="absolute top-[-23px] left-0 w-[300%] h-6 text-blue-500/60 dark:text-cyan-400/50 fill-current animate-wave-fast pointer-events-none"
+                                                                    viewBox="0 0 1200 120"
                                                                     preserveAspectRatio="none"
                                                                 >
                                                                     <path d="M0,50 C100,20 250,80 400,50 C550,20 700,80 850,50 C1000,20 1150,80 1300,50 L1300,120 L0,120 Z" />
@@ -568,7 +576,7 @@ export default function ParentDashboard() {
                                                         <div className="absolute top-0 bottom-0 right-3 w-1.5 bg-white/10 dark:bg-white/5 blur-[0.5px] rounded-full pointer-events-none" />
                                                         <div className="absolute top-2 right-4 w-4 h-4 bg-white/25 dark:bg-white/10 blur-[1px] rounded-full pointer-events-none" />
                                                         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
-                                                        
+
                                                         {/* Dynamic HUD reading overlay */}
                                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20">
                                                             <div className="px-2.5 py-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-sm border border-white/40 dark:border-white/10 flex items-center justify-center">
@@ -593,8 +601,8 @@ export default function ParentDashboard() {
                                                             {hydrationPercentage >= 100 ? 'Optimal Hydration Reached!' : 'Daily Fluid Tracker'}
                                                         </h4>
                                                         <p className="text-xs font-semibold text-[var(--color-text-muted)] mt-2 leading-relaxed max-w-sm">
-                                                            {hydrationPercentage >= 100 
-                                                                ? 'Wonderful job! Your child has met or exceeded the daily recommended hydration goal. Keep it up!' 
+                                                            {hydrationPercentage >= 100
+                                                                ? 'Wonderful job! Your child has met or exceeded the daily recommended hydration goal. Keep it up!'
                                                                 : 'Fluids are vital for core metabolic functions and concentration. Use quick buttons below to add cups easily.'}
                                                         </p>
                                                     </div>
@@ -620,7 +628,7 @@ export default function ParentDashboard() {
                                                     {/* Quick Log Controls */}
                                                     <div className="flex flex-wrap items-center gap-3.5 pt-1">
                                                         <div className="flex items-center bg-[var(--color-bg-page)] dark:bg-slate-800/40 rounded-2xl p-1 border border-[var(--color-divider)] shrink-0">
-                                                            <motion.button 
+                                                            <motion.button
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => handleQuickWaterChange('decrement')}
                                                                 disabled={(dailyLog?.water_intake_glasses || 0) <= 0}
@@ -632,7 +640,7 @@ export default function ParentDashboard() {
                                                                 <span className="text-sm font-black text-[var(--color-text-main)] dark:text-white tabular-nums">{Math.round((totalIntakeMl / 250) * 10) / 10}</span>
                                                                 <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">glasses</span>
                                                             </div>
-                                                            <motion.button 
+                                                            <motion.button
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => handleQuickWaterChange('increment')}
                                                                 className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all border border-slate-200/50 dark:border-zinc-700/30 shadow-sm"
@@ -713,45 +721,44 @@ export default function ParentDashboard() {
                                             className="group cursor-pointer bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden hover:border-[var(--color-primary)] transition-all shadow-sm hover:shadow-xl hover:translate-y-[-2px]"
                                         >
                                             <div className="flex flex-col sm:flex-row">
-                                                <div className="w-full sm:w-32 h-48 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
+                                                <div className="w-full sm:w-32 h-32 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
                                                     <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                                     {(log.status === 'reviewed' || log.status === 'verified') && (
-                                                        <div className="absolute top-3 left-3 bg-green-500 text-white p-1.5 rounded-full shadow-lg border border-white/20">
-                                                            <CheckCircle2 size={12} />
+                                                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-green-500 text-white p-1 sm:p-1.5 rounded-full shadow-lg border border-white/20">
+                                                            <CheckCircle2 size={10} />
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="p-5 flex-1 flex flex-col justify-center min-w-0">
-                                                    <div className="flex justify-between items-start mb-1.5">
-                                                        <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
-                                                        <div className="flex gap-2">
+                                                <div className="p-3 sm:p-5 flex-1 flex flex-col justify-center min-w-0">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-tight">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
+                                                        <div className="flex gap-1.5 shrink-0 ml-1">
                                                             {log.compliance_status === 'flagged' && (
-                                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase bg-red-100 text-red-700 flex items-center gap-1">
-                                                                    <AlertCircle size={8} /> Flagged
+                                                                <span className="text-[7px] sm:text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-red-100 text-red-700 flex items-center gap-0.5">
+                                                                    <AlertCircle size={7} /> Flagged
                                                                 </span>
                                                             )}
-                                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${
-                                                                (log.status === 'reviewed' || log.status === 'verified') 
-                                                                    ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' 
-                                                                    : log.status === 'rejected'
-                                                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
-                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
-                                                            }`}>
+                                                            <span className={`text-[7px] sm:text-[8px] font-black px-1.5 sm:px-2 py-0.5 rounded-full uppercase ${(log.status === 'reviewed' || log.status === 'verified')
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400'
+                                                                : log.status === 'rejected'
+                                                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
+                                                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+                                                                }`}>
                                                                 {log.status === 'rejected' ? 'Correction Needed' : log.status}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <h4 className="text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-1 mb-1 group-hover:text-[var(--color-primary)] transition-colors">
+                                                    <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase line-clamp-1 mb-0.5 sm:mb-1 group-hover:text-[var(--color-primary)] transition-colors">
                                                         {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Evaluating...'}
                                                     </h4>
                                                     {log.compliance_status === 'flagged' && log.violation_details?.violations?.length > 0 && (
-                                                        <p className="text-[9px] font-black text-red-600 uppercase mb-1.5 flex items-center gap-1">
+                                                        <p className="text-[8px] sm:text-[9px] font-black text-red-600 uppercase mb-1 flex items-center gap-1">
                                                             Reason: {log.violation_details.violations[0].rule || log.violation_details.violations[0].rule_name}
                                                         </p>
                                                     )}
-                                                    <p className="text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-tight font-medium">
-                                                        {(log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected') 
-                                                            ? `"${log.nutritionist_review?.comment || 'Correction requested.'}"` 
+                                                    <p className="text-[10px] sm:text-[11px] text-[var(--color-text-muted)] italic line-clamp-2 leading-snug font-medium">
+                                                        {(log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected')
+                                                            ? `"${log.nutritionist_review?.comment || 'Correction requested.'}"`
                                                             : "Waiting for professional clinician review..."}
                                                     </p>
                                                 </div>

@@ -712,25 +712,31 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                         </div>
                     </div>
                 )}
-                <div className="bg-[var(--color-primary)]/5 p-4 flex items-center justify-between border-b border-[var(--color-primary)]/10 rounded-t-xl">
-                    <h3 className="font-bold text-[var(--color-secondary)] flex items-center gap-2">
-                        <Camera size={18} className="text-[var(--color-primary)]" />
-                        Log Child's Meal
+                <div className="bg-[var(--color-primary)]/5 px-3 sm:px-4 py-3 flex items-center justify-between border-b border-[var(--color-primary)]/10 rounded-t-xl gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-[var(--color-secondary)] flex items-center gap-1.5 shrink-0">
+                        <Camera size={15} className="text-[var(--color-primary)] sm:hidden" />
+                        <Camera size={18} className="text-[var(--color-primary)] hidden sm:block" />
+                        <span className="sm:hidden">Log Meal</span>
+                        <span className="hidden sm:inline">Log Child's Meal</span>
                     </h3>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 shrink-0">
                         {!showGuide && status === 'idle' && (
                             <button 
                                 onClick={() => {
                                     setShowGuide(true);
                                     localStorage.removeItem('smartnutri_hide_logger_guide');
                                 }} 
-                                className="text-[9px] font-black uppercase tracking-widest text-[var(--color-primary)] hover:underline flex items-center gap-0.5"
+                                className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[var(--color-primary)] hover:underline flex items-center gap-0.5"
                             >
-                                <Info size={11} /> Show Guide
+                                <Info size={10} className="sm:hidden" />
+                                <Info size={11} className="hidden sm:block" />
+                                <span className="hidden sm:inline">Show Guide</span>
+                                <span className="sm:hidden">Guide</span>
                             </button>
                         )}
-                        <span className="text-[10px] bg-[var(--color-primary)]/20 text-[var(--color-primary)] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                            Smart Care Verification
+                        <span className="text-[8px] sm:text-[10px] bg-[var(--color-primary)]/20 text-[var(--color-primary)] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-tighter whitespace-nowrap">
+                            <span className="sm:hidden">Verified ✓</span>
+                            <span className="hidden sm:inline">Smart Care Verification</span>
                         </span>
                     </div>
                 </div>

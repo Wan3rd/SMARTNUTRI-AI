@@ -290,12 +290,13 @@ export default function MealHistory() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
-                        <Calendar className="text-[var(--color-primary)]" /> Meal History
+                    <h1 className="text-xl md:text-3xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
+                        <Calendar size={20} className="text-[var(--color-primary)] md:hidden" />
+                        <Calendar size={28} className="text-[var(--color-primary)] hidden md:block" /> Meal History
                     </h1>
-                    <p className="text-[var(--color-text-muted)] mt-1">Complete tracking of all logged meals</p>
+                    <p className="text-xs md:text-sm text-[var(--color-text-muted)] mt-0.5 md:mt-1">Complete tracking of all logged meals</p>
                 </div>
                 {!showGuide && (
                     <button 
@@ -303,9 +304,12 @@ export default function MealHistory() {
                             setShowGuide(true);
                             localStorage.removeItem('smartnutri_hide_history_guide');
                         }}
-                        className="h-10 px-4 rounded-xl border border-[var(--color-divider)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-all flex items-center gap-1.5 bg-white dark:bg-white/5 select-none shrink-0"
+                        className="h-8 md:h-10 px-2.5 md:px-4 rounded-xl border border-[var(--color-divider)] text-[9px] md:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-all flex items-center gap-1 md:gap-1.5 bg-white dark:bg-white/5 select-none shrink-0 whitespace-nowrap"
                     >
-                        <Info size={13} /> Show Guide
+                        <Info size={11} className="md:hidden" />
+                        <Info size={13} className="hidden md:block" />
+                        <span className="md:hidden">Guide</span>
+                        <span className="hidden md:inline">Show Guide</span>
                     </button>
                 )}
             </div>
