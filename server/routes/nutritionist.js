@@ -641,7 +641,7 @@ router.get('/logs/pending', verifyToken, isNutritionist, async (req, res) => {
 
 // PATCH /logs/:id/review - Provide nutritionist feedback
 router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) => {
-    const { nutritionist_review, status } = req.body;
+    const { nutritionist_review, status, water_ml } = req.body;
 
     // --- Input Validation ---
     const VALID_REVIEW_STATUSES = ['reviewed', 'approved', 'rejected', 'verified'];
@@ -734,7 +734,8 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
                 total_carbs_g: macros.carbs_g || 0,
                 total_fat_g: macros.fat_g || 0,
                 total_sugar_g: macros.sugar_g || 0,
-                total_sodium_mg: macros.sodium_mg || 0
+                total_sodium_mg: macros.sodium_mg || 0,
+                water_ml: water_ml !== undefined ? (water_ml === null ? null : parseInt(water_ml)) : undefined
             }
         });
 

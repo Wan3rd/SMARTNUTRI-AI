@@ -14,6 +14,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [loading, setLoading] = useState(false);
     const [review, setReview] = useState('');
     const [editedAnalysis, setEditedAnalysis] = useState(null);
+    const [editedWater, setEditedWater] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [zoomScale, setZoomScale] = useState(1);
@@ -44,7 +45,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         const initialAnalysis = JSON.stringify(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
         const currentAnalysis = JSON.stringify(editedAnalysis);
 
-        return review !== initialReview || initialAnalysis !== currentAnalysis;
+        return review !== initialReview || initialAnalysis !== currentAnalysis || editedWater !== (log.water_ml || 0);
     };
 
     const handleDismiss = () => {
@@ -104,6 +105,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         if (log) {
             setReview(log.nutritionist_review?.comment || '');
             setEditedAnalysis(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+            setEditedWater(log.water_ml || 0);
             setNotif({ show: false, message: '', type: 'success' });
         }
     }, [log]);
@@ -151,7 +153,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     comment: review,
                     verified_analysis: editedAnalysis
                 },
-                status: 'verified'
+                status: 'verified',
+                water_ml: editedWater
             });
             showNotif("Meal log successfully verified", "success");
             
@@ -180,7 +183,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     comment: review,
                     verified_analysis: editedAnalysis
                 },
-                status: 'reviewed'
+                status: 'reviewed',
+                water_ml: editedWater
             });
             showNotif("Progress saved successfully", "success");
             onReviewComplete?.(); // Refresh data in background
@@ -202,7 +206,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     comment: review || "Nutritionist requested correction/clarification.",
                     verified_analysis: editedAnalysis
                 },
-                status: 'rejected'
+                status: 'rejected',
+                water_ml: editedWater
             });
             showNotif("Meal log rejected", "info");
             
@@ -528,18 +533,58 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             </motion.div>
 
                             <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4">
-                                {[
-                                    { icon: <Droplets size={16} />, label: "Water", value: log.water_ml ? `${log.water_ml}ml` : 'None', color: "#3b82f6" },
-                                    { icon: <Info size={16} />, label: "Tools", value: log.serving_spoon_used ? 'Standard Spoon' : 'Estimated', color: "#6366f1" },
-                                    { icon: <Activity size={16} />, label: "Exercise", value: log.physical_activity || 'None', color: "#f59e0b" }
-                                ].map((stat, i) => (
-                                    <div key={i} className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl transition-all shadow-lg shadow-black/5">
-                                        <p className="text-xs font-black uppercase mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: stat.color }}>
-                                            {stat.icon} {stat.label}
-                                        </p>
-                                        <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">{stat.value}</div>
+                                {/* Water Card */}
+                                <div className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl transition-all shadow-lg shadow-black/5">
+                                    <p className="text-xs font-black uppercase mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: "#3b82f6" }}>
+                                        <Droplets size={16} /> Water
+                                    </p>
+                                    {isEditing ? (
+                                        <select
+                                            value={editedWater}
+                                            onChange={(e) => setEditedWater(parseInt(e.target.value))}
+                                            className="w-full mt-1 bg-[var(--color-bg-card)] text-[var(--color-text-main)] text-xs font-black uppercase tracking-tight rounded-xl border-2 border-[var(--color-divider)] p-2 focus:border-[var(--color-primary)] outline-none transition-all cursor-pointer font-bold"
+                                        >
+                                            <option value={0}>0 Glasses (0 ml)</option>
+                                            <option value={250}>1 Glass (250 ml)</option>
+                                            <option value={500}>2 Glasses (500 ml)</option>
+                                            <option value={750}>3 Glasses (750 ml)</option>
+                                            <option value={1000}>4 Glasses (1000 ml)</option>
+                                            <option value={1250}>5 Glasses (1250 ml)</option>
+                                            <option value={1500}>6 Glasses (1500 ml)</option>
+                                            <option value={1750}>7 Glasses (1750 ml)</option>
+                                            <option value={2000}>8 Glasses (2000 ml)</option>
+                                            <option value={2250}>9 Glasses (2250 ml)</option>
+                                            <option value={2500}>10 Glasses (2500 ml)</option>
+                                            {![0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500].includes(editedWater) && (
+                                                <option value={editedWater}>{Math.round(editedWater / 250 * 10) / 10} Glasses ({editedWater} ml)</option>
+                                            )}
+                                        </select>
+                                    ) : (
+                                        <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                            {editedWater ? `${editedWater}ml` : 'None'}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Tools Card */}
+                                <div className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl transition-all shadow-lg shadow-black/5">
+                                    <p className="text-xs font-black uppercase mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: "#6366f1" }}>
+                                        <Info size={16} /> Tools
+                                    </p>
+                                    <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                        {log.serving_spoon_used ? 'Standard Spoon' : 'Estimated'}
                                     </div>
-                                ))}
+                                </div>
+
+                                {/* Exercise Card */}
+                                <div className="bg-[var(--color-bg-page)] p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-divider)] group hover:border-[var(--color-primary)] hover:shadow-xl transition-all shadow-lg shadow-black/5">
+                                    <p className="text-xs font-black uppercase mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform" style={{ color: "#f59e0b" }}>
+                                        <Activity size={16} /> Exercise
+                                    </p>
+                                    <div className="text-sm sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">
+                                        {log.physical_activity || 'None'}
+                                    </div>
+                                </div>
                             </motion.div>
 
                             {/* Food Analysis Table */}
