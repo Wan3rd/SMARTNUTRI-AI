@@ -217,6 +217,13 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                 {/* Step 1: Basic Info */}
                                 {step === 1 && (
                                     <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                            <div>
+                                                <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 1: Child Identity</span>
+                                                Enter your child's name, date of birth, and gender. This basic information establishes their custom pediatric profile to customize all nutritional analytics.
+                                            </div>
+                                        </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Child's Name</label>
                                             <div className="relative">
@@ -275,6 +282,13 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                 {/* Step 2: Measurements */}
                                 {step === 2 && (
                                     <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                            <div>
+                                                <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 2: Growth Metrics</span>
+                                                Provide height and weight records. SmartNutri-AI uses these parameters to evaluate real-time growth progress against the standard World Health Organization (WHO) growth charts.
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Height (cm)</label>
@@ -312,16 +326,32 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
 
                                 {/* Step 3: Vaccines */}
                                 {step === 3 && (
-                                    <VaccinationStep 
-                                        formData={formData}
-                                        setFormData={setFormData}
-                                        disabled={loading}
-                                    />
+                                    <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                            <div>
+                                                <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 3: Immunization History</span>
+                                                Enter previous and scheduled vaccinations. Keeping accurate records helps the medical engine send alerts for upcoming dose windows. (Optional)
+                                            </div>
+                                        </div>
+                                        <VaccinationStep 
+                                            formData={formData}
+                                            setFormData={setFormData}
+                                            disabled={loading}
+                                        />
+                                    </div>
                                 )}
 
                                 {/* Step 4: Dietary */}
                                 {step === 4 && (
                                     <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                            <div>
+                                                <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 4: Allergy & Diet Safeguards</span>
+                                                Select active dietary preferences and any known food allergies. The SmartNutri-AI meal scanner will automatically flag hazardous ingredients based on these parameters.
+                                            </div>
+                                        </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Allergies</label>
                                             <div className="flex flex-wrap gap-2">

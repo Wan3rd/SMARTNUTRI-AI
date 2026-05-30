@@ -201,6 +201,16 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [itemIdxToDelete, setItemIdxToDelete] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    
+    // Hideable Guide States
+    const [showGuide, setShowGuide] = useState(() => {
+        return localStorage.getItem('smartnutri_hide_logger_guide') !== 'true';
+    });
+
+    const handleDismissGuide = () => {
+        setShowGuide(false);
+        localStorage.setItem('smartnutri_hide_logger_guide', 'true');
+    };
 
     // Cropping States
     const [cropImage, setCropImage] = useState(null);
@@ -707,10 +717,45 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                         <Camera size={18} className="text-[var(--color-primary)]" />
                         Log Child's Meal
                     </h3>
-                    <span className="text-[10px] bg-[var(--color-primary)]/20 text-[var(--color-primary)] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                        Smart Care Verification
-                    </span>
+                    <div className="flex items-center gap-3">
+                        {!showGuide && status === 'idle' && (
+                            <button 
+                                onClick={() => {
+                                    setShowGuide(true);
+                                    localStorage.removeItem('smartnutri_hide_logger_guide');
+                                }} 
+                                className="text-[9px] font-black uppercase tracking-widest text-[var(--color-primary)] hover:underline flex items-center gap-0.5"
+                            >
+                                <Info size={11} /> Show Guide
+                            </button>
+                        )}
+                        <span className="text-[10px] bg-[var(--color-primary)]/20 text-[var(--color-primary)] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                            Smart Care Verification
+                        </span>
+                    </div>
                 </div>
+
+                {status === 'idle' && showGuide && (
+                    <div className="bg-gradient-to-r from-emerald-50/50 to-indigo-50/50 dark:from-emerald-950/10 dark:to-indigo-950/10 p-5 border-b border-[var(--color-divider)] flex items-start gap-3 select-none animate-in fade-in duration-500 relative">
+                        <Info size={16} className="mt-0.5 text-emerald-500 shrink-0" />
+                        <div className="text-xs text-[var(--color-text-main)] font-medium leading-relaxed pr-6">
+                            <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">💡 How to use the Meal Logger</span>
+                            <ul className="list-disc list-inside space-y-1 text-[11px] text-[var(--color-text-muted)] mt-1 font-semibold">
+                                <li>Select a <strong className="text-[var(--color-text-main)] font-black">Meal Category</strong> and adjust the logging date and time.</li>
+                                <li>Upload or snap a <strong className="text-[var(--color-text-main)] font-black">Before Meal</strong> photo.</li>
+                                <li>The AI will instantly extract ingredients and check them against your child's active allergies!</li>
+                                <li>Verify the identified food items, make adjustments, and finalize the log.</li>
+                            </ul>
+                        </div>
+                        <button 
+                            onClick={handleDismissGuide}
+                            className="absolute top-4 right-4 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-[var(--color-text-muted)] hover:text-var(--color-text-main) transition-colors"
+                            title="Dismiss Guide"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                )}
 
                 {status === 'idle' && !preview && recentLogs.length > 0 && (
                     <div className="bg-[var(--color-bg-page)] dark:bg-white/5 p-4 border-b border-[var(--color-divider)]">

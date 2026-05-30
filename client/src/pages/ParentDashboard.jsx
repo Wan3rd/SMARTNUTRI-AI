@@ -629,7 +629,7 @@ export default function ParentDashboard() {
                                                                 <Minus size={16} strokeWidth={2.5} />
                                                             </motion.button>
                                                             <div className="px-3.5 flex flex-col items-center justify-center select-none shrink-0 min-w-[70px]">
-                                                                <span className="text-sm font-black text-[var(--color-text-main)] dark:text-white tabular-nums">{dailyLog?.water_intake_glasses || 0}</span>
+                                                                <span className="text-sm font-black text-[var(--color-text-main)] dark:text-white tabular-nums">{Math.round((totalIntakeMl / 250) * 10) / 10}</span>
                                                                 <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">glasses</span>
                                                             </div>
                                                             <motion.button 

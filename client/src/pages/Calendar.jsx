@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
-import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils, Info, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Snackbar, Alert } from '@mui/material';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
@@ -24,6 +24,12 @@ export default function Calendar() {
     const [scheduledMeals, setScheduledMeals] = useState([]);
     const [dayStatuses, setDayStatuses] = useState({});
     const [isInitialSync, setIsInitialSync] = useState(true);
+    
+    // Hideable Guide States
+    const [showGuide, setShowGuide] = useState(() => {
+        return localStorage.getItem('smartnutri_hide_calendar_guide') !== 'true';
+    });
+    
     const [notification, setNotification] = useState({
         open: false,
         message: '',
@@ -274,10 +280,83 @@ export default function Calendar() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div>
-                <h1 className="text-3xl font-bold text-[var(--color-secondary)]">Nutrition Calendar</h1>
-                <p className="text-[var(--color-text-muted)] mt-1">Plan and track your meals for the month.</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold text-[var(--color-secondary)]">Nutrition Calendar</h1>
+                    <p className="text-[var(--color-text-muted)] mt-1">Plan and track your meals for the month.</p>
+                </div>
+                {!showGuide && (
+                    <button 
+                        onClick={() => {
+                            setShowGuide(true);
+                            localStorage.removeItem('smartnutri_hide_calendar_guide');
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[var(--color-divider)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-all flex items-center gap-1.5 bg-white dark:bg-white/5 select-none shrink-0"
+                    >
+                        <Info size={13} /> Show Guide
+                    </button>
+                )}
             </div>
+
+            {/* Premium Interactive User Legend & Guide */}
+            {showGuide && (
+                <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm bg-white dark:bg-white/5 p-6 sm:p-8 relative">
+                    <button 
+                        onClick={() => {
+                            setShowGuide(false);
+                            localStorage.setItem('smartnutri_hide_calendar_guide', 'true');
+                        }}
+                        className="absolute top-6 right-6 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors z-20"
+                        title="Dismiss Guide"
+                    >
+                        <X size={16} />
+                    </button>
+                    <CardContent className="p-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pr-8">
+                        <div className="space-y-2 max-w-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center">
+                                    <Info size={14} className="text-[var(--color-primary)]" />
+                                </div>
+                                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">Clinical Calendar Guide</span>
+                            </div>
+                            <h4 className="text-lg font-black text-[var(--color-secondary)] dark:text-white uppercase tracking-tight leading-none">Meal Compliance Heatmap</h4>
+                            <p className="text-xs font-semibold text-[var(--color-text-muted)] leading-relaxed">
+                                Monthly days are marked by a color-coded evaluation indicator summarizing compliance to active nutritional goals and allergen checks.
+                            </p>
+                        </div>
+
+                        <div className="flex-1 w-full md:w-auto grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-5 bg-[var(--color-bg-page)] dark:bg-slate-800/40 border border-[var(--color-divider)] rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_var(--color-primary)]" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block">🟢 Compliant</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">All targets met</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block">🟡 Warning</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">Near threshold</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-xl bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-bounce" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest block">🔴 Danger / Out</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">Limits breached</span>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {renderHeader()}
             {renderDays()}

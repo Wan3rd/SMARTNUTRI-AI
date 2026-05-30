@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { motion } from 'framer-motion';
-import { Activity, Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, Calendar, Filter, Search, CheckCircle2, AlertCircle, Clock, ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
 import api from '../lib/api';
 import { HistorySkeleton } from '../components/SkeletonShell';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,11 @@ export default function MealHistory() {
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [isInitialSync, setIsInitialSync] = useState(true);
+    
+    // Hideable Guide States
+    const [showGuide, setShowGuide] = useState(() => {
+        return localStorage.getItem('smartnutri_hide_history_guide') !== 'true';
+    });
 
     const showNotif = (message, type = 'success') => {
         setNotif({ show: true, message, type });
@@ -285,11 +290,24 @@ export default function MealHistory() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
-                    <Calendar className="text-[var(--color-primary)]" /> Meal History
-                </h1>
-                <p className="text-[var(--color-text-muted)] mt-1">Complete tracking of all logged meals</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold text-[var(--color-secondary)] flex items-center gap-2">
+                        <Calendar className="text-[var(--color-primary)]" /> Meal History
+                    </h1>
+                    <p className="text-[var(--color-text-muted)] mt-1">Complete tracking of all logged meals</p>
+                </div>
+                {!showGuide && (
+                    <button 
+                        onClick={() => {
+                            setShowGuide(true);
+                            localStorage.removeItem('smartnutri_hide_history_guide');
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[var(--color-divider)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-all flex items-center gap-1.5 bg-white dark:bg-white/5 select-none shrink-0"
+                    >
+                        <Info size={13} /> Show Guide
+                    </button>
+                )}
             </div>
 
             {/* Filters Bar */}
@@ -333,6 +351,69 @@ export default function MealHistory() {
             <div className="flex flex-col md:flex-row gap-8 min-h-[600px]">
                 {/* LEFT SIDEBAR: DATE SELECTION */}
                 <div className="w-full md:w-72 flex-shrink-0 space-y-4">
+                    {/* Interactive User Legend & Guide */}
+                    {showGuide && (
+                        <Card className="border border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-sm bg-white dark:bg-white/5 relative">
+                            <CardContent className="p-4 sm:p-5 space-y-4 select-none pr-8">
+                                <button 
+                                    onClick={() => {
+                                        setShowGuide(false);
+                                        localStorage.setItem('smartnutri_hide_history_guide', 'true');
+                                    }}
+                                    className="absolute top-4 right-4 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                                    title="Dismiss Guide"
+                                >
+                                    <X size={12} />
+                                </button>
+                                <div>
+                                    <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] mb-1">💡 Meal Compliance Guide</h4>
+                                    <p className="text-[11px] font-semibold text-[var(--color-text-muted)] leading-relaxed">
+                                        Understand how SmartNutri-AI and expert clinicians evaluate logged child meals:
+                                    </p>
+                                </div>
+                            
+                            <div className="space-y-3 pt-1.5 border-t border-[var(--color-divider)] border-dashed">
+                                <div className="flex items-start gap-2.5">
+                                    <div className="h-5 w-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">🟢 Safe / Compliant</span>
+                                        <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Fully matches child profile thresholds and contains no active allergen threats.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                    <div className="h-5 w-5 rounded-full bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-500">
+                                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider block">🔴 Flagged / Hazard</span>
+                                        <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Contains ingredients matching your child's specified food allergens or dietary exclusions.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                    <div className="h-5 w-5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-500">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider block">🔵 Clinician Reviewed</span>
+                                        <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Verified by an expert nutritionist. AI errors have been manually corrected.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-3 bg-[var(--color-primary)]/5 rounded-2xl border border-[var(--color-primary)]/15">
+                                <p className="text-[10.5px] font-bold text-[var(--color-primary)] leading-normal flex items-start gap-1.5">
+                                    <Info size={13} className="shrink-0 mt-0.5 text-[var(--color-primary)]" />
+                                    <span>
+                                        <strong>Caregiver Tip:</strong> Select any date list card to view full macro charts. Tap individual meals to request an audit or correct entries.
+                                    </span>
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    )}
+
                     <Card className="border border-[var(--color-divider)]">
                         <CardContent className="p-4">
                             <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block mb-4">Select Date</label>
