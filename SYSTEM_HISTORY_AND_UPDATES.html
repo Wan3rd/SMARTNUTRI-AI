@@ -466,6 +466,21 @@
                     </div>
                 </div>
 
+                <!-- MAY 30 — EVENING SESSION -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 30, 2026 — Evening</div>
+                    <div class="timeline-title">UX Onboarding Guides, Fluid Tracker Bug Fix & Meal History Calendar Overlap Resolution</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span><strong>Hideable Onboarding Guides System:</strong> Introduced a persistent, localStorage-backed guide visibility pattern across multiple components. Users can dismiss any guide panel with a close button and restore it via a "Show Guide" toggle in the page header. The hidden state survives page reloads. Guides were added to <code>AddChildModal.jsx</code> (step-by-step child registration walkthrough for all 4 form steps), <code>MealLogger.jsx</code> (a collapsible "How to use the Meal Logger" panel), <code>MealHistory.jsx</code> (a compliance legend card in the date sidebar), and <code>Calendar.jsx</code> (a heatmap legend and interaction guide). Each uses a unique <code>localStorage</code> key (e.g. <code>smartnutri_hide_logger_guide</code>, <code>smartnutri_hide_history_guide</code>).</li>
+                            <li><span class="tech-tag">Client</span><strong>Meal History Compliance Legend:</strong> Added a color-coded legend card inside the date sidebar of <code>MealHistory.jsx</code> explaining 🟢 Safe/Compliant, 🔴 Flagged/Hazard, and 🔵 Clinician Reviewed statuses. Includes a Caregiver Tip callout guiding parents on how to select a date to view macro charts and tap individual entries to request an audit or correction. Hideable via the "Show Guide" button in the page header.</li>
+                            <li><span class="tech-tag">Client</span><strong>Calendar Heatmap Legend:</strong> Added a persistent but dismissible guide card to <code>Calendar.jsx</code> explaining the calendar heatmap dot system — 🟢 Optimal, 🟡 Warning, 🔴 Critical/Danger, ⚪ No Data — and instructing caregivers to tap any date to drill into per-day macro summaries and compliance alerts.</li>
+                            <li><span class="tech-tag">Bug Fix</span><strong>Daily Fluid Tracker Incorrect Count:</strong> Resolved a bug in <code>ParentDashboard.jsx</code> where hydration entries logged through the Meal Logger (via the <code>water_ml</code> field) were not contributing to the Daily Fluid Tracker card glass count. The counter now aggregates both manual glass button taps and water volume from meal logs using a unified <code>totalIntakeMl / 250</code> calculation.</li>
+                            <li><span class="tech-tag">Bug Fix</span><strong>Meal History Date Card Scale Overlap:</strong> Fixed a visual layout defect in <code>MealHistory.jsx</code> where the selected date button applied a CSS <code>scale(1.02)</code> transform on desktop, causing it to overflow its container and visually overlap the adjacent daily log detail panel. Removed <code>md:scale-[1.02]</code> and <code>z-10</code> from the selected state class and replaced with a stronger drop shadow (<code>shadow-xl shadow-emerald-500/30</code>) to preserve the active selection visual without disrupting layout.</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 

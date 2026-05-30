@@ -431,7 +431,7 @@ export default function MealHistory() {
                                             onClick={() => setSelectedHistoryDate(date)}
                                             className={`flex-shrink-0 snap-start flex items-center justify-between p-3 md:p-4 rounded-2xl border-2 transition-all text-left min-w-[140px] md:min-w-0 ${
                                                 isSelected 
-                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg md:scale-[1.02] z-10 shadow-emerald-500/20' 
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-xl shadow-emerald-500/30' 
                                                 : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
                                             }`}
                                         >
