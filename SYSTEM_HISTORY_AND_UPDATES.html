@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartNutri-AI: Chronological Change Log & Historical Documentary</title>
+
+
+    <style>
+        :root {
+            --color-text-main: #1f2328;
+            --color-text-muted: #656d76;
+            --color-border: #d0d7de;
+            --color-bg-page: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-text-main: #e6edf3;
+                --color-text-muted: #8d96a0;
+                --color-border: #30363d;
+                --color-bg-page: #0d1117;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            background-color: var(--color-bg-page);
+            color: var(--color-text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            line-height: 1.25;
+            color: var(--color-text-main);
+        }
+
+        h1 {
+            font-size: 2em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--color-border);
+            margin-top: 0;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: var(--color-text-muted);
+            margin-top: 10px;
+            font-weight: normal;
+        }
+
+        /* Simplified sections */
+        .card {
+            margin-bottom: 30px;
+        }
+
+        .card h2 {
+            font-size: 1.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        /* Reset timeline details */
+        .timeline {
+            border-left: none;
+            padding-left: 0;
+            margin-left: 0;
+        }
+
+        .timeline-item {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: none !important;
+        }
+
+        .timeline-date {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .timeline-title {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 4px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-content {
+            font-size: 1em;
+            color: var(--color-text-main);
+        }
+
+        .tech-tag {
+            font-weight: bold;
+            color: var(--color-text-main);
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin-right: 6px;
+            font-size: 1em !important;
+        }
+
+        .tech-tag::before {
+            content: "[";
+        }
+
+        .tech-tag::after {
+            content: "]";
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        li {
+            margin-bottom: 6px;
+            color: var(--color-text-main) !important;
+            font-size: 1em !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <h1>SmartNutri-AI</h1>
+        </header>
+
+        <!-- Chronological Overview -->
+        <div class="card">
+            <h2>Chronological Overview</h2>
+            <p style="font-size: 14px; color: var(--color-text-muted); margin: 0; text-align: justify;">
+                This page lists every single code change, database update, dashboard layout refinement, and clinical bug
+                fix we have made in the project. Each update is listed by its exact calendar date, so you can easily
+                track how the application was built step-by-step from the very beginning.
+            </p>
+        </div>
+
+        <!-- The Timeline -->
+        <div class="card">
+            <h2>Change Log & System Updates</h2>
+
+            <div class="timeline">
+
+                <!-- MAY 03 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 03, 2026</div>
+                    <div class="timeline-title">Initial Setup, Caregiver Meal Logging Screen & Form Check Guards</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Set up the Express backend project, established
+                                Prisma database connection models, and built the first HTML layout files.</li>
+                            <li><span class="tech-tag">Client</span>Coded the first caregiver meal logging panel so
+                                parents can select a child and submit meals. We added checks to block parents from
+                                saving empty logs.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 04 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 04, 2026</div>
+                    <div class="timeline-title">Clinician Review Interface & Image Cropping Tool</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Designed and built the first overlay modal where
+                                nutritionists can inspect submitted meals.</li>
+                            <li><span class="tech-tag">Client</span>Integrated a manual image cropping helper library
+                                (<code>react-image-crop</code>) into the meal logger. This lets parents crop photos of
+                                plates to give the AI engine a clearer view of food portions.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 05 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 05, 2026</div>
+                    <div class="timeline-title">Clinician Portal, Patient Setup Modal & Session Checking</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Implemented role validation checks to keep data
+                                secure (parents can only see their children's data, and clinicians can only see their
+                                assigned clients).</li>
+                            <li><span class="tech-tag">Client</span>Built the clinician dashboard panel listing linked
+                                parents, and added a modal to register new patients.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 08 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 08, 2026</div>
+                    <div class="timeline-title">Child Profile Switching, Responsive Layouts & Scroll Locks</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Created a global <strong>ProfileContext</strong>
+                                system. Parents can now switch children with a single click, and all dashboard stats
+                                update instantly in the background.</li>
+                            <li><span class="tech-tag">Client</span>Polished layout responsiveness across smartphones,
+                                tablets, and desktop displays. Coded a scroll-lock trigger to prevent parent pages from
+                                scrolling when modals are open.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 09 - MAY 10 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 09 - 10, 2026</div>
+                    <div class="timeline-title">Visual Loading Skeletons, Kid's Growth Records & Vaccination Charts
+                    </div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Designed custom visual skeletons (e.g.
+                                <code>DashboardSkeleton</code>) that display clean outlines while data is loading.
+                            </li>
+                            <li><span class="tech-tag">Server</span>Added dedicated database structures to track child
+                                growth indices (height/weight history) and clinical vaccination logs.</li>
+                            <li><span class="tech-tag">Client</span>Created the interactive vaccination checklist and
+                                progress meters inside child profiles.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 15 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 15, 2026</div>
+                    <div class="timeline-title">Account Deactivations, Force Password Resets & Vercel CORS Tweaks</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Coded administrative tools to deactivate accounts
+                                safely, trigger force-resets on next login, and enforce terms of service agreements.
+                            </li>
+                            <li><span class="tech-tag">Server</span>Configured <code>vercel.json</code> properties and
+                                tightened CORS policies to protect database endpoints.</li>
+                            <li><span class="tech-tag">Server</span>Added a 14-minute self-ping cron-helper to keep the
+                                Render API server awake and eliminate slow cold-starts.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 16 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 16, 2026</div>
+                    <div class="timeline-title">Kid's Allergen Warning System & Dashboard Tab Interfaces</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Coded the <strong>Allergen Detection
+                                    System</strong>: it automatically reads a child's medical allergy records and
+                                matches them against ingredients recognized in logged meals, warning caregivers
+                                instantly.</li>
+                            <li><span class="tech-tag">Client</span>Redesigned dashboards to use clean tabs, separating
+                                active daily nutritional goals from deep log lists.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 17 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 17, 2026</div>
+                    <div class="timeline-title">Offline PWA Service Workers & Gemini AI plate Scanner</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Setup offline PWA manifest assets
+                                (<code>manifest.webmanifest</code>) to support browser installation.</li>
+                            <li><span class="tech-tag">Server</span>Connected the <strong>Gemini AI Service</strong>: it
+                                scans caregiver notes or uploaded meal photos to identify ingredients and output
+                                estimated calories/macros.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 19 - MAY 20 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 19 - 20, 2026</div>
+                    <div class="timeline-title">Nutritionist ADIME Workspace & Edamam API safeguards</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Built the clinical workspace for nutritionists to
+                                write ADIME assessment records.</li>
+                            <li><span class="tech-tag">Server</span>Added defensive safeguards to the Edamam recipe
+                                route. The route now automatically replaces empty or missing fields with default labels,
+                                preventing 500 server crashes.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 21 - MAY 22 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 21 - 22, 2026</div>
+                    <div class="timeline-title">Flagged Meal Correction Editor, Mobile FAB dials & Auto-Log</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Built a flow for parents to edit and resubmit meal
+                                logs that were flagged for correction by their nutritionist.</li>
+                            <li><span class="tech-tag">Client</span>Added an ergonomic floating action button (FAB) for
+                                mobile, letting caregivers scan plates with their camera or duplicate yesterday's logged
+                                meal in one click.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 23 - MAY 25 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 23 - 25, 2026</div>
+                    <div class="timeline-title">OTP Password Recovery, Client Link/Unlink & Scroll Animations</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Constructed an OTP verification dispatch pipeline to
+                                help users recover forgotten passwords.</li>
+                            <li><span class="tech-tag">Server</span>Coded link/unlink triggers inside `nutritionist.js`
+                                to manage active parent connections securely.</li>
+                            <li><span class="tech-tag">Client</span>Built a beautiful public landing page with inquiry
+                                forms, responsive scroll behaviors, and clean motion cards.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 26 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 26, 2026</div>
+                    <div class="timeline-title">ADIME Editor Polish, Pediatric Insights & Admin Telemetry Console</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Polished empty-state screens in the ADIME editor and
+                                built a pediatric "Insights" dashboard showing meal compliance.</li>
+                            <li><span class="tech-tag">Server</span>Designed a secure administrator console displaying
+                                server stats, database health indicators, and live log histories.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 27 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 27, 2026</div>
+                    <div class="timeline-title">PDF Export Engine, OKLCH Color Space & Cloudinary File Uploads</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span>Built the client-side <strong>PDF Export
+                                    Engine</strong>: allows clinicians to compile patient logs, clinical timelines, and
+                                growth stats into a printable PDF report in one click.</li>
+                            <li><span class="tech-tag">Client</span>Transformed CSS designs to modern OKLCH layout
+                                colors, supporting rich dark and light modes.</li>
+                            <li><span class="tech-tag">Server</span>Integrated secure Cloudinary storage hooks to manage
+                                uploaded parent images.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 29 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 29, 2026</div>
+                    <div class="timeline-title">Real-Time WebSockets Alerts, Error Notification Audits & Timezone
+                        Mismatch Fixes</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span>Set up **Socket.io** using private rooms mapped to
+                                parent user IDs. We exposed this socket manager as Express middleware to all routers.
+                            </li>
+                            <li><span class="tech-tag">Client</span>Coded the layout socket hook: parent dashboards
+                                instantly receive notification banners when a clinician reviews a meal, automatically
+                                refreshing stats in the background without manual page reloads.</li>
+                            <li><span class="tech-tag">Client</span>Polished `ReviewLogModal.jsx`: we close the modal
+                                *first* and wait 300ms before triggering the parent page update. This gives exit
+                                animations time to slide out smoothly and prevents the background page from shifting or
+                                jumping.</li>
+                            <li><span class="tech-tag">Client</span>Wrapped modal overlays, notifications, and dialogs
+                                inside a single root overlay container. This stops sibling divs from inserting space
+                                gaps or breaking the parent page flexboxes. We also reset the notification state on
+                                close so old alerts never reappear.</li>
+                            <li><span class="tech-tag">Client</span>Audited and upgraded all client-side form
+                                submissions and API catch blocks across 7 core pages and components
+                                (<code>Settings.jsx</code>, <code>Profile.jsx</code>, <code>ClientDetails.jsx</code>,
+                                <code>ReviewLogModal.jsx</code>, <code>MealLogger.jsx</code>,
+                                <code>MealDetailModal.jsx</code>, and <code>RecipeDetail.jsx</code>). All hardcoded
+                                fallback generic strings were replaced with dynamic extractions of the precise
+                                server-side validation error messages (using <code>err.response?.data?.message</code>)
+                                so users instantly know exactly what input field triggered a failure.
+                            </li>
+                            <li><span class="tech-tag">Client</span>Fixed a subtle timezone mismatch shift bug in the
+                                <code>MealLogger.jsx</code> client submissions. Pre-parsed the timezone-naive local
+                                datetime string from the browser as local time and converted it to a standard UTC ISO
+                                string before POSTing, preventing Node.js from incorrectly parsing it as UTC and
+                                shifting the meal logs (and therefore calorie progress and the daily wave fluid tumbler)
+                                8 hours into the future.
+                            </li>
+                            <li><span class="tech-tag">Server</span>Upgraded the <code>/admin/stats</code> router to
+                                accept a dynamic <code>range</code> parameter (<code>week</code>, <code>month</code>, or
+                                <code>year</code>) and group registration and log counts daily or monthly dynamically
+                                while padding gaps. We also added a server-side <code>compiledAt</code> synchronization
+                                timestamp.
+                            </li>
+                            <li><span class="tech-tag">Client</span>Overhauled the <code>AdminTelemetry.jsx</code> chart
+                                system with a premium segmented duration filter selector (Week, Month, Year). The charts
+                                recalculate all totals, daily/monthly averages, and record peaks on-the-fly. They format
+                                timestamps dynamically in local format within glassmorphic tooltips, adjust the X-axis
+                                to the target range granularity, and display a pulsing live-update synchronized clock.
+                            </li>
+                            <li><span class="tech-tag">Server</span>Coded the <code>GET /admin/diagnostics</code>
+                                self-test API that runs concurrent, live pings to Prisma Database (measures raw
+                                execution query latency), Google Gemini AI API (handshakes using Process Key
+                                credentials), and Cloudinary Storage (validates token parameters).</li>
+                            <li><span class="tech-tag">Client</span>Designed and mounted a dedicated
+                                <code>PlatformDiagnostics.jsx</code> diagnostic panel inside the <strong>System
+                                    Telemetry</strong> monitoring console. It features one-click testing, pulsing
+                                progress states, and beautifully color-coded (Healthy/Failed) HSL cards showing live
+                                response speed stats.
+                            </li>
+                            <li><span class="tech-tag">Server</span>Exposed a public, static endpoint <code>GET /system-updates</code> that delivers this Change Log documentary page directly from the repository root.</li>
+                            <li><span class="tech-tag">Client</span>Integrated a dynamically-resolving "See System Updates" button in the landing page footer to easily access public developer specifications and system history.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAY 30 (TODAY) -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 30, 2026 (Today)</div>
+                    <div class="timeline-title">Global Rules Engine "Min" Target Enforcement, Dual-Layer Future Date Validations & Clinical Workspace Hardening</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span><strong>Unified Rules Engine Minimum Target Support:</strong> Audited and overhauled nutritional rule checks across both portals. Day statuses and daily violations dashboards now fully recognize and assert minimum (<code>min</code>) targets in addition to maximum limits, highlighting under-consumption anomalies for calories, protein, carbs, fats, sodium, and water across <code>ClientDetails.jsx</code>, <code>MealHistory.jsx</code>, <code>Calendar.jsx</code>, and <code>ParentDashboard.jsx</code>.</li>
+                            <li><span class="tech-tag">Client</span><strong>System-wide Future Date Restraints:</strong> Placed native <code>max</code> calendar boundaries and double-layered validation blocks across all birthdate entry points (clinician and caregiver registration modals and settings), vaccination logging, growth log updates, and caregiver meal logs (<code>CreatePatientModal.jsx</code>, <code>Onboarding.jsx</code>, <code>AddChildModal.jsx</code>, <code>Profile.jsx</code>, and <code>MealLogger.jsx</code>) to hard-block impossible future inputs.</li>
+                            <li><span class="tech-tag">Client</span><strong>Resilient Pediatric Growth Velocity Calculations:</strong> Refactored biometric velocity tracking inside the client dashboard to precompute height and weight growth velocities strictly between the two newest consecutive logs, preventing mathematical drift.</li>
+                            <li><span class="tech-tag">Client</span><strong>Clinical Workspace State Isolation & Sync:</strong> Fully secured the nutritionist's clinical drafts against profile leakage by resetting text areas on switch, flushing empty local caches, and expanding the edit form cancellation state payload to seamlessly restore all 17 clinical and medical attributes.</li>
+                            <li><span class="tech-tag">Client</span><strong>Personalization & Unit Preference Check:</strong> Verified system-wide application of Settings preferences. Implemented dynamic unit and decimal precision formats inside <code>ClientDetails.jsx</code>, <code>ReviewLogModal.jsx</code>, and <code>Profile.jsx</code>. Biometric cards now automatically swap primary/secondary units between Metric (cm, kg) and Imperial (lbs, ft/in) styles based on <code>measurement_system</code>, calorie/macro breakdowns dynamically render rounded whole numbers or precise decimal fractions following the user's <code>nutrient_precision</code> settings, all clinician-side growth deltas, monthly velocities, and Clinical Intelligence warnings convert to Imperial (lbs, lbs/m, in, in/m), and caregiver-side child profile trend badges dynamically adjust to imperial metrics (<code>+1.1 lbs trend</code> and <code>+0.5 in trend</code>) when active.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- System Architecture Card -->
+        <div class="card">
+            <h2>Data Reliability Details</h2>
+            <div style="font-size: 13px; color: var(--color-text-muted); line-height: 1.7;">
+                <p><strong>Safe Deletions:</strong> Removing logs, profiles, or linked caregivers is done inside
+                    database transactions. This ensures all child tables are cleared together, preventing broken
+                    database links.</p>
+                <p><strong>Calorie Recalculations:</strong> The system guards your custom nutrition inputs. Ingredient
+                    calorie numbers are only recalculated when caregiver plate waste edits are made, preserving manual
+                    nutritionist overrides.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer
+            style="text-align: center; font-size: 11px; color: var(--color-text-muted); border-t: 1px solid var(--color-divider); padding-top: 20px;">
+            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Production Stable
+        </footer>
+
+    </div>
+
+</body>
+
+</html>

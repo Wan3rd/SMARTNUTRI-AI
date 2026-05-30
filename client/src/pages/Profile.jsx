@@ -1402,7 +1402,9 @@ export default function Profile() {
                                             Height ({user?.measurement_system === 'imperial' ? 'ft/in' : 'cm'})
                                         </label>
                                         {!isEditing && (
-                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">+1.2cm trend</span>
+                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                {user?.measurement_system === 'imperial' ? '+0.5 in trend' : '+1.2cm trend'}
+                                            </span>
                                         )}
                                     </div>
                                     {isEditing ? (
@@ -1459,7 +1461,9 @@ export default function Profile() {
                                             Weight ({user?.measurement_system === 'imperial' ? 'lbs' : 'kg'})
                                         </label>
                                         {!isEditing && (
-                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">+0.5kg trend</span>
+                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                {user?.measurement_system === 'imperial' ? '+1.1 lbs trend' : '+0.5kg trend'}
+                                            </span>
                                         )}
                                     </div>
                                     {isEditing ? (

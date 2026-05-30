@@ -923,9 +923,12 @@ export default function ClientDetails() {
         }
 
         if (growthLogs.length > 1) {
+            const isImperial = user?.measurement_system === 'imperial';
             const weightVelocity = parseFloat(growthDeltas.weight);
+            const displayVal = isImperial ? (weightVelocity * 2.20462).toFixed(1) : weightVelocity.toFixed(1);
+            const unitStr = isImperial ? 'lbs' : 'kg';
             if (weightVelocity < -0.5) {
-                alerts.push({ icon: TrendingDown, title: 'Rapid Weight Loss', desc: `Significant weight loss of ${weightVelocity}kg detected since last visit.`, severity: 'critical' });
+                alerts.push({ icon: TrendingDown, title: 'Rapid Weight Loss', desc: `Significant weight loss of ${Math.abs(displayVal)}${unitStr} detected since last visit.`, severity: 'critical' });
             }
         }
 
@@ -2574,16 +2577,27 @@ export default function ClientDetails() {
                                                                     >
                                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                                             <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight</div>
-                                                                            {!isLoading && parseFloat(growthDeltas.weight) !== 0 && (
-                                                                                <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.weight) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                                                    {parseFloat(growthDeltas.weight) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
-                                                                                    {parseFloat(growthDeltas.weight) > 0 ? '+' : ''}{growthDeltas.weight}kg
-                                                                                </div>
-                                                                            )}
+                                                                            {!isLoading && parseFloat(growthDeltas.weight) !== 0 && (() => {
+                                                                                const isImperial = user?.measurement_system === 'imperial';
+                                                                                const rawVal = parseFloat(growthDeltas.weight);
+                                                                                const convertedVal = isImperial ? (rawVal * 2.20462).toFixed(1) : rawVal.toFixed(1);
+                                                                                const unitStr = isImperial ? 'lbs' : 'kg';
+                                                                                return (
+                                                                                    <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${rawVal > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                                        {rawVal > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                                        {rawVal > 0 ? '+' : ''}{convertedVal} {unitStr}
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
                                                                         </div>
                                                                         <div className="flex items-end justify-between relative z-10">
                                                                             <div className="text-lg sm:text-xl font-black text-[var(--color-primary)]">
-                                                                                {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.weight_kg} <span className="text-[10px] sm:text-xs font-bold opacity-60">kg</span></>}
+                                                                                {isLoading ? (
+                                                                                    <SkeletonLoader className="h-7 w-16" />
+                                                                                ) : (() => {
+                                                                                    const wConv = convertWeight(selectedProfile.weight_kg, user?.measurement_system);
+                                                                                    return <>{wConv.value} <span className="text-[10px] sm:text-xs font-bold opacity-60">{wConv.unit}</span></>;
+                                                                                })()}
                                                                             </div>
                                                                             {!isLoading && growthLogs.length > 1 && (
                                                                                 <div className="w-12 sm:w-20 opacity-60">
@@ -2600,7 +2614,13 @@ export default function ClientDetails() {
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-emerald-500" />
-                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{growthDeltas.weightVel}kg/m</span></span>
+                                                                                        {(() => {
+                                                                                            const isImperial = user?.measurement_system === 'imperial';
+                                                                                            const velVal = parseFloat(growthDeltas.weightVel);
+                                                                                            const convertedVel = isImperial ? (velVal * 2.20462).toFixed(2) : velVal.toFixed(2);
+                                                                                            const unitStr = isImperial ? 'lbs/m' : 'kg/m';
+                                                                                            return <span>Velocity: <span className="text-[var(--color-text-main)]">{convertedVel} {unitStr}</span></span>;
+                                                                                        })()}
                                                                                     </div>
                                                                                 </div>
                                                                                 {growthLogs[growthLogs.length - 1]?.clinical_analysis?.weight && (
@@ -2614,7 +2634,7 @@ export default function ClientDetails() {
                                                                             </div>
                                                                         )}
                                                                     </motion.div>
-
+ 
                                                                     {/* Height Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
@@ -2622,20 +2642,38 @@ export default function ClientDetails() {
                                                                     >
                                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                                             <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height</div>
-                                                                            {!isLoading && parseFloat(growthDeltas.height) !== 0 && (
-                                                                                <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${parseFloat(growthDeltas.height) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                                                    {parseFloat(growthDeltas.height) > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
-                                                                                    {parseFloat(growthDeltas.height) > 0 ? '+' : ''}{growthDeltas.height}cm
-                                                                                </div>
-                                                                            )}
+                                                                            {!isLoading && parseFloat(growthDeltas.height) !== 0 && (() => {
+                                                                                const isImperial = user?.measurement_system === 'imperial';
+                                                                                const rawVal = parseFloat(growthDeltas.height);
+                                                                                const convertedVal = isImperial ? (rawVal / 2.54).toFixed(1) : rawVal.toFixed(1);
+                                                                                const unitStr = isImperial ? 'in' : 'cm';
+                                                                                return (
+                                                                                    <div className={`text-[8px] sm:text-[9px] font-black flex items-center ${rawVal > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                                        {rawVal > 0 ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
+                                                                                        {rawVal > 0 ? '+' : ''}{convertedVal} {unitStr}
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
                                                                         </div>
                                                                         <div className="flex items-end justify-between relative z-10">
                                                                             <div className="flex flex-col">
                                                                                 <div className="text-lg sm:text-xl font-black text-[var(--color-secondary)]">
-                                                                                    {isLoading ? <SkeletonLoader className="h-7 w-16" /> : <>{selectedProfile.height_cm} <span className="text-[10px] sm:text-xs font-bold opacity-60">cm</span></>}
+                                                                                    {isLoading ? (
+                                                                                        <SkeletonLoader className="h-7 w-16" />
+                                                                                    ) : user?.measurement_system === 'imperial' ? (
+                                                                                        <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" <span className="text-[10px] sm:text-xs font-bold opacity-60">ft/in</span></>
+                                                                                    ) : (
+                                                                                        <>{selectedProfile.height_cm} <span className="text-[10px] sm:text-xs font-bold opacity-60">cm</span></>
+                                                                                    )}
                                                                                 </div>
                                                                                 <div className="text-[7px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5 whitespace-nowrap">
-                                                                                    {isLoading ? <SkeletonLoader className="h-3 w-12" /> : <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imp</>}
+                                                                                    {isLoading ? (
+                                                                                        <SkeletonLoader className="h-3 w-12" />
+                                                                                    ) : user?.measurement_system === 'imperial' ? (
+                                                                                        <>{selectedProfile.height_cm} cm Metric</>
+                                                                                    ) : (
+                                                                                        <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" Imp</>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                             {!isLoading && growthLogs.length > 1 && (
@@ -2653,7 +2691,13 @@ export default function ClientDetails() {
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-blue-500" />
-                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{growthDeltas.heightVel}cm/m</span></span>
+                                                                                        {(() => {
+                                                                                            const isImperial = user?.measurement_system === 'imperial';
+                                                                                            const velVal = parseFloat(growthDeltas.heightVel);
+                                                                                            const convertedVel = isImperial ? (velVal / 2.54).toFixed(2) : velVal.toFixed(2);
+                                                                                            const unitStr = isImperial ? 'in/m' : 'cm/m';
+                                                                                            return <span>Velocity: <span className="text-[var(--color-text-main)]">{convertedVel} {unitStr}</span></span>;
+                                                                                        })()}
                                                                                     </div>
                                                                                 </div>
                                                                                 {growthLogs[growthLogs.length - 1]?.clinical_analysis?.height && (
@@ -3727,7 +3771,7 @@ export default function ClientDetails() {
                                                                                     ].map((stat, idx) => (
                                                                                         <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
-                                                                                            <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{Math.round(stat.value)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                                            <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{formatValue(stat.value, user?.nutrient_precision)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>

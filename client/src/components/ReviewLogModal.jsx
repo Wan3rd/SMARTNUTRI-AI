@@ -6,8 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
 import ConfirmDialog from './common/ConfirmDialog';
+import { formatValue } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
 
 export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete }) {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [review, setReview] = useState('');
     const [editedAnalysis, setEditedAnalysis] = useState(null);
@@ -621,7 +624,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                             </div>
                                                         ) : (
                                                             <span className="text-xs font-black" style={{ color: macro.col }}>
-                                                                {parseFloat(Number(item[macro.key] || 0).toFixed(1))}
+                                                                {formatValue(item[macro.key], user?.nutrient_precision)}
                                                                 {macro.label !== "Kcal" ? 'g' : ''}
                                                             </span>
                                                         )}
@@ -643,7 +646,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     ].map((sum, si) => (
                                         <div key={si} className="text-center bg-[var(--color-bg-card)] rounded-2xl p-4 border-2 border-[var(--color-divider)] shadow-lg shadow-black/5 hover:translate-y-[-2px] transition-transform overflow-hidden" style={{ borderColor: `${sum.col}33` }}>
                                             <div className="text-lg sm:text-2xl font-black truncate" style={{ color: sum.col }}>
-                                                {parseFloat(Number(sum.val || 0).toFixed(1))}
+                                                {formatValue(sum.val, user?.nutrient_precision)}
                                                 {si > 0 ? 'g' : ''}
                                             </div>
                                             <div className="text-[10px] font-black tracking-widest uppercase opacity-60" style={{ color: sum.col }}>{sum.label}</div>
