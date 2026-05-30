@@ -1421,6 +1421,7 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
         dietary_preferences,
         height_cm,
         weight_kg,
+        waist_circumference,
         activity_level,
         child_name,
         date_of_birth,
@@ -1461,6 +1462,9 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
                 dietary_preferences,
                 height_cm: height_cm ? parseFloat(height_cm) : undefined,
                 weight_kg: weight_kg ? parseFloat(weight_kg) : undefined,
+                waist_circumference: waist_circumference !== undefined
+                    ? (waist_circumference && waist_circumference !== '' ? parseFloat(waist_circumference) : null)
+                    : undefined,
                 activity_level,
                 child_name,
                 date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,

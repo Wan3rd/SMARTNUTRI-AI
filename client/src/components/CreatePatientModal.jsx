@@ -200,6 +200,10 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 setNotif({ show: true, message: 'Please fill in child identity fields before proceeding.', type: 'error' });
                 return false;
             }
+            if (new Date(formData.date_of_birth) > new Date()) {
+                setNotif({ show: true, message: 'Date of birth cannot be in the future.', type: 'error' });
+                return false;
+            }
             if (!parentId && !formData.parent_email.includes('@')) {
                 setNotif({ show: true, message: 'Please enter a valid email address.', type: 'error' });
                 return false;
@@ -301,7 +305,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Birth Date</label>
-                                <input name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+                                <input name="date_of_birth" type="date" max={new Date().toISOString().split('T')[0]} value={formData.date_of_birth} onChange={handleChange} className="w-full px-3 sm:px-4 py-3 bg-[var(--color-bg-page)] border-2 border-slate-200 dark:border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
                             </div>
                             <div className="space-y-1 min-w-0">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Sex</label>

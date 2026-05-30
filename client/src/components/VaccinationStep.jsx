@@ -107,6 +107,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                                         <div className="flex items-center gap-2 w-full sm:w-auto">
                                             <input 
                                                 type="date" 
+                                                max={new Date().toISOString().split('T')[0]}
                                                 value={vaccineData?.date_administered || ''}
                                                 onChange={(e) => updateVaccine(type.id, { date_administered: e.target.value })}
                                                 className="text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none w-full sm:w-auto"

@@ -20,6 +20,21 @@ import CreatePatientModal from '../components/CreatePatientModal';
 import { ClientDetailsSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 import InsightsTab from './ClientDetails/components/InsightsTab';
 
+const formatDateSafe = (dateVal, options = {}) => {
+    if (!dateVal) return 'N/A';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString(undefined, options);
+};
+
+const getAgeSafe = (dob) => {
+    if (!dob) return 'N/A';
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return 'N/A';
+    const age = new Date().getFullYear() - d.getFullYear();
+    return isNaN(age) ? 'N/A' : `${age} Yrs`;
+};
+
 // Stable default for the portion exchange matrix — used in fetchPortionPlan to
 // avoid the stale-closure bug that blanks out the grid when switching clients.
 const DEFAULT_PORTION_MATRIX = [
@@ -435,7 +450,10 @@ export default function ClientDetails() {
         if (!selectedProfile || isInitialSync) return;
 
         const hasContent = Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0);
-        if (!hasContent) return;
+        if (!hasContent) {
+            clearDraft('adime');
+            return;
+        }
 
         setSyncStatus({ type: 'saving', lastSaved: null });
         const timer = setTimeout(() => {
@@ -448,7 +466,12 @@ export default function ClientDetails() {
     // Auto-Save Effect for Progress Notes
     useEffect(() => {
         if (!selectedProfile || isInitialSync) return;
-        if (!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0) return;
+
+        const hasContent = newNote && newNote.replace(/<[^>]*>/g, '').trim().length > 0;
+        if (!hasContent) {
+            clearDraft('note');
+            return;
+        }
 
         setSyncStatus({ type: 'saving', lastSaved: null });
         const timer = setTimeout(() => {
@@ -464,16 +487,24 @@ export default function ClientDetails() {
             const adimeDraft = loadDraft('adime');
             const noteDraft = loadDraft('note');
 
-            if (adimeDraft && !isRestored.adime) {
+            if (adimeDraft) {
                 setNewAdime(adimeDraft);
-                setIsRestored(prev => ({ ...prev, adime: true }));
-            }
-            if (noteDraft && !isRestored.note) {
-                setNewNote(noteDraft);
-                setIsRestored(prev => ({ ...prev, note: true }));
+            } else {
+                setNewAdime({
+                    assessment: '',
+                    diagnosis: '',
+                    intervention: '',
+                    monitoring: '',
+                    evaluation: ''
+                });
             }
 
-            // Reset restoration flags if switching profiles (optional, but keep it for now)
+            if (noteDraft) {
+                setNewNote(noteDraft);
+            } else {
+                setNewNote('');
+            }
+
             setIsRestored({ adime: !!adimeDraft, note: !!noteDraft });
         }
     }, [selectedProfile?.id]);
@@ -799,13 +830,19 @@ export default function ClientDetails() {
     }, [selectedProfile]);
 
     const growthDeltas = useMemo(() => {
-        if (!growthLogs || growthLogs.length < 2) return { weight: 0, height: 0 };
+        if (!growthLogs || growthLogs.length < 2) return { weight: '0.0', height: '0.0', weightVel: '0.00', heightVel: '0.00' };
         const sorted = [...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
         const current = sorted[0];
         const previous = sorted[1];
+        
+        const diffDays = (new Date(current.logged_at) - new Date(previous.logged_at)) / (1000 * 60 * 60 * 24);
+        const months = diffDays / 30.44;
+        
         return {
             weight: (current.weight_kg - previous.weight_kg).toFixed(1),
-            height: (current.height_cm - previous.height_cm).toFixed(1)
+            height: (current.height_cm - previous.height_cm).toFixed(1),
+            weightVel: months > 0 ? ((current.weight_kg - previous.weight_kg) / months).toFixed(2) : '0.00',
+            heightVel: months > 0 ? ((current.height_cm - previous.height_cm) / months).toFixed(2) : '0.00'
         };
     }, [growthLogs]);
 
@@ -994,6 +1031,7 @@ export default function ClientDetails() {
                 else if (rule.category === 'Sodium') current = totals.sodium;
 
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
+                else if (rule.rule_type === 'min' && current < limit) status = 'danger';
             });
 
             statuses[date] = status;
@@ -1027,7 +1065,8 @@ export default function ClientDetails() {
             else if (rule.category === 'Sugar') current = totals.sugar;
             else if (rule.category === 'Sodium') current = totals.sodium;
 
-            if (rule.rule_type === 'max' && current > limit) {
+            const isViolation = (rule.rule_type === 'max' && current > limit) || (rule.rule_type === 'min' && current < limit);
+            if (isViolation) {
                 violations.push({
                     name: rule.rule_name,
                     category: rule.category,
@@ -1060,6 +1099,10 @@ export default function ClientDetails() {
     };
 
     const handleClinicalSave = async () => {
+        if (clinicalForm.date_of_birth && new Date(clinicalForm.date_of_birth) > new Date()) {
+            showNotif("Date of birth cannot be in the future.", "error");
+            return;
+        }
         try {
             const res = await api.patch(`/nutritionist/clients/profile/${selectedProfile.id}`, clinicalForm);
             setSelectedProfile(res.data);
@@ -1072,24 +1115,28 @@ export default function ClientDetails() {
         }
     };
 
+    // Fetch global child data on profile mount/change (required by global biometric cards and Clinical Intelligence)
     useEffect(() => {
-        if (selectedProfile && activeTab === 'plan') {
-            fetchMealPlan(selectedProfile.id);
-        }
-        if (selectedProfile && activeTab === 'notes') {
-            fetchNotes(selectedProfile.id);
-        }
-        if (selectedProfile && (activeTab === 'history' || activeTab === 'review' || activeTab === 'insights')) {
+        if (selectedProfile) {
             fetchLogs(selectedProfile.id);
-        }
-        if (selectedProfile && activeTab === 'adime') {
-            fetchAdimeNotes(selectedProfile.id);
-        }
-        if (selectedProfile && activeTab === 'overview') {
             fetchGrowthLogs(selectedProfile.id);
             fetchVaccinationData(selectedProfile.id);
         }
-    }, [selectedProfile, activeTab]);
+    }, [selectedProfile?.id]);
+
+    // Fetch tab-specific data when the active tab changes
+    useEffect(() => {
+        if (!selectedProfile) return;
+        if (activeTab === 'plan') {
+            fetchMealPlan(selectedProfile.id);
+        }
+        if (activeTab === 'notes') {
+            fetchNotes(selectedProfile.id);
+        }
+        if (activeTab === 'adime') {
+            fetchAdimeNotes(selectedProfile.id);
+        }
+    }, [selectedProfile?.id, activeTab]);
 
     useEffect(() => {
         if (clientId) {
@@ -1186,6 +1233,10 @@ export default function ClientDetails() {
 
     const handleUpdateGrowthLog = async (e) => {
         e.preventDefault();
+        if (editGrowthForm.logged_at && new Date(editGrowthForm.logged_at) > new Date()) {
+            showNotif("Growth log date cannot be in the future.", "error");
+            return;
+        }
         try {
             await api.patch(`/profiles/growth-record/${editingGrowthLog}`, editGrowthForm);
             fetchGrowthLogs(selectedProfile.id);
@@ -1216,6 +1267,10 @@ export default function ClientDetails() {
 
     const handleAddVaccine = async () => {
         if (!newVaccine.typeId) return;
+        if (newVaccine.date && new Date(newVaccine.date) > new Date()) {
+            showNotif("Vaccination date cannot be in the future.", "error");
+            return;
+        }
         try {
             const res = await api.post(`/profiles/${selectedProfile.id}/vaccinations`, {
                 vaccination_type_id: newVaccine.typeId,
@@ -1423,7 +1478,7 @@ export default function ClientDetails() {
                     <div class="header">
                         <div>
                             <div class="title">Clinical Nutrition Report</div>
-                            <div class="meta">Patient: ${selectedProfile.child_name} | Age: ${new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} yrs | ${selectedProfile.gender}</div>
+                            <div class="meta">Patient: ${selectedProfile.child_name} | Age: ${getAgeSafe(selectedProfile.date_of_birth)} | ${selectedProfile.gender}</div>
                         </div>
                         <div class="meta" style="text-align: right;">Generated: ${new Date().toLocaleDateString()}</div>
                     </div>
@@ -1907,6 +1962,13 @@ export default function ClientDetails() {
         }
     }, [selectedProfile]);
 
+    // Persist active child profile in sessionStorage to prevent resetting selection on page refresh
+    useEffect(() => {
+        if (selectedProfile?.id) {
+            sessionStorage.setItem(`selected_profile_${clientId}`, selectedProfile.id);
+        }
+    }, [selectedProfile?.id, clientId]);
+
     const fetchStandards = async (profileId) => {
         try {
             const res = await api.get(`/nutritionist/standards/${profileId}`);
@@ -1925,7 +1987,8 @@ export default function ClientDetails() {
             if (data.length > 0) {
                 setSelectedProfile(prev => {
                     // Maintain current selection if it still exists in the refreshed list
-                    const currentId = prev?.id;
+                    // Fall back to saved selection in sessionStorage if refreshing
+                    const currentId = prev?.id || sessionStorage.getItem(`selected_profile_${clientId}`);
                     const matched = data.find(p => p.id === currentId);
                     return matched || data[0];
                 });
@@ -2157,8 +2220,8 @@ export default function ClientDetails() {
                 ) : (
                     <div className={cn("flex flex-col lg:flex-row items-start w-full max-w-full transition-all duration-300", isSidebarMinimized ? "lg:gap-4" : "gap-4 lg:gap-8")}>
                         {/* Left Sidebar: Profiles (Command Center) */}
-                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full lg:relative lg:z-40", isSidebarMinimized ? "lg:w-[60px]" : "lg:w-72")}>
-                            <div className="sticky top-[72px] lg:top-8 z-30 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-2 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
+                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full lg:relative lg:z-10", isSidebarMinimized ? "lg:w-[60px]" : "lg:w-72")}>
+                            <div className="sticky top-[72px] lg:top-8 z-10 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-2 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
                                 <div className={cn("flex items-center justify-between", isSidebarMinimized ? "mb-0" : "mb-4")}>
                                     <h3 className={cn("font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] flex items-center gap-2 transition-opacity duration-200", isSidebarMinimized ? "lg:opacity-0 lg:w-0 lg:overflow-hidden lg:m-0" : "opacity-100 w-auto")}>
                                         <Users size={14} className="text-[var(--color-primary)] shrink-0" />
@@ -2237,7 +2300,7 @@ export default function ClientDetails() {
                                                             </div>
                                                             <div className="flex items-center justify-between">
                                                                 <div className={cn("text-[8px] font-bold uppercase tracking-wider whitespace-nowrap", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
-                                                                    {new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()}Y • {profile.gender.charAt(0)}
+                                                                    {getAgeSafe(profile.date_of_birth)} • {profile.gender.charAt(0)}
                                                                 </div>
                                                                 <div className={cn("text-[8px] font-black whitespace-nowrap", isSelected ? 'text-white/90' : 'text-[var(--color-primary)]')}>
                                                                     {profile.weight_kg || '--'}KG
@@ -2269,7 +2332,7 @@ export default function ClientDetails() {
                                                                     {profile.child_name}
                                                                 </p>
                                                                 <div className="flex items-center gap-1.5 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none pt-0.5">
-                                                                    <span>{new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()} Yrs</span>
+                                                                    <span>{getAgeSafe(profile.date_of_birth)}</span>
                                                                     <span>•</span>
                                                                     <span className="text-[var(--color-primary)]">{profile.weight_kg || '--'} kg</span>
                                                                 </div>
@@ -2478,7 +2541,10 @@ export default function ClientDetails() {
                                                                                     <h2 className={cn("text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none truncate mb-1", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
                                                                                     <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex-wrap">
                                                                                         <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm">{selectedProfile.gender}</span>
-                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{new Date().getFullYear() - new Date(selectedProfile.date_of_birth).getFullYear()} Years Old</span>
+                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{getAgeSafe(selectedProfile.date_of_birth)}</span>
+                                                                                        {selectedProfile.waist_circumference && (
+                                                                                            <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">Waist: {selectedProfile.waist_circumference} cm</span>
+                                                                                        )}
                                                                                     </div>
                                                                                 </>
                                                                             )}
@@ -2494,7 +2560,7 @@ export default function ClientDetails() {
                                                                         <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
                                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
                                                                             <div className="text-sm font-black text-[var(--color-secondary)]">
-                                                                                {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : new Date(selectedProfile.date_of_birth).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                                                                {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : formatDateSafe(selectedProfile.date_of_birth, { dateStyle: 'long' })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -2534,7 +2600,7 @@ export default function ClientDetails() {
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-emerald-500" />
-                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.weight / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}kg/m</span></span>
+                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{growthDeltas.weightVel}kg/m</span></span>
                                                                                     </div>
                                                                                 </div>
                                                                                 {growthLogs[growthLogs.length - 1]?.clinical_analysis?.weight && (
@@ -2587,7 +2653,7 @@ export default function ClientDetails() {
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-blue-500" />
-                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{(growthDeltas.height / (Math.max(1, (new Date() - new Date(growthLogs[1].logged_at)) / (1000 * 60 * 60 * 24 * 30)))).toFixed(2)}cm/m</span></span>
+                                                                                        <span>Velocity: <span className="text-[var(--color-text-main)]">{growthDeltas.heightVel}cm/m</span></span>
                                                                                     </div>
                                                                                 </div>
                                                                                 {growthLogs[growthLogs.length - 1]?.clinical_analysis?.height && (
@@ -2728,13 +2794,27 @@ export default function ClientDetails() {
                                                                                 variant="ghost"
                                                                                 onClick={() => {
                                                                                     setIsClinicalEditing(false);
-                                                                                    setClinicalForm({
-                                                                                        child_name: selectedProfile?.child_name || '',
-                                                                                        gender: selectedProfile?.gender || '',
-                                                                                        date_of_birth: selectedProfile?.date_of_birth?.split('T')[0] || '',
-                                                                                        activity_level: selectedProfile?.activity_level || '',
-                                                                                        allergies: selectedProfile?.allergies || []
-                                                                                    });
+                                                                                    if (selectedProfile) {
+                                                                                        setClinicalForm({
+                                                                                            child_name: selectedProfile.child_name || '',
+                                                                                            gender: selectedProfile.gender || '',
+                                                                                            date_of_birth: selectedProfile.date_of_birth?.split('T')[0] || '',
+                                                                                            activity_level: selectedProfile.activity_level || '',
+                                                                                            height_cm: selectedProfile.height_cm || '',
+                                                                                            weight_kg: selectedProfile.weight_kg || '',
+                                                                                            allergies: selectedProfile.allergies || [],
+                                                                                            dietary_preferences: selectedProfile.dietary_preferences || '',
+                                                                                            medical_history: typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : '',
+                                                                                            medications: selectedProfile.medications || '',
+                                                                                            weigh_in_conditions: selectedProfile.weigh_in_conditions || '',
+                                                                                            bristol_stool_scale: selectedProfile.bristol_stool_scale || 4,
+                                                                                            family_history: selectedProfile.family_history || '',
+                                                                                            food_intolerances: selectedProfile.food_intolerances || '',
+                                                                                            symptoms: selectedProfile.symptoms || '',
+                                                                                            lifestyle_factors: selectedProfile.lifestyle_factors || '',
+                                                                                            waist_circumference: selectedProfile.waist_circumference || ''
+                                                                                        });
+                                                                                    }
                                                                                 }}
                                                                                 className="flex-1 sm:flex-none text-xs font-black uppercase"
                                                                             >
@@ -2754,7 +2834,7 @@ export default function ClientDetails() {
 
                                                                 {/* Edit Form for Bio Info if in edit mode */}
                                                                 {isClinicalEditing && (
-                                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-top-2 duration-300">
                                                                         <div className="space-y-1.5">
                                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
                                                                             <input
@@ -2779,9 +2859,21 @@ export default function ClientDetails() {
                                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Date of Birth</label>
                                                                             <input
                                                                                 type="date"
+                                                                                max={new Date().toISOString().split('T')[0]}
                                                                                 value={clinicalForm.date_of_birth}
                                                                                 onChange={(e) => setClinicalForm({ ...clinicalForm, date_of_birth: e.target.value })}
                                                                                 className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-1.5">
+                                                                            <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Waist (cm)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                step="0.1"
+                                                                                value={clinicalForm.waist_circumference}
+                                                                                onChange={(e) => setClinicalForm({ ...clinicalForm, waist_circumference: e.target.value })}
+                                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                                                placeholder="Optional"
                                                                             />
                                                                         </div>
                                                                     </div>
@@ -3117,6 +3209,7 @@ export default function ClientDetails() {
                                                                                 <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
                                                                                 <input
                                                                                     type="date"
+                                                                                    max={new Date().toISOString().split('T')[0]}
                                                                                     value={newVaccine.date}
                                                                                     onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
                                                                                     className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
@@ -5095,6 +5188,7 @@ export default function ClientDetails() {
                                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
                                     <input
                                         type="date"
+                                        max={new Date().toISOString().split('T')[0]}
                                         required
                                         value={editGrowthForm.logged_at}
                                         onChange={(e) => setEditGrowthForm({ ...editGrowthForm, logged_at: e.target.value })}

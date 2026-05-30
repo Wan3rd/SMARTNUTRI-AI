@@ -71,6 +71,11 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                 setMessage({ type: 'error', text: "Please enter the child's name before continuing." });
                 return false;
             }
+            const dob = new Date(formData.dateOfBirth);
+            if (dob > new Date()) {
+                setMessage({ type: 'error', text: "Date of birth cannot be in the future." });
+                return false;
+            }
         }
         if (targetStep >= 2) {
             const h = parseFloat(formData.heightCm);

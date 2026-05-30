@@ -511,6 +511,10 @@ export default function Profile() {
 
     const handleAddVaccine = async () => {
         if (!newVaccine.typeId) return;
+        if (newVaccine.date && new Date(newVaccine.date) > new Date()) {
+            showNotification('Vaccination date cannot be in the future', 'error');
+            return;
+        }
         try {
             const res = await api.post(`/profiles/${profileData.id}/vaccinations`, {
                 vaccination_type_id: newVaccine.typeId,
@@ -691,11 +695,21 @@ export default function Profile() {
     };
 
     const handleSave = async () => {
+        if (!profileData.childName || !profileData.childName.trim()) {
+            showNotification("Please enter a valid child's name.", "error");
+            return;
+        }
+        const parsedAge = parseInt(profileData.age);
+        if (isNaN(parsedAge) || parsedAge < 0 || parsedAge > 18) {
+            showNotification("Please enter a valid age between 0 and 18 years.", "error");
+            return;
+        }
+
         setSaving(true);
         try {
             // Calculate rough DOB from age again
             const dob = new Date();
-            dob.setFullYear(dob.getFullYear() - parseInt(profileData.age || 0));
+            dob.setFullYear(dob.getFullYear() - parsedAge);
 
             let finalHeight = parseFloat(profileData.height);
             let finalWeight = parseFloat(profileData.weight);
@@ -1678,6 +1692,7 @@ export default function Profile() {
                                                     <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
                                                     <input
                                                         type="date"
+                                                        max={new Date().toISOString().split('T')[0]}
                                                         value={newVaccine.date}
                                                         onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
                                                         className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"

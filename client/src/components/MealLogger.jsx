@@ -483,6 +483,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
             showNotif('Please check the verification box to confirm the meal data is correct before saving.', 'error');
             return;
         }
+        if (suppData.loggedAt && new Date(suppData.loggedAt) > new Date()) {
+            showNotif('Meal log date and time cannot be in the future.', 'error');
+            return;
+        }
         setLoading(true);
         setStatus('saving');
         try {

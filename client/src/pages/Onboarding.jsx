@@ -151,6 +151,10 @@ export default function Onboarding() {
                 setError("Please complete all essential vitals.");
                 return false;
             }
+            if (new Date(formData.date_of_birth) > new Date()) {
+                setError("Date of birth cannot be in the future.");
+                return false;
+            }
             const h = parseFloat(formData.height);
             const w = parseFloat(formData.weight);
             if (h < 30 || h > 250) { setError("Invalid height range (30-250cm)"); return false; }
@@ -365,6 +369,7 @@ export default function Onboarding() {
                                                 <input
                                                     type="date"
                                                     name="date_of_birth"
+                                                    max={new Date().toISOString().split('T')[0]}
                                                     required
                                                     className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
                                                     value={formData.date_of_birth}

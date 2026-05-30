@@ -119,6 +119,7 @@ export default function MealHistory() {
                 else if (rule.category === 'Sodium') current = totals.sodium;
 
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
+                else if (rule.rule_type === 'min' && current < limit) status = 'danger';
             });
 
             statuses[date] = status;
@@ -152,7 +153,8 @@ export default function MealHistory() {
             else if (rule.category === 'Sugar') current = totals.sugar;
             else if (rule.category === 'Sodium') current = totals.sodium;
 
-            if (rule.rule_type === 'max' && current > limit) {
+            const isViolation = (rule.rule_type === 'max' && current > limit) || (rule.rule_type === 'min' && current < limit);
+            if (isViolation) {
                 violations.push({
                     name: rule.rule_name,
                     category: rule.category,

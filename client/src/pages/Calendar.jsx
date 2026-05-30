@@ -97,6 +97,8 @@ export default function Calendar() {
 
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
                 else if (rule.rule_type === 'max' && current > limit * 0.9 && status !== 'danger') status = 'warning';
+                else if (rule.rule_type === 'min' && current < limit) status = 'danger';
+                else if (rule.rule_type === 'min' && current < limit * 1.1 && status !== 'danger') status = 'warning';
             });
 
             statuses[date] = status;
