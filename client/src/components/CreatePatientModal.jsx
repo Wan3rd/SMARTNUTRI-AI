@@ -525,6 +525,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                     <VaccinationStep 
                         formData={formData}
                         setFormData={setFormData}
+                        disabled={loading}
                     />
                 );
             case 4:
@@ -635,7 +636,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={(e) => {
-            if (e.target === e.currentTarget) handleClose();
+            if (e.target === e.currentTarget && !loading) handleClose();
         }}>
             <Card className="w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col">
                 {/* Header with Stepper */}
@@ -645,7 +646,11 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <h2 className="text-xl sm:text-2xl font-black text-[var(--color-text-main)] tracking-tight uppercase">Patient Profiling</h2>
                             <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Initial Clinical Intake</p>
                         </div>
-                        <button onClick={handleClose} className="p-2 bg-[var(--color-bg-card)] rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-[var(--color-divider)]">
+                        <button 
+                            onClick={() => !loading && handleClose()} 
+                            disabled={loading}
+                            className="p-2 bg-[var(--color-bg-card)] rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-[var(--color-divider)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <X size={18} sm:size={20} />
                         </button>
                     </div>
@@ -685,11 +690,11 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         onClose={() => setNotif({ ...notif, show: false })}
                     />
 
-                    <div className="min-h-[300px]">
+                    <fieldset disabled={loading} className="w-full border-none p-0 m-0 min-h-[300px]">
                         <AnimatePresence mode="wait">
                             {renderStep()}
                         </AnimatePresence>
-                    </div>
+                    </fieldset>
                     {step === 0 && (
                         <p className="text-[9px] text-center text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest mt-6 bg-slate-100 dark:bg-white/5 py-3 rounded-xl border border-slate-200 dark:border-white/10">
                             * Default parent password: <span className="text-emerald-600 dark:text-emerald-400">smartnutri123</span>
@@ -703,7 +708,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <Button 
                                 variant="outline" 
                                 onClick={prevStep}
-                                className="h-12 sm:h-14 px-5 sm:px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2"
+                                disabled={loading}
+                                className="h-12 sm:h-14 px-5 sm:px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 disabled:opacity-50"
                             >
                                 <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
                             </Button>
@@ -711,8 +717,9 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         {step < STEPS.length - 1 ? (
                             <Button 
                                 onClick={nextStep}
+                                disabled={loading}
                                 className={cn(
-                                    "flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl transition-all duration-300",
+                                    "flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl transition-all duration-300 disabled:opacity-50",
                                     isStepValid() 
                                         ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" 
                                         : "bg-slate-800 dark:bg-slate-700 hover:opacity-90"

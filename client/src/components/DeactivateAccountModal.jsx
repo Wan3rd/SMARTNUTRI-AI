@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
-import { X, ShieldAlert, Lock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { X, ShieldAlert, Lock, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -56,8 +56,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
             <Card className="w-full max-w-md shadow-2xl border-0 dark:border dark:border-red-900/30 overflow-hidden rounded-3xl animate-in zoom-in duration-300 relative">
                 {/* Absolute Close Button */}
                 <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 z-20 p-2 bg-red-100/50 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-800/40 rounded-full transition-all duration-300 text-red-600 dark:text-red-400 backdrop-blur-sm group"
+                    onClick={() => !loading && onClose()} 
+                    disabled={loading}
+                    className="absolute top-4 right-4 z-20 p-2 bg-red-100/50 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-800/40 rounded-full transition-all duration-300 text-red-600 dark:text-red-400 backdrop-blur-sm group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                 </button>
@@ -91,8 +92,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                         {deactivationReasons.map((r) => (
                                             <button
                                                 key={r}
-                                                onClick={() => setReason(r)}
-                                                className={`p-3 text-[10px] font-bold text-left rounded-xl border transition-all ${reason === r 
+                                                onClick={() => !loading && setReason(r)}
+                                                disabled={loading}
+                                                className={`p-3 text-[10px] font-bold text-left rounded-xl border transition-all disabled:opacity-50 ${reason === r 
                                                     ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400' 
                                                     : 'bg-transparent border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-red-200 dark:hover:border-red-500/20'}`}
                                             >
@@ -105,7 +107,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
 
                             <div className="flex flex-col gap-3 pt-2">
                                 <Button 
-                                    disabled={!reason}
+                                    disabled={!reason || loading}
                                     className="w-full py-4 border-2 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-500/10 font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-none hover:shadow-md disabled:opacity-30 disabled:hover:bg-transparent"
                                     onClick={() => setStep(2)}
                                 >
@@ -142,7 +144,8 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                     <input
                                         type="password"
                                         required
-                                        className="w-full p-4 pl-12 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] dark:bg-black/20 text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-red-500 transition-all shadow-inner"
+                                        disabled={loading}
+                                        className="w-full p-4 pl-12 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] dark:bg-black/20 text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-red-500 transition-all shadow-inner disabled:opacity-50"
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
@@ -155,9 +158,13 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                 <Button 
                                     type="submit" 
                                     disabled={loading}
-                                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 rounded-2xl font-black uppercase tracking-widest text-[10px]"
+                                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 rounded-2xl font-black uppercase tracking-widest text-[10px] flex justify-center items-center gap-2"
                                 >
-                                    {loading ? 'Deactivating...' : (
+                                    {loading ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <Loader2 className="animate-spin" size={16} /> Deactivating...
+                                        </span>
+                                    ) : (
                                         <span className="flex items-center justify-center gap-2">
                                             Confirm Deactivation <ArrowRight size={16} />
                                         </span>
@@ -166,8 +173,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                 <Button 
                                     type="button"
                                     variant="ghost" 
-                                    className="w-full text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]"
-                                    onClick={() => setStep(1)}
+                                    disabled={loading}
+                                    className="w-full text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] disabled:opacity-50"
+                                    onClick={() => !loading && setStep(1)}
                                 >
                                     Back
                                 </Button>

@@ -100,7 +100,7 @@ export default function ForceChangePassword() {
                 </CardHeader>
                 <CardContent className="pb-10">
                     {error && (
-                        <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold text-center border border-red-200 dark:border-red-900/50">
+                        <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30 rounded-2xl text-xs font-bold text-center">
                             {error}
                         </div>
                     )}

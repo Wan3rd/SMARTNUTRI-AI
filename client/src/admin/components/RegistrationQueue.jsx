@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { Users, Search, Eye, BadgeCheck, ShieldAlert, Check, X, ShieldCheck, Lock } from 'lucide-react';
+import { Users, Search, Eye, BadgeCheck, ShieldAlert, Check, X, ShieldCheck, Lock, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import Notification from '../../components/common/Notification';
 
@@ -40,7 +40,7 @@ export default function RegistrationQueue({ onStatsUpdate }) {
     };
 
     const handleVerify = async (id, status) => {
-        setProcessingId(id);
+        setProcessingId(`${id}-${status}`);
         try {
             await api.patch(`/admin/nutritionists/${id}/verify`, { status });
             setNutritionists(prev => prev.map(n => n.id === id ? { ...n, status } : n));
@@ -56,7 +56,7 @@ export default function RegistrationQueue({ onStatsUpdate }) {
     };
 
     const handleSuspend = async (id, isSuspended) => {
-        setProcessingId(id);
+        setProcessingId(`${id}-suspend`);
         try {
             await api.patch(`/admin/users/${id}/suspend`, { is_suspended: isSuspended });
             setNutritionists(prev => prev.map(n => n.id === id ? { ...n, is_suspended: isSuspended } : n));
@@ -224,7 +224,7 @@ export default function RegistrationQueue({ onStatsUpdate }) {
             {selectedNutri && (
                 <div 
                     className="fixed inset-0 z-[100] flex items-center justify-center sm:bg-black/60 sm:backdrop-blur-md sm:p-6 animate-in sm:fade-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 duration-300"
-                    onClick={() => setSelectedNutri(null)}
+                    onClick={() => !processingId && setSelectedNutri(null)}
                 >
                     <Card 
                         className="max-w-2xl w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[3rem] overflow-hidden shadow-none sm:shadow-2xl bg-[var(--color-bg-card)] flex flex-col relative"
@@ -232,8 +232,9 @@ export default function RegistrationQueue({ onStatsUpdate }) {
                     >
                         <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
                             <button
-                                onClick={() => setSelectedNutri(null)}
-                                className="p-3 hover:bg-[var(--color-bg-page)] rounded-2xl transition-all text-[var(--color-text-muted)]"
+                                onClick={() => !processingId && setSelectedNutri(null)}
+                                disabled={processingId !== null}
+                                className="p-3 hover:bg-[var(--color-bg-page)] rounded-2xl transition-all text-[var(--color-text-muted)] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <X size={24} />
                             </button>
@@ -279,14 +280,14 @@ export default function RegistrationQueue({ onStatsUpdate }) {
                                 </label>
                                 {selectedNutri.license_image_url ? (
                                     <div
-                                        className="relative group aspect-video rounded-3xl overflow-hidden border-2 border-[var(--color-divider)] cursor-zoom-in bg-zinc-900 shadow-inner"
-                                        onClick={() => setPreviewLicenseImage(selectedNutri.license_image_url)}
+                                        className={`relative group aspect-video rounded-3xl overflow-hidden border-2 border-[var(--color-divider)] bg-zinc-900 shadow-inner ${processingId ? 'pointer-events-none opacity-50' : 'cursor-zoom-in'}`}
+                                        onClick={() => !processingId && setPreviewLicenseImage(selectedNutri.license_image_url)}
                                     >
                                         <img src={selectedNutri.license_image_url} alt="License" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-black text-white uppercase tracking-[0.2em] border border-white/20 shadow-lg">
                                                 Inspect Document
-                                            </div>
+                                              </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -301,30 +302,44 @@ export default function RegistrationQueue({ onStatsUpdate }) {
                                 <div className="flex gap-3">
                                     <Button
                                         onClick={() => handleVerify(selectedNutri.id, 'rejected')}
-                                        disabled={processingId === selectedNutri.id}
-                                        className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-rose-500/20"
+                                        disabled={processingId !== null}
+                                        className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-rose-500/20 flex justify-center items-center"
                                     >
-                                        <X size={16} /> Reject
+                                        {processingId === `${selectedNutri.id}-rejected` ? (
+                                            <Loader2 className="animate-spin" size={16} />
+                                        ) : (
+                                            <><X size={16} /> Reject</>
+                                        )}
                                     </Button>
                                     <Button
                                         onClick={() => handleVerify(selectedNutri.id, 'approved')}
-                                        disabled={processingId === selectedNutri.id}
-                                        className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-emerald-500/20"
+                                        disabled={processingId !== null}
+                                        className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-emerald-500/20 flex justify-center items-center"
                                     >
-                                        <Check size={16} /> Approve
+                                        {processingId === `${selectedNutri.id}-approved` ? (
+                                            <Loader2 className="animate-spin" size={16} />
+                                        ) : (
+                                            <><Check size={16} /> Approve</>
+                                        )}
                                     </Button>
                                 </div>
 
                                 <Button
                                     onClick={() => handleSuspend(selectedNutri.id, !selectedNutri.is_suspended)}
-                                    disabled={processingId === selectedNutri.id}
-                                    className={`w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 transition-all border-none shadow-sm ${selectedNutri.is_suspended
+                                    disabled={processingId !== null}
+                                    className={`w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 transition-all border-none shadow-sm flex justify-center items-center disabled:opacity-50 ${selectedNutri.is_suspended
                                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-500 hover:text-white'
                                             : 'bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 hover:bg-amber-500 hover:text-white'
                                         }`}
                                 >
-                                    {selectedNutri.is_suspended ? <ShieldCheck size={16} /> : <Lock size={16} />}
-                                    {selectedNutri.is_suspended ? 'Reactivate Account' : 'Suspend Account Access'}
+                                    {processingId === `${selectedNutri.id}-suspend` ? (
+                                        <Loader2 className="animate-spin" size={16} />
+                                    ) : (
+                                        <>
+                                            {selectedNutri.is_suspended ? <ShieldCheck size={16} /> : <Lock size={16} />}
+                                            {selectedNutri.is_suspended ? 'Reactivate Account' : 'Suspend Account Access'}
+                                        </>
+                                    )}
                                 </Button>
                             </div>
                         </CardContent>

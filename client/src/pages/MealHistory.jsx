@@ -217,7 +217,8 @@ export default function MealHistory() {
         // Search filter
         if (searchQuery) {
             filtered = filtered.filter(log => {
-                const items = log.ai_analysis?.items?.map(i => i.name.toLowerCase()).join(' ') || '';
+                const analysis = log.nutritionist_review?.verified_analysis || log.ai_analysis;
+                const items = analysis?.items?.map(i => i.name.toLowerCase()).join(' ') || '';
                 const review = log.nutritionist_review?.title?.toLowerCase() || '';
                 return items.includes(searchQuery.toLowerCase()) || review.includes(searchQuery.toLowerCase());
             });

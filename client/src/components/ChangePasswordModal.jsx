@@ -58,12 +58,12 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                 newPassword: formData.newPassword
             });
             setMessage({ type: 'success', text: 'Password updated successfully' });
-            // Keep button disabled and form locked
-            setLoading(false); 
+            
             setTimeout(() => {
                 onClose();
                 setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 setMessage({ type: '', text: '' });
+                setLoading(false);
             }, 2500);
         } catch (err) {
             setMessage({ 
@@ -86,93 +86,100 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                 </div>
                                 <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Security Update</h2>
                             </div>
-                            <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                            <button 
+                                onClick={() => !(loading || message.type === 'success') && onClose()} 
+                                disabled={loading || message.type === 'success'}
+                                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Current Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
-                                    <input
-                                        type={showPasswords ? "text" : "password"}
-                                        required
-                                        value={formData.currentPassword}
-                                        onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
-                                        className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                        placeholder="••••••••"
-                                    />
+                            <fieldset disabled={loading || message.type === 'success'} className="space-y-5 border-none p-0 m-0">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Current Password</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            required
+                                            value={formData.currentPassword}
+                                            onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
+                                            className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">New Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
-                                    <input
-                                        type={showPasswords ? "text" : "password"}
-                                        required
-                                        value={formData.newPassword}
-                                        onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
-                                        className="w-full h-12 pl-11 pr-11 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                        placeholder="••••••••"
-                                    />
-                                    <button
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">New Password</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            required
+                                            value={formData.newPassword}
+                                            onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                                            className="w-full h-12 pl-11 pr-11 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                            placeholder="••••••••"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswords(!showPasswords)}
+                                            disabled={loading || message.type === 'success'}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50"
+                                        >
+                                            {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Confirm New Password</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            required
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                            className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                </div>
+
+                                {message.text && (
+                                    <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
+                                        {message.text}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <Button
                                         type="button"
-                                        onClick={() => setShowPasswords(!showPasswords)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                                        variant="secondary"
+                                        onClick={onClose}
+                                        className="flex-1 h-12 rounded-xl"
                                     >
-                                        {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={loading || message.type === 'success'}
+                                        className="flex-[2] h-12 rounded-xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-[var(--color-primary)]/20 disabled:opacity-80"
+                                    >
+                                        {loading ? (
+                                            <Loader2 className="animate-spin" size={16} />
+                                        ) : message.type === 'success' ? (
+                                            'Updated!'
+                                        ) : (
+                                            'Update Password'
+                                        )}
+                                    </Button>
                                 </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Confirm New Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16} />
-                                    <input
-                                        type={showPasswords ? "text" : "password"}
-                                        required
-                                        value={formData.confirmPassword}
-                                        onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                                        className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                            </div>
-
-                            {message.text && (
-                                <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
-                                    {message.text}
-                                </div>
-                            )}
-
-                            <div className="flex gap-3 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={onClose}
-                                    className="flex-1 h-12 rounded-xl"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={loading || message.type === 'success'}
-                                    className="flex-[2] h-12 rounded-xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-[var(--color-primary)]/20 disabled:opacity-80"
-                                >
-                                    {loading ? (
-                                        <Loader2 className="animate-spin" size={16} />
-                                    ) : message.type === 'success' ? (
-                                        'Updated!'
-                                    ) : (
-                                        'Update Password'
-                                    )}
-                                </Button>
-                            </div>
+                            </fieldset>
                         </form>
                     </CardContent>
                 </Card>

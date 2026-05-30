@@ -272,7 +272,7 @@ export default function Register() {
                 </CardHeader>
                 <CardContent className="px-6 sm:px-10 pb-8">
                     {error && (
-                        <div className="mb-6 p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs text-center font-bold">
+                        <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30 rounded-2xl text-xs font-bold text-center">
                             {error}
                         </div>
                     )}

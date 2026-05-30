@@ -163,7 +163,7 @@ router.post('/analyze', verifyToken, (req, res, next) => {
 
 // POST /logs/analyze-item - Analyze a single item string (Caregiver manual correction)
 router.post('/analyze-item', verifyToken, async (req, res) => {
-    const { name, serving_unit, cooking_method } = req.body;
+    const { name, serving_unit, cooking_method, allergies } = req.body;
     if (!name) return res.status(400).json({ message: 'Name is required' });
 
     // Sanitize inputs before embedding in AI prompt (prevent prompt injection)
@@ -178,6 +178,18 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
     try {
         const { generateText } = await import('../services/gemini.js');
         const methodPrefix = safeMethod ? `${safeMethod} ` : '';
+        
+        let allergySection = '';
+        if (allergies && Array.isArray(allergies) && allergies.length > 0) {
+            const cleanAllergies = allergies.map(a => String(a).trim()).filter(Boolean);
+            if (cleanAllergies.length > 0) {
+                allergySection = `
+                Additionally, analyze if the food "${methodPrefix}${safeName}" traditionally contains any of the child's recorded clinical allergies: [${cleanAllergies.join(', ')}]. 
+                Evaluate if the allergen is a direct or hidden/traditional ingredient (e.g., "Bibingka" contains egg and dairy, "Leche Flan" contains egg and dairy, "Cake" contains egg and wheat/gluten, "Pesto" contains tree nuts).
+                Set the "detected_allergens" field in the output JSON to a flat array of matching allergens from the child's list. If none match, return [].`;
+            }
+        }
+
         const prompt = `Provide nutritional data for exactly 1 ${safeUnit} of "${methodPrefix}${safeName}". 
         Assume a standard kid-sized portion if ambiguous.
         CRITICAL: The macros MUST be for EXACTLY 1 ${safeUnit}, NOT per 100g (unless the unit is exactly 100g). If the food is a commercial brand, use its exact official nutrition label for 1 ${safeUnit}.
@@ -187,7 +199,8 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
         2. If the user requests 'Piece' or similar individual unit, divide the total package weight and macros by the typical number of pieces per pack to get the exact weight and macros for a single piece (e.g., 30g / 9 pieces = ~3.33g per piece; 140 kcal / 9 pieces = ~15.5 kcal per piece).
         3. Do NOT default single pieces of light crackers/biscuits to 10g or 100g.
         4. If the unit is 'Pack' or 'Sachet', output the exact full nutritional value for 1 full pack/sachet of that brand.
-         Output Format: {"name": "${safeName}", "serving_weight_g": <estimated_weight_of_1_unit_in_grams>, "calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "sugar_g": 0, "sodium_mg": 0}
+        ${allergySection}
+         Output Format: {"name": "${safeName}", "serving_weight_g": <estimated_weight_of_1_unit_in_grams>, "calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "sugar_g": 0, "sodium_mg": 0, "detected_allergens": []}
         Only output valid JSON. No markdown.`;
 
         const raw = await generateText(prompt);

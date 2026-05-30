@@ -189,7 +189,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                     <CardContent className="p-0">
                         {/* Header */}
                         <div className="bg-[var(--color-primary)] p-6 sm:p-8 text-white relative">
-                            <button onClick={onClose} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 hover:bg-white/10 rounded-full transition-colors">
+                            <button onClick={() => !loading && onClose()} disabled={loading} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 <X size={20} sm:size={24} />
                             </button>
                             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Add New Profile</h2>
@@ -206,164 +206,167 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                         </div>
 
                         <form className="p-6 sm:p-10 space-y-6 sm:space-y-8" onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}>
-                            {message.text && (
-                                <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
-                                    {message.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
-                                    {message.text}
-                                </div>
-                            )}
+                            <fieldset disabled={loading} className="space-y-6 sm:space-y-8 border-none p-0 m-0">
+                                {message.text && (
+                                    <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
+                                        {message.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
+                                        {message.text}
+                                    </div>
+                                )}
 
-                            {/* Step 1: Basic Info */}
-                            {step === 1 && (
-                                <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Child's Name</label>
-                                        <div className="relative">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={18} />
-                                            <input
-                                                type="text" required value={formData.childName}
-                                                onChange={(e) => setFormData({...formData, childName: e.target.value})}
-                                                className="w-full h-14 pl-12 pr-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
-                                                placeholder="Enter full name"
-                                            />
+                                {/* Step 1: Basic Info */}
+                                {step === 1 && (
+                                    <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Child's Name</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={18} />
+                                                <input
+                                                    type="text" required value={formData.childName}
+                                                    onChange={(e) => setFormData({...formData, childName: e.target.value})}
+                                                    className="w-full h-14 pl-12 pr-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    placeholder="Enter full name"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Date of Birth</label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <select
+                                                        value={dobParts.month}
+                                                        onChange={(e) => setDobParts({...dobParts, month: e.target.value})}
+                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                    >
+                                                        {MONTHS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                                    </select>
+                                                    <select
+                                                        value={dobParts.day}
+                                                        onChange={(e) => setDobParts({...dobParts, day: e.target.value})}
+                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                    >
+                                                        {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                                                    </select>
+                                                    <select
+                                                        value={dobParts.year}
+                                                        onChange={(e) => setDobParts({...dobParts, year: e.target.value})}
+                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                    >
+                                                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Gender</label>
+                                                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)]">
+                                                    {['Male', 'Female'].map(g => (
+                                                        <button key={g} type="button" onClick={() => !loading && setFormData({...formData, gender: g})}
+                                                            className={`flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.gender === g ? 'bg-white dark:bg-white/10 text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}
+                                                        >
+                                                            {g}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Date of Birth</label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <select
-                                                    value={dobParts.month}
-                                                    onChange={(e) => setDobParts({...dobParts, month: e.target.value})}
-                                                    className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
-                                                >
-                                                    {MONTHS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                                                </select>
-                                                <select
-                                                    value={dobParts.day}
-                                                    onChange={(e) => setDobParts({...dobParts, day: e.target.value})}
-                                                    className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
-                                                >
-                                                    {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                                                </select>
-                                                <select
-                                                    value={dobParts.year}
-                                                    onChange={(e) => setDobParts({...dobParts, year: e.target.value})}
-                                                    className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
-                                                >
-                                                    {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                                                </select>
+                                )}
+
+                                {/* Step 2: Measurements */}
+                                {step === 2 && (
+                                    <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Height (cm)</label>
+                                                <input
+                                                    type="number" required value={formData.heightCm}
+                                                    onChange={(e) => setFormData({...formData, heightCm: e.target.value})}
+                                                    className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    placeholder="e.g. 110"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Weight (kg)</label>
+                                                <input
+                                                    type="number" required value={formData.weightKg}
+                                                    onChange={(e) => setFormData({...formData, weightKg: e.target.value})}
+                                                    className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    placeholder="e.g. 20"
+                                                />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Gender</label>
-                                            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)]">
-                                                {['Male', 'Female'].map(g => (
-                                                    <button key={g} type="button" onClick={() => setFormData({...formData, gender: g})}
-                                                        className={`flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.gender === g ? 'bg-white dark:bg-white/10 text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Activity Level</label>
+                                            <select
+                                                value={formData.activityLevel}
+                                                onChange={(e) => setFormData({...formData, activityLevel: e.target.value})}
+                                                className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all appearance-none"
+                                            >
+                                                <option value="sedentary">Sedentary (Little to no exercise)</option>
+                                                <option value="moderate">Moderate (Active 3-5 days/week)</option>
+                                                <option value="highly_active">Highly Active (Physical training daily)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Step 3: Vaccines */}
+                                {step === 3 && (
+                                    <VaccinationStep 
+                                        formData={formData}
+                                        setFormData={setFormData}
+                                        disabled={loading}
+                                    />
+                                )}
+
+                                {/* Step 4: Dietary */}
+                                {step === 4 && (
+                                    <div className="space-y-6 animate-in slide-in-from-right-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Allergies</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {ALLERGY_OPTIONS.map(a => (
+                                                    <button key={a} type="button" onClick={() => !loading && toggleOption(formData.allergies, a, (val) => setFormData({...formData, allergies: val}))}
+                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.allergies.includes(a) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
                                                     >
-                                                        {g}
+                                                        {a}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Dietary Preferences</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {DIETARY_OPTIONS.map(d => (
+                                                    <button key={d} type="button" onClick={() => !loading && toggleOption(formData.dietaryPreferences, d, (val) => setFormData({...formData, dietaryPreferences: val}))}
+                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.dietaryPreferences.includes(d) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
+                                                    >
+                                                        {d}
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Step 2: Measurements */}
-                            {step === 2 && (
-                                <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Height (cm)</label>
-                                            <input
-                                                type="number" required value={formData.heightCm}
-                                                onChange={(e) => setFormData({...formData, heightCm: e.target.value})}
-                                                className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
-                                                placeholder="e.g. 110"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Weight (kg)</label>
-                                            <input
-                                                type="number" required value={formData.weightKg}
-                                                onChange={(e) => setFormData({...formData, weightKg: e.target.value})}
-                                                className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
-                                                placeholder="e.g. 20"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Activity Level</label>
-                                        <select
-                                            value={formData.activityLevel}
-                                            onChange={(e) => setFormData({...formData, activityLevel: e.target.value})}
-                                            className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all appearance-none"
-                                        >
-                                            <option value="sedentary">Sedentary (Little to no exercise)</option>
-                                            <option value="moderate">Moderate (Active 3-5 days/week)</option>
-                                            <option value="highly_active">Highly Active (Physical training daily)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Step 3: Vaccines */}
-                            {step === 3 && (
-                                <VaccinationStep 
-                                    formData={formData}
-                                    setFormData={setFormData}
-                                />
-                            )}
-
-                            {/* Step 4: Dietary */}
-                            {step === 4 && (
-                                <div className="space-y-6 animate-in slide-in-from-right-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Allergies</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {ALLERGY_OPTIONS.map(a => (
-                                                <button key={a} type="button" onClick={() => toggleOption(formData.allergies, a, (val) => setFormData({...formData, allergies: val}))}
-                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.allergies.includes(a) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
-                                                >
-                                                    {a}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Dietary Preferences</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {DIETARY_OPTIONS.map(d => (
-                                                <button key={d} type="button" onClick={() => toggleOption(formData.dietaryPreferences, d, (val) => setFormData({...formData, dietaryPreferences: val}))}
-                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.dietaryPreferences.includes(d) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
-                                                >
-                                                    {d}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Footer Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-[var(--color-divider)]">
-                                {step > 1 && (
-                                    <Button type="button" variant="outline" onClick={handleBack} className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
-                                        <ChevronLeft size={16} /> Back
-                                    </Button>
                                 )}
-                                {step < 4 ? (
-                                    <Button type="button" onClick={handleNext} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
-                                        Continue <ChevronRight size={16} />
-                                    </Button>
-                                ) : (
-                                    <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
-                                        {loading ? <Loader2 className="animate-spin" size={16} /> : 'Complete Profile'}
-                                    </Button>
-                                )}
-                            </div>
+
+                                {/* Footer Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-[var(--color-divider)]">
+                                    {step > 1 && (
+                                        <Button type="button" variant="outline" onClick={handleBack} disabled={loading} className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
+                                            <ChevronLeft size={16} /> Back
+                                        </Button>
+                                    )}
+                                    {step < 4 ? (
+                                        <Button type="button" onClick={handleNext} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                            Continue <ChevronRight size={16} />
+                                        </Button>
+                                    ) : (
+                                        <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                            {loading ? <Loader2 className="animate-spin" size={16} /> : 'Complete Profile'}
+                                        </Button>
+                                    )}
+                                </div>
+                            </fieldset>
                         </form>
                     </CardContent>
                 </Card>

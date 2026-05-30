@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { XCircle } from 'lucide-react';
+import { XCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
@@ -52,7 +52,12 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                             <h2 className="text-2xl font-black text-[var(--color-text-main)] tracking-tight">New Platform Account</h2>
                             <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Administrative Provisioning</p>
                         </div>
-                        <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
+                        <button 
+                            type="button" 
+                            onClick={() => processingId !== 'creating' && onClose()} 
+                            disabled={processingId === 'creating'}
+                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <XCircle size={20} />
                         </button>
                     </div>
@@ -63,7 +68,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <fieldset disabled={processingId === 'creating'} className="space-y-4 border-none p-0 m-0">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-2">Account Role</label>
                             <div className="flex gap-2 p-1 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
@@ -72,7 +77,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                                         key={r}
                                         type="button"
                                         onClick={() => setCreateForm(prev => ({ ...prev, role: r }))}
-                                        className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${createForm.role === r ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm border border-[var(--color-divider)]' : 'text-[var(--color-text-muted)]'}`}
+                                        disabled={processingId === 'creating'}
+                                        className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-50 ${createForm.role === r ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm border border-[var(--color-divider)]' : 'text-[var(--color-text-muted)]'}`}
                                     >
                                         {r === 'parent' ? 'Parent' : r === 'nutritionist' ? 'Nutritionist' : 'Admin'}
                                     </button>
@@ -142,14 +148,18 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </fieldset>
 
                     <Button
                         type="submit"
                         disabled={processingId === 'creating'}
-                        className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[var(--color-primary)]/20"
+                        className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[var(--color-primary)]/20 flex justify-center items-center gap-2"
                     >
-                        {processingId === 'creating' ? 'Provisioning Account...' : 'Generate Account'}
+                        {processingId === 'creating' ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" /> Provisioning Account...
+                            </>
+                        ) : 'Generate Account'}
                     </Button>
                 </form>
             </Card>

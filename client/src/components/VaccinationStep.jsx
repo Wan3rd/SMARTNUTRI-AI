@@ -3,7 +3,7 @@ import { Search, ShieldCheck, CheckCircle, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../lib/api';
 
-export default function VaccinationStep({ formData, setFormData, field = 'vaccinations' }) {
+export default function VaccinationStep({ formData, setFormData, field = 'vaccinations', disabled = false }) {
     const [vaccineTypes, setVaccineTypes] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
@@ -26,6 +26,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
     const vaccinations = formData[field] || [];
 
     const toggleVaccine = (type) => {
+        if (disabled) return;
         const isSelected = vaccinations.some(v => v.vaccination_type_id === type.id);
         if (isSelected) {
             setFormData(prev => ({
@@ -45,6 +46,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
     };
 
     const updateVaccine = (typeId, updates) => {
+        if (disabled) return;
         setFormData(prev => ({
             ...prev,
             [field]: prev[field].map(v => 
@@ -69,7 +71,8 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                         placeholder="Search vaccines..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-[var(--color-bg-page)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                        disabled={disabled}
+                        className="w-full pl-9 pr-4 py-2 bg-[var(--color-bg-page)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
             </div>
@@ -90,8 +93,8 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                         return (
                             <div 
                                 key={type.id}
-                                onClick={() => toggleVaccine(type)}
-                                className={`group cursor-pointer p-4 rounded-2xl border-2 transition-all active:scale-[0.98] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${isSelected ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 shadow-md' : 'bg-[var(--color-bg-page)] border-slate-200 dark:border-[var(--color-divider)] hover:border-emerald-300'}`}
+                                onClick={() => !disabled && toggleVaccine(type)}
+                                className={`group p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-[0.98]'} ${isSelected ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 shadow-md' : 'bg-[var(--color-bg-page)] border-slate-200 dark:border-[var(--color-divider)] hover:border-emerald-300'}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-500'}`}>
@@ -110,14 +113,16 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                                                 max={new Date().toISOString().split('T')[0]}
                                                 value={vaccineData?.date_administered || ''}
                                                 onChange={(e) => updateVaccine(type.id, { date_administered: e.target.value })}
-                                                className="text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none w-full sm:w-auto"
+                                                disabled={disabled}
+                                                className="text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                             <input 
                                                 type="text"
                                                 placeholder="Batch # / Notes"
                                                 value={vaccineData?.notes || ''}
                                                 onChange={(e) => updateVaccine(type.id, { notes: e.target.value })}
-                                                className="flex-1 w-full sm:w-32 text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none placeholder:opacity-50"
+                                                disabled={disabled}
+                                                className="flex-1 w-full sm:w-32 text-xs bg-[var(--color-bg-card)] text-[var(--color-text-main)] border border-slate-200 dark:border-[var(--color-divider)] rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-emerald-500 outline-none placeholder:opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         </div>
                                         <CheckCircle className="text-emerald-500 hidden sm:block" size={18} />

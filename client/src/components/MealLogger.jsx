@@ -15,16 +15,19 @@ import { useAuth } from '../context/AuthContext';
 import { cn, convertWater } from '../lib/utils';
 
 const ALLERGEN_DERIVATIVES = {
-    dairy: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
-    milk: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
-    gluten: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
-    wheat: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
-    peanut: ['peanut', 'groundnut', 'arachis', 'peanut butter', 'peanut oil'],
-    egg: ['egg', 'mayonnaise', 'meringue', 'ovalbumin', 'custard', 'egg yolk', 'egg white'],
-    soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
-    soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    dairy: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk', 'ice cream', 'milkshake', 'frappe', 'pizza', 'lasagna', 'mozzarella', 'parmesan', 'cheddar', 'cream cheese', 'sour cream', 'custard', 'flan', 'leche flan', 'pudding'],
+    milk: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk', 'ice cream', 'milkshake', 'frappe', 'pizza', 'lasagna', 'mozzarella', 'parmesan', 'cheddar', 'cream cheese', 'sour cream', 'custard', 'flan', 'leche flan', 'pudding'],
+    gluten: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour', 'cake', 'cookie', 'pancake', 'waffle', 'muffin', 'pizza', 'biscuit', 'pastry', 'donut', 'crouton', 'gravy', 'soba', 'ramen', 'macaroni', 'spaghetti'],
+    wheat: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour', 'cake', 'cookie', 'pancake', 'waffle', 'muffin', 'pizza', 'biscuit', 'pastry', 'donut', 'crouton', 'gravy', 'soba', 'ramen', 'macaroni', 'spaghetti'],
+    peanut: ['peanut', 'groundnut', 'arachis', 'peanut butter', 'peanut oil', 'satay', 'kare-kare'],
+    egg: ['egg', 'mayonnaise', 'meringue', 'ovalbumin', 'custard', 'egg yolk', 'egg white', 'cake', 'pancake', 'cookie', 'waffle', 'muffin', 'flan', 'pudding', 'french toast', 'crepe', 'macaron', 'meringue', 'carbonara', 'egg tart', 'leche flan', 'mayo'],
+    soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce', 'teriyaki', 'taho', 'tokwa'],
+    soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce', 'teriyaki', 'taho', 'tokwa'],
     fish: ['fish', 'salmon', 'tuna', 'cod', 'sardine', 'anchovy', 'mackerel', 'tilapia', 'trout', 'haddock', 'patis'],
-    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong']
+    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong', 'paella'],
+    "tree nut": ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia', 'brazil nut', 'chestnut', 'nutella', 'marzipan', 'pesto', 'praline', 'baklava', 'amaretto', 'gianduja'],
+    "tree nuts": ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia', 'brazil nut', 'chestnut', 'nutella', 'marzipan', 'pesto', 'praline', 'baklava', 'amaretto', 'gianduja'],
+    sesame: ['sesame', 'tahini', 'hummus', 'halvah', 'benne', 'sesame oil', 'sesame seed', 'gomasio']
 };
 
 const isAllergyBypassed = (allergenOrDeriv, itemName) => {
@@ -50,6 +53,61 @@ const isAllergyBypassed = (allergenOrDeriv, itemName) => {
         return true;
     }
     return false;
+};
+
+const getAllergensForItem = (item, allergies) => {
+    if (!item.name || !allergies || allergies.length === 0) return [];
+    
+    const matched = new Set();
+
+    // 1. Check AI-detected allergens first
+    if (item.detected_allergens && item.detected_allergens.length > 0) {
+        item.detected_allergens.forEach(a => matched.add(a));
+    }
+
+    // 2. Perform static matching
+    const itemName = item.name.trim().toLowerCase();
+    allergies.forEach(allergyRaw => {
+        const parts = String(allergyRaw || '').split(/[,/;]+/);
+        parts.forEach(part => {
+            let allergen = part.toLowerCase()
+                .replace(/\ballergy\b/g, '')
+                .replace(/\ballergies\b/g, '')
+                .replace(/\ballergic\b/g, '')
+                .replace(/\bto\b/g, '')
+                .trim();
+
+            if (allergen.endsWith('ies')) {
+                allergen = allergen.slice(0, -3) + 'y';
+            } else if (allergen.endsWith('s') && !allergen.endsWith('ss') && !allergen.endsWith('us') && !allergen.endsWith('is') && !allergen.endsWith('as')) {
+                allergen = allergen.slice(0, -1);
+            }
+
+            if (!allergen || allergen.length < 2) return;
+
+            // Direct check
+            const isDirectMatch = itemName.includes(allergen) || (itemName.length >= 3 && allergen.includes(itemName));
+            const isBypassed = isAllergyBypassed(allergen, itemName);
+            if (isDirectMatch && !isBypassed) {
+                matched.add(allergyRaw);
+                return;
+            }
+
+            // Semantic check
+            if (ALLERGEN_DERIVATIVES[allergen]) {
+                const isDerivMatch = ALLERGEN_DERIVATIVES[allergen].some(deriv => {
+                    const isDerivMatch = itemName.includes(deriv) || (itemName.length >= 3 && deriv.includes(itemName));
+                    const isDerivBypassed = isAllergyBypassed(deriv, itemName);
+                    return isDerivMatch && !isDerivBypassed;
+                });
+                if (isDerivMatch) {
+                    matched.add(allergyRaw);
+                }
+            }
+        });
+    });
+
+    return Array.from(matched);
 };
 
 const COOKING_METHODS = [
@@ -203,48 +261,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
     // Clinical Allergy Awareness Logic
     const allergyWarnings = useMemo(() => {
         if (!allergies || allergies.length === 0 || !verifiedItems || verifiedItems.length === 0) return [];
-
-        return verifiedItems.filter(item => {
-            const itemName = item.name?.toLowerCase() || '';
-            return allergies.some(allergyRaw => {
-                // Split the allergy element by comma, slash, or semicolon to handle joint inputs like "milk/dairy"
-                const parts = String(allergyRaw || '').split(/[,/;]+/);
-                
-                return parts.some(part => {
-                    let allergen = part.toLowerCase()
-                        .replace(/\ballergy\b/g, '')
-                        .replace(/\ballergies\b/g, '')
-                        .replace(/\ballergic\b/g, '')
-                        .replace(/\bto\b/g, '')
-                        .trim();
-
-                    // Simple English plural stemming (matches backend stemmer)
-                    if (allergen.endsWith('ies')) {
-                        allergen = allergen.slice(0, -3) + 'y';
-                    } else if (allergen.endsWith('s') && !allergen.endsWith('ss') && !allergen.endsWith('us') && !allergen.endsWith('is') && !allergen.endsWith('as')) {
-                        allergen = allergen.slice(0, -1);
-                    }
-
-                    if (!allergen || allergen.length < 2) return false;
-
-                    // 1. Direct match with bypasses
-                    const isDirectMatch = itemName.includes(allergen);
-                    const isBypassed = isAllergyBypassed(allergen, itemName);
-                    if (isDirectMatch && !isBypassed) return true;
-
-                    // 2. Semantic derivative check
-                    if (ALLERGEN_DERIVATIVES[allergen]) {
-                        return ALLERGEN_DERIVATIVES[allergen].some(deriv => {
-                            const isDerivMatch = itemName.includes(deriv);
-                            const isDerivBypassed = isAllergyBypassed(deriv, itemName);
-                            return isDerivMatch && !isDerivBypassed;
-                        });
-                    }
-
-                    return false;
-                });
-            });
-        });
+        return verifiedItems.filter(item => getAllergensForItem(item, allergies).length > 0);
     }, [verifiedItems, allergies]);
 
     const fileInputRef = useRef(null);
@@ -348,7 +365,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
             const res = await api.post('/logs/analyze-item', {
                 name,
                 serving_unit: unit,
-                cooking_method: method
+                cooking_method: method,
+                allergies: allergies
             });
             const data = res.data;
 
@@ -372,6 +390,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                     carbs_g: Math.round((data.carbs_g || 0) * qty * 10) / 10,
                     fat_g: Math.round((data.fat_g || 0) * qty * 10) / 10,
                     serving_weight_g: data.serving_weight_g || 100,
+                    detected_allergens: data.detected_allergens || [],
                     isUpdating: false,
                     isStale: false
                 };
@@ -505,7 +524,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                         const res = await api.post('/logs/analyze-item', {
                             name: item.name,
                             serving_unit: item.serving_unit,
-                            cooking_method: item.cooking_method
+                            cooking_method: item.cooking_method,
+                            allergies: allergies
                         });
                         const data = res.data;
                         const qty = item.measure_qty || 1;
@@ -521,6 +541,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                             carbs_g: Math.round((data.carbs_g || 0) * qty * 10) / 10,
                             fat_g: Math.round((data.fat_g || 0) * qty * 10) / 10,
                             serving_weight_g: data.serving_weight_g || 100,
+                            detected_allergens: data.detected_allergens || [],
                             isStale: false,
                             isUpdating: false
                         };
@@ -932,7 +953,8 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
                             <div className="space-y-4">
                                 {verifiedItems.map((item, idx) => {
-                                    const isAllergicItem = allergyWarnings.some(w => w.name?.toLowerCase() === item.name?.toLowerCase());
+                                    const matchedAllergens = getAllergensForItem(item, allergies);
+                                    const isAllergicItem = matchedAllergens.length > 0;
                                     return (
                                         <div
                                             key={idx}
@@ -957,7 +979,7 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                                         {isAllergicItem && (
                                                             <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/30 text-[8px] font-black text-red-800 dark:text-red-400 uppercase tracking-widest mt-1.5 animate-pulse">
                                                                 <AlertCircle size={10} className="shrink-0 text-red-600 dark:text-red-400" />
-                                                                Matches child allergy
+                                                                ⚠️ Allergy Trigger Detected: {matchedAllergens.join(', ')}
                                                             </div>
                                                         )}
                                                     </div>

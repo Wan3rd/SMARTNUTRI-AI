@@ -104,8 +104,9 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
                             </p>
                         </div>
                         <button
-                            onClick={onClose}
-                            className="h-9 w-9 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-white transition-colors shrink-0 mt-1"
+                            onClick={() => !isLoading && onClose()}
+                            disabled={isLoading}
+                            className="h-9 w-9 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-white transition-colors shrink-0 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <X size={18} />
                         </button>
@@ -150,8 +151,9 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
                 {/* Footer Actions */}
                 <div className="p-6 sm:p-8 pt-0 flex flex-col sm:flex-row gap-3 shrink-0 pb-10 sm:pb-8">
                     <button
-                        onClick={onClose}
-                        className="flex-1 py-3.5 rounded-2xl border-2 border-[var(--color-divider)] text-[var(--color-text-muted)] font-black uppercase tracking-widest text-xs hover:bg-[var(--color-bg-page)] transition-all"
+                        onClick={() => !isLoading && onClose()}
+                        disabled={isLoading}
+                        className="flex-1 py-3.5 rounded-2xl border-2 border-[var(--color-divider)] text-[var(--color-text-muted)] font-black uppercase tracking-widest text-xs hover:bg-[var(--color-bg-page)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Cancel
                     </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Plus, Minus } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Plus, Minus, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
@@ -42,7 +42,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const isDirty = () => {
         if (!log) return false;
         const initialReview = log.nutritionist_review?.comment || '';
-        const initialAnalysis = JSON.stringify(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+        const initialAnalysis = JSON.stringify(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
         const currentAnalysis = JSON.stringify(editedAnalysis);
 
         return review !== initialReview || initialAnalysis !== currentAnalysis || editedWater !== (log.water_ml || 0);
@@ -104,7 +104,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     useEffect(() => {
         if (log) {
             setReview(log.nutritionist_review?.comment || '');
-            setEditedAnalysis(log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+            setEditedAnalysis(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
             setEditedWater(log.water_ml || 0);
             setNotif({ show: false, message: '', type: 'success' });
         }
@@ -748,7 +748,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     disabled={loading}
                                     className="w-full lg:hidden h-13 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 active:scale-95 transition-all border-none flex items-center justify-center gap-2"
                                 >
-                                    <CheckCircle size={15} />
+                                    {loading ? <Loader2 size={15} className="animate-spin mr-1" /> : <CheckCircle size={15} />}
                                     {loading ? 'Processing...' : 'Verify Meal'}
                                 </Button>
 
@@ -789,7 +789,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         disabled={loading}
                                         className="hidden lg:flex flex-1 h-12 lg:h-13 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-2xl shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 active:scale-95 transition-all border-none items-center justify-center gap-1.5"
                                     >
-                                        <CheckCircle size={13} />
+                                        {loading ? <Loader2 size={13} className="animate-spin mr-1" /> : <CheckCircle size={13} />}
                                         {loading ? 'Processing...' : 'Verify Meal'}
                                     </Button>
                                 </div>

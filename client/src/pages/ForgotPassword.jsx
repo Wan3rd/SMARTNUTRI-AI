@@ -110,7 +110,7 @@ export default function ForgotPassword() {
                                             )}
                                         </Button>
                                     ) : (
-                                        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-100 dark:border-red-500/20">
+                                        <div className="p-4 rounded-2xl bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30">
                                             Max attempts reached. Try again later.
                                         </div>
                                     )}
@@ -147,7 +147,7 @@ export default function ForgotPassword() {
                                 </div>
 
                                 {message.text && (
-                                    <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-wide flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                                    <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-wide flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
                                         {message.text}
                                     </div>
                                 )}
