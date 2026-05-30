@@ -644,7 +644,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
     const { nutritionist_review, status } = req.body;
 
     // --- Input Validation ---
-    const VALID_REVIEW_STATUSES = ['reviewed', 'approved', 'rejected'];
+    const VALID_REVIEW_STATUSES = ['reviewed', 'approved', 'rejected', 'verified'];
     if (status && !VALID_REVIEW_STATUSES.includes(status)) {
         return res.status(400).json({ message: `Invalid status. Must be one of: ${VALID_REVIEW_STATUSES.join(', ')}` });
     }

@@ -96,8 +96,9 @@ export default function MealHistory() {
                 acc.fat += (l.total_fat_g || 0);
                 acc.sugar += (l.total_sugar_g || 0);
                 acc.sodium += (l.total_sodium_mg || 0);
+                acc.water += (l.water_ml || 0);
                 return acc;
-            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
             let status = 'success';
             
@@ -117,6 +118,7 @@ export default function MealHistory() {
                 else if (rule.category === 'Fats') current = totals.fat;
                 else if (rule.category === 'Sugar') current = totals.sugar;
                 else if (rule.category === 'Sodium') current = totals.sodium;
+                else if (rule.category === 'Fluid/Water' || rule.category === 'Water') current = totals.water;
 
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
                 else if (rule.rule_type === 'min' && current < limit) status = 'danger';
@@ -137,8 +139,9 @@ export default function MealHistory() {
             acc.fat += (l.total_fat_g || 0);
             acc.sugar += (l.total_sugar_g || 0);
             acc.sodium += (l.total_sodium_mg || 0);
+            acc.water += (l.water_ml || 0);
             return acc;
-        }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0 });
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
         const violations = [];
         rules.forEach(rule => {
@@ -152,6 +155,7 @@ export default function MealHistory() {
             else if (rule.category === 'Fats') current = totals.fat;
             else if (rule.category === 'Sugar') current = totals.sugar;
             else if (rule.category === 'Sodium') current = totals.sodium;
+            else if (rule.category === 'Fluid/Water' || rule.category === 'Water') current = totals.water;
 
             const isViolation = (rule.rule_type === 'max' && current > limit) || (rule.rule_type === 'min' && current < limit);
             if (isViolation) {
@@ -160,7 +164,8 @@ export default function MealHistory() {
                     category: rule.category,
                     actual: Math.round(current),
                     limit: limit,
-                    unit: rule.rule_unit
+                    unit: rule.rule_unit,
+                    rule_type: rule.rule_type
                 });
             }
         });
@@ -404,7 +409,7 @@ export default function MealHistory() {
                                                     <span className="text-[var(--color-danger)] mr-1.5 uppercase tracking-tight">{v.name}</span>
                                                     <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
                                                     <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
-                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">Limit {v.limit}{v.unit}</span>
+                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">{v.rule_type === 'min' ? 'Min Goal' : 'Limit'} {v.limit}{v.unit}</span>
                                                 </div>
                                             ))}
                                         </div>

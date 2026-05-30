@@ -79,8 +79,9 @@ export default function Calendar() {
                 acc.carbs += (l.total_carbs_g || 0);
                 acc.fat += (l.total_fat_g || 0);
                 acc.sodium += (l.total_sodium_mg || 0);
+                acc.water += (l.water_ml || 0);
                 return acc;
-            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 0 });
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 0, water: 0 });
 
             let status = 'success'; // Default Green
 
@@ -94,6 +95,7 @@ export default function Calendar() {
                 else if (rule.category === 'Carbohydrates' || rule.category === 'Carb') current = totals.carbs;
                 else if (rule.category === 'Fats' || rule.category === 'Fat') current = totals.fat;
                 else if (rule.category === 'Sodium') current = totals.sodium;
+                else if (rule.category === 'Fluid/Water' || rule.category === 'Water') current = totals.water;
 
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
                 else if (rule.rule_type === 'max' && current > limit * 0.9 && status !== 'danger') status = 'warning';
