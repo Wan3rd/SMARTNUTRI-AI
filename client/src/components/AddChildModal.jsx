@@ -1,16 +1,32 @@
 import React, { useState, useRef } from 'react';
-import { User, Calendar, Baby, Activity, Info, Loader2, X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck } from 'lucide-react';
+import { User, Calendar, Baby, Activity, Info, Loader2, X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Plus, ChevronDown } from 'lucide-react';
 import { Button } from './common/Button';
 import { Card, CardContent } from './common/Card';
 import api from '../lib/api';
 import VaccinationStep from './VaccinationStep';
+import { cn } from '../lib/utils';
+import { motion } from 'framer-motion';
 
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)", "Vegetarian", "Vegan", "Halal", "Kosher", "Gluten-Free", "Lactose-Free", "Pescatarian"
 ];
 
 const ALLERGY_OPTIONS = [
-    "None", "Peanuts", "Tree Nuts", "Milk/Dairy", "Eggs", "Wheat/Gluten", "Soy", "Fish", "Shellfish", "Sesame"
+    "None",
+    "Peanuts",
+    "Tree Nuts",
+    "Milk/Dairy",
+    "Eggs",
+    "Wheat/Gluten",
+    "Soy",
+    "Fish",
+    "Shellfish",
+    "Sesame",
+    "Mustard",
+    "Sulfites",
+    "Corn",
+    "Nightshades",
+    "Legumes"
 ];
 
 const STEPS = [
@@ -34,6 +50,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const isSubmitting = useRef(false);
+    const [isAllergiesDropdownOpen, setIsAllergiesDropdownOpen] = useState(false);
 
     const [dobParts, setDobParts] = useState({
         day: '01',
@@ -265,14 +282,32 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Gender</label>
-                                                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)]">
-                                                    {['Male', 'Female'].map(g => (
-                                                        <button key={g} type="button" onClick={() => !loading && setFormData({ ...formData, gender: g })}
-                                                            className={`flex-1 h-10 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.gender === g ? 'bg-white dark:bg-white/10 text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
-                                                        >
-                                                            {g}
-                                                        </button>
-                                                    ))}
+                                                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)] relative overflow-hidden">
+                                                    {['Male', 'Female'].map(g => {
+                                                        const isSelected = formData.gender === g;
+                                                        return (
+                                                            <button
+                                                                key={g}
+                                                                type="button"
+                                                                onClick={() => !loading && setFormData({ ...formData, gender: g })}
+                                                                className="flex-1 h-10 rounded-xl text-xs font-black uppercase tracking-widest relative z-10 transition-colors duration-300 select-none cursor-pointer text-center flex items-center justify-center"
+                                                                style={{
+                                                                    color: isSelected
+                                                                        ? 'var(--color-primary)'
+                                                                        : 'var(--color-text-muted)'
+                                                                }}
+                                                            >
+                                                                {isSelected && (
+                                                                    <motion.div
+                                                                        layoutId="activeGenderBg"
+                                                                        className="absolute inset-0 bg-white dark:bg-white/10 rounded-xl shadow-sm z-[-1]"
+                                                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                    />
+                                                                )}
+                                                                {g}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>
@@ -311,15 +346,37 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Activity Level</label>
-                                            <select
-                                                value={formData.activityLevel}
-                                                onChange={(e) => setFormData({ ...formData, activityLevel: e.target.value })}
-                                                className="w-full h-11 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all appearance-none"
-                                            >
-                                                <option value="sedentary">Sedentary (Little to no exercise)</option>
-                                                <option value="moderate">Moderate (Active 3-5 days/week)</option>
-                                                <option value="highly_active">Highly Active (Physical training daily)</option>
-                                            </select>
+                                            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)] relative overflow-hidden">
+                                                {[
+                                                    { id: 'sedentary', label: 'Sedentary' },
+                                                    { id: 'moderate', label: 'Moderate' },
+                                                    { id: 'highly_active', label: 'Highly Active' }
+                                                ].map(act => {
+                                                    const isSelected = formData.activityLevel.toLowerCase() === act.id;
+                                                    return (
+                                                        <button
+                                                            key={act.id}
+                                                            type="button"
+                                                            onClick={() => !loading && setFormData({ ...formData, activityLevel: act.id })}
+                                                            className="flex-1 h-11 rounded-xl text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 select-none cursor-pointer text-center flex items-center justify-center px-1"
+                                                            style={{
+                                                                color: isSelected
+                                                                    ? 'var(--color-primary)'
+                                                                    : 'var(--color-text-muted)'
+                                                            }}
+                                                        >
+                                                            {isSelected && (
+                                                                <motion.div
+                                                                    layoutId="activeActivityBg"
+                                                                    className="absolute inset-0 bg-white dark:bg-white/10 rounded-xl shadow-sm z-[-1]"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                />
+                                                            )}
+                                                            {act.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -353,27 +410,119 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Allergies</label>
+                                            <label className="block mb-2 text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Allergies</label>
+
+                                            <div className="mb-4 relative">
+                                                <button
+                                                    type="button"
+                                                    disabled={loading}
+                                                    onClick={() => setIsAllergiesDropdownOpen(!isAllergiesDropdownOpen)}
+                                                    className={cn(
+                                                        "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
+                                                        isAllergiesDropdownOpen ? "border-[var(--color-danger)]/50 ring-4 ring-[var(--color-danger)]/10" : "border-[var(--color-divider)]"
+                                                    )}
+                                                >
+                                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate flex items-center">
+                                                        <Plus size={14} className="inline mr-2 text-[var(--color-text-muted)]" /> <span>Add Allergy...</span>
+                                                    </span>
+                                                    <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)] flex-shrink-0", isAllergiesDropdownOpen && "rotate-180")} />
+                                                </button>
+
+                                                {isAllergiesDropdownOpen && (
+                                                    <>
+                                                        <div
+                                                            className="fixed inset-0 z-40"
+                                                            onClick={() => setIsAllergiesDropdownOpen(false)}
+                                                        />
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                                        >
+                                                            {ALLERGY_OPTIONS.map(option => {
+                                                                const isSelected = formData.allergies.includes(option);
+                                                                if (isSelected) return null;
+
+                                                                return (
+                                                                    <button
+                                                                        key={option}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (option === 'None') {
+                                                                                setFormData(prev => ({ ...prev, allergies: ['None'] }));
+                                                                            } else {
+                                                                                let newAllergies = formData.allergies.filter(a => a !== 'None');
+                                                                                newAllergies.push(option);
+                                                                                setFormData(prev => ({ ...prev, allergies: newAllergies }));
+                                                                            }
+                                                                            setIsAllergiesDropdownOpen(false);
+                                                                        }}
+                                                                        className="w-full text-left p-3 rounded-xl hover:bg-[var(--color-danger)]/10 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-[var(--color-danger)]"
+                                                                    >
+                                                                        {option}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                            {ALLERGY_OPTIONS.every(o => formData.allergies.includes(o)) && (
+                                                                <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                                                                    All allergies selected
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    </>
+                                                )}
+                                            </div>
+
                                             <div className="flex flex-wrap gap-2">
-                                                {ALLERGY_OPTIONS.map(a => (
-                                                    <button key={a} type="button" onClick={() => !loading && toggleOption(formData.allergies, a, (val) => setFormData({ ...formData, allergies: val }))}
-                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.allergies.includes(a) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
-                                                    >
-                                                        {a}
-                                                    </button>
-                                                ))}
+                                                {(formData.allergies?.filter(Boolean).length === 0 || (formData.allergies?.filter(Boolean).length === 1 && formData.allergies?.filter(Boolean)[0] === "None")) ? (
+                                                    <div className="px-3 py-1.5 rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 text-[var(--color-success)] text-[9px] font-black uppercase tracking-widest">None</div>
+                                                ) : (
+                                                    formData.allergies?.filter(Boolean).map((allergy, idx) => (
+                                                        <div
+                                                            key={`${allergy}-${idx}`}
+                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
+                                                                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/30'
+                                                                : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/30'
+                                                                }`}
+                                                        >
+                                                            {allergy}
+                                                            <button
+                                                                type="button"
+                                                                disabled={loading}
+                                                                onClick={() => {
+                                                                    const newAllergies = formData.allergies.filter(a => a !== allergy);
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        allergies: newAllergies.length === 0 ? ['None'] : newAllergies
+                                                                    }));
+                                                                }}
+                                                                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors disabled:opacity-50"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Dietary Preferences</label>
                                             <div className="flex flex-wrap gap-2">
-                                                {DIETARY_OPTIONS.map(d => (
-                                                    <button key={d} type="button" onClick={() => !loading && toggleOption(formData.dietaryPreferences, d, (val) => setFormData({ ...formData, dietaryPreferences: val }))}
-                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.dietaryPreferences.includes(d) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
-                                                    >
-                                                        {d}
-                                                    </button>
-                                                ))}
+                                                {DIETARY_OPTIONS.map(d => {
+                                                    const isSelected = formData.dietaryPreferences.includes(d);
+                                                    return (
+                                                        <motion.button
+                                                            key={d}
+                                                            type="button"
+                                                            whileHover={{ scale: 1.04 }}
+                                                            whileTap={{ scale: 0.96 }}
+                                                            onClick={() => !loading && toggleOption(formData.dietaryPreferences, d, (val) => setFormData({ ...formData, dietaryPreferences: val }))}
+                                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 cursor-pointer ${isSelected ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
+                                                        >
+                                                            {d}
+                                                        </motion.button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>

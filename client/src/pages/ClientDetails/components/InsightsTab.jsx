@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import api from '../../../lib/api';
 
-export default function InsightsTab({ selectedProfile, logs = [] }) {
+export default function InsightsTab({ selectedProfile, logs = [], isSidebarMinimized }) {
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -44,30 +44,30 @@ export default function InsightsTab({ selectedProfile, logs = [] }) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${isSidebarMinimized ? "lg:grid-cols-3" : "lg:grid-cols-2 xl:grid-cols-3"}`}>
+                <div className="p-4 sm:p-6 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-card)] shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
                     <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">Compliance Rate (30 Days)</p>
                     <p className="text-3xl sm:text-4xl font-black text-[var(--color-primary)] mt-2 tracking-tighter">{reportData.summary?.complianceRate || 0}%</p>
                 </div>
-                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                <div className="p-4 sm:p-6 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-card)] shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
                     <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-secondary)] transition-colors">Total Meals Logged</p>
                     <p className="text-3xl sm:text-4xl font-black text-[var(--color-secondary)] mt-2 tracking-tighter">{reportData.summary?.totalLogs || 0}</p>
                 </div>
-                <div className="p-4 sm:p-6 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
-                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-red-500 transition-colors">Flagged Interactions</p>
-                    <p className="text-3xl sm:text-4xl font-black text-red-500 mt-2 tracking-tighter">{reportData.summary?.flaggedCount || 0}</p>
+                <div className="p-4 sm:p-6 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-card)] shadow-lg shadow-black/5 text-center transition-all hover:shadow-xl group">
+                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-danger transition-colors">Flagged Interactions</p>
+                    <p className="text-3xl sm:text-4xl font-black text-danger mt-2 tracking-tighter">{reportData.summary?.flaggedCount || 0}</p>
                 </div>
             </div>
 
-            <div className="p-4 sm:p-8 rounded-2xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 shadow-lg shadow-black/5">
+            <div className="p-4 sm:p-8 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-card)] shadow-lg shadow-black/5">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <h3 className="font-black text-sm sm:text-base uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2">
                         <Activity size={18} className="text-[var(--color-primary)]" />
                         Health Score & Compliance Trend
                     </h3>
                     <div className="flex gap-2">
-                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Compliance
+                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-success bg-success/10 px-3 py-1 rounded-full border border-success/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Compliance
                         </span>
                     </div>
                 </div>

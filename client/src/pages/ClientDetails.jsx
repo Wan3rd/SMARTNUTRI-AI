@@ -233,7 +233,7 @@ const AutocompleteMatrixCell = ({ value, onChange, item }) => {
         <div className="flex flex-col items-center relative w-full h-full min-h-[40px]">
             <textarea
                 rows={2}
-                className="w-full h-full bg-transparent border-0 text-center text-sm font-bold text-[var(--color-text-main)] focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-white/10 resize-none overflow-y-auto scrollbar-hide py-2"
+                className="w-full h-full bg-transparent border-0 text-center text-sm font-bold text-text-main focus:ring-0 placeholder:text-text-muted/40 resize-none overflow-y-auto scrollbar-hide py-2"
                 placeholder="e.g. 1/2 cup"
                 value={val}
                 onChange={(e) => onChange(e.target.value)}
@@ -241,12 +241,12 @@ const AutocompleteMatrixCell = ({ value, onChange, item }) => {
                 onBlur={() => setTimeout(() => setIsFocused(false), 150)}
             />
             {isFocused && suggestions.length > 0 && (
-                <div className="absolute top-[80%] left-0 right-0 flex flex-wrap justify-center gap-1 mt-1 z-20 pointer-events-auto bg-white/90 dark:bg-black/90 p-1 rounded-lg shadow-xl border border-[var(--color-divider)] backdrop-blur-sm">
+                <div className="absolute top-[80%] left-0 right-0 flex flex-wrap justify-center gap-1 mt-1 z-20 pointer-events-auto bg-bg-card/90 p-1 rounded-lg shadow-xl border border-divider backdrop-blur-sm">
                     {suggestions.map(s => (
                         <div
                             key={s}
                             onMouseDown={(e) => { e.preventDefault(); onChange(s); setIsFocused(false); }}
-                            className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase rounded-md cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-800/60 shadow-sm"
+                            className="px-2 py-1 bg-success/10 text-success text-[9px] font-black uppercase rounded-md cursor-pointer hover:bg-success/20 shadow-sm"
                         >
                             {s}
                         </div>
@@ -2574,7 +2574,7 @@ export default function ClientDetails() {
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 relative z-10">
+                                                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 relative z-10", isSidebarMinimized ? "lg:grid-cols-5" : "lg:grid-cols-3 xl:grid-cols-5")}>
                                                                     {/* Weight Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
@@ -2783,7 +2783,7 @@ export default function ClientDetails() {
                                                                     <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-widest">Clinical Intelligence</h3>
                                                                 </div>
 
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                                <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-3", isSidebarMinimized ? "lg:grid-cols-4" : "lg:grid-cols-2 xl:grid-cols-4")}>
                                                                     {clinicalPatterns.map((alert, idx) => (
                                                                         <motion.div
                                                                             key={idx}
@@ -2883,7 +2883,7 @@ export default function ClientDetails() {
 
                                                                 {/* Edit Form for Bio Info if in edit mode */}
                                                                 {isClinicalEditing && (
-                                                                    <div className="p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-top-2 duration-300">
+                                                                    <div className={cn("p-6 bg-blue-50/50 dark:bg-blue-500/5 rounded-3xl border-2 border-blue-100 dark:border-blue-500/20 grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-top-2 duration-300", !isSidebarMinimized && "lg:grid-cols-2 xl:grid-cols-4")}>
                                                                         <div className="space-y-1.5">
                                                                             <label className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest ml-1">Child Name</label>
                                                                             <input
@@ -3157,7 +3157,7 @@ export default function ClientDetails() {
                                                                             <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
                                                                                 <Activity size={14} /> Bristol Stool Scale (Baseline)
                                                                             </h4>
-                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                                                            <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3", isSidebarMinimized ? "md:grid-cols-7" : "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7")}>
                                                                                 {BRISTOL_TYPES.map(type => {
                                                                                     const currentVal = isClinicalEditing ? clinicalForm.bristol_stool_scale : selectedProfile.bristol_stool_scale;
                                                                                     const isSelected = currentVal === type.type;
@@ -3240,7 +3240,7 @@ export default function ClientDetails() {
 
                                                                 {isAddingVaccine && (
                                                                     <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800/30 animate-in slide-in-from-top-2 duration-300">
-                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                                                        <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-6 mb-6", !isSidebarMinimized && "lg:grid-cols-2 xl:grid-cols-3")}>
                                                                             <div className="space-y-1.5">
                                                                                 <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
                                                                                 <select
@@ -3293,7 +3293,7 @@ export default function ClientDetails() {
                                                                         <p className="text-xs mt-1">Start by adding a new vaccine record for {selectedProfile.child_name}.</p>
                                                                     </div>
                                                                 ) : (
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                    <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", isSidebarMinimized ? "lg:grid-cols-3" : "lg:grid-cols-2 xl:grid-cols-3")}>
                                                                         {childVaccinations.map(v => (
                                                                             <div key={v.id} className="group relative flex items-start gap-3 p-3 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-emerald-500/50 hover:shadow-sm transition-all duration-300">
                                                                                 <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -3767,7 +3767,7 @@ export default function ClientDetails() {
                                                                                     </div>
                                                                                 )}
 
-                                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                                <div className={cn("grid grid-cols-2 gap-4", isSidebarMinimized ? "md:grid-cols-4" : "xl:grid-cols-4")}>
                                                                                     {[
                                                                                         { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
                                                                                         { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
@@ -3958,10 +3958,10 @@ export default function ClientDetails() {
 
                                                     {activeTab === 'adime' && (
                                                         <>
-                                                            <div className="bg-blue-50 dark:bg-blue-900/10 p-4 sm:p-6 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                                                            <div className="bg-info/5 p-4 sm:p-6 rounded-xl border border-info/20">
                                                                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
                                                                     <h3 className="font-bold text-base sm:text-lg text-[var(--color-secondary)] flex items-center gap-2">
-                                                                        <MessageSquare size={18} className="text-blue-600 shrink-0" /> ADIME Clinical Note
+                                                                        <MessageSquare size={18} className="text-info shrink-0" /> ADIME Clinical Note
                                                                     </h3>
 
                                                                     <div className="flex items-center gap-3">
@@ -3995,22 +3995,22 @@ export default function ClientDetails() {
                                                                                 }
                                                                                 e.target.value = ''; // Reset selection
                                                                             }}
-                                                                            className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-white dark:bg-slate-900 text-xs font-bold text-blue-600 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer appearance-none shadow-sm"
+                                                                            className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-divider bg-bg-card text-xs font-bold text-text-main outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer appearance-none shadow-sm"
                                                                             defaultValue=""
                                                                         >
-                                                                            <option value="" disabled>Choose ADIME Template...</option>
+                                                                            <option value="" disabled className="bg-bg-card text-text-main">Choose ADIME Template...</option>
                                                                             {CLINICAL_ADIME_TEMPLATES.map(t => (
-                                                                                <option key={t.name} value={t.content} className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200">
+                                                                                <option key={t.name} value={t.content} className="bg-bg-card text-text-main">
                                                                                     + {t.name}
                                                                                 </option>
                                                                             ))}
                                                                             {adimeNotes.length > 0 && (
-                                                                                <option value="copy_forward" className="bg-white dark:bg-slate-950 text-emerald-600 dark:text-emerald-400 font-bold">
+                                                                                <option value="copy_forward" className="bg-bg-card text-success font-bold">
                                                                                     📋 Copy Forward (Last Note)
                                                                                 </option>
                                                                             )}
                                                                         </select>
-                                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600 dark:text-blue-400">
+                                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-muted">
                                                                             <ChevronDown size={14} />
                                                                         </div>
                                                                     </div>
@@ -4059,12 +4059,12 @@ export default function ClientDetails() {
                                                                 ) : (
                                                                     adimeNotes.map(note => (
                                                                         <div key={note.id} className={cn(
-                                                                            "p-5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-white/5 space-y-3 relative group transition-all",
+                                                                            "p-5 border border-divider rounded-xl bg-bg-card space-y-3 relative group transition-all",
                                                                             note.is_optimistic && "opacity-50 grayscale pointer-events-none"
                                                                         )}>
-                                                                            <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2 mb-2">
+                                                                            <div className="flex justify-between items-center border-b border-divider pb-2 mb-2">
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <span className="text-xs font-bold text-blue-600 uppercase">ADIME RECORD</span>
+                                                                                    <span className="text-xs font-bold text-info uppercase">ADIME RECORD</span>
                                                                                     {note.is_optimistic && (
                                                                                         <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">Syncing...</span>
                                                                                     )}
@@ -4099,7 +4099,7 @@ export default function ClientDetails() {
                                                                                 <form onSubmit={handleUpdateAdime} className="space-y-4">
                                                                                     <div className="space-y-1">
                                                                                         <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Note</label>
-                                                                                        <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-divider)]">
+                                                                                        <div className="bg-bg-card rounded-xl overflow-hidden border border-divider">
                                                                                             <ReactQuill
                                                                                                 theme="snow"
                                                                                                 value={editAdimeForm.assessment}
@@ -4110,7 +4110,7 @@ export default function ClientDetails() {
                                                                                     </div>
                                                                                     <div className="flex justify-end gap-2 pt-2">
                                                                                         <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                                        <Button type="submit" className="bg-blue-600 text-white text-xs font-black uppercase px-6">Update Record</Button>
+                                                                                        <Button type="submit" className="bg-info hover:bg-primary-hover text-white text-xs font-black uppercase px-6">Update Record</Button>
                                                                                     </div>
                                                                                 </form>
                                                                             ) : (
@@ -4172,7 +4172,7 @@ export default function ClientDetails() {
 
 
                                                                 <form onSubmit={handleAddNote} className="space-y-3">
-                                                                    <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'notes' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
+                                                                    <div className={`bg-bg-card rounded-xl overflow-hidden border transition-all ${focusedField === 'notes' ? 'border-primary shadow-md scale-[1.01]' : 'border-divider'}`}>
                                                                         <ReactQuill
                                                                             ref={el => editorRefs.current['notes'] = el}
                                                                             theme="snow"
@@ -4184,7 +4184,7 @@ export default function ClientDetails() {
                                                                         />
                                                                     </div>
                                                                     <div className="flex justify-end pt-2">
-                                                                        <Button type="submit" disabled={!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-[var(--color-primary)] text-white shadow-lg shadow-blue-500/20">
+                                                                        <Button type="submit" disabled={!newNote || newNote.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-primary hover:bg-primary-hover text-white shadow-lg">
                                                                             Save Clinical Note
                                                                         </Button>
                                                                     </div>
@@ -4194,23 +4194,23 @@ export default function ClientDetails() {
                                                             <div className="space-y-4">
                                                                 <h4 className="font-bold text-[var(--color-secondary)] uppercase text-xs tracking-wider px-2">Recent Observations</h4>
                                                                 {notes.length === 0 ? (
-                                                                    <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-gray-50 dark:bg-white/5 rounded-xl border-2 border-dashed border-[var(--color-divider)]">No clinical observations recorded for this profile yet.</p>
+                                                                    <p className="text-center py-12 text-[var(--color-text-muted)] italic bg-bg-page rounded-xl border border-dashed border-divider">No clinical observations recorded for this profile yet.</p>
                                                                 ) : (
                                                                     notes.map(note => (
                                                                         <div key={note.id} className={cn(
                                                                             "p-5 border rounded-xl relative group hover:shadow-md transition-all",
-                                                                            note.is_pinned ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800/40' : 'bg-white dark:bg-white/5 border-[var(--color-divider)]',
+                                                                            note.is_pinned ? 'bg-warning/10 border-warning/30' : 'bg-bg-card border-divider',
                                                                             note.is_optimistic && "opacity-50 grayscale pointer-events-none"
                                                                         )}>
                                                                             {note.is_optimistic ? (
                                                                                 <span className="absolute top-2 right-4 text-[10px] font-black text-amber-600 uppercase flex items-center gap-1 animate-pulse">Syncing...</span>
                                                                             ) : note.is_pinned && (
-                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-yellow-600 dark:text-yellow-400 uppercase flex items-center gap-1">📌 Pinned</span>
+                                                                                <span className="absolute top-2 right-4 text-[10px] font-black text-warning uppercase flex items-center gap-1">📌 Pinned</span>
                                                                             )}
 
                                                                             {editingNoteId === note.id ? (
                                                                                 <form onSubmit={handleUpdateNote} className="space-y-3">
-                                                                                    <div className="bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 border-[var(--color-primary)]">
+                                                                                    <div className="bg-bg-card rounded-xl overflow-hidden border border-primary">
                                                                                         <ReactQuill
                                                                                             theme="snow"
                                                                                             value={editNoteForm}
@@ -4220,7 +4220,7 @@ export default function ClientDetails() {
                                                                                     </div>
                                                                                     <div className="flex justify-end gap-2">
                                                                                         <Button variant="ghost" type="button" onClick={() => setEditingNoteId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                                        <Button type="submit" disabled={!editNoteForm || editNoteForm.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-[var(--color-primary)] text-white text-xs font-black uppercase px-6 shadow-lg shadow-emerald-500/20">Update Note</Button>
+                                                                                        <Button type="submit" disabled={!editNoteForm || editNoteForm.replace(/<[^>]*>/g, '').trim().length === 0} className="bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase px-6 shadow-lg">Update Note</Button>
                                                                                     </div>
                                                                                 </form>
                                                                             ) : (
@@ -4273,7 +4273,7 @@ export default function ClientDetails() {
 
                                                     {/* TAB: INSIGHTS */}
                                                     {activeTab === 'insights' && (
-                                                        <InsightsTab selectedProfile={selectedProfile} logs={logs} />
+                                                        <InsightsTab selectedProfile={selectedProfile} logs={logs} isSidebarMinimized={isSidebarMinimized} />
                                                     )}
 
                                                     {/* TAB 2: RULES */}
@@ -4424,8 +4424,8 @@ export default function ClientDetails() {
                                                                 </div>
 
                                                                 <h4 className="font-bold text-sm mb-4 text-[var(--color-primary)] uppercase tracking-wider">Custom Rule Builder</h4>
-                                                                <form onSubmit={handleAddRule} className="grid grid-cols-1 md:grid-cols-12 gap-5 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-xl border border-[var(--color-divider)] shadow-inner">
-                                                                    <div className="md:col-span-3">
+                                                                <form onSubmit={handleAddRule} className={cn("grid grid-cols-1 gap-5 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-xl border border-[var(--color-divider)] shadow-inner", isSidebarMinimized ? "md:grid-cols-12" : "md:grid-cols-2 xl:grid-cols-12")}>
+                                                                    <div className={cn("md:col-span-3", !isSidebarMinimized && "xl:col-span-3")}>
                                                                         <label className="block text-xs font-bold mb-1.5 ml-1 text-[var(--color-text-muted)] uppercase">Category</label>
                                                                         <select
                                                                             className="w-full p-2.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-main)] focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer"
@@ -4551,7 +4551,7 @@ export default function ClientDetails() {
                                                                         <Button
                                                                             onClick={() => setIsSaveTemplateModalOpen(true)}
                                                                             variant="outline"
-                                                                            className="w-full md:w-auto h-11 px-4 rounded-2xl border-[var(--color-divider)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-[var(--color-bg-card)]"
+                                                                            className="w-full md:w-auto h-11 px-4 rounded-2xl border border-divider text-text-main hover:bg-primary/10 hover:text-primary flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-bg-card shadow-sm"
                                                                         >
                                                                             <BookmarkPlus size={18} /> Save as Template
                                                                         </Button>
@@ -4562,30 +4562,30 @@ export default function ClientDetails() {
                                                                         <div className="relative group/meal-template flex-grow md:flex-none">
                                                                             <Button
                                                                                 variant="outline"
-                                                                                className="w-full md:w-auto h-11 px-4 rounded-2xl border-[var(--color-divider)] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-[var(--color-bg-card)]"
+                                                                                className="w-full md:w-auto h-11 px-4 rounded-2xl border border-divider text-primary hover:bg-primary/10 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-bg-card shadow-sm"
                                                                             >
                                                                                 <ListFilter size={18} /> Load Template
                                                                             </Button>
                                                                             <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/meal-template:opacity-100 group-hover/meal-template:visible transition-all z-50">
-                                                                                <div className="bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl overflow-hidden">
-                                                                                    <div className="px-3 py-2 bg-[var(--color-primary)]/10 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest flex items-center gap-1">
+                                                                                <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
+                                                                                    <div className="px-3 py-2 bg-primary/10 border-b border-divider text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1">
                                                                                         <span>🍽️ Weekly Meal Templates</span>
                                                                                     </div>
                                                                                     <div className="max-h-80 overflow-y-auto scrollbar-thin">
                                                                                         {mealTemplates.map(t => (
                                                                                             <div
                                                                                                 key={t.id}
-                                                                                                className="p-3 border-b border-[var(--color-divider)] last:border-0 hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
+                                                                                                className="p-3 border-b border-divider last:border-0 hover:bg-primary/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
                                                                                                 onClick={() => handleApplyMealTemplate(t.id)}
                                                                                             >
                                                                                                 <div className="flex-grow min-w-0">
                                                                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                                                                        <span className="text-xs font-black text-[var(--color-text-main)] group-hover/mitem:text-[var(--color-primary)] transition-colors line-clamp-1">{t.name}</span>
+                                                                                                        <span className="text-xs font-black text-text-main group-hover/mitem:text-primary transition-colors line-clamp-1">{t.name}</span>
                                                                                                         {t.is_default && (
-                                                                                                            <span className="px-1.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] font-black uppercase tracking-wider rounded-md border border-[var(--color-primary)]/20 shrink-0">Starter</span>
+                                                                                                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-wider rounded-md border border-primary/20 shrink-0">Starter</span>
                                                                                                         )}
                                                                                                     </div>
-                                                                                                    <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
+                                                                                                    <div className="text-[10px] text-text-muted mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
                                                                                                 </div>
                                                                                                 <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/mitem:opacity-100 transition-opacity">
                                                                                                     <button
@@ -4593,14 +4593,14 @@ export default function ClientDetails() {
                                                                                                             e.stopPropagation();
                                                                                                             handleOpenTemplateEditor(t);
                                                                                                         }}
-                                                                                                        className="p-1 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-lg transition-colors"
+                                                                                                        className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
                                                                                                         title="Edit Template"
                                                                                                     >
                                                                                                         <Edit2 size={12} />
                                                                                                     </button>
                                                                                                     <button
                                                                                                         onClick={(e) => handleDeleteMealTemplate(t.id, e)}
-                                                                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                                                        className="p-1 text-danger hover:text-danger/80 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
                                                                                                         title="Delete Template"
                                                                                                     >
                                                                                                         <Trash2 size={12} />
@@ -4885,13 +4885,13 @@ export default function ClientDetails() {
                                                     {/* TAB: PORTION EXCHANGE */}
                                                     {activeTab === 'portions' && (
                                                         <div className="space-y-6 animate-in fade-in duration-500">
-                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-white/5 p-5 rounded-[1.5rem] border-2 border-[var(--color-divider)] shadow-sm">
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-bg-card p-5 rounded-[1.5rem] border border-divider shadow-sm">
                                                                 <div>
-                                                                    <h3 className="font-black text-lg text-[var(--color-secondary)] uppercase tracking-tight flex items-center gap-2">
-                                                                        <Table className="text-[var(--color-primary)]" size={20} />
+                                                                    <h3 className="font-black text-lg text-secondary uppercase tracking-tight flex items-center gap-2">
+                                                                        <Table className="text-primary" size={20} />
                                                                         Portion Exchange Matrix
                                                                     </h3>
-                                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-2 uppercase tracking-widest opacity-70">
+                                                                    <p className="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest opacity-70">
                                                                         Medical Grade Portion Distribution Plan
                                                                     </p>
                                                                 </div>
@@ -4901,25 +4901,25 @@ export default function ClientDetails() {
                                                                         const customTemplates = portionTemplates.filter(t => t.nutritionist_id);
                                                                         return (
                                                                             <div className="relative group/template">
-                                                                                <Button variant="outline" className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent">
+                                                                                <Button variant="outline" className="h-9 px-3 rounded-lg border border-success/30 text-success hover:text-success/80 hover:bg-success/10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-bg-card">
                                                                                     <ListFilter size={14} /> Load Template
                                                                                 </Button>
                                                                                 <div className="absolute top-full right-0 pt-2 w-72 opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50">
-                                                                                    <div className="bg-white dark:bg-[#1a1a1a] border-2 border-[var(--color-divider)] rounded-2xl shadow-xl overflow-hidden">
+                                                                                    <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
                                                                                         <div className="max-h-80 overflow-y-auto scrollbar-thin">
                                                                                             {universalTemplates.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-b border-[var(--color-divider)] text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                                                                                    <div className="px-3 py-2 bg-success/10 border-b border-divider text-[9px] font-black text-success uppercase tracking-widest flex items-center gap-1">
                                                                                                         <span>🌿 Clinical Standards</span>
                                                                                                     </div>
                                                                                                     {universalTemplates.map(t => (
                                                                                                         <div
                                                                                                             key={t.id}
-                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] hover:bg-[var(--color-primary)]/5 cursor-pointer transition-colors"
+                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-divider hover:bg-primary/5 cursor-pointer transition-colors"
                                                                                                             onClick={() => applyPortionTemplate(t)}
                                                                                                         >
-                                                                                                            <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
-                                                                                                            <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-tight rounded-md border border-emerald-200 dark:border-emerald-800/20">
+                                                                                                            <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
+                                                                                                            <span className="px-1.5 py-0.5 bg-success/10 text-success text-[8px] font-black uppercase tracking-tight rounded-md border border-success/20">
                                                                                                                 Universal
                                                                                                             </span>
                                                                                                         </div>
@@ -4929,19 +4929,19 @@ export default function ClientDetails() {
 
                                                                                             {customTemplates.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="px-3 py-2 bg-[var(--color-bg-page)]/80 border-b border-[var(--color-divider)] text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1">
+                                                                                                    <div className="px-3 py-2 bg-bg-page/80 border-b border-divider text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
                                                                                                         <span>👤 Your Saved Templates</span>
                                                                                                     </div>
                                                                                                     {customTemplates.map(t => (
                                                                                                         <div
                                                                                                             key={t.id}
-                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-divider)] last:border-b-0 hover:bg-[var(--color-primary)]/5 group/titem cursor-pointer transition-colors"
+                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-divider last:border-b-0 hover:bg-primary/5 group/titem cursor-pointer transition-colors"
                                                                                                             onClick={() => applyPortionTemplate(t)}
                                                                                                         >
-                                                                                                            <span className="text-xs font-bold text-[var(--color-text-main)] truncate pr-2">{t.template_name}</span>
+                                                                                                            <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
                                                                                                             <button
                                                                                                                 onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }}
-                                                                                                                className="text-red-400 hover:text-red-600 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-red-50 dark:bg-red-900/20 rounded-md"
+                                                                                                                className="text-danger hover:text-danger/80 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-danger/10 rounded-md"
                                                                                                             >
                                                                                                                 <Trash2 size={12} />
                                                                                                             </button>
@@ -4959,7 +4959,7 @@ export default function ClientDetails() {
                                                                     <Button
                                                                         onClick={() => setIsTemplateModalOpen(true)}
                                                                         variant="outline"
-                                                                        className="h-9 px-3 rounded-lg border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-transparent"
+                                                                        className="h-9 px-3 rounded-lg border border-success/30 text-success hover:text-success/80 hover:bg-success/10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-bg-card"
                                                                         title="Save current matrix as a template"
                                                                     >
                                                                         <BookmarkPlus size={14} /> Save Template
@@ -4968,7 +4968,7 @@ export default function ClientDetails() {
                                                                     <Button
                                                                         onClick={handleSavePortions}
                                                                         disabled={isSavingPortions}
-                                                                        className="h-9 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                                                                        className="h-9 px-4 rounded-lg bg-success hover:bg-primary-hover text-white shadow-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
                                                                     >
                                                                         {isSavingPortions ? 'Saving...' : <><Save size={14} /> Update Matrix</>}
                                                                     </Button>
@@ -4978,17 +4978,17 @@ export default function ClientDetails() {
                                                             {/* PORTION GRID / MOBILE CARDS */}
                                                             <div className="w-full">
                                                                 {/* DESKTOP MATRIX */}
-                                                                <div className="hidden lg:block bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
+                                                                <div className="hidden lg:block bg-bg-card rounded-[1.5rem] border border-divider overflow-hidden shadow-sm">
                                                                     <div className="overflow-x-auto">
                                                                         <table className="w-full border-collapse min-w-[900px]">
                                                                             <thead>
-                                                                                <tr className="bg-[var(--color-bg-page)]/50 border-b-2 border-[var(--color-divider)]">
-                                                                                    <th className="p-4 text-left w-40 border-r-2 border-[var(--color-divider)] sticky left-0 bg-[var(--color-bg-page)] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                                                                                        <span className="text-[9px] font-black text-[var(--color-secondary)] uppercase tracking-[0.2em]">Food Item</span>
+                                                                                <tr className="bg-bg-page/50 border-b border-divider">
+                                                                                    <th className="p-4 text-left w-40 border-r border-divider sticky left-0 bg-bg-page z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                        <span className="text-[9px] font-black text-secondary uppercase tracking-[0.2em]">Food Item</span>
                                                                                     </th>
                                                                                     {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                                        <th key={meal} className="p-4 text-center border-r-2 border-[var(--color-divider)] last:border-r-0">
-                                                                                            <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{meal}</span>
+                                                                                        <th key={meal} className="p-4 text-center border-r border-divider last:border-r-0">
+                                                                                            <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">{meal}</span>
                                                                                         </th>
                                                                                     ))}
                                                                                 </tr>
@@ -5002,20 +5002,20 @@ export default function ClientDetails() {
                                                                                     { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
                                                                                     { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
                                                                                 ].map(item => (
-                                                                                    <tr key={item.id} className="border-b-2 border-[var(--color-divider)] last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors group">
-                                                                                        <td className="p-4 border-r-2 border-[var(--color-divider)] sticky left-0 bg-white dark:bg-[#1a1a1a] z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                                                                                    <tr key={item.id} className="border-b border-divider last:border-b-0 hover:bg-bg-page/50 transition-colors group">
+                                                                                        <td className="p-4 border-r border-divider sticky left-0 bg-bg-card z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
                                                                                             <div className="flex items-center gap-3">
-                                                                                                <div className="p-2 bg-[var(--color-bg-page)] rounded-xl text-[var(--color-primary)] group-hover:scale-110 transition-transform">
+                                                                                                <div className="p-2 bg-bg-page rounded-xl text-primary group-hover:scale-110 transition-transform">
                                                                                                     {item.icon}
                                                                                                 </div>
                                                                                                 <div>
-                                                                                                    <div className="text-[11px] font-black text-[var(--color-text-main)] uppercase tracking-tight">{item.label}</div>
-                                                                                                    <div className="text-[9px] font-bold text-[var(--color-text-muted)] mt-0.5 opacity-60">1 serving = {item.unit}</div>
+                                                                                                    <div className="text-[11px] font-black text-text-main uppercase tracking-tight">{item.label}</div>
+                                                                                                    <div className="text-[9px] font-bold text-text-muted mt-0.5 opacity-60">1 serving = {item.unit}</div>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </td>
                                                                                         {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                                            <td key={meal} className="p-4 border-r-2 border-[var(--color-divider)] last:border-r-0 relative">
+                                                                                            <td key={meal} className="p-4 border-r border-divider last:border-r-0 relative">
                                                                                                 <AutocompleteMatrixCell
                                                                                                     value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
                                                                                                     onChange={(val) => updatePortionCell(meal, item.id, val)}
@@ -5026,22 +5026,22 @@ export default function ClientDetails() {
                                                                                     </tr>
                                                                                 ))}
                                                                                 {/* Special Row for Sugar — plain clinical text note, NOT connected to rule engine */}
-                                                                                <tr className="bg-amber-50/30 dark:bg-amber-900/5 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
-                                                                                    <td className="p-4 border-r-2 border-amber-200 dark:border-amber-800/30 sticky left-0 bg-amber-50 dark:bg-amber-900/10 z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
+                                                                                <tr className="bg-warning/5 hover:bg-warning/10 transition-colors">
+                                                                                    <td className="p-4 border-r border-warning/20 sticky left-0 bg-bg-card z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
                                                                                         <div className="flex items-center gap-3">
-                                                                                            <div className="p-2 bg-amber-100 dark:bg-amber-800/40 rounded-xl text-amber-500">
+                                                                                            <div className="p-2 bg-warning/20 rounded-xl text-warning">
                                                                                                 <AlertCircle size={14} />
                                                                                             </div>
                                                                                             <div>
-                                                                                                <div className="text-[11px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-tight">Sugar / Clinical Note</div>
-                                                                                                <div className="text-[9px] font-bold text-amber-600/70 dark:text-amber-400/60 mt-0.5">Text only · no rule engine</div>
+                                                                                                <div className="text-[11px] font-black text-warning uppercase tracking-tight">Sugar / Clinical Note</div>
+                                                                                                <div className="text-[9px] font-bold text-warning/70 mt-0.5">Text only · no rule engine</div>
                                                                                             </div>
                                                                                         </div>
                                                                                     </td>
-                                                                                    <td colSpan="5" className="p-3 border-t border-amber-100 dark:border-amber-800/20">
+                                                                                    <td colSpan="5" className="p-3 border-t border-warning/20">
                                                                                         <textarea
                                                                                             rows={2}
-                                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-amber-900 dark:text-amber-200 focus:ring-0 placeholder:text-amber-700/30 dark:placeholder:text-amber-300/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
+                                                                                            className="w-full bg-transparent border-0 text-sm font-bold text-text-main focus:ring-0 placeholder:text-warning/30 italic resize-none overflow-y-auto scrollbar-hide py-2"
                                                                                             placeholder="e.g. Limit intake of sugar, sugary products and sweetened beverages"
                                                                                             value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
                                                                                             onChange={(e) => {
@@ -5058,11 +5058,11 @@ export default function ClientDetails() {
                                                                 {/* MOBILE MEAL CARDS */}
                                                                 <div className="block lg:hidden space-y-4">
                                                                     {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
-                                                                        <div key={meal} className="bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-[var(--color-divider)] overflow-hidden shadow-sm">
-                                                                            <div className="bg-[var(--color-bg-page)] p-3 border-b-2 border-[var(--color-divider)] text-center shadow-inner">
-                                                                                <span className="font-black text-[var(--color-primary)] uppercase tracking-widest text-[11px]">{meal}</span>
+                                                                        <div key={meal} className="bg-bg-card rounded-[1.5rem] border border-divider overflow-hidden shadow-sm">
+                                                                            <div className="bg-bg-page p-3 border-b border-divider text-center shadow-inner">
+                                                                                <span className="font-black text-primary uppercase tracking-widest text-[11px]">{meal}</span>
                                                                             </div>
-                                                                            <div className="divide-y-2 divide-[var(--color-divider)]">
+                                                                            <div className="divide-y divide-divider">
                                                                                 {[
                                                                                     { id: 'vegetables', label: 'Vegetables', icon: <Leaf size={14} />, unit: '1/2 cup' },
                                                                                     { id: 'fruit', label: 'Fruit', icon: <Apple size={14} />, unit: '1 pc/slice' },
@@ -5071,16 +5071,16 @@ export default function ClientDetails() {
                                                                                     { id: 'meat', label: 'Meat/Protein', icon: <Beef size={14} />, unit: '30-40g' },
                                                                                     { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
                                                                                 ].map(item => (
-                                                                                    <div key={item.id} className="flex items-stretch bg-white dark:bg-[#1a1a1a]">
-                                                                                        <div className="flex items-center gap-2 p-3 w-1/2 border-r-2 border-[var(--color-divider)]">
-                                                                                            <div className="p-1.5 bg-[var(--color-bg-page)] rounded-lg text-[var(--color-primary)] shrink-0">
+                                                                                    <div key={item.id} className="flex items-stretch bg-bg-card">
+                                                                                        <div className="flex items-center gap-2 p-3 w-1/2 border-r border-divider">
+                                                                                            <div className="p-1.5 bg-bg-page rounded-lg text-primary shrink-0">
                                                                                                 {item.icon}
                                                                                             </div>
                                                                                             <div className="min-w-0">
-                                                                                                <div className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-tight truncate">{item.label}</div>
+                                                                                                <div className="text-[10px] font-black text-text-main uppercase tracking-tight truncate">{item.label}</div>
                                                                                             </div>
                                                                                         </div>
-                                                                                        <div className="w-1/2 relative bg-[var(--color-bg-page)]/30">
+                                                                                        <div className="w-1/2 relative bg-bg-page/30">
                                                                                             <AutocompleteMatrixCell
                                                                                                 value={portionMatrix.find(r => r.meal_type === meal)?.[item.id]}
                                                                                                 onChange={(val) => updatePortionCell(meal, item.id, val)}
@@ -5094,18 +5094,18 @@ export default function ClientDetails() {
                                                                     ))}
 
                                                                     {/* Mobile Sugar / Clinical Note Card — plain text only, NOT connected to rule engine */}
-                                                                    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[1.5rem] border-2 border-amber-200 dark:border-amber-800/30 overflow-hidden shadow-sm">
-                                                                        <div className="p-3 border-b-2 border-amber-200 dark:border-amber-800/30 flex items-center justify-center gap-2">
-                                                                            <AlertCircle size={14} className="text-amber-500" />
+                                                                    <div className="bg-warning/5 rounded-[1.5rem] border border-warning/30 overflow-hidden shadow-sm">
+                                                                        <div className="p-3 border-b border-warning/30 flex items-center justify-center gap-2">
+                                                                            <AlertCircle size={14} className="text-warning" />
                                                                             <div className="text-center">
-                                                                                <h4 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-[11px]">Sugar / Clinical Note</h4>
-                                                                                <p className="text-[9px] font-bold text-amber-600/60 dark:text-amber-400/50 mt-0.5">Text only · displayed as warning to parents</p>
+                                                                                <h4 className="font-black text-warning uppercase tracking-widest text-[11px]">Sugar / Clinical Note</h4>
+                                                                                <p className="text-[9px] font-bold text-warning/60 mt-0.5">Text only · displayed as warning to parents</p>
                                                                             </div>
                                                                         </div>
                                                                         <div className="p-1">
                                                                             <textarea
                                                                                 rows={2}
-                                                                                className="w-full bg-transparent border-0 p-3 text-sm font-bold text-amber-900 dark:text-amber-100 focus:ring-0 outline-none placeholder:text-amber-700/40 resize-none"
+                                                                                className="w-full bg-transparent border-0 p-3 text-sm font-bold text-text-main focus:ring-0 outline-none placeholder:text-warning/40 resize-none"
                                                                                 placeholder="e.g. Limit intake of sugar, sugary products..."
                                                                                 value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
                                                                                 onChange={(e) => updatePortionCell('Breakfast', 'sugar', e.target.value)}
@@ -5116,37 +5116,37 @@ export default function ClientDetails() {
                                                             </div>
 
                                                             {/* EXCHANGE GUIDE TOOLTIP */}
-                                                            <div className="p-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border-2 border-blue-100 dark:border-blue-800/30">
+                                                            <div className="p-8 bg-info/5 rounded-[2.5rem] border border-info/20">
                                                                 <div className="flex items-start gap-4">
-                                                                    <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-2xl text-blue-600 dark:text-blue-400">
+                                                                    <div className="p-3 bg-info/20 rounded-2xl text-info">
                                                                         <Info size={24} />
                                                                     </div>
                                                                     <div>
-                                                                        <h4 className="font-black text-blue-800 dark:text-blue-300 uppercase tracking-[0.2em] text-xs mb-2">Standard Exchange Guide</h4>
+                                                                        <h4 className="font-black text-info uppercase tracking-[0.2em] text-xs mb-2">Standard Exchange Guide</h4>
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Vegetables</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup cooked OR 1 cup raw</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Vegetables</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 1/2 cup cooked OR 1 cup raw</p>
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Rice & Carbs</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1/2 cup rice OR 1.5 slices bread</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Rice & Carbs</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 1/2 cup rice OR 1.5 slices bread</p>
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Milk</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 cup (250 mL) low fat milk</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Milk</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 1 cup (250 mL) low fat milk</p>
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Meat/Protein</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 30-40g (Size of a matchbox)</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Meat/Protein</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 30-40g (Size of a matchbox)</p>
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fruit</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 medium pc OR 1 slice (40-60g)</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Fruit</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 1 medium pc OR 1 slice (40-60g)</p>
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <span className="text-[9px] font-black text-blue-600/50 uppercase tracking-widest block">Fat & Oil</span>
-                                                                                <p className="text-[11px] font-bold text-blue-800/70 dark:text-blue-400/70 leading-relaxed">1 serving = 1 tsp (5 mL) vegetable oil</p>
+                                                                                <span className="text-[9px] font-black text-info/50 uppercase tracking-widest block">Fat & Oil</span>
+                                                                                <p className="text-[11px] font-bold text-info/70 leading-relaxed">1 serving = 1 tsp (5 mL) vegetable oil</p>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -5490,10 +5490,10 @@ export default function ClientDetails() {
                 <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} title="Save Portion Template">
                     <div className="space-y-6">
                         <div>
-                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Template Name</label>
+                            <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Template Name</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)]"
+                                className="w-full px-4 py-3 rounded-xl border border-divider bg-bg-page text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary shadow-sm"
                                 placeholder="e.g. 1500 kcal Diabetic Plan"
                                 value={newTemplateName}
                                 onChange={(e) => setNewTemplateName(e.target.value)}
@@ -5501,7 +5501,7 @@ export default function ClientDetails() {
                         </div>
                         <div className="flex gap-3">
                             <Button variant="outline" className="flex-1" onClick={() => setIsTemplateModalOpen(false)}>Cancel</Button>
-                            <Button className="flex-1 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90" onClick={handleSaveTemplate}>Save Template</Button>
+                            <Button className="flex-1 bg-primary text-white hover:bg-primary-hover shadow-sm" onClick={handleSaveTemplate}>Save Template</Button>
                         </div>
                     </div>
                 </Modal>
@@ -5602,42 +5602,42 @@ export default function ClientDetails() {
                     title="Save Week as Template"
                 >
                     <div className="space-y-6">
-                        <div>
-                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Template Name</label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all"
-                                placeholder="e.g. Active Toddler Summer Plan"
-                                value={newTemplateForm.name}
-                                onChange={(e) => setNewTemplateForm(prev => ({ ...prev, name: e.target.value }))}
-                            />
-                        </div>
+                         <div>
+                             <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Template Name</label>
+                             <input
+                                 type="text"
+                                 className="w-full px-4 py-3 rounded-xl border border-divider bg-bg-page text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                                 placeholder="e.g. Active Toddler Summer Plan"
+                                 value={newTemplateForm.name}
+                                 onChange={(e) => setNewTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                             />
+                         </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Target Age Group</label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all"
-                                placeholder="e.g. 1-2 years"
-                                value={newTemplateForm.target_age}
-                                onChange={(e) => setNewTemplateForm(prev => ({ ...prev, target_age: e.target.value }))}
-                            />
-                        </div>
+                         <div>
+                             <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Target Age Group</label>
+                             <input
+                                 type="text"
+                                 className="w-full px-4 py-3 rounded-xl border border-divider bg-bg-page text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                                 placeholder="e.g. 1-2 years"
+                                 value={newTemplateForm.target_age}
+                                 onChange={(e) => setNewTemplateForm(prev => ({ ...prev, target_age: e.target.value }))}
+                             />
+                         </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-2">Description</label>
-                            <textarea
-                                className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all min-h-[80px]"
-                                placeholder="Describe the focus or dietary rules for this weekly plan..."
-                                value={newTemplateForm.description}
-                                onChange={(e) => setNewTemplateForm(prev => ({ ...prev, description: e.target.value }))}
-                            />
-                        </div>
+                         <div>
+                             <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Description</label>
+                             <textarea
+                                 className="w-full px-4 py-3 rounded-xl border border-divider bg-bg-page text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm min-h-[80px]"
+                                 placeholder="Describe the focus or dietary rules for this weekly plan..."
+                                 value={newTemplateForm.description}
+                                 onChange={(e) => setNewTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                             />
+                         </div>
 
-                        <div className="flex gap-3 border-t border-[var(--color-divider)] pt-4">
-                            <Button variant="outline" className="flex-1 rounded-xl h-11 text-xs font-black uppercase tracking-wider" onClick={() => setIsSaveTemplateModalOpen(false)}>Cancel</Button>
-                            <Button className="flex-1 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90 rounded-xl h-11 text-xs font-black uppercase tracking-wider" onClick={handleSaveWeekAsTemplate}>Save Template</Button>
-                        </div>
+                         <div className="flex gap-3 border-t border-divider pt-4">
+                             <Button variant="outline" className="flex-1 rounded-xl h-11 text-xs font-black uppercase tracking-wider" onClick={() => setIsSaveTemplateModalOpen(false)}>Cancel</Button>
+                             <Button className="flex-1 bg-primary text-white hover:bg-primary-hover rounded-xl h-11 text-xs font-black uppercase tracking-wider shadow-sm" onClick={handleSaveWeekAsTemplate}>Save Template</Button>
+                         </div>
                     </div>
                 </Modal>
 
@@ -5650,31 +5650,31 @@ export default function ClientDetails() {
                         maxWidth="max-w-[96vw] 2xl:max-w-[1600px]"
                     >
                         <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-1">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-[var(--color-bg-page)]/50 rounded-2xl border border-[var(--color-divider)]">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-bg-page/50 rounded-2xl border border-divider">
                                 <div>
-                                    <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1.5">Template Name</label>
+                                    <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-1.5">Template Name</label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-divider bg-bg-card text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary shadow-sm"
                                         value={editingTemplate.name}
                                         onChange={(e) => setEditingTemplate(prev => ({ ...prev, name: e.target.value }))}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1.5">Target Age Group</label>
+                                    <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-1.5">Target Age Group</label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-divider bg-bg-card text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary shadow-sm"
                                         placeholder="e.g. 1-2 years"
                                         value={editingTemplate.target_age || ''}
                                         onChange={(e) => setEditingTemplate(prev => ({ ...prev, target_age: e.target.value }))}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1.5">Description</label>
+                                    <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-1.5">Description</label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2.5 rounded-xl border-2 border-[var(--color-divider)] bg-white dark:bg-white/5 text-sm font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-divider bg-bg-card text-sm font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary shadow-sm"
                                         placeholder="Brief description"
                                         value={editingTemplate.description || ''}
                                         onChange={(e) => setEditingTemplate(prev => ({ ...prev, description: e.target.value }))}
@@ -5682,20 +5682,20 @@ export default function ClientDetails() {
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto border-2 border-[var(--color-divider)] rounded-2xl bg-white dark:bg-[#1a1a1a]">
+                            <div className="overflow-x-auto border border-divider rounded-2xl bg-bg-card">
                                 <table className="w-full border-collapse min-w-[1000px]">
                                     <thead>
-                                        <tr className="bg-[var(--color-bg-page)] border-b-2 border-[var(--color-divider)]">
-                                            <th className="p-3 text-left text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-wider w-28">Type</th>
+                                        <tr className="bg-bg-page border-b border-divider">
+                                            <th className="p-3 text-left text-[10px] font-black text-text-muted uppercase tracking-wider w-28">Type</th>
                                             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
-                                                <th key={day} className="p-3 text-left text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-wider">{day}</th>
+                                                <th key={day} className="p-3 text-left text-[10px] font-black text-text-muted uppercase tracking-wider">{day}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[var(--color-divider)]">
+                                    <tbody className="divide-y divide-divider">
                                         {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
-                                            <tr key={type} className="hover:bg-[var(--color-primary)]/5 transition-colors">
-                                                <td className="p-3 font-black text-[10px] text-[var(--color-secondary)] uppercase tracking-widest bg-[var(--color-bg-page)]/20 border-r border-[var(--color-divider)]">
+                                            <tr key={type} className="hover:bg-primary/5 transition-colors">
+                                                <td className="p-3 font-black text-[10px] text-secondary uppercase tracking-widest bg-bg-page/20 border-r border-divider">
                                                     {type}
                                                 </td>
                                                 {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => {
@@ -5707,99 +5707,99 @@ export default function ClientDetails() {
                                                         editingTemplate.days[day].push(meal);
                                                     }
                                                     return (
-                                                        <td key={day} className="p-2 border-r border-[var(--color-divider)] last:border-r-0 align-top">
-                                                            <div className="space-y-1.5">
-                                                                <input
-                                                                    type="text"
-                                                                    className="w-full px-2 py-1.5 rounded-lg border border-[var(--color-divider)] bg-white dark:bg-white/5 text-[11px] font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all placeholder:opacity-30"
-                                                                    placeholder="Recipe Name"
-                                                                    value={meal.recipe_name || ''}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value;
-                                                                        setEditingTemplate(prev => {
-                                                                            const updated = { ...prev };
-                                                                            const target = updated.days[day].find(m => m.meal_type === type);
-                                                                            target.recipe_name = val;
-                                                                            return updated;
-                                                                        });
-                                                                    }}
-                                                                />
-                                                                <div className="grid grid-cols-2 gap-1">
-                                                                    <div className="relative flex items-center">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full pl-1.5 pr-4 py-1 rounded-md border border-[var(--color-divider)] bg-white dark:bg-white/5 text-[9px] font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                                            placeholder="Kcal"
-                                                                            value={meal.calories === 0 || meal.calories === null ? '' : meal.calories}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                                                                                setEditingTemplate(prev => {
-                                                                                    const updated = { ...prev };
-                                                                                    const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                    target.calories = val;
-                                                                                    return updated;
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="absolute right-1 text-[7px] text-[var(--color-text-muted)] font-black uppercase pointer-events-none">cal</span>
-                                                                    </div>
-                                                                    <div className="relative flex items-center">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full pl-1.5 pr-3 py-1 rounded-md border border-[var(--color-divider)] bg-white dark:bg-white/5 text-[9px] font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                                            placeholder="Pro"
-                                                                            value={meal.protein_g === 0 || meal.protein_g === null ? '' : meal.protein_g}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                                                                                setEditingTemplate(prev => {
-                                                                                    const updated = { ...prev };
-                                                                                    const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                    target.protein_g = val;
-                                                                                    return updated;
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="absolute right-1 text-[7px] text-[var(--color-text-muted)] font-black uppercase pointer-events-none">p</span>
-                                                                    </div>
-                                                                    <div className="relative flex items-center">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full pl-1.5 pr-3 py-1 rounded-md border border-[var(--color-divider)] bg-white dark:bg-white/5 text-[9px] font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                                            placeholder="Carb"
-                                                                            value={meal.carbs_g === 0 || meal.carbs_g === null ? '' : meal.carbs_g}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                                                                                setEditingTemplate(prev => {
-                                                                                    const updated = { ...prev };
-                                                                                    const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                    target.carbs_g = val;
-                                                                                    return updated;
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="absolute right-1 text-[7px] text-[var(--color-text-muted)] font-black uppercase pointer-events-none">c</span>
-                                                                    </div>
-                                                                    <div className="relative flex items-center">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="w-full pl-1.5 pr-3 py-1 rounded-md border border-[var(--color-divider)] bg-white dark:bg-white/5 text-[9px] font-bold text-[var(--color-text-main)] focus:border-[var(--color-primary)] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                                            placeholder="Fat"
-                                                                            value={meal.fats_g === 0 || meal.fats_g === null ? '' : meal.fats_g}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                                                                                setEditingTemplate(prev => {
-                                                                                    const updated = { ...prev };
-                                                                                    const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                    target.fats_g = val;
-                                                                                    return updated;
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="absolute right-1 text-[7px] text-[var(--color-text-muted)] font-black uppercase pointer-events-none">f</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
+                                                         <td key={day} className="p-2 border-r border-divider last:border-r-0 align-top">
+                                                             <div className="space-y-1.5">
+                                                                 <input
+                                                                     type="text"
+                                                                     className="w-full px-2 py-1.5 rounded-lg border border-divider bg-bg-card text-[11px] font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all placeholder:opacity-30 shadow-sm"
+                                                                     placeholder="Recipe Name"
+                                                                     value={meal.recipe_name || ''}
+                                                                     onChange={(e) => {
+                                                                         const val = e.target.value;
+                                                                         setEditingTemplate(prev => {
+                                                                             const updated = { ...prev };
+                                                                             const target = updated.days[day].find(m => m.meal_type === type);
+                                                                             target.recipe_name = val;
+                                                                             return updated;
+                                                                         });
+                                                                     }}
+                                                                 />
+                                                                 <div className="grid grid-cols-2 gap-1">
+                                                                     <div className="relative flex items-center">
+                                                                         <input
+                                                                             type="number"
+                                                                             className="w-full pl-1.5 pr-4 py-1 rounded-md border border-divider bg-bg-card text-[9px] font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                             placeholder="Kcal"
+                                                                             value={meal.calories === 0 || meal.calories === null ? '' : meal.calories}
+                                                                             onChange={(e) => {
+                                                                                 const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                                                                                 setEditingTemplate(prev => {
+                                                                                     const updated = { ...prev };
+                                                                                     const target = updated.days[day].find(m => m.meal_type === type);
+                                                                                     target.calories = val;
+                                                                                     return updated;
+                                                                                 });
+                                                                             }}
+                                                                         />
+                                                                         <span className="absolute right-1 text-[7px] text-text-muted font-black uppercase pointer-events-none">cal</span>
+                                                                     </div>
+                                                                     <div className="relative flex items-center">
+                                                                         <input
+                                                                             type="number"
+                                                                             className="w-full pl-1.5 pr-3 py-1 rounded-md border border-divider bg-bg-card text-[9px] font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                             placeholder="Pro"
+                                                                             value={meal.protein_g === 0 || meal.protein_g === null ? '' : meal.protein_g}
+                                                                             onChange={(e) => {
+                                                                                 const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                                                                                 setEditingTemplate(prev => {
+                                                                                     const updated = { ...prev };
+                                                                                     const target = updated.days[day].find(m => m.meal_type === type);
+                                                                                     target.protein_g = val;
+                                                                                     return updated;
+                                                                                 });
+                                                                             }}
+                                                                         />
+                                                                         <span className="absolute right-1 text-[7px] text-text-muted font-black uppercase pointer-events-none">p</span>
+                                                                     </div>
+                                                                     <div className="relative flex items-center">
+                                                                         <input
+                                                                             type="number"
+                                                                             className="w-full pl-1.5 pr-3 py-1 rounded-md border border-divider bg-bg-card text-[9px] font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                             placeholder="Carb"
+                                                                             value={meal.carbs_g === 0 || meal.carbs_g === null ? '' : meal.carbs_g}
+                                                                             onChange={(e) => {
+                                                                                 const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                                                                                 setEditingTemplate(prev => {
+                                                                                     const updated = { ...prev };
+                                                                                     const target = updated.days[day].find(m => m.meal_type === type);
+                                                                                     target.carbs_g = val;
+                                                                                     return updated;
+                                                                                 });
+                                                                             }}
+                                                                         />
+                                                                         <span className="absolute right-1 text-[7px] text-text-muted font-black uppercase pointer-events-none">c</span>
+                                                                     </div>
+                                                                     <div className="relative flex items-center">
+                                                                         <input
+                                                                             type="number"
+                                                                             className="w-full pl-1.5 pr-3 py-1 rounded-md border border-divider bg-bg-card text-[9px] font-bold text-text-main focus:border-primary outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                             placeholder="Fat"
+                                                                             value={meal.fats_g === 0 || meal.fats_g === null ? '' : meal.fats_g}
+                                                                             onChange={(e) => {
+                                                                                 const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                                                                                 setEditingTemplate(prev => {
+                                                                                     const updated = { ...prev };
+                                                                                     const target = updated.days[day].find(m => m.meal_type === type);
+                                                                                     target.fats_g = val;
+                                                                                     return updated;
+                                                                                 });
+                                                                             }}
+                                                                         />
+                                                                         <span className="absolute right-1 text-[7px] text-text-muted font-black uppercase pointer-events-none">f</span>
+                                                                     </div>
+                                                                 </div>
+                                                             </div>
+                                                         </td>
                                                     );
                                                 })}
                                             </tr>
@@ -5808,9 +5808,9 @@ export default function ClientDetails() {
                                 </table>
                             </div>
 
-                            <div className="flex justify-end gap-3 border-t border-[var(--color-divider)] pt-4">
-                                <Button variant="outline" className="px-6 h-11 rounded-xl text-xs font-black uppercase tracking-wider" onClick={() => setIsTemplateEditorOpen(false)}>Cancel</Button>
-                                <Button className="px-6 h-11 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90 rounded-xl text-xs font-black uppercase tracking-wider" onClick={handleSaveEditedTemplate}>Save Template</Button>
+                            <div className="flex justify-end gap-3 border-t border-divider pt-4">
+                                <Button variant="outline" className="px-6 h-11 rounded-xl text-xs font-black uppercase tracking-wider animate-all cursor-pointer" onClick={() => setIsTemplateEditorOpen(false)}>Cancel</Button>
+                                <Button className="px-6 h-11 bg-primary text-white hover:bg-primary-hover rounded-xl text-xs font-black uppercase tracking-wider shadow-sm animate-all cursor-pointer" onClick={handleSaveEditedTemplate}>Save Template</Button>
                             </div>
                         </div>
                     </Modal>

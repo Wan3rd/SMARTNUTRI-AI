@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { Activity, User, Save, LogOut, Edit2, Plus, Trash2, Calendar, ChevronDown, Check, Camera, Loader2, X, Shield, ShieldAlert, Phone, Building2, BadgeCheck, Users, BarChart3, Stethoscope, Link2, Lock, Eye, EyeOff, FileUp, CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoading } from '../context/LoadingContext';
+import { useProfile } from '../context/ProfileContext';
 import { cn, convertHeight, convertWeight, toMetricHeight, toMetricWeight } from '../lib/utils';
 import { ProfileSkeleton } from '../components/SkeletonShell';
 import api from '../lib/api';
@@ -125,6 +126,7 @@ export default function Profile() {
     const { user, logout, updateUser } = useAuth();
     const { startLoading, stopLoading } = useLoading();
     const { showNotification } = useNotification();
+    const { refreshProfiles, selectProfile: globalSelectProfile } = useProfile();
     const navigate = useNavigate();
 
     // Redirect admins away from profile page
@@ -469,6 +471,7 @@ export default function Profile() {
 
     const selectProfile = (id) => {
         fetchProfile(id);
+        globalSelectProfile(id);
     };
 
     const handleLogout = () => {
@@ -672,17 +675,21 @@ export default function Profile() {
             setIsDeleteModalOpen(false);
             setDeleteConfirmName('');
 
-            // Refresh profiles list
+            // Sync with global profile context
+            await refreshProfiles();
+
+            // Refresh profiles list locally
             const res = await api.get('/profiles');
             setAllProfiles(res.data);
 
             if (res.data.length > 0) {
                 // Fetch the first available profile
                 fetchProfile(res.data[0].id);
+                globalSelectProfile(res.data[0].id);
             } else {
                 // Clear selected profile if none left
                 setProfileData(null);
-                setSelectedProfileId(null);
+                localStorage.removeItem('selectedProfileId');
             }
 
             showNotification('Profile deleted successfully', 'success');
@@ -765,20 +772,21 @@ export default function Profile() {
             >
 
                 {/* ── HERO BANNER ── */}
-                <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl">
-                    {/* Gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700" />
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent" />
+                <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
+                    {/* Premium Theme-Responsive Mesh Gradient Backdrop */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/10 via-[var(--color-bg-card)] to-[var(--color-info)]/5" />
+                    {/* Soft ambient decorative glowing blobs for high-end aesthetic depth */}
+                    <div className="absolute top-[-50%] right-[-10%] w-[350px] h-[350px] rounded-full bg-[var(--color-primary)]/8 blur-[80px] pointer-events-none" />
+                    <div className="absolute bottom-[-30%] left-[20%] w-[250px] h-[250px] rounded-full bg-[var(--color-info)]/8 blur-[60px] pointer-events-none" />
 
                     <div className="relative px-6 sm:px-8 py-8 sm:py-10 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 overflow-hidden">
                         {/* Avatar with pulse ring */}
                         <div className="relative flex-shrink-0 group">
-                            <div className="absolute inset-0 rounded-3xl bg-white/30 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
-                            <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-white/20 backdrop-blur-sm rounded-3xl border-2 border-white/40 flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-2xl select-none">
+                            <div className="absolute inset-0 rounded-3xl bg-[var(--color-primary)]/20 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
+                            <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-[var(--color-bg-page)] rounded-3xl border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-primary)] text-2xl sm:text-3xl font-black shadow-md select-none transition-all group-hover:border-[var(--color-primary)]/50">
                                 {isUploadingPhoto ? (
                                     <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
-                                        <Loader2 size={32} className="animate-spin text-white" />
+                                        <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
                                     </div>
                                 ) : nutri.profileImageUrl ? (
                                     <img
@@ -798,7 +806,7 @@ export default function Profile() {
                                         <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
                                     </label>
                                     {user?.status === 'approved' && (
-                                        <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-400 rounded-xl border-2 border-white flex items-center justify-center z-20">
+                                        <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-500 rounded-xl border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
                                             <BadgeCheck size={14} className="text-white" />
                                         </div>
                                     )}
@@ -808,20 +816,23 @@ export default function Profile() {
 
                         {/* Name & role */}
                         <div className="flex-1 text-center sm:text-left min-w-0">
-                            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 mb-2 sm:mb-1">
-                                <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md truncate max-w-full text-center sm:text-left leading-tight">{nutri.fullName}</h1>
-                                <span className="px-3 py-1 bg-white/20 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm whitespace-nowrap">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 mb-2 sm:mb-1.5">
+                                <h1 className="text-xl sm:text-3xl font-black text-[var(--color-text-main)] tracking-tight truncate max-w-full text-center sm:text-left leading-tight">{nutri.fullName}</h1>
+                                <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm whitespace-nowrap">
                                     Nutritionist
                                 </span>
                             </div>
-                            <p className="text-blue-100 font-medium text-xs sm:text-sm truncate">{nutri.specialization} &bull; {nutri.clinic || 'SmartNutri Clinical'}</p>
+                            <p className="text-[var(--color-text-muted)] font-medium text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-2 truncate">
+                                <Stethoscope size={14} className="shrink-0 text-[var(--color-primary)]" />
+                                <span>{nutri.specialization} &bull; {nutri.clinic || 'SmartNutri Clinical'}</span>
+                            </p>
                         </div>
 
                         {/* Member since pill */}
                         <div className="flex-shrink-0 text-center w-full sm:w-auto mt-2 sm:mt-0">
-                            <div className="px-4 sm:px-5 py-2 sm:py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/25 flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0">
-                                <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest sm:mb-0.5">Member Since:</p>
-                                <p className="text-lg sm:text-xl font-black text-white">{memberSince}</p>
+                            <div className="px-4 sm:px-5 py-2 sm:py-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0 shadow-sm">
+                                <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest sm:mb-0.5">Member Since:</p>
+                                <p className="text-lg sm:text-xl font-black text-[var(--color-text-main)]">{memberSince}</p>
                             </div>
                         </div>
                     </div>
@@ -1898,7 +1909,10 @@ export default function Profile() {
             <AddChildModal
                 isOpen={isAddChildOpen}
                 onClose={() => setIsAddChildOpen(false)}
-                onChildAdded={() => fetchProfile()}
+                onChildAdded={() => {
+                    fetchProfile();
+                    refreshProfiles();
+                }}
             />
             <AddClientModal
                 isOpen={isAddClientOpen}

@@ -1426,7 +1426,12 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
         activity_level,
         child_name,
         date_of_birth,
-        gender
+        gender,
+        weigh_in_conditions,
+        family_history,
+        food_intolerances,
+        symptoms,
+        lifestyle_factors
     } = req.body;
 
     try {
@@ -1455,6 +1460,9 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
                 medical_history,
                 medications,
                 vaccinations,
+                bristol_stool_scale: bristol_stool_scale !== undefined
+                    ? (bristol_stool_scale !== '' && bristol_stool_scale !== null ? parseInt(bristol_stool_scale) : null)
+                    : undefined,
                 allergies: allergies !== undefined
                     ? (Array.isArray(allergies)
                         ? allergies.flatMap(a => typeof a === 'string' ? a.split(',').map(s => s.trim()) : [a]).filter(Boolean)
@@ -1469,7 +1477,12 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
                 activity_level,
                 child_name,
                 date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
-                gender
+                gender,
+                weigh_in_conditions,
+                family_history,
+                food_intolerances,
+                symptoms,
+                lifestyle_factors
             }
         });
 

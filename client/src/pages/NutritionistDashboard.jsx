@@ -224,52 +224,54 @@ export default function NutritionistDashboard() {
             <AnnouncementBanner />
             {/* ── NUTRITIONIST HERO BANNER ── */}
             <div className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
-                {/* Gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 opacity-90" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+                {/* Premium Theme-Responsive Mesh Gradient Backdrop */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/10 via-[var(--color-bg-card)] to-[var(--color-info)]/5" />
+                {/* Soft ambient decorative glowing blobs for high-end aesthetic depth */}
+                <div className="absolute top-[-50%] right-[-10%] w-[350px] h-[350px] rounded-full bg-[var(--color-primary)]/8 blur-[80px] pointer-events-none" />
+                <div className="absolute bottom-[-30%] left-[20%] w-[250px] h-[250px] rounded-full bg-[var(--color-info)]/8 blur-[60px] pointer-events-none" />
 
                 <div className="relative p-3 sm:p-8 flex flex-col sm:flex-row items-center sm:items-end gap-5 sm:gap-6">
                     {/* Avatar */}
                     <div className="relative flex-shrink-0 group">
-                        <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-white/20 backdrop-blur-sm rounded-3xl border-2 border-white/40 flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-2xl">
+                        <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-[var(--color-bg-page)] rounded-3xl border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-primary)] text-2xl sm:text-3xl font-black shadow-md transition-all group-hover:border-[var(--color-primary)]/50">
                             {user?.profile_image_url ? (
                                 <img src={user.profile_image_url} alt="Nutri" className="h-full w-full object-cover" />
                             ) : (
-                                <User size={28} className="text-white/40" />
+                                <User size={28} className="text-[var(--color-text-muted)]" />
                             )}
                         </div>
                         {user?.status === 'approved' && (
-                            <div className="absolute -bottom-1 -right-1 h-6 w-6 sm:h-7 sm:w-7 bg-emerald-400 rounded-xl border-2 border-white flex items-center justify-center z-20 shadow-lg">
+                            <div className="absolute -bottom-1 -right-1 h-6 w-6 sm:h-7 sm:w-7 bg-emerald-500 rounded-xl border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
                                 <BadgeCheck size={12} className="text-white" />
                             </div>
                         )}
                     </div>
 
                     <div className="flex-1 text-center sm:text-left">
-                        <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2 mb-2 sm:mb-1">
-                            <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight", user?.privacy_mode && "privacy-blur")}>
+                        <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2 mb-2 sm:mb-1.5">
+                            <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)] tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
                                 Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
                             </h1>
-                            <span className="px-3 py-1 bg-white/20 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full border border-white/30 backdrop-blur-sm">
+                            <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm">
                                 Clinical Nutritionist
                             </span>
                         </div>
-                        <p className="text-blue-100 font-medium text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-2 opacity-90">
-                            <Stethoscope size={14} className="shrink-0" />
+                        <p className="text-[var(--color-text-muted)] font-medium text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-2">
+                            <Stethoscope size={14} className="shrink-0 text-[var(--color-primary)]" />
                             <span className="truncate max-w-[200px] sm:max-w-none">{user?.specialization || 'Pediatric Specialist'} &bull; {user?.clinic || 'SmartNutri Clinical'}</span>
                         </p>
                     </div>
 
                     <div className="flex flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                         <Button
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none shadow-xl shadow-emerald-900/20 font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                            className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border-none shadow-lg shadow-emerald-500/10 font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsModalOpen(true)}
                         >
                             <UserPlus size={14} className="xs:w-4 xs:h-4" />
                             <span className="whitespace-nowrap">Link Parent</span>
                         </Button>
                         <Button
-                            className="bg-white text-blue-600 hover:bg-blue-50 border-none shadow-lg font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02]"
+                            className="bg-[var(--color-bg-card)] text-[var(--color-info)] hover:bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-sm hover:shadow-md font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsProfilingOpen(true)}
                         >
                             <Stethoscope size={14} className="xs:w-4 xs:h-4" />
