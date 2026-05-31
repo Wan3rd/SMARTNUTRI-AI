@@ -2522,13 +2522,13 @@ export default function ClientDetails() {
                                                             <motion.div
                                                                 initial={{ opacity: 0, y: 20 }}
                                                                 animate={{ opacity: 1, y: 0 }}
-                                                                className="sm:-mx-0 p-4 sm:p-6 glass mesh-emerald rounded-2xl sm:rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl relative overflow-hidden"
+                                                                className="sm:-mx-0 p-4 sm:p-6 glass mesh-emerald rounded-2xl sm:rounded-[2.5rem] border border-[var(--color-divider)] shadow-2xl relative overflow-hidden"
                                                             >
                                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 sm:gap-0 relative z-10">
                                                                     <div className="flex items-center gap-3 sm:gap-5">
                                                                         <motion.div
                                                                             whileHover={{ scale: 1.05, rotate: 5 }}
-                                                                            className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-white/50 dark:border-white/10 shadow-xl flex-shrink-0 backdrop-blur-xl"
+                                                                            className="h-16 w-16 sm:h-24 sm:w-24 rounded-3xl overflow-hidden bg-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] border-4 border-[var(--color-divider)] shadow-xl flex-shrink-0 backdrop-blur-xl"
                                                                         >
                                                                             {isLoading ? <SkeletonLoader /> : (
                                                                                 selectedProfile?.profile_image_url ? (
@@ -2548,10 +2548,10 @@ export default function ClientDetails() {
                                                                                 <>
                                                                                     <h2 className={cn("text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none truncate mb-1", user?.privacy_mode && "privacy-blur")}>{selectedProfile.child_name}</h2>
                                                                                     <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex-wrap">
-                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm">{selectedProfile.gender}</span>
-                                                                                        <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">{getAgeSafe(selectedProfile.date_of_birth)}</span>
+                                                                                        <span className="px-3 py-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">{selectedProfile.gender}</span>
+                                                                                        <span className="px-3 py-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm whitespace-nowrap">{getAgeSafe(selectedProfile.date_of_birth)}</span>
                                                                                         {selectedProfile.waist_circumference && (
-                                                                                            <span className="px-3 py-1 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-white/20 dark:border-white/10 backdrop-blur-md shadow-sm whitespace-nowrap">Waist: {selectedProfile.waist_circumference} cm</span>
+                                                                                            <span className="px-3 py-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm whitespace-nowrap">Waist: {selectedProfile.waist_circumference} cm</span>
                                                                                         )}
                                                                                     </div>
                                                                                 </>
@@ -2565,7 +2565,7 @@ export default function ClientDetails() {
                                                                                 <span className="text-[11px] font-black uppercase tracking-widest">{clinicalPatterns.filter(a => a.severity === 'critical' || a.severity === 'high').length} Urgent Alerts</span>
                                                                             </div>
                                                                         )}
-                                                                        <div className="text-left sm:text-right p-4 sm:p-0 bg-white/30 dark:bg-slate-900/30 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/20 dark:border-white/10 sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
+                                                                        <div className="text-left sm:text-right p-4 sm:p-0 bg-[var(--color-bg-card)] sm:bg-transparent rounded-2xl sm:rounded-none border border-[var(--color-divider)] sm:border-none self-start sm:self-auto w-full sm:w-auto backdrop-blur-sm sm:backdrop-blur-none">
                                                                             <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Clinical Record DOB</div>
                                                                             <div className="text-sm font-black text-[var(--color-secondary)]">
                                                                                 {isLoading ? <SkeletonLoader className="h-5 w-32 ml-auto" /> : formatDateSafe(selectedProfile.date_of_birth, { dateStyle: 'long' })}
@@ -2578,7 +2578,7 @@ export default function ClientDetails() {
                                                                     {/* Weight Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
-                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
+                                                                        className="p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl sm:rounded-3xl border border-[var(--color-divider)] relative overflow-hidden group shadow-lg"
                                                                     >
                                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                                             <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Weight</div>
@@ -2615,7 +2615,7 @@ export default function ClientDetails() {
                                                                             )}
                                                                         </div>
                                                                         {!isLoading && growthLogs.length > 1 && (
-                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
+                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-[var(--color-divider)] pt-2 relative z-10">
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-emerald-500" />
@@ -2643,7 +2643,7 @@ export default function ClientDetails() {
                                                                     {/* Height Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
-                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 relative overflow-hidden group shadow-lg backdrop-blur-md"
+                                                                        className="p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl sm:rounded-3xl border border-[var(--color-divider)] relative overflow-hidden group shadow-lg"
                                                                     >
                                                                         <div className="flex justify-between items-start mb-1 relative z-10">
                                                                             <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Height</div>
@@ -2692,7 +2692,7 @@ export default function ClientDetails() {
                                                                             )}
                                                                         </div>
                                                                         {!isLoading && growthLogs.length > 1 && (
-                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-white/20 pt-2 relative z-10">
+                                                                            <div className="mt-2 text-[7px] sm:text-[9px] font-bold text-[var(--color-text-muted)] border-t border-[var(--color-divider)] pt-2 relative z-10">
                                                                                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                                                                                     <div className="flex items-center gap-1">
                                                                                         <Activity size={8} className="text-blue-500" />
@@ -2720,7 +2720,7 @@ export default function ClientDetails() {
                                                                     {/* BMI Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
-                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 flex flex-col justify-between shadow-lg backdrop-blur-md"
+                                                                        className="p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl sm:rounded-3xl border border-[var(--color-divider)] flex flex-col justify-between shadow-lg"
                                                                     >
                                                                         <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">BMI Status</div>
                                                                         {bmiData ? (
@@ -2739,7 +2739,7 @@ export default function ClientDetails() {
                                                                     {/* Activity Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
-                                                                        className="p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
+                                                                        className="p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl sm:rounded-3xl border border-[var(--color-divider)] shadow-lg"
                                                                     >
                                                                         <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Activity Level</div>
                                                                         <div className="text-xs sm:text-sm font-black text-[var(--color-text-main)] capitalize mt-2 truncate">
@@ -2750,7 +2750,7 @@ export default function ClientDetails() {
                                                                     {/* Allergies Card */}
                                                                     <motion.div
                                                                         whileHover={{ scale: 1.02, y: -5 }}
-                                                                        className="col-span-1 sm:col-span-2 lg:col-span-1 p-3 sm:p-4 glass bg-white/40 dark:bg-slate-900/40 rounded-2xl sm:rounded-3xl border border-white/20 dark:border-white/10 shadow-lg backdrop-blur-md"
+                                                                        className="col-span-1 sm:col-span-2 lg:col-span-1 p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl sm:rounded-3xl border border-[var(--color-divider)] shadow-lg"
                                                                     >
                                                                         <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Primary Allergies</div>
                                                                         <div className="flex flex-wrap gap-1 mt-2">
@@ -3508,9 +3508,9 @@ export default function ClientDetails() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="p-6 bg-green-50 dark:bg-green-900/10 rounded-3xl border-2 border-green-100 dark:border-green-800/30">
-                                                                <h4 className="font-black text-green-800 dark:text-green-300 uppercase tracking-widest text-xs mb-2">Clinical Insights Summary</h4>
-                                                                <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">
+                                                            <div className="p-6 bg-[var(--color-success)]/10 rounded-3xl border border-[var(--color-success)]/30">
+                                                                <h4 className="font-black text-[var(--color-success)] uppercase tracking-widest text-xs mb-2">Clinical Insights Summary</h4>
+                                                                <p className="text-sm text-[var(--color-text-main)] leading-relaxed">
                                                                     Currently tracking <strong>{rules.length} active nutrition rules</strong> for this profile. All clinical parameters and growth metrics are up to date as of {new Date().toLocaleDateString()}.
                                                                 </p>
                                                             </div>

@@ -10,7 +10,7 @@ export default function ForgotPassword() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [submitted, setSubmitted] = useState(false);
-    
+
     // Resend Logic State
     const [resendTimer, setResendTimer] = useState(0);
     const [resendAttempts, setResendAttempts] = useState(0);
@@ -33,7 +33,7 @@ export default function ForgotPassword() {
 
     const handleSubmit = async (e, isResend = false) => {
         if (e) e.preventDefault();
-        
+
         if (isResend && resendAttempts >= 3) {
             setMessage({ type: 'error', text: 'Too many attempts. Please try again later.' });
             return;
@@ -51,9 +51,9 @@ export default function ForgotPassword() {
                 setResendAttempts(prev => prev + 1);
             }
         } catch (err) {
-            setMessage({ 
-                type: 'error', 
-                text: err.response?.data?.message || 'Something went wrong. Please try again.' 
+            setMessage({
+                type: 'error',
+                text: err.response?.data?.message || 'Something went wrong. Please try again.'
             });
         } finally {
             setLoading(false);

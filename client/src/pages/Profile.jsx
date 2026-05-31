@@ -76,10 +76,10 @@ const calculateBMI = (weight, height) => {
 
 const getBMIStatus = (bmi) => {
     if (!bmi) return null;
-    if (bmi < 18.5) return { label: 'Underweight', color: 'text-blue-600 bg-blue-50 border-blue-200' };
-    if (bmi < 25) return { label: 'Normal Weight', color: 'text-green-600 bg-green-50 border-green-200' };
-    if (bmi < 30) return { label: 'Overweight', color: 'text-orange-600 bg-orange-50 border-orange-200' };
-    return { label: 'Obese', color: 'text-red-600 bg-red-50 border-red-200' };
+    if (bmi < 18.5) return { label: 'Underweight', color: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border border-[var(--color-info)]/30' };
+    if (bmi < 25) return { label: 'Normal Weight', color: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border border-[var(--color-success)]/30' };
+    if (bmi < 30) return { label: 'Overweight', color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30' };
+    return { label: 'Obese', color: 'text-[var(--color-danger)] bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30' };
 };
 
 // Must be defined outside Profile to keep a stable reference across renders
@@ -306,11 +306,11 @@ export default function Profile() {
 
     const handleCancelNutri = () => {
         const isDirty = nutri.fullName !== (user?.full_name || '') ||
-                        nutri.phone !== (user?.phone || '') ||
-                        nutri.specialization !== (user?.specialization || 'Pediatric Nutrition') ||
-                        nutri.licenseNo !== (user?.license_no || '') ||
-                        nutri.clinic !== (user?.clinic || '');
-        
+            nutri.phone !== (user?.phone || '') ||
+            nutri.specialization !== (user?.specialization || 'Pediatric Nutrition') ||
+            nutri.licenseNo !== (user?.license_no || '') ||
+            nutri.clinic !== (user?.clinic || '');
+
         if (isDirty) {
             setConfirmDialog({
                 isOpen: true,
@@ -337,8 +337,8 @@ export default function Profile() {
 
     const handleCancelParent = () => {
         const isDirty = parentData.fullName !== (user?.full_name || '') ||
-                        parentData.phone !== (user?.phone || '');
-        
+            parentData.phone !== (user?.phone || '');
+
         if (isDirty) {
             setConfirmDialog({
                 isOpen: true,
@@ -391,11 +391,11 @@ export default function Profile() {
         }
 
         const isDirty = profileData.childName !== (initial.child_name || '') ||
-                        profileData.age !== (initial.age?.toString() || '') ||
-                        profileData.height.toString() !== (initial.height_cm?.toString() || '') ||
-                        profileData.weight.toString() !== (initial.weight_kg?.toString() || '') ||
-                        profileData.medicalHistory !== (initial.medical_history || '');
-        
+            profileData.age !== (initial.age?.toString() || '') ||
+            profileData.height.toString() !== (initial.height_cm?.toString() || '') ||
+            profileData.weight.toString() !== (initial.weight_kg?.toString() || '') ||
+            profileData.medicalHistory !== (initial.medical_history || '');
+
         if (isDirty) {
             setConfirmDialog({
                 isOpen: true,
@@ -830,15 +830,15 @@ export default function Profile() {
                 {/* ── STATS ROW ── */}
                 <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2 sm:gap-4">
                     {[
-                        { label: 'Active Clients', value: clientCount ?? '—', icon: Users, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
-                        { label: 'Role', value: 'Clinical', icon: Stethoscope, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
+                        { label: 'Active Clients', value: clientCount ?? '—', icon: Users, color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },
+                        { label: 'Role', value: 'Clinical', icon: Stethoscope, color: 'text-[var(--color-info)] bg-[var(--color-info)]/10' },
                         {
                             label: 'Status',
                             value: user?.status === 'approved' ? 'Verified' : 'Pending',
                             icon: user?.status === 'approved' ? Shield : ShieldAlert,
                             color: user?.status === 'approved'
-                                ? 'text-violet-600 bg-violet-50 dark:bg-violet-900/20'
-                                : 'text-amber-600 bg-amber-50 dark:bg-amber-900/20'
+                                ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                                : 'text-[var(--color-warning)] bg-[var(--color-warning)]/10'
                         },
                     ].map(stat => (
                         <motion.div
@@ -907,11 +907,11 @@ export default function Profile() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 sm:p-6 space-y-6">
-                            <div className="flex items-start gap-4 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                                <Shield className="text-emerald-500 flex-shrink-0 mt-0.5" size={16} />
+                            <div className="flex items-start gap-4 p-4 bg-[var(--color-primary)]/10 rounded-2xl border border-[var(--color-primary)]/30">
+                                <Shield className="text-[var(--color-primary)] flex-shrink-0 mt-0.5" size={16} />
                                 <div className="space-y-1">
-                                    <p className="text-[11px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-tight">Identity Compliance</p>
-                                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300/70 font-medium leading-relaxed">
+                                    <p className="text-[11px] font-black text-[var(--color-primary)] uppercase tracking-tight">Identity Compliance</p>
+                                    <p className="text-[10px] text-[var(--color-text-main)] opacity-70 font-medium leading-relaxed">
                                         Upload a clear photo of your PRC ID or medical license to achieve "Verified" status and gain full clinical authority.
                                     </p>
                                 </div>
@@ -977,8 +977,8 @@ export default function Profile() {
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Email Address</label>
                                     <div className="p-3 sm:p-4 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)] text-xs sm:text-sm flex items-center gap-3 overflow-hidden">
-                                        <div className="h-8 w-8 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Link2 size={14} className="text-blue-500" />
+                                        <div className="h-8 w-8 bg-[var(--color-info)]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Link2 size={14} className="text-[var(--color-info)]" />
                                         </div>
                                         <span className="truncate">{user.email}</span>
                                     </div>
@@ -986,17 +986,17 @@ export default function Profile() {
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Account Type</label>
                                     <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-divider)] flex items-center gap-3">
-                                        <div className="h-8 w-8 bg-violet-50 dark:bg-violet-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Shield size={14} className="text-violet-500" />
+                                        <div className="h-8 w-8 bg-[var(--color-primary)]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Shield size={14} className="text-[var(--color-primary)]" />
                                         </div>
                                         <div>
                                             <p className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight">Nutritionist</p>
                                             <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Clinical Reviewer Access</p>
                                         </div>
                                         {user?.status === 'approved' ? (
-                                            <span className="ml-auto px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-200 dark:border-emerald-800">Verified</span>
+                                            <span className="ml-auto px-2 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[9px] font-black uppercase tracking-widest rounded-lg border border-[var(--color-primary)]/30">Verified</span>
                                         ) : (
-                                            <span className="ml-auto px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-lg border border-amber-200 dark:border-amber-800">Under Audit</span>
+                                            <span className="ml-auto px-2 py-1 bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-[9px] font-black uppercase tracking-widest rounded-lg border border-[var(--color-warning)]/30">Under Audit</span>
                                         )}
                                     </div>
                                 </div>
@@ -1013,16 +1013,16 @@ export default function Profile() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 sm:p-6 space-y-4">
-                                <div className="flex items-start gap-3 p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-800">
-                                    <Shield size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                                    <p className="text-[10px] sm:text-[11px] font-medium text-amber-700 dark:text-amber-400 leading-relaxed">
+                                <div className="flex items-start gap-3 p-3 sm:p-4 bg-[var(--color-warning)]/10 rounded-2xl border border-[var(--color-warning)]/30">
+                                    <Shield size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
+                                    <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-warning)] leading-relaxed">
                                         Your account is secured with enterprise-grade encryption. Contact your clinical administrator to change your password.
                                     </p>
                                 </div>
                                 <Button
                                     variant="outline"
                                     onClick={handleLogout}
-                                    className="w-full h-11 sm:h-12 rounded-xl sm:rounded-2xl text-red-500 border-2 border-red-100 hover:bg-red-50 hover:border-red-300 transition-all font-black uppercase tracking-widest gap-2 text-[10px] sm:text-xs"
+                                    className="w-full h-11 sm:h-12 rounded-xl sm:rounded-2xl text-[var(--color-danger)] border-2 border-[var(--color-danger)]/20 hover:bg-[var(--color-danger)]/10 hover:border-[var(--color-danger)]/40 transition-all font-black uppercase tracking-widest gap-2 text-[10px] sm:text-xs"
                                 >
                                     <LogOut size={16} /> Sign Out
                                 </Button>
@@ -1218,646 +1218,665 @@ export default function Profile() {
                 </motion.div>
             )}
 
-            {/* Header Section (Child-Focused) */}
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-4 sm:mb-10 p-5 sm:p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
-                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
-                    <div className="relative group">
-                        <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-4 border-white">
-                            {isUploadingPhoto ? (
-                                <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
-                                    <Loader2 size={24} className="animate-spin text-white" />
+            {allProfiles.length === 0 ? (
+                <motion.div
+                    variants={itemVariants}
+                    className="p-8 sm:p-10 bg-white dark:bg-white/5 border-2 border-dashed border-[var(--color-divider)] rounded-[2rem] text-center space-y-6 max-w-xl mx-auto shadow-sm my-6 animate-in fade-in duration-300"
+                >
+                    <div className="mx-auto w-14 h-14 bg-gradient-to-br from-emerald-500/10 to-teal-600/10 rounded-2xl flex items-center justify-center text-[var(--color-primary)]">
+                        <Plus size={28} />
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-black uppercase text-[var(--color-secondary)] tracking-wider">No Child Profiles Added</h3>
+                        <p className="text-xs font-semibold text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
+                            To customize dietary settings, log vaccines, and track growth charts, please click the <strong>Add Child</strong> button on the top right.
+                        </p>
+                    </div>
+                </motion.div>
+            ) : (
+                <>
+                    {/* Header Section (Child-Focused) */}
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-4 sm:mb-10 p-5 sm:p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
+                            <div className="relative group">
+                                <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-4 border-white">
+                                    {isUploadingPhoto ? (
+                                        <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
+                                            <Loader2 size={24} className="animate-spin text-white" />
+                                        </div>
+                                    ) : profileData.profileImageUrl ? (
+                                        <img
+                                            src={profileData.profileImageUrl}
+                                            alt={profileData.childName}
+                                            className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
+                                        />
+                                    ) : (
+                                        profileData.childName.charAt(0).toUpperCase() || 'C'
+                                    )}
                                 </div>
-                            ) : profileData.profileImageUrl ? (
-                                <img
-                                    src={profileData.profileImageUrl}
-                                    alt={profileData.childName}
-                                    className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
-                                />
+                                {isEditing && !isUploadingPhoto && (
+                                    <>
+                                        <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                                            <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'child')} accept="image/*" />
+                                            <Camera size={28} className="animate-bounce" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
+                                        </label>
+                                        <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-[var(--color-primary)] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
+                                            <Camera size={14} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Image Cropper Modal */}
+                            {imageToCrop && (
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                                    <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
+                                        <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-6">
+                                            <CardTitle className="text-sm font-black uppercase tracking-widest">Adjust Profile Photo</CardTitle>
+                                            <button onClick={() => setImageToCrop(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                                                <X size={20} />
+                                            </button>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
+                                            <div className="relative h-80 w-full bg-gray-100">
+                                                <Cropper
+                                                    image={imageToCrop}
+                                                    crop={crop}
+                                                    zoom={zoom}
+                                                    aspect={cropTarget === 'license' ? 3 / 2 : 1}
+                                                    onCropChange={setCrop}
+                                                    onCropComplete={onCropComplete}
+                                                    onZoomChange={setZoom}
+                                                    cropShape="rect"
+                                                    showGrid={true}
+                                                />
+                                            </div>
+                                            <div className="p-8 space-y-6">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Zoom Level</label>
+                                                    <input
+                                                        type="range"
+                                                        value={zoom}
+                                                        min={1}
+                                                        max={3}
+                                                        step={0.1}
+                                                        onChange={(e) => setZoom(e.target.value)}
+                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setImageToCrop(null)}
+                                                        className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        onClick={handlePhotoUpload}
+                                                        disabled={isUploadingPhoto}
+                                                        className="flex-1 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2"
+                                                    >
+                                                        {isUploadingPhoto ? (
+                                                            <>
+                                                                <Loader2 size={16} className="animate-spin" />
+                                                                Saving...
+                                                            </>
+                                                        ) : 'Save Photo'}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            )}
+                            <div className="w-full min-w-0">
+                                <h1 className={cn("text-2xl sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight truncate", user?.privacy_mode && "privacy-blur")}>{profileData.childName || 'Child Profile'}</h1>
+                                <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium italic truncate">Parent Account &bull; {user?.full_name}</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            {!isEditing ? (
+                                <Button
+                                    onClick={() => setIsEditing(true)}
+                                    className="w-full sm:w-auto h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-md shadow-[var(--color-primary)]/20 flex items-center justify-center border-b-2 border-black/10 active:border-b-0 active:translate-y-[1px] pt-[1px]"
+                                >
+                                    <Edit2 size={14} /> Edit Profile
+                                </Button>
                             ) : (
-                                profileData.childName.charAt(0).toUpperCase() || 'C'
+                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCancelProfile}
+                                        className="w-full sm:w-auto h-11 px-6 rounded-xl border-2 border-[var(--color-divider)] font-black uppercase tracking-widest text-[10px] order-2 sm:order-1"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="w-full sm:w-auto h-11 px-8 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20 order-1 sm:order-2"
+                                    >
+                                        <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
+                                    </Button>
+                                </div>
                             )}
                         </div>
-                        {isEditing && !isUploadingPhoto && (
-                            <>
-                                <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
-                                    <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'child')} accept="image/*" />
-                                    <Camera size={28} className="animate-bounce" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
-                                </label>
-                                <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-[var(--color-primary)] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
-                                    <Camera size={14} />
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    </motion.div>
 
-                    {/* Image Cropper Modal */}
-                    {imageToCrop && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                            <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
-                                <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-6">
-                                    <CardTitle className="text-sm font-black uppercase tracking-widest">Adjust Profile Photo</CardTitle>
-                                    <button onClick={() => setImageToCrop(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                                        <X size={20} />
-                                    </button>
+
+
+                    {/* Profile Form Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                        <motion.div variants={itemVariants}>
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]"><User size={20} /> Basic Information</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-0">
-                                    <div className="relative h-80 w-full bg-gray-100">
-                                        <Cropper
-                                            image={imageToCrop}
-                                            crop={crop}
-                                            zoom={zoom}
-                                            aspect={cropTarget === 'license' ? 3 / 2 : 1}
-                                            onCropChange={setCrop}
-                                            onCropComplete={onCropComplete}
-                                            onZoomChange={setZoom}
-                                            cropShape="rect"
-                                            showGrid={true}
+                                <CardContent className="p-5 sm:p-8 space-y-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Child's Name</label>
+                                        <input
+                                            type="text"
+                                            name="childName"
+                                            value={profileData.childName}
+                                            onChange={handleChange}
+                                            disabled={!isEditing}
+                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-lg sm:disabled:text-xl disabled:font-black disabled:uppercase disabled:tracking-tight"
                                         />
                                     </div>
-                                    <div className="p-8 space-y-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Zoom Level</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age (Years)</label>
                                             <input
-                                                type="range"
-                                                value={zoom}
-                                                min={1}
-                                                max={3}
-                                                step={0.1}
-                                                onChange={(e) => setZoom(e.target.value)}
-                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+                                                type="number"
+                                                name="age"
+                                                value={profileData.age}
+                                                onChange={handleChange}
+                                                disabled={!isEditing}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
                                             />
                                         </div>
-                                        <div className="flex gap-4">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setImageToCrop(null)}
-                                                className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
+                                            <select
+                                                name="gender"
+                                                value={profileData.gender}
+                                                onChange={handleChange}
+                                                disabled={!isEditing}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
                                             >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                onClick={handlePhotoUpload}
-                                                disabled={isUploadingPhoto}
-                                                className="flex-1 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2"
-                                            >
-                                                {isUploadingPhoto ? (
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between ml-1">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                    Height ({user?.measurement_system === 'imperial' ? 'ft/in' : 'cm'})
+                                                </label>
+                                                {!isEditing && (
+                                                    <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                        {user?.measurement_system === 'imperial' ? '+0.5 in trend' : '+1.2cm trend'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {isEditing ? (
+                                                user?.measurement_system === 'imperial' ? (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                name="heightFeet"
+                                                                placeholder="Feet"
+                                                                value={profileData.heightFeet}
+                                                                onChange={handleChange}
+                                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                            />
+                                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">FT</span>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                name="heightInches"
+                                                                placeholder="Inches"
+                                                                value={profileData.heightInches}
+                                                                onChange={handleChange}
+                                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                            />
+                                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">IN</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="number"
+                                                        name="height"
+                                                        value={profileData.height}
+                                                        onChange={handleChange}
+                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    />
+                                                )
+                                            ) : (
+                                                <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
+                                                    {user?.measurement_system === 'imperial' ? (
+                                                        (() => {
+                                                            const h = convertHeight(profileData.height, 'imperial');
+                                                            return `${h.feet}'${h.inches}"`;
+                                                        })()
+                                                    ) : (
+                                                        `${profileData.height} cm`
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between ml-1">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                    Weight ({user?.measurement_system === 'imperial' ? 'lbs' : 'kg'})
+                                                </label>
+                                                {!isEditing && (
+                                                    <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                        {user?.measurement_system === 'imperial' ? '+1.1 lbs trend' : '+0.5kg trend'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {isEditing ? (
+                                                <input
+                                                    type="number"
+                                                    name="weight"
+                                                    value={profileData.weight}
+                                                    onChange={handleChange}
+                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                />
+                                            ) : (
+                                                <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
+                                                    {user?.measurement_system === 'imperial' ? (
+                                                        `${convertWeight(profileData.weight, 'imperial').value} lbs`
+                                                    ) : (
+                                                        `${profileData.weight} kg`
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Real-time BMI Display */}
+                                    {profileData.height && profileData.weight && (
+                                        <div className="p-4 rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-page)]/50 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
+                                            <div className="text-center sm:text-left">
+                                                <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
+                                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                                    <span className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)]">
+                                                        {calculateBMI(
+                                                            user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                            user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                                        )}
+                                                    </span>
+                                                    <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${getBMIStatus(calculateBMI(
+                                                        user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                        user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                                    )).color}`}>
+                                                        {getBMIStatus(calculateBMI(
+                                                            user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
+                                                            user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
+                                                        )).label}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-center sm:text-right border-t sm:border-t-0 border-[var(--color-divider)] pt-3 sm:pt-0 w-full sm:w-auto">
+                                                <p className="text-[8px] sm:text-[9px] text-[var(--color-text-muted)] font-bold uppercase max-w-full sm:max-w-[100px] leading-tight mx-auto sm:ml-auto">Pediatric Clinical Estimate</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Activity Level</label>
+                                        <select
+                                            name="activityLevel"
+                                            value={profileData.activityLevel}
+                                            onChange={handleChange}
+                                            disabled={!isEditing}
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
+                                        >
+                                            <option value="sedentary">Sedentary</option>
+                                            <option value="light">Light</option>
+                                            <option value="moderate">Moderate</option>
+                                            <option value="very_active">Very Active</option>
+                                        </select>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants}>
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🍽️ Dietary & Allergies</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8 space-y-8">
+                                    <div>
+                                        <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
+                                        <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                                            {DIETARY_OPTIONS.map(option => (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => toggleSelection('dietaryPreferences', option)}
+                                                    disabled={!isEditing}
+                                                    className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-tight transition-all border-2 ${profileData.dietaryPreferences.includes(option)
+                                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md'
+                                                        : 'bg-[var(--color-bg-page)] text-[var(--color-text-main)] border-[var(--color-divider)]'
+                                                        } ${!isEditing ? 'cursor-default' : 'cursor-pointer hover:border-[var(--color-primary)] hover:translate-y-[-1px] active:scale-95'}`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
+
+                                        {isEditing && (
+                                            <div className="mb-4 relative">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                                    className={cn(
+                                                        "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
+                                                        isDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
+                                                    )}
+                                                >
+                                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
+                                                        <Plus size={14} className="inline mr-2" /> <span className="truncate">Add Allergy...</span>
+                                                    </span>
+                                                    <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)] flex-shrink-0", isDropdownOpen && "rotate-180")} />
+                                                </button>
+
+                                                {isDropdownOpen && (
                                                     <>
-                                                        <Loader2 size={16} className="animate-spin" />
-                                                        Saving...
+                                                        <div
+                                                            className="fixed inset-0 z-40"
+                                                            onClick={() => setIsDropdownOpen(false)}
+                                                        />
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                                        >
+                                                            {ALLERGY_OPTIONS.map(option => {
+                                                                const isSelected = profileData.allergies.includes(option);
+                                                                if (isSelected) return null;
+
+                                                                return (
+                                                                    <button
+                                                                        key={option}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (option === 'None') {
+                                                                                setProfileData({ ...profileData, allergies: ['None'] });
+                                                                            } else {
+                                                                                let newAllergies = profileData.allergies.filter(a => a !== 'None');
+                                                                                newAllergies.push(option);
+                                                                                setProfileData({ ...profileData, allergies: newAllergies });
+                                                                            }
+                                                                            setIsDropdownOpen(false);
+                                                                        }}
+                                                                        className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
+                                                                    >
+                                                                        {option}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                            {ALLERGY_OPTIONS.every(o => profileData.allergies.includes(o)) && (
+                                                                <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                                                                    All allergies selected
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
                                                     </>
-                                                ) : 'Save Photo'}
-                                            </Button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-wrap gap-2">
+                                            {(profileData.allergies?.filter(Boolean).length === 0 || (profileData.allergies?.filter(Boolean).length === 1 && profileData.allergies?.filter(Boolean)[0] === "None")) ? (
+                                                <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
+                                            ) : (
+                                                profileData.allergies?.filter(Boolean).map((allergy, idx) => (
+                                                    <div
+                                                        key={`${allergy}-${idx}`}
+                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
+                                                            ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
+                                                            : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
+                                                            }`}
+                                                    >
+                                                        {allergy}
+                                                        {isEditing && (
+                                                            <button
+                                                                onClick={() => toggleSelection('allergies', allergy)}
+                                                                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
-                        </div>
-                    )}
-                    <div className="w-full min-w-0">
-                        <h1 className={cn("text-2xl sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight truncate", user?.privacy_mode && "privacy-blur")}>{profileData.childName || 'Child Profile'}</h1>
-                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium italic truncate">Parent Account &bull; {user?.full_name}</p>
-                    </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    {!isEditing ? (
-                        <Button
-                            onClick={() => setIsEditing(true)}
-                            className="w-full sm:w-auto h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-md shadow-[var(--color-primary)]/20 flex items-center justify-center border-b-2 border-black/10 active:border-b-0 active:translate-y-[1px] pt-[1px]"
-                        >
-                            <Edit2 size={14} /> Edit Profile
-                        </Button>
-                    ) : (
-                        <div className="flex flex-col sm:flex-row gap-3 w-full">
-                            <Button
-                                variant="outline"
-                                onClick={handleCancelProfile}
-                                className="w-full sm:w-auto h-11 px-6 rounded-xl border-2 border-[var(--color-divider)] font-black uppercase tracking-widest text-[10px] order-2 sm:order-1"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="w-full sm:w-auto h-11 px-8 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20 order-1 sm:order-2"
-                            >
-                                <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
+                        </motion.div>
 
-
-
-            {/* Profile Form Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                <motion.div variants={itemVariants}>
-                    <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]"><User size={20} /> Basic Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-5 sm:p-8 space-y-6">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Child's Name</label>
-                                <input
-                                    type="text"
-                                    name="childName"
-                                    value={profileData.childName}
-                                    onChange={handleChange}
-                                    disabled={!isEditing}
-                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-lg sm:disabled:text-xl disabled:font-black disabled:uppercase disabled:tracking-tight"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age (Years)</label>
-                                    <input
-                                        type="number"
-                                        name="age"
-                                        value={profileData.age}
-                                        onChange={handleChange}
-                                        disabled={!isEditing}
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
-                                    <select
-                                        name="gender"
-                                        value={profileData.gender}
-                                        onChange={handleChange}
-                                        disabled={!isEditing}
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
-                                    >
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between ml-1">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
-                                            Height ({user?.measurement_system === 'imperial' ? 'ft/in' : 'cm'})
-                                        </label>
-                                        {!isEditing && (
-                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
-                                                {user?.measurement_system === 'imperial' ? '+0.5 in trend' : '+1.2cm trend'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {isEditing ? (
-                                        user?.measurement_system === 'imperial' ? (
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        name="heightFeet"
-                                                        placeholder="Feet"
-                                                        value={profileData.heightFeet}
-                                                        onChange={handleChange}
-                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                                    />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">FT</span>
-                                                </div>
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        name="heightInches"
-                                                        placeholder="Inches"
-                                                        value={profileData.heightInches}
-                                                        onChange={handleChange}
-                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                                    />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">IN</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <input
-                                                type="number"
-                                                name="height"
-                                                value={profileData.height}
-                                                onChange={handleChange}
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                            />
-                                        )
-                                    ) : (
-                                        <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
-                                            {user?.measurement_system === 'imperial' ? (
-                                                (() => {
-                                                    const h = convertHeight(profileData.height, 'imperial');
-                                                    return `${h.feet}'${h.inches}"`;
-                                                })()
-                                            ) : (
-                                                `${profileData.height} cm`
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between ml-1">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
-                                            Weight ({user?.measurement_system === 'imperial' ? 'lbs' : 'kg'})
-                                        </label>
-                                        {!isEditing && (
-                                            <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
-                                                {user?.measurement_system === 'imperial' ? '+1.1 lbs trend' : '+0.5kg trend'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            name="weight"
-                                            value={profileData.weight}
-                                            onChange={handleChange}
-                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
-                                        />
-                                    ) : (
-                                        <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
-                                            {user?.measurement_system === 'imperial' ? (
-                                                `${convertWeight(profileData.weight, 'imperial').value} lbs`
-                                            ) : (
-                                                `${profileData.weight} kg`
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Real-time BMI Display */}
-                            {profileData.height && profileData.weight && (
-                                <div className="p-4 rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-page)]/50 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
-                                    <div className="text-center sm:text-left">
-                                        <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
-                                        <div className="flex items-center justify-center sm:justify-start gap-3">
-                                            <span className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)]">
-                                                {calculateBMI(
-                                                    user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                    user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                                )}
-                                            </span>
-                                            <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${getBMIStatus(calculateBMI(
-                                                user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                            )).color}`}>
-                                                {getBMIStatus(calculateBMI(
-                                                    user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                    user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                                )).label}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="text-center sm:text-right border-t sm:border-t-0 border-[var(--color-divider)] pt-3 sm:pt-0 w-full sm:w-auto">
-                                        <p className="text-[8px] sm:text-[9px] text-[var(--color-text-muted)] font-bold uppercase max-w-full sm:max-w-[100px] leading-tight mx-auto sm:ml-auto">Pediatric Clinical Estimate</p>
-                                    </div>
-                                </div>
-                            )}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Activity Level</label>
-                                <select
-                                    name="activityLevel"
-                                    value={profileData.activityLevel}
-                                    onChange={handleChange}
-                                    disabled={!isEditing}
-                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
-                                >
-                                    <option value="sedentary">Sedentary</option>
-                                    <option value="light">Light</option>
-                                    <option value="moderate">Moderate</option>
-                                    <option value="very_active">Very Active</option>
-                                </select>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl shadow-lg">
-                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🍽️ Dietary & Allergies</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-5 sm:p-8 space-y-8">
-                            <div>
-                                <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
-                                <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                                    {DIETARY_OPTIONS.map(option => (
-                                        <button
-                                            key={option}
-                                            onClick={() => toggleSelection('dietaryPreferences', option)}
-                                            disabled={!isEditing}
-                                            className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-tight transition-all border-2 ${profileData.dietaryPreferences.includes(option)
-                                                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md'
-                                                : 'bg-[var(--color-bg-page)] text-[var(--color-text-main)] border-[var(--color-divider)]'
-                                                } ${!isEditing ? 'cursor-default' : 'cursor-pointer hover:border-[var(--color-primary)] hover:translate-y-[-1px] active:scale-95'}`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
-
-                                {isEditing && (
-                                    <div className="mb-4 relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                            className={cn(
-                                                "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
-                                                isDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
-                                            )}
-                                        >
-                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
-                                                <Plus size={14} className="inline mr-2" /> <span className="truncate">Add Allergy...</span>
-                                            </span>
-                                            <ChevronDown size={14} className={cn("transition-transform duration-200 text-[var(--color-text-muted)] flex-shrink-0", isDropdownOpen && "rotate-180")} />
-                                        </button>
-
-                                        {isDropdownOpen && (
-                                            <>
-                                                <div
-                                                    className="fixed inset-0 z-40"
-                                                    onClick={() => setIsDropdownOpen(false)}
-                                                />
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
-                                                >
-                                                    {ALLERGY_OPTIONS.map(option => {
-                                                        const isSelected = profileData.allergies.includes(option);
-                                                        if (isSelected) return null;
-
-                                                        return (
-                                                            <button
-                                                                key={option}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    if (option === 'None') {
-                                                                        setProfileData({ ...profileData, allergies: ['None'] });
-                                                                    } else {
-                                                                        let newAllergies = profileData.allergies.filter(a => a !== 'None');
-                                                                        newAllergies.push(option);
-                                                                        setProfileData({ ...profileData, allergies: newAllergies });
-                                                                    }
-                                                                    setIsDropdownOpen(false);
-                                                                }}
-                                                                className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
-                                                            >
-                                                                {option}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                    {ALLERGY_OPTIONS.every(o => profileData.allergies.includes(o)) && (
-                                                        <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
-                                                            All allergies selected
-                                                        </div>
-                                                    )}
-                                                </motion.div>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap gap-2">
-                                    {(profileData.allergies?.filter(Boolean).length === 0 || (profileData.allergies?.filter(Boolean).length === 1 && profileData.allergies?.filter(Boolean)[0] === "None")) ? (
-                                        <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
-                                    ) : (
-                                        profileData.allergies?.filter(Boolean).map((allergy, idx) => (
-                                            <div
-                                                key={`${allergy}-${idx}`}
-                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
-                                                    ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
-                                                    : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
-                                                    }`}
-                                            >
-                                                {allergy}
-                                                {isEditing && (
-                                                    <button
-                                                        onClick={() => toggleSelection('allergies', allergy)}
-                                                        className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
+                        {/* Clinical Data section spanning 2 columns */}
+                        <motion.div variants={itemVariants} className="md:col-span-2">
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                        <Stethoscope size={18} className="text-blue-500" /> Advanced Clinical Profile
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8 space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
+                                                {isEditing && !isAddingVaccine && (
+                                                    <Button
+                                                        onClick={() => setIsAddingVaccine(true)}
+                                                        className="h-8 px-3 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
                                                     >
-                                                        <X size={10} />
-                                                    </button>
+                                                        <Plus size={14} /> Add Vaccine
+                                                    </Button>
                                                 )}
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
 
-                {/* Clinical Data section spanning 2 columns */}
-                <motion.div variants={itemVariants} className="md:col-span-2">
-                    <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                        <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
-                                <Stethoscope size={18} className="text-blue-500" /> Advanced Clinical Profile
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-5 sm:p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
-                                        {isEditing && !isAddingVaccine && (
-                                            <Button
-                                                onClick={() => setIsAddingVaccine(true)}
-                                                className="h-8 px-3 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
-                                            >
-                                                <Plus size={14} /> Add Vaccine
-                                            </Button>
-                                        )}
-                                    </div>
-
-                                    {isAddingVaccine && (
-                                        <div className="mb-6 p-5 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
-                                                    <select
-                                                        value={newVaccine.typeId}
-                                                        onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
-                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
-                                                    >
-                                                        <option value="">Select Vaccine...</option>
-                                                        {vaccinationTypes.map(t => (
-                                                            <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
-                                                    <input
-                                                        type="date"
-                                                        max={new Date().toISOString().split('T')[0]}
-                                                        value={newVaccine.date}
-                                                        onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
-                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5 mb-4">
-                                                <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Notes (Batch #, Provider)</label>
-                                                <input
-                                                    type="text"
-                                                    value={newVaccine.notes}
-                                                    onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
-                                                    placeholder="e.g. Batch #12345, Dr. Smith Clinic"
-                                                    className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all placeholder:opacity-40"
-                                                />
-                                            </div>
-                                            <div className="flex gap-2 justify-end">
-                                                <Button variant="outline" onClick={() => setIsAddingVaccine(false)} className="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancel</Button>
-                                                <Button onClick={handleAddVaccine} className="h-9 px-4 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-md shadow-[var(--color-primary)]/20">Save Record</Button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-3">
-                                        {childVaccinations.length === 0 ? (
-                                            <div className="p-6 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-2xl">
-                                                <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                                                {childVaccinations.map(v => (
-                                                    <div key={v.id} className="group relative flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
-                                                        <div className="h-9 w-9 sm:h-10 sm:w-10 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                            <Check size={18} className="sm:w-5 sm:h-5" />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight mb-1">
-                                                                {v.vaccination_types?.name}
-                                                            </h4>
-                                                            <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
-                                                                <Calendar size={10} className="flex-shrink-0" />
-                                                                {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                                                            </div>
-                                                            {v.notes && <p className="text-[9px] text-[var(--color-text-muted)] mt-2 whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2">{v.notes}</p>}
-                                                        </div>
-                                                        {isEditing && (
-                                                            <button
-                                                                onClick={() => handleDeleteVaccine(v.id)}
-                                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
+                                            {isAddingVaccine && (
+                                                <div className="mb-6 p-5 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
+                                                            <select
+                                                                value={newVaccine.typeId}
+                                                                onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
+                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
                                                             >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        )}
+                                                                <option value="">Select Vaccine...</option>
+                                                                {vaccinationTypes.map(t => (
+                                                                    <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
+                                                            <input
+                                                                type="date"
+                                                                max={new Date().toISOString().split('T')[0]}
+                                                                value={newVaccine.date}
+                                                                onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
+                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
+                                                            />
+                                                        </div>
                                                     </div>
+                                                    <div className="space-y-1.5 mb-4">
+                                                        <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Notes (Batch #, Provider)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={newVaccine.notes}
+                                                            onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
+                                                            placeholder="e.g. Batch #12345, Dr. Smith Clinic"
+                                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all placeholder:opacity-40"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button variant="outline" onClick={() => setIsAddingVaccine(false)} className="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancel</Button>
+                                                        <Button onClick={handleAddVaccine} className="h-9 px-4 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-md shadow-[var(--color-primary)]/20">Save Record</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3">
+                                                {childVaccinations.length === 0 ? (
+                                                    <div className="p-6 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-2xl">
+                                                        <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                                        {childVaccinations.map(v => (
+                                                            <div key={v.id} className="group relative flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
+                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                                    <Check size={18} className="sm:w-5 sm:h-5" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight mb-1">
+                                                                        {v.vaccination_types?.name}
+                                                                    </h4>
+                                                                    <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
+                                                                        <Calendar size={10} className="flex-shrink-0" />
+                                                                        {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                    </div>
+                                                                    {v.notes && <p className="text-[9px] text-[var(--color-text-muted)] mt-2 whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2">{v.notes}</p>}
+                                                                </div>
+                                                                {isEditing && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteVaccine(v.id)}
+                                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>
+                                            {isEditing ? (
+                                                <textarea
+                                                    name="medications"
+                                                    rows="4"
+                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                                    placeholder="e.g. Daily multivitamins, Vitamin C, Iron drops..."
+                                                    value={profileData.medications}
+                                                    onChange={handleChange}
+                                                />
+                                            ) : (
+                                                <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
+                                                    {profileData.medications || <span className="text-[var(--color-text-muted)] italic opacity-50">No medications listed</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History / Surgical History</label>
+                                        {isEditing ? (
+                                            <textarea
+                                                name="medicalHistory"
+                                                rows="4"
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                                placeholder="e.g. History of mild asthma, no previous surgeries..."
+                                                value={profileData.medicalHistory}
+                                                onChange={handleChange}
+                                            />
+                                        ) : (
+                                            <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
+                                                {profileData.medicalHistory || <span className="text-[var(--color-text-muted)] italic opacity-50">No medical history provided</span>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Standard Weigh-in Conditions</label>
+                                            <input
+                                                type="text"
+                                                name="weighInConditions"
+                                                disabled={!isEditing}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                                placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only"
+                                                value={profileData.weighInConditions}
+                                                onChange={handleChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Bristol Stool Scale (Gastrointestinal Assessment)</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                                {BRISTOL_TYPES.map(type => (
+                                                    <button
+                                                        key={type.type}
+                                                        onClick={() => isEditing && setProfileData({ ...profileData, bristolStoolScale: type.type })}
+                                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${profileData.bristolStoolScale === type.type
+                                                            ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg'
+                                                            : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
+                                                            } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                                                    >
+                                                        <span className="text-xl">
+                                                            {type.type === '1' && '🥜'}
+                                                            {type.type === '2' && '🍇'}
+                                                            {type.type === '3' && '🥖'}
+                                                            {type.type === '4' && '🐍'}
+                                                            {type.type === '5' && '💧'}
+                                                            {type.type === '6' && '☁️'}
+                                                            {type.type === '7' && '🌊'}
+                                                        </span>
+                                                        <div className="text-center">
+                                                            <p className="text-[10px] font-black uppercase tracking-tight">{type.label}</p>
+                                                            <p className={`text-[8px] font-bold uppercase leading-tight ${profileData.bristolStoolScale === type.type ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
+                                                                {type.desc}
+                                                            </p>
+                                                        </div>
+                                                    </button>
                                                 ))}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>
-                                    {isEditing ? (
-                                        <textarea
-                                            name="medications"
-                                            rows="4"
-                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
-                                            placeholder="e.g. Daily multivitamins, Vitamin C, Iron drops..."
-                                            value={profileData.medications}
-                                            onChange={handleChange}
-                                        />
-                                    ) : (
-                                        <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
-                                            {profileData.medications || <span className="text-[var(--color-text-muted)] italic opacity-50">No medications listed</span>}
+                                            <p className="text-[9px] text-[var(--color-text-muted)] font-medium bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-[var(--color-divider)]">
+                                                <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === profileData.bristolStoolScale)?.detail}
+                                            </p>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History / Surgical History</label>
-                                {isEditing ? (
-                                    <textarea
-                                        name="medicalHistory"
-                                        rows="4"
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
-                                        placeholder="e.g. History of mild asthma, no previous surgeries..."
-                                        value={profileData.medicalHistory}
-                                        onChange={handleChange}
-                                    />
-                                ) : (
-                                    <div className="p-0 text-sm font-medium text-[var(--color-text-main)] leading-relaxed min-h-[1.5rem]">
-                                        {profileData.medicalHistory || <span className="text-[var(--color-text-muted)] italic opacity-50">No medical history provided</span>}
                                     </div>
-                                )}
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Standard Weigh-in Conditions</label>
-                                    <input
-                                        type="text"
-                                        name="weighInConditions"
-                                        disabled={!isEditing}
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
-                                        placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only"
-                                        value={profileData.weighInConditions}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Bristol Stool Scale (Gastrointestinal Assessment)</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                                        {BRISTOL_TYPES.map(type => (
-                                            <button
-                                                key={type.type}
-                                                onClick={() => isEditing && setProfileData({ ...profileData, bristolStoolScale: type.type })}
-                                                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${profileData.bristolStoolScale === type.type
-                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg'
-                                                    : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
-                                                    } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
-                                            >
-                                                <span className="text-xl">
-                                                    {type.type === '1' && '🥜'}
-                                                    {type.type === '2' && '🍇'}
-                                                    {type.type === '3' && '🥖'}
-                                                    {type.type === '4' && '🐍'}
-                                                    {type.type === '5' && '💧'}
-                                                    {type.type === '6' && '☁️'}
-                                                    {type.type === '7' && '🌊'}
-                                                </span>
-                                                <div className="text-center">
-                                                    <p className="text-[10px] font-black uppercase tracking-tight">{type.label}</p>
-                                                    <p className={`text-[8px] font-bold uppercase leading-tight ${profileData.bristolStoolScale === type.type ? 'text-white/80' : 'text-[var(--color-text-muted)]'}`}>
-                                                        {type.desc}
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <p className="text-[9px] text-[var(--color-text-muted)] font-medium bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-[var(--color-divider)]">
-                                        <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === profileData.bristolStoolScale)?.detail}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-            </div>
-
-            <motion.div variants={itemVariants} className="mt-6 pt-6 border-t border-red-500/10">
-                <div className="flex flex-col md:flex-row items-center justify-between p-5 bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-2xl gap-4">
-                    <div>
-                        <h3 className="text-sm font-black text-red-600 uppercase tracking-widest">Danger Zone</h3>
-                        <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mt-0.5 opacity-80">Permanently delete this child's clinical record</p>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     </div>
-                    <Button
-                        onClick={() => setIsDeleteModalOpen(true)}
-                        className="h-11 px-6 rounded-xl bg-red-500/10 dark:bg-red-500/20 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/30 transition-all font-black uppercase tracking-widest text-[9px] gap-2 shadow-sm"
-                    >
-                        <Trash2 size={14} /> Delete Profile
-                    </Button>
-                </div>
-            </motion.div>
+
+                    <motion.div variants={itemVariants} className="mt-6 pt-6 border-t border-red-500/10">
+                        <div className="flex flex-col md:flex-row items-center justify-between p-5 bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-2xl gap-4">
+                            <div>
+                                <h3 className="text-sm font-black text-red-600 uppercase tracking-widest">Danger Zone</h3>
+                                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mt-0.5 opacity-80">Permanently delete this child's clinical record</p>
+                            </div>
+                            <Button
+                                onClick={() => setIsDeleteModalOpen(true)}
+                                className="h-11 px-6 rounded-xl bg-red-500/10 dark:bg-red-500/20 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/30 transition-all font-black uppercase tracking-widest text-[9px] gap-2 shadow-sm"
+                            >
+                                <Trash2 size={14} /> Delete Profile
+                            </Button>
+                        </div>
+                    </motion.div>
+                </>
+            )}
 
             <motion.div variants={itemVariants} className="flex justify-center pt-10 border-t-2 border-[var(--color-divider)]">
                 <Button

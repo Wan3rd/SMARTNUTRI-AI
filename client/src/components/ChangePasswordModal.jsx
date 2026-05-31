@@ -43,9 +43,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
         if (password.length < 8 || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
-            return setMessage({ 
-                type: 'error', 
-                text: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' 
+            return setMessage({
+                type: 'error',
+                text: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
             });
         }
 
@@ -58,7 +58,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                 newPassword: formData.newPassword
             });
             setMessage({ type: 'success', text: 'Password updated successfully' });
-            
+
             setTimeout(() => {
                 onClose();
                 setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -66,9 +66,9 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                 setLoading(false);
             }, 2500);
         } catch (err) {
-            setMessage({ 
-                type: 'error', 
-                text: err.response?.data?.message || 'Failed to update password' 
+            setMessage({
+                type: 'error',
+                text: err.response?.data?.message || 'Failed to update password'
             });
             setLoading(false);
         }
@@ -81,13 +81,13 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                     <CardContent className="p-8">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                <div className="p-2 rounded-xl bg-[var(--color-success)]/10 text-[var(--color-success)]">
                                     <ShieldCheck size={20} />
                                 </div>
                                 <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Security Update</h2>
                             </div>
-                            <button 
-                                onClick={() => !(loading || message.type === 'success') && onClose()} 
+                            <button
+                                onClick={() => !(loading || message.type === 'success') && onClose()}
                                 disabled={loading || message.type === 'success'}
                                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -105,7 +105,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                             type={showPasswords ? "text" : "password"}
                                             required
                                             value={formData.currentPassword}
-                                            onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                                             className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                             placeholder="••••••••"
                                         />
@@ -120,7 +120,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                             type={showPasswords ? "text" : "password"}
                                             required
                                             value={formData.newPassword}
-                                            onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                                             className="w-full h-12 pl-11 pr-11 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                             placeholder="••••••••"
                                         />
@@ -143,7 +143,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                             type={showPasswords ? "text" : "password"}
                                             required
                                             value={formData.confirmPassword}
-                                            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                             className="w-full h-12 pl-11 pr-4 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                             placeholder="••••••••"
                                         />
@@ -151,7 +151,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                 </div>
 
                                 {message.text && (
-                                    <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
+                                    <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${message.type === 'success' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/30' : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/30'}`}>
                                         {message.text}
                                     </div>
                                 )}

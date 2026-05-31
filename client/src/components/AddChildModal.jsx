@@ -52,7 +52,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         dietaryPreferences: [],
         vaccinations: []
     });
-    
+
 
 
     // Sync DOB parts to formData
@@ -104,7 +104,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
             setStep(prev => Math.min(prev + 1, 4));
         }
     };
-    
+
     const handleBack = () => {
         setMessage({ type: '', text: '' });
         setStep(prev => Math.max(prev - 1, 1));
@@ -126,7 +126,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
         if (isSubmitting.current) return;
-        
+
         // If not on the final step, just try to go to the next step
         if (step < 4) {
             handleNext();
@@ -161,9 +161,9 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
             }
 
             setMessage({ type: 'success', text: 'New clinical profile created!' });
-            
+
             if (onChildAdded) onChildAdded();
-            
+
             setTimeout(() => {
                 onClose();
                 setStep(1);
@@ -194,7 +194,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                             </button>
                             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Add New Profile</h2>
                             <p className="text-white/80 font-bold text-[10px] sm:text-sm">Register a new child to the SmartNutri-AI clinical engine</p>
-                            
+
                             {/* Progress */}
                             <div className="flex gap-4 mt-8">
                                 {STEPS.map((s, i) => (
@@ -205,8 +205,8 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                             </div>
                         </div>
 
-                        <form className="p-6 sm:p-10 space-y-6 sm:space-y-8" onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}>
-                            <fieldset disabled={loading} className="space-y-6 sm:space-y-8 border-none p-0 m-0">
+                        <form className="p-5 sm:p-6 space-y-4" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+                            <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0">
                                 {message.text && (
                                     <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
                                         {message.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
@@ -216,59 +216,59 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
 
                                 {/* Step 1: Basic Info */}
                                 {step === 1 && (
-                                    <div className="space-y-6 animate-in slide-in-from-right-4">
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
-                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                    <div className="space-y-4 animate-in slide-in-from-right-4">
+                                        <div className="p-3.5 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
                                             <div>
                                                 <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 1: Child Identity</span>
-                                                Enter your child's name, date of birth, and gender. This basic information establishes their custom pediatric profile to customize all nutritional analytics.
+                                                <span className="text-[var(--color-text-main)] opacity-70">Enter your child's name, date of birth, and gender. This basic information establishes their custom pediatric profile to customize all nutritional analytics.</span>
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Child's Name</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Child's Name</label>
                                             <div className="relative">
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={18} />
                                                 <input
                                                     type="text" required value={formData.childName}
-                                                    onChange={(e) => setFormData({...formData, childName: e.target.value})}
-                                                    className="w-full h-14 pl-12 pr-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
+                                                    className="w-full h-11 pl-12 pr-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
                                                     placeholder="Enter full name"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Date of Birth</label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Date of Birth</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <select
                                                         value={dobParts.month}
-                                                        onChange={(e) => setDobParts({...dobParts, month: e.target.value})}
-                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                        onChange={(e) => setDobParts({ ...dobParts, month: e.target.value })}
+                                                        className="h-11 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
                                                     >
                                                         {MONTHS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
                                                     </select>
                                                     <select
                                                         value={dobParts.day}
-                                                        onChange={(e) => setDobParts({...dobParts, day: e.target.value})}
-                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                        onChange={(e) => setDobParts({ ...dobParts, day: e.target.value })}
+                                                        className="h-11 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
                                                     >
                                                         {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                                                     </select>
                                                     <select
                                                         value={dobParts.year}
-                                                        onChange={(e) => setDobParts({...dobParts, year: e.target.value})}
-                                                        className="h-14 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
+                                                        onChange={(e) => setDobParts({ ...dobParts, year: e.target.value })}
+                                                        className="h-11 px-2 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all text-xs appearance-none text-center cursor-pointer"
                                                     >
                                                         {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Gender</label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Gender</label>
                                                 <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)]">
                                                     {['Male', 'Female'].map(g => (
-                                                        <button key={g} type="button" onClick={() => !loading && setFormData({...formData, gender: g})}
-                                                            className={`flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.gender === g ? 'bg-white dark:bg-white/10 text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}
+                                                        <button key={g} type="button" onClick={() => !loading && setFormData({ ...formData, gender: g })}
+                                                            className={`flex-1 h-10 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.gender === g ? 'bg-white dark:bg-white/10 text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
                                                         >
                                                             {g}
                                                         </button>
@@ -281,40 +281,40 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
 
                                 {/* Step 2: Measurements */}
                                 {step === 2 && (
-                                    <div className="space-y-6 animate-in slide-in-from-right-4">
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
-                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                    <div className="space-y-4 animate-in slide-in-from-right-4">
+                                        <div className="p-3.5 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
                                             <div>
                                                 <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 2: Growth Metrics</span>
-                                                Provide height and weight records. SmartNutri-AI uses these parameters to evaluate real-time growth progress against the standard World Health Organization (WHO) growth charts.
+                                                <span className="text-[var(--color-text-main)] opacity-70">Provide height and weight records. SmartNutri-AI uses these parameters to evaluate real-time growth progress against the standard World Health Organization (WHO) growth charts.</span>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Height (cm)</label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Height (cm)</label>
                                                 <input
                                                     type="number" required value={formData.heightCm}
-                                                    onChange={(e) => setFormData({...formData, heightCm: e.target.value})}
-                                                    className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    onChange={(e) => setFormData({ ...formData, heightCm: e.target.value })}
+                                                    className="w-full h-11 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
                                                     placeholder="e.g. 110"
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Weight (kg)</label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Weight (kg)</label>
                                                 <input
                                                     type="number" required value={formData.weightKg}
-                                                    onChange={(e) => setFormData({...formData, weightKg: e.target.value})}
-                                                    className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
+                                                    className="w-full h-11 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all"
                                                     placeholder="e.g. 20"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Activity Level</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Activity Level</label>
                                             <select
                                                 value={formData.activityLevel}
-                                                onChange={(e) => setFormData({...formData, activityLevel: e.target.value})}
-                                                className="w-full h-14 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all appearance-none"
+                                                onChange={(e) => setFormData({ ...formData, activityLevel: e.target.value })}
+                                                className="w-full h-11 px-6 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold focus:border-[var(--color-primary)] outline-none transition-all appearance-none"
                                             >
                                                 <option value="sedentary">Sedentary (Little to no exercise)</option>
                                                 <option value="moderate">Moderate (Active 3-5 days/week)</option>
@@ -326,15 +326,15 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
 
                                 {/* Step 3: Vaccines */}
                                 {step === 3 && (
-                                    <div className="space-y-6 animate-in slide-in-from-right-4">
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
-                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                    <div className="space-y-4 animate-in slide-in-from-right-4">
+                                        <div className="p-3.5 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
                                             <div>
                                                 <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 3: Immunization History</span>
-                                                Enter previous and scheduled vaccinations. Keeping accurate records helps the medical engine send alerts for upcoming dose windows. (Optional)
+                                                <span className="text-[var(--color-text-main)] opacity-70">Enter previous and scheduled vaccinations. Keeping accurate records helps the medical engine send alerts for upcoming dose windows. (Optional)</span>
                                             </div>
                                         </div>
-                                        <VaccinationStep 
+                                        <VaccinationStep
                                             formData={formData}
                                             setFormData={setFormData}
                                             disabled={loading}
@@ -344,19 +344,19 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
 
                                 {/* Step 4: Dietary */}
                                 {step === 4 && (
-                                    <div className="space-y-6 animate-in slide-in-from-right-4">
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
-                                            <Info size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                                    <div className="space-y-4 animate-in slide-in-from-right-4">
+                                        <div className="p-3.5 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-2xl text-[11px] sm:text-xs font-semibold flex items-start gap-3 select-none">
+                                            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
                                             <div>
                                                 <span className="font-black uppercase tracking-widest text-[9px] text-[var(--color-primary)] mb-1 block">Step 4: Allergy & Diet Safeguards</span>
-                                                Select active dietary preferences and any known food allergies. The SmartNutri-AI meal scanner will automatically flag hazardous ingredients based on these parameters.
+                                                <span className="text-[var(--color-text-main)] opacity-70">Select active dietary preferences and any known food allergies. The SmartNutri-AI meal scanner will automatically flag hazardous ingredients based on these parameters.</span>
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Allergies</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Allergies</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {ALLERGY_OPTIONS.map(a => (
-                                                    <button key={a} type="button" onClick={() => !loading && toggleOption(formData.allergies, a, (val) => setFormData({...formData, allergies: val}))}
+                                                    <button key={a} type="button" onClick={() => !loading && toggleOption(formData.allergies, a, (val) => setFormData({ ...formData, allergies: val }))}
                                                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.allergies.includes(a) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
                                                     >
                                                         {a}
@@ -364,11 +364,11 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] ml-1">Dietary Preferences</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] ml-1">Dietary Preferences</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {DIETARY_OPTIONS.map(d => (
-                                                    <button key={d} type="button" onClick={() => !loading && toggleOption(formData.dietaryPreferences, d, (val) => setFormData({...formData, dietaryPreferences: val}))}
+                                                    <button key={d} type="button" onClick={() => !loading && toggleOption(formData.dietaryPreferences, d, (val) => setFormData({ ...formData, dietaryPreferences: val }))}
                                                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.dietaryPreferences.includes(d) ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'}`}
                                                     >
                                                         {d}
@@ -380,18 +380,18 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                 )}
 
                                 {/* Footer Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-[var(--color-divider)]">
+                                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[var(--color-divider)]">
                                     {step > 1 && (
-                                        <Button type="button" variant="outline" onClick={handleBack} disabled={loading} className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
+                                        <Button type="button" variant="outline" onClick={handleBack} disabled={loading} className="w-full sm:w-auto h-11 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-slate-700 dark:text-slate-300 hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
                                             <ChevronLeft size={16} /> Back
                                         </Button>
                                     )}
                                     {step < 4 ? (
-                                        <Button type="button" onClick={handleNext} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        <Button type="button" onClick={handleNext} disabled={loading} className="flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
                                             Continue <ChevronRight size={16} />
                                         </Button>
                                     ) : (
-                                        <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
                                             {loading ? <Loader2 className="animate-spin" size={16} /> : 'Complete Profile'}
                                         </Button>
                                     )}

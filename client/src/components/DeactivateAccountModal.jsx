@@ -53,22 +53,22 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md shadow-2xl border-0 dark:border dark:border-red-900/30 overflow-hidden rounded-3xl animate-in zoom-in duration-300 relative">
+            <Card className="w-full max-w-md shadow-2xl border border-[var(--color-divider)] overflow-hidden rounded-3xl animate-in zoom-in duration-300 relative">
                 {/* Absolute Close Button */}
-                <button 
-                    onClick={() => !loading && onClose()} 
+                <button
+                    onClick={() => !loading && onClose()}
                     disabled={loading}
-                    className="absolute top-4 right-4 z-20 p-2 bg-red-100/50 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-800/40 rounded-full transition-all duration-300 text-red-600 dark:text-red-400 backdrop-blur-sm group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="absolute top-4 right-4 z-20 p-2 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 rounded-full transition-all duration-300 text-[var(--color-danger)] backdrop-blur-sm group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                 </button>
 
-                <CardHeader className="bg-red-50/80 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/20 p-6 pt-8 flex justify-between items-center">
+                <CardHeader className="bg-[var(--color-danger)]/10 border-b border-[var(--color-danger)]/20 p-6 pt-8 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 dark:bg-red-500/20 rounded-xl text-red-600 dark:text-red-400">
+                        <div className="p-2 bg-[var(--color-danger)]/10 rounded-xl text-[var(--color-danger)]">
                             <ShieldAlert size={20} />
                         </div>
-                        <CardTitle className="text-red-700 dark:text-red-400 font-black uppercase tracking-tight text-lg">Deactivate Account</CardTitle>
+                        <CardTitle className="text-[var(--color-danger)] font-black uppercase tracking-tight text-lg">Deactivate Account</CardTitle>
                     </div>
                 </CardHeader>
 
@@ -76,10 +76,10 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                     {step === 1 ? (
                         <div className="space-y-6">
                             <div className="space-y-4">
-                                <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 flex gap-4">
-                                    <AlertTriangle className="text-amber-600 dark:text-amber-500 flex-shrink-0" size={24} />
+                                <div className="p-4 bg-[var(--color-warning)]/10 rounded-2xl border border-[var(--color-warning)]/30 flex gap-4">
+                                    <AlertTriangle className="text-[var(--color-warning)] flex-shrink-0" size={24} />
                                     <div className="space-y-1">
-                                        <p className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Clinical Data Notice</p>
+                                        <p className="text-xs font-black text-[var(--color-warning)] uppercase tracking-widest">Clinical Data Notice</p>
                                         <p className="text-xs text-[var(--color-text-main)] font-medium leading-relaxed opacity-90">
                                             Deactivating your account will immediately stop all data tracking. Your clinical history will be archived for medical compliance.
                                         </p>
@@ -94,9 +94,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                                 key={r}
                                                 onClick={() => !loading && setReason(r)}
                                                 disabled={loading}
-                                                className={`p-3 text-[10px] font-bold text-left rounded-xl border transition-all disabled:opacity-50 ${reason === r 
-                                                    ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400' 
-                                                    : 'bg-transparent border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-red-200 dark:hover:border-red-500/20'}`}
+                                                className={`p-3 text-[10px] font-bold text-left rounded-xl border transition-all disabled:opacity-50 ${reason === r
+                                                    ? 'bg-[var(--color-danger)]/10 border-[var(--color-danger)]/30 text-[var(--color-danger)]'
+                                                    : 'bg-transparent border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-danger)]/30'}`}
                                             >
                                                 {r}
                                             </button>
@@ -106,15 +106,15 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                             </div>
 
                             <div className="flex flex-col gap-3 pt-2">
-                                <Button 
+                                <Button
                                     disabled={!reason || loading}
-                                    className="w-full py-4 border-2 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-500/10 font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-none hover:shadow-md disabled:opacity-30 disabled:hover:bg-transparent"
+                                    className="w-full py-4 border-2 border-[var(--color-danger)]/30 text-[var(--color-danger)] bg-transparent hover:bg-[var(--color-danger)]/10 font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-none hover:shadow-md disabled:opacity-30 disabled:hover:bg-transparent"
                                     onClick={() => setStep(2)}
                                 >
                                     Proceed to Confirmation
                                 </Button>
-                                <Button 
-                                    variant="ghost" 
+                                <Button
+                                    variant="ghost"
                                     className="w-full text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]"
                                     onClick={onClose}
                                 >
@@ -130,7 +130,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-[10px] font-black text-center uppercase tracking-widest border border-red-200 dark:border-red-900/50">
+                                <div className="p-4 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-2xl text-[10px] font-black text-center uppercase tracking-widest border border-[var(--color-danger)]/30">
                                     {error}
                                 </div>
                             )}
@@ -145,7 +145,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                         type="password"
                                         required
                                         disabled={loading}
-                                        className="w-full p-4 pl-12 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] dark:bg-black/20 text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-red-500 transition-all shadow-inner disabled:opacity-50"
+                                        className="w-full p-4 pl-12 rounded-2xl border border-[var(--color-divider)] bg-[var(--color-bg-page)] dark:bg-black/20 text-[var(--color-text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-danger)] transition-all shadow-inner disabled:opacity-50"
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
@@ -155,10 +155,10 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                             </div>
 
                             <div className="flex flex-col gap-3 pt-2">
-                                <Button 
-                                    type="submit" 
+                                <Button
+                                    type="submit"
                                     disabled={loading}
-                                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 rounded-2xl font-black uppercase tracking-widest text-[10px] flex justify-center items-center gap-2"
+                                    className="w-full py-4 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white shadow-lg shadow-[var(--color-danger)]/20 rounded-2xl font-black uppercase tracking-widest text-[10px] flex justify-center items-center gap-2"
                                 >
                                     {loading ? (
                                         <span className="flex items-center justify-center gap-2">
@@ -170,9 +170,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                         </span>
                                     )}
                                 </Button>
-                                <Button 
+                                <Button
                                     type="button"
-                                    variant="ghost" 
+                                    variant="ghost"
                                     disabled={loading}
                                     className="w-full text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] disabled:opacity-50"
                                     onClick={() => !loading && setStep(1)}

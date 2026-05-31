@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
 import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets, Baby, Heart, ShieldCheck, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
@@ -12,12 +12,13 @@ import { cn, formatValue, convertHeight, convertWeight, convertWater } from '../
 import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { DashboardSkeleton } from '../components/SkeletonShell';
+import AddChildModal from '../components/AddChildModal';
 
 import Notification from '../components/common/Notification';
 
 export default function ParentDashboard() {
     const { user } = useAuth();
-    const { selectedProfile, loading: profileLoading } = useProfile();
+    const { selectedProfile, profiles, refreshProfiles, loading: profileLoading } = useProfile();
     const { startLoading, stopLoading } = useLoading();
     const [allLogs, setAllLogs] = useState([]);
     const [recentLogs, setRecentLogs] = useState([]);
@@ -30,6 +31,7 @@ export default function ParentDashboard() {
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
     const [showWelcome, setShowWelcome] = useState(false);
+    const [isAddChildOpen, setIsAddChildOpen] = useState(false);
 
     useEffect(() => {
         // Show welcome notification once on first arrival
@@ -192,7 +194,7 @@ export default function ParentDashboard() {
 
         if (isMax) {
             badgeLabel = 'Max Limit';
-            badgeStyle = 'border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/5';
+            badgeStyle = 'border-[var(--color-danger)]/30 text-[var(--color-danger)] bg-[var(--color-danger)]/5';
             if (current > goal) {
                 barColor = 'bg-gradient-to-r from-rose-500 to-red-600 shadow-[0_0_12px_rgba(239,68,68,0.5)]';
             } else if (current > goal * 0.8) {
@@ -202,7 +204,7 @@ export default function ParentDashboard() {
             }
         } else {
             badgeLabel = 'Min Target';
-            badgeStyle = 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5';
+            badgeStyle = 'border-[var(--color-primary)]/30 text-[var(--color-primary)] bg-[var(--color-primary)]/5';
             if (current >= goal) {
                 barColor = 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]';
             } else if (current >= goal * 0.5) {
@@ -257,6 +259,103 @@ export default function ParentDashboard() {
 
 
     if (isInitialSync) return <DashboardSkeleton />;
+
+    if (!profileLoading && profiles.length === 0) {
+        return (
+            <div className="space-y-8 animate-in fade-in duration-500 pb-20 px-4 max-w-4xl mx-auto">
+                <AnnouncementBanner />
+
+                {/* Onboarding Header */}
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border-2 border-[var(--color-divider)] p-8 sm:p-10 text-center shadow-sm">
+                    <div className="relative z-10 max-w-xl mx-auto space-y-6">
+                        <div className="mx-auto w-16 h-16 rounded-[22px] bg-white dark:bg-white/10 flex items-center justify-center shadow-md p-3 border border-[var(--color-divider)]">
+                            <img src="/SmartNutri-logo.png" alt="SmartNutri Logo" className="h-full w-full object-contain rounded-full" />
+                        </div>
+                        <h1 className="text-2xl sm:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-tight">
+                            Add Your Child's Profile
+                        </h1>
+                        <p className="text-[11px] sm:text-sm text-[var(--color-text-muted)] font-black uppercase tracking-widest opacity-80 leading-relaxed max-w-md mx-auto">
+                            To start tracking progress, logging daily meals, and getting direct nutritionist feedback, let's create a profile for your child.
+                        </p>
+
+                        <div className="pt-2">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setIsAddChildOpen(true)}
+                                className="inline-flex items-center gap-2 px-6 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/10 transition-all border border-emerald-400/20"
+                            >
+                                <Plus size={16} strokeWidth={3} />
+                                Create Child Profile
+                            </motion.button>
+                            <p className="text-[9px] text-[var(--color-text-muted)] font-black uppercase tracking-widest mt-2.5 opacity-60">
+                                Takes just a minute • Easy to customize later
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Features Value Proposition Grid */}
+                <div className="space-y-4">
+                    <div className="text-center sm:text-left px-2">
+                        <h2 className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-[0.25em]">
+                            What you can do
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[
+                            {
+                                icon: <Activity size={20} className="text-emerald-500" />,
+                                title: "Growth Tracker",
+                                desc: "Keep a simple record of your child's weight and height over time."
+                            },
+                            {
+                                icon: <Sparkles size={20} className="text-teal-500" />,
+                                title: "Daily Meal Logs",
+                                desc: "Take photos of child food plates to track nutritional logs easily."
+                            },
+                            {
+                                icon: <MessageSquare size={20} className="text-blue-500" />,
+                                title: "Clinician Advice",
+                                desc: "Get direct suggestions, guidelines, and feedback from your assigned nutritionist."
+                            },
+                            {
+                                icon: <Droplets size={20} className="text-sky-500" />,
+                                title: "Water Intake Tracker",
+                                desc: "Monitor daily hydration easily with an interactive water cup."
+                            }
+                        ].map((feat, idx) => (
+                            <div
+                                key={idx}
+                                className="flex gap-4 bg-white dark:bg-white/5 border border-[var(--color-divider)] rounded-2xl p-5 hover:border-[var(--color-primary)]/20 transition-all hover:translate-x-1 duration-200"
+                            >
+                                <div className="h-10 w-10 rounded-xl bg-zinc-50 dark:bg-white/5 border border-[var(--color-divider)] flex items-center justify-center shrink-0">
+                                    {feat.icon}
+                                </div>
+                                <div className="space-y-1">
+                                    <h4 className="text-xs font-black uppercase text-[var(--color-secondary)] tracking-wider">
+                                        {feat.title}
+                                    </h4>
+                                    <p className="text-[11px] font-medium text-[var(--color-text-muted)] leading-relaxed">
+                                        {feat.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <AddChildModal
+                    isOpen={isAddChildOpen}
+                    onClose={() => setIsAddChildOpen(false)}
+                    onChildAdded={async () => {
+                        await refreshProfiles();
+                    }}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -334,12 +433,12 @@ export default function ParentDashboard() {
                                         {assignedNutritionist?.profile_image_url ? (
                                             <img src={assignedNutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-700" />
                                         ) : (
-                                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-950/20 dark:to-blue-950/20">
+                                            <div className="h-full w-full flex items-center justify-center bg-[var(--color-bg-page)]">
                                                 {assignedNutritionist ? <User size={24} className="text-gray-300" /> : <Activity size={24} className="text-[var(--color-primary)] animate-pulse" />}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 sm:h-5 sm:w-5 bg-emerald-500 rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
+                                    <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 sm:h-5 sm:w-5 bg-[var(--color-primary)] rounded-lg border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-md">
                                         <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 bg-white rounded-full animate-pulse" />
                                     </div>
                                 </div>
@@ -618,8 +717,8 @@ export default function ParentDashboard() {
                                                             </span>
                                                         </div>
                                                         {hydrationPercentage >= 100 && (
-                                                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase px-2.5 py-1 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 tracking-wider shadow-sm select-none">
-                                                                <BadgeCheck size={12} className="text-emerald-500 shrink-0" />
+                                                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black text-[var(--color-primary)] uppercase px-2.5 py-1 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 tracking-wider shadow-sm select-none">
+                                                                <BadgeCheck size={12} className="text-[var(--color-primary)] shrink-0" />
                                                                 Target Achieved
                                                             </span>
                                                         )}

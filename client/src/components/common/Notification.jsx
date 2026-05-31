@@ -20,21 +20,21 @@ export default function Notification({ show, onClose, type = 'success', message,
     if (!show) return null;
 
     const icons = {
-        success: <CheckCircle className="text-emerald-500 animate-pulse flex-shrink-0" size={20} />,
-        error: <AlertCircle className="text-rose-500 animate-bounce flex-shrink-0" size={20} />,
-        info: <Info className="text-blue-500 flex-shrink-0" size={20} />,
+        success: <CheckCircle className="text-[var(--color-success)] animate-pulse flex-shrink-0" size={20} />,
+        error: <AlertCircle className="text-[var(--color-danger)] animate-bounce flex-shrink-0" size={20} />,
+        info: <Info className="text-[var(--color-info)] flex-shrink-0" size={20} />,
     };
 
     const containerStyles = {
-        success: 'border-emerald-200/60 bg-emerald-50/95 dark:bg-zinc-900/95 text-emerald-900 dark:text-emerald-100 border-l-4 border-l-emerald-500 dark:border-l-emerald-600 dark:border-zinc-800/80 shadow-2xl',
-        error: 'border-rose-200/60 bg-rose-50/95 dark:bg-zinc-900/95 text-rose-900 dark:text-rose-100 border-l-4 border-l-rose-500 dark:border-l-rose-600 dark:border-zinc-800/80 shadow-2xl',
-        info: 'border-blue-200/60 bg-blue-50/95 dark:bg-zinc-900/95 text-blue-900 dark:text-blue-100 border-l-4 border-l-blue-500 dark:border-l-blue-600 dark:border-zinc-800/80 shadow-2xl',
+        success: 'border-[var(--color-success)]/20 bg-[var(--color-bg-card)]/95 text-[var(--color-text-main)] border-l-4 border-l-[var(--color-success)] shadow-2xl',
+        error: 'border-[var(--color-danger)]/20 bg-[var(--color-bg-card)]/95 text-[var(--color-text-main)] border-l-4 border-l-[var(--color-danger)] shadow-2xl',
+        info: 'border-[var(--color-info)]/20 bg-[var(--color-bg-card)]/95 text-[var(--color-text-main)] border-l-4 border-l-[var(--color-info)] shadow-2xl',
     };
 
     const closeButtonStyles = {
-        success: 'text-emerald-700/70 hover:text-emerald-900 hover:bg-emerald-100/50 dark:text-emerald-400/70 dark:hover:text-emerald-200 dark:hover:bg-emerald-950/40',
-        error: 'text-rose-700/70 hover:text-rose-900 hover:bg-rose-100/50 dark:text-rose-400/70 dark:hover:text-rose-200 dark:hover:bg-rose-950/40',
-        info: 'text-blue-700/70 hover:text-blue-900 hover:bg-blue-100/50 dark:text-blue-400/70 dark:hover:text-blue-200 dark:hover:bg-blue-950/40',
+        success: 'text-[var(--color-success)]/70 hover:text-[var(--color-success)] hover:bg-[var(--color-success)]/10',
+        error: 'text-[var(--color-danger)]/70 hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10',
+        info: 'text-[var(--color-info)]/70 hover:text-[var(--color-info)] hover:bg-[var(--color-info)]/10',
     };
 
     return (

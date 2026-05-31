@@ -478,6 +478,7 @@ export default function Register() {
                 </CardContent>
             </Card>
 
+            {/* Cache-buster to force Vite HMR rebuild of imported components */}
             <TermsModal 
                 isOpen={isTermsModalOpen} 
                 onClose={() => setIsTermsModalOpen(false)} 

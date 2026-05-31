@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { 
-    X, UserPlus, AlertCircle, CheckCircle, 
-    Stethoscope, Activity, Heart, Scale, 
+import {
+    X, UserPlus, AlertCircle, CheckCircle,
+    Stethoscope, Activity, Heart, Scale,
     ArrowRight, ArrowLeft, Loader2, Info,
     User, Mail, Calendar, Baby, ShieldCheck, Plus, Trash2, Search, ChevronDown
 } from 'lucide-react';
@@ -240,7 +240,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             };
 
             const res = await api.post('/nutritionist/create-client', payload);
-            
+
             if (onClientAdded) onClientAdded();
             onClose();
             setStep(0);
@@ -268,9 +268,9 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         switch (step) {
             case 0:
                 return (
-                    <motion.div 
-                        initial={{ opacity: 0, x: 20 }} 
-                        animate={{ opacity: 1, x: 0 }} 
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-4"
                     >
@@ -315,8 +315,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                             key={g}
                                             type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, gender: g }))}
-                                            className={`flex-1 py-2 sm:py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${formData.gender === g 
-                                                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' 
+                                            className={`flex-1 py-2 sm:py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${formData.gender === g
+                                                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                                                 : 'text-[var(--color-text-muted)] hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                         >
                                             {g}
@@ -329,7 +329,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 );
             case 1:
                 return (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
@@ -343,14 +343,14 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         </div>
                         <div className="space-y-1">
                             <label className="block mb-2 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
-                            
+
                             <div className="mb-4 relative">
                                 <button
                                     type="button"
                                     onClick={() => setIsAllergiesDropdownOpen(!isAllergiesDropdownOpen)}
                                     className={cn(
                                         "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
-                                        isAllergiesDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
+                                        isAllergiesDropdownOpen ? "border-[var(--color-danger)]/50 ring-4 ring-[var(--color-danger)]/10" : "border-[var(--color-divider)]"
                                     )}
                                 >
                                     <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
@@ -368,7 +368,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                         <motion.div
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
                                         >
                                             {ALLERGY_OPTIONS.map(option => {
                                                 const isSelected = formData.allergies.includes(option);
@@ -388,7 +388,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                                             }
                                                             setIsAllergiesDropdownOpen(false);
                                                         }}
-                                                        className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
+                                                        className="w-full text-left p-3 rounded-xl hover:bg-[var(--color-danger)]/10 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-[var(--color-danger)]"
                                                     >
                                                         {option}
                                                     </button>
@@ -406,14 +406,14 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
 
                             <div className="flex flex-wrap gap-2">
                                 {(formData.allergies?.filter(Boolean).length === 0 || (formData.allergies?.filter(Boolean).length === 1 && formData.allergies?.filter(Boolean)[0] === "None")) ? (
-                                    <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
+                                    <div className="px-3 py-1.5 rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 text-[var(--color-success)] text-[9px] font-black uppercase tracking-widest">None</div>
                                 ) : (
                                     formData.allergies?.filter(Boolean).map((allergy, idx) => (
                                         <div
                                             key={`${allergy}-${idx}`}
                                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
-                                                ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
-                                                : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
+                                                ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/30'
+                                                : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/30'
                                                 }`}
                                         >
                                             {allergy}
@@ -421,9 +421,9 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                                 type="button"
                                                 onClick={() => {
                                                     const newAllergies = formData.allergies.filter(a => a !== allergy);
-                                                    setFormData(prev => ({ 
-                                                        ...prev, 
-                                                        allergies: newAllergies.length === 0 ? ['None'] : newAllergies 
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        allergies: newAllergies.length === 0 ? ['None'] : newAllergies
                                                     }));
                                                 }}
                                                 className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
@@ -443,8 +443,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Symptoms & Food Intolerances</label>
                             <input name="food_intolerances" value={formData.food_intolerances} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Lactose intolerance, Bloating..." />
                         </div>
-                        <div className="md:col-span-2 space-y-3 p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border-2 border-amber-100 dark:border-amber-900/20">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 flex items-center gap-2 mb-2">
+                        <div className="md:col-span-2 space-y-3 p-4 bg-[var(--color-warning)]/10 rounded-2xl border-2 border-[var(--color-warning)]/30">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-warning)] flex items-center gap-2 mb-2">
                                 <Activity size={12} /> Bristol Stool Scale (Baseline)
                             </label>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
@@ -452,10 +452,10 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                     <button
                                         key={type.type}
                                         type="button"
-                                        onClick={() => setFormData({...formData, bristol_stool_scale: type.type})}
+                                        onClick={() => setFormData({ ...formData, bristol_stool_scale: type.type })}
                                         className={`flex flex-col items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-2xl border-2 transition-all group ${formData.bristol_stool_scale === type.type
-                                            ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                            : 'bg-white dark:bg-amber-950/20 text-amber-600 border-amber-200 dark:border-amber-900/30 hover:border-amber-400'
+                                            ? 'bg-[var(--color-warning)] border-[var(--color-warning)] text-white shadow-lg shadow-[var(--color-warning)]/20'
+                                            : 'bg-[var(--color-bg-page)] text-[var(--color-warning)] border-[var(--color-divider)] hover:border-[var(--color-warning)]/40'
                                             }`}
                                     >
                                         <span className="text-lg sm:text-xl">
@@ -469,14 +469,14 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                         </span>
                                         <div className="text-center">
                                             <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight leading-tight">{type.label}</p>
-                                            <p className={`text-[7px] sm:text-[8px] font-bold uppercase leading-tight mt-0.5 ${formData.bristol_stool_scale === type.type ? 'text-white/90' : 'text-amber-600/70 dark:text-amber-400/70'}`}>
+                                            <p className={`text-[7px] sm:text-[8px] font-bold uppercase leading-tight mt-0.5 ${formData.bristol_stool_scale === type.type ? 'text-white/90' : 'text-[var(--color-warning)]/70'}`}>
                                                 {type.desc}
                                             </p>
                                         </div>
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-[9px] text-amber-700 dark:text-amber-400 font-medium bg-amber-100/50 dark:bg-amber-900/30 p-3 rounded-xl border border-amber-200 dark:border-amber-900/50 leading-relaxed mt-2">
+                            <p className="text-[9px] text-[var(--color-warning)] font-medium bg-[var(--color-warning)]/10 p-3 rounded-xl border border-[var(--color-warning)]/30 leading-relaxed mt-2">
                                 <strong>Assessment Guide:</strong> {BRISTOL_TYPES.find(t => t.type === formData.bristol_stool_scale)?.detail}
                             </p>
                         </div>
@@ -484,7 +484,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 );
             case 2:
                 return (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-6"
                     >
@@ -505,15 +505,15 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         <div className="bg-[var(--color-bg-page)] p-6 rounded-3xl border-2 border-[var(--color-divider)]">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                                    <Info size={12} className="text-emerald-500" /> Standard Weigh-in Conditions
+                                    <Info size={12} className="text-[var(--color-info)]" /> Standard Weigh-in Conditions
                                 </label>
-                                <textarea 
-                                    name="weigh_in_conditions" 
-                                    value={formData.weigh_in_conditions} 
-                                    onChange={handleChange} 
+                                <textarea
+                                    name="weigh_in_conditions"
+                                    value={formData.weigh_in_conditions}
+                                    onChange={handleChange}
                                     rows="2"
-                                    className="w-full px-4 py-3 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl text-sm font-medium text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 resize-none" 
-                                    placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only" 
+                                    className="w-full px-4 py-3 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl text-sm font-medium text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder:text-slate-400 resize-none"
+                                    placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only"
                                 />
                                 <p className="text-[8px] text-[var(--color-text-main)] opacity-40 italic font-bold uppercase tracking-tight">Consistent clinical baseline is critical for accurate growth velocity calculations.</p>
                             </div>
@@ -522,7 +522,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 );
             case 3:
                 return (
-                    <VaccinationStep 
+                    <VaccinationStep
                         formData={formData}
                         setFormData={setFormData}
                         disabled={loading}
@@ -530,7 +530,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 );
             case 4:
                 return (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-4"
                     >
@@ -640,14 +640,14 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         }}>
             <Card className="w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col">
                 {/* Header with Stepper */}
-                <div className="bg-[var(--color-divider)] p-5 sm:p-8 pb-4 shrink-0">
+                <div className="bg-[var(--color-divider)] p-5 sm:px-8 sm:pt-6 sm:pb-5 shrink-0">
                     <div className="flex justify-between items-center mb-6 sm:mb-8">
                         <div>
                             <h2 className="text-xl sm:text-2xl font-black text-[var(--color-text-main)] tracking-tight uppercase">Patient Profiling</h2>
                             <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Initial Clinical Intake</p>
                         </div>
-                        <button 
-                            onClick={() => !loading && handleClose()} 
+                        <button
+                            onClick={() => !loading && handleClose()}
                             disabled={loading}
                             className="p-2 bg-[var(--color-bg-card)] rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-[var(--color-divider)] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -669,7 +669,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                                 </div>
                                 {i < STEPS.length - 1 && (
                                     <div className="flex-1 h-[2px] bg-[var(--color-divider)] mx-1 sm:mx-2 -mt-1 sm:-mt-6">
-                                        <motion.div 
+                                        <motion.div
                                             className="h-full bg-emerald-500"
                                             initial={{ width: '0%' }}
                                             animate={{ width: step > i ? '100%' : '0%' }}
@@ -682,7 +682,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto scrollbar-hide sm:custom-scrollbar p-5 sm:p-8">
+                <div className="flex-1 overflow-y-auto scrollbar-hide sm:custom-scrollbar p-5 sm:px-8 sm:pt-4 sm:pb-8">
                     <Notification
                         show={notif.show}
                         type={notif.type}
@@ -696,8 +696,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                         </AnimatePresence>
                     </fieldset>
                     {step === 0 && (
-                        <p className="text-[9px] text-center text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest mt-6 bg-slate-100 dark:bg-white/5 py-3 rounded-xl border border-slate-200 dark:border-white/10">
-                            * Default parent password: <span className="text-emerald-600 dark:text-emerald-400">smartnutri123</span>
+                        <p className="text-[9px] text-center text-[var(--color-text-muted)] font-bold uppercase tracking-widest mt-3.5 bg-[var(--color-info)]/10 py-3 rounded-xl border border-[var(--color-info)]/30">
+                            * Default parent password: <span className="text-[var(--color-primary)]">smartnutri123</span>
                         </p>
                     )}
                 </div>
@@ -705,8 +705,8 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 <div className="p-4 sm:p-6 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] shrink-0">
                     <div className="flex gap-3 sm:gap-4 max-w-md mx-auto w-full">
                         {step > 0 && (
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={prevStep}
                                 disabled={loading}
                                 className="h-12 sm:h-14 px-5 sm:px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 disabled:opacity-50"
@@ -715,20 +715,20 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             </Button>
                         )}
                         {step < STEPS.length - 1 ? (
-                            <Button 
+                            <Button
                                 onClick={nextStep}
                                 disabled={loading}
                                 className={cn(
                                     "flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl transition-all duration-300 disabled:opacity-50",
-                                    isStepValid() 
-                                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" 
+                                    isStepValid()
+                                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
                                         : "bg-slate-800 dark:bg-slate-700 hover:opacity-90"
                                 )}
                             >
                                 Next Step <ArrowRight size={14} />
                             </Button>
                         ) : (
-                            <Button 
+                            <Button
                                 onClick={handleSubmit}
                                 disabled={loading}
                                 className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex gap-2 shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all disabled:opacity-50"
