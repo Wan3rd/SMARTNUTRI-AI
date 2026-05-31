@@ -86,16 +86,10 @@ export function ThemeProvider({
             syncBackend();
         } else {
             // Fallback for browsers that do not support View Transitions
-            const root = window.document.documentElement;
-            root.classList.add("no-transition");
-            
             updateTheme();
             
-            requestAnimationFrame(() => {
-                root.classList.remove("no-transition");
-            });
-
-            await syncBackend();
+            // Sync to backend asynchronously to prevent UI blocking
+            syncBackend();
         }
     };
 

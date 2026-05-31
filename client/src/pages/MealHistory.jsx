@@ -284,7 +284,14 @@ export default function MealHistory() {
     if (isInitialSync) return <HistorySkeleton />;
 
     if (!selectedProfile && !profileLoading) {
-        return <div className="p-8 text-center text-[var(--color-text-muted)]">Please select a child profile to view meal history.</div>;
+        const hasNoProfiles = !profiles || profiles.length === 0;
+        return (
+            <div className="p-8 text-center text-[var(--color-text-muted)] font-medium">
+                {hasNoProfiles 
+                    ? "No child profiles found. Please add a child profile to view meal history." 
+                    : "Please select a child profile to view meal history."}
+            </div>
+        );
     }
 
     return (

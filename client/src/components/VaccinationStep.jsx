@@ -77,7 +77,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 gap-3 sm:max-h-[400px] sm:overflow-y-auto pr-2 custom-scrollbar">
                 {loading ? (
                     <div className="py-10 text-center">
                         <div className="animate-spin h-6 w-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-2"></div>

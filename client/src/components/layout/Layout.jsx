@@ -19,8 +19,9 @@ export function Layout({ children }) {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
     const navigate = useNavigate();
     const location = useLocation();
-    const { selectedProfile } = useProfile();
+    const { selectedProfile, profiles } = useProfile();
     const { setAutoOpenWebcam, setAutoQuickLog } = useMealLoggerStore();
+    const hasNoChild = !profiles || profiles.length === 0;
     const [fabMenuOpen, setFabMenuOpen] = useState(false);
     const { showNotification } = useNotification();
 
@@ -346,11 +347,18 @@ export function Layout({ children }) {
                             if (item.isFab) {
                                 return (
                                     <div key="fab" className="relative -top-4">
-                                        <div className="absolute inset-0 bg-[var(--color-primary)]/20 rounded-full blur-md animate-pulse" />
+                                        {!hasNoChild && <div className="absolute inset-0 bg-[var(--color-primary)]/20 rounded-full blur-md animate-pulse" />}
                                         <motion.button
-                                            whileTap={{ scale: 0.92 }}
+                                            whileTap={hasNoChild ? {} : { scale: 0.92 }}
+                                            disabled={hasNoChild}
                                             onClick={() => setFabMenuOpen(!fabMenuOpen)}
-                                            className="relative z-10 w-14 h-14 bg-gradient-to-tr from-[var(--color-primary)] to-emerald-400 text-white rounded-full flex items-center justify-center shadow-xl active:scale-95 transition-transform"
+                                            className={cn(
+                                                "relative z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all",
+                                                hasNoChild
+                                                    ? "bg-gray-300 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed shadow-none"
+                                                    : "bg-gradient-to-tr from-[var(--color-primary)] to-emerald-400 text-white shadow-xl active:scale-95 transition-transform"
+                                            )}
+                                            title={hasNoChild ? "Please add a child profile first" : undefined}
                                         >
                                             <Plus size={28} className={cn("stroke-[2.5] transition-transform duration-300", fabMenuOpen && "rotate-45")} />
                                         </motion.button>

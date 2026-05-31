@@ -5,7 +5,7 @@ import { Card, CardContent } from './common/Card';
 import api from '../lib/api';
 import VaccinationStep from './VaccinationStep';
 import { cn } from '../lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)", "Vegetarian", "Vegan", "Halal", "Kosher", "Gluten-Free", "Lactose-Free", "Pescatarian"
@@ -80,7 +80,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         }));
     }, [dobParts]);
 
-    if (!isOpen) return null;
+    // Early return removed to allow exit animations via AnimatePresence
 
     const validateStep = (targetStep = step) => {
         if (targetStep >= 1) {
@@ -200,14 +200,28 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
     };
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="w-full max-w-2xl animate-in zoom-in duration-300">
-                <Card className="border-2 border-[var(--color-divider)] rounded-[40px] overflow-hidden shadow-2xl">
-                    <CardContent className="p-0">
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md"
+                >
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl flex flex-col"
+                    >
+                <Card className="w-full h-full sm:h-auto sm:max-h-[90vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[40px] overflow-hidden shadow-2xl flex flex-col bg-[var(--color-bg-card)]">
+                    <CardContent className="p-0 flex flex-col h-full overflow-hidden">
                         {/* Header */}
-                        <div className="bg-[var(--color-primary)] p-6 sm:p-8 text-white relative">
+                        <div className="bg-[var(--color-primary)] p-6 sm:p-8 text-white relative flex-shrink-0">
                             <button onClick={() => !loading && onClose()} disabled={loading} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                <X size={20} sm:size={24} />
+                                <X className="w-5 h-5 sm:w-6 sm:h-6" />
                             </button>
                             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Add New Profile</h2>
                             <p className="text-white/80 font-bold text-[10px] sm:text-sm">Register a new child to the SmartNutri-AI clinical engine</p>
@@ -222,8 +236,9 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                             </div>
                         </div>
 
-                        <form className="p-5 sm:p-6 space-y-4" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
-                            <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0">
+                        <form className="flex-1 flex flex-col min-h-0" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+                            <fieldset disabled={loading} className="flex-1 flex flex-col min-h-0 border-none p-0 m-0">
+                                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 scrollbar-thin">
                                 {message.text && (
                                     <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>
                                         {message.type === 'success' ? <CheckCircle2 size={18} /> : <Info size={18} />}
@@ -528,19 +543,21 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                                     </div>
                                 )}
 
+                                </div>
+
                                 {/* Footer Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[var(--color-divider)]">
+                                <div className="p-5 sm:p-6 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] flex flex-col sm:flex-row gap-3 flex-shrink-0">
                                     {step > 1 && (
                                         <Button type="button" variant="outline" onClick={handleBack} disabled={loading} className="w-full sm:w-auto h-11 px-8 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 border-[var(--color-divider)] text-slate-700 dark:text-slate-300 hover:text-[var(--color-text-main)] hover:bg-[var(--color-divider)]">
                                             <ChevronLeft size={16} /> Back
                                         </Button>
                                     )}
                                     {step < 4 ? (
-                                        <Button type="button" onClick={handleNext} disabled={loading} className="flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        <Button type="button" onClick={handleNext} disabled={loading} className="w-full sm:flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
                                             Continue <ChevronRight size={16} />
                                         </Button>
                                     ) : (
-                                        <Button type="button" onClick={handleSubmit} disabled={loading} className="flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
+                                        <Button type="button" onClick={handleSubmit} disabled={loading} className="w-full sm:flex-1 h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 shadow-xl shadow-[var(--color-primary)]/20">
                                             {loading ? <Loader2 className="animate-spin" size={16} /> : 'Complete Profile'}
                                         </Button>
                                     )}
@@ -549,7 +566,9 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                         </form>
                     </CardContent>
                 </Card>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
