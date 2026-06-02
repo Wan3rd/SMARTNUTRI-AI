@@ -527,15 +527,15 @@ export default function Settings() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-20 px-4 sm:px-0">
-            <div className="pt-2 sm:pt-0">
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-20 px-2 sm:px-0">
+            <div className="pt-2 sm:pt-0 px-1 sm:px-0">
                 <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-secondary)]">Settings</h1>
                 <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">Manage app preferences and clinical configurations.</p>
             </div>
 
             {sections.map((section, idx) => (
-                <Card key={idx} className="border-2 border-[var(--color-divider)] overflow-hidden shadow-sm rounded-2xl sm:rounded-3xl">
-                    <CardHeader className="border-b border-[var(--color-divider)] p-4 sm:p-6 bg-gray-50/30 dark:bg-white/5">
+                <Card key={idx} className="border-2 border-[var(--color-divider)] overflow-hidden shadow-sm rounded-xl sm:rounded-3xl">
+                    <CardHeader className="border-b border-[var(--color-divider)] p-3.5 sm:p-6 bg-gray-50/30 dark:bg-white/5">
                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-black uppercase tracking-tight">
                             <section.icon size={20} className="text-[var(--color-primary)]" />
                             {section.title}
@@ -546,7 +546,7 @@ export default function Settings() {
                             <div
                                 key={i}
                                 onClick={item.onClick}
-                                className={`flex items-center justify-between p-4 sm:p-5 transition-all border-b last:border-0 border-[var(--color-divider)] ${item.onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''}`}
+                                className={`flex items-center justify-between p-3.5 sm:p-5 transition-all border-b last:border-0 border-[var(--color-divider)] ${item.onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''}`}
                             >
                                 <div>
                                     <div className={`font-black uppercase text-xs sm:text-sm ${item.type === 'danger' ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>

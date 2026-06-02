@@ -250,11 +250,11 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     </div>
                 )}
                 {/* Header */}
-                <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-6 flex justify-between items-start z-10">
+                <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10">
                     <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
-                        <p className="text-[10px] sm:text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-1 flex items-center gap-2 opacity-70">
-                            <Calendar size={12} className="text-[var(--color-primary)]" />
+                        <h2 className="text-base sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
+                        <p className="text-[8px] xs:text-[9px] sm:text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5 sm:mt-1 flex flex-wrap items-center gap-1 sm:gap-2 opacity-70">
+                            <Calendar className="text-[var(--color-primary)] w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                             {new Date(log.logged_at).toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -265,8 +265,8 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                             {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-10 w-10">
-                        <X size={20} />
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl sm:rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center p-0">
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                 </div>
 
@@ -466,15 +466,26 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                             <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Water Intake</p>
                             {isEditing ? (
-                                <div className="flex items-center gap-1.5">
-                                    <input
-                                        type="number"
-                                        value={editedWater}
-                                        onChange={(e) => setEditedWater(Math.max(0, parseInt(e.target.value) || 0))}
-                                        className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl px-2 py-1 focus:border-[var(--color-primary)] outline-none"
-                                    />
-                                    <span className="text-[10px] font-black text-[var(--color-text-muted)]">ML</span>
-                                </div>
+                                <select
+                                    value={editedWater}
+                                    onChange={(e) => setEditedWater(parseInt(e.target.value))}
+                                    className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none cursor-pointer"
+                                >
+                                    <option value={0}>0 Glasses (0 ml)</option>
+                                    <option value={250}>1 Glass (250 ml)</option>
+                                    <option value={500}>2 Glasses (500 ml)</option>
+                                    <option value={750}>3 Glasses (750 ml)</option>
+                                    <option value={1000}>4 Glasses (1000 ml)</option>
+                                    <option value={1250}>5 Glasses (1250 ml)</option>
+                                    <option value={1500}>6 Glasses (1500 ml)</option>
+                                    <option value={1750}>7 Glasses (1750 ml)</option>
+                                    <option value={2000}>8 Glasses (2000 ml)</option>
+                                    <option value={2250}>9 Glasses (2250 ml)</option>
+                                    <option value={2500}>10 Glasses (2500 ml)</option>
+                                    {![0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500].includes(editedWater) && (
+                                        <option value={editedWater}>{Math.round(editedWater / 250 * 10) / 10} Glasses ({editedWater} ml)</option>
+                                    )}
+                                </select>
                             ) : (
                                 <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.water_ml || 0} ML</p>
                             )}
@@ -784,77 +795,96 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-6 flex flex-col sm:flex-row gap-3 sm:justify-between items-center w-full z-10">
-                    <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-start">
+                <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
+                    <Button
+                        variant="none"
+                        className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 bg-rose-50/10 dark:bg-rose-950/15 hover:bg-rose-100/70 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300 shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                        onClick={() => setShowConfirm(true)}
+                        disabled={isDeleting || isResubmitting}
+                    >
+                        {isDeleting ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-1 sm:mr-2" /> : <Trash2 className="h-3.5 w-3.5 mr-1 sm:mr-2" />}
+                        <span className="hidden sm:inline">Delete Meal</span>
+                        <span className="inline sm:hidden">Delete</span>
+                    </Button>
+                    
+                    {user?.role === 'parent' && (log.status === 'rejected' || log.status === 'pending') && !isEditing && (
                         <Button
                             variant="none"
-                            className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 bg-rose-50/10 dark:bg-rose-950/15 hover:bg-rose-100/70 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300 shadow-sm font-black uppercase tracking-widest text-[10px]"
-                            onClick={() => setShowConfirm(true)}
-                            disabled={isDeleting || isResubmitting}
+                            className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 bg-amber-50/10 dark:bg-amber-900/15 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300 shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                            onClick={() => setIsEditing(true)}
                         >
-                            {isDeleting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Trash2 size={14} className="mr-2" />}
-                            Delete Meal
+                            {log.status === 'rejected' ? (
+                                <>
+                                    <span className="hidden sm:inline">Correct Details</span>
+                                    <span className="inline sm:hidden">Correct</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="hidden sm:inline">Edit Details</span>
+                                    <span className="inline sm:hidden">Edit</span>
+                                </>
+                            )}
                         </Button>
-                        
-                        {user?.role === 'parent' && (log.status === 'rejected' || log.status === 'pending') && !isEditing && (
-                            <Button
-                                variant="none"
-                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 bg-amber-50/10 dark:bg-amber-900/15 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300 shadow-sm font-black uppercase tracking-widest text-[10px]"
-                                onClick={() => setIsEditing(true)}
-                            >
-                                {log.status === 'rejected' ? 'Correct Details' : 'Edit Details'}
-                            </Button>
-                        )}
+                    )}
 
-                        {isEditing && (
-                            <Button
-                                variant="none"
-                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl border-2 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300 bg-gray-50/10 dark:bg-zinc-900/20 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white shadow-sm font-black uppercase tracking-widest text-[10px]"
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    // Reset edit states to originals
-                                    setEditedConsumption(log.consumption_percent ?? 100);
-                                    setEditedHiddenIngredients(log.hidden_ingredients || '');
-                                    setEditedWater(log.water_ml ?? 0);
-                                    setEditedSupplements(log.supplements || '');
-                                    setEditedActivity(log.physical_activity || '');
-                                    setEditedCategory(log.meal_category || 'Other');
-                                    setEditedCookingMethod(log.cooking_method || 'Standard');
-                                    setEditedImageAfter(null);
-                                    setEditedImageAfterPreview(log.image_after_url || '');
-                                }}
-                            >
-                                Cancel Edits
-                            </Button>
-                        )}
-                    </div>
+                    {isEditing && (
+                        <Button
+                            variant="none"
+                            className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300 bg-gray-50/10 dark:bg-zinc-900/20 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                            onClick={() => {
+                                setIsEditing(false);
+                                // Reset edit states to originals
+                                setEditedConsumption(log.consumption_percent ?? 100);
+                                setEditedHiddenIngredients(log.hidden_ingredients || '');
+                                setEditedWater(log.water_ml ?? 0);
+                                setEditedSupplements(log.supplements || '');
+                                setEditedActivity(log.physical_activity || '');
+                                setEditedCategory(log.meal_category || 'Other');
+                                setEditedCookingMethod(log.cooking_method || 'Standard');
+                                setEditedImageAfter(null);
+                                setEditedImageAfterPreview(log.image_after_url || '');
+                            }}
+                        >
+                            <span className="hidden sm:inline">Cancel Edits</span>
+                            <span className="inline sm:hidden">Cancel</span>
+                        </Button>
+                    )}
 
-                    <div className="flex gap-2 w-full sm:w-auto justify-end">
-                        {isEditing ? (
-                            <Button
-                                variant="none"
-                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-amber-500/20 flex items-center justify-center animate-pulse px-10"
-                                onClick={handleResubmit}
-                                disabled={isResubmitting}
-                            >
-                                {isResubmitting ? (
+                    {isEditing ? (
+                        <Button
+                            variant="none"
+                            className="flex-1 sm:flex-initial sm:ml-auto h-10 sm:h-11 rounded-xl sm:rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] shadow-lg shadow-amber-500/20 flex items-center justify-center px-2 sm:px-10"
+                            onClick={handleResubmit}
+                            disabled={isResubmitting}
+                        >
+                            {isResubmitting ? (
+                                <>
+                                    <Loader2 className="animate-spin h-3.5 w-3.5 mr-1 sm:mr-2" />
+                                    {log.status === 'rejected' ? 'Resubmitting...' : 'Saving...'}
+                                </>
+                            ) : (
+                                log.status === 'rejected' ? (
                                     <>
-                                        <Loader2 size={16} className="animate-spin mr-2" />
-                                        {log.status === 'rejected' ? 'Resubmitting...' : 'Saving...'}
+                                        <span className="hidden sm:inline">Save & Resubmit</span>
+                                        <span className="inline sm:hidden">Resubmit</span>
                                     </>
                                 ) : (
-                                    log.status === 'rejected' ? "Save & Resubmit" : "Save Changes"
-                                )}
-                            </Button>
-                        ) : (
-                            <Button
-                                className="w-full sm:w-auto h-12 sm:h-11 rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-10 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20"
-                                onClick={onClose}
-                            >
-                                Close Details
-                            </Button>
-                        )}
-                    </div>
+                                    <>
+                                        <span className="hidden sm:inline">Save Changes</span>
+                                        <span className="inline sm:hidden">Save</span>
+                                    </>
+                                )
+                            )}
+                        </Button>
+                    ) : (
+                        <Button
+                            className="flex-1 sm:flex-initial sm:ml-auto h-10 sm:h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-2 sm:px-10 font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] shadow-lg shadow-emerald-500/20 flex items-center justify-center"
+                            onClick={onClose}
+                        >
+                            <span className="hidden sm:inline">Close Details</span>
+                            <span className="inline sm:hidden">Close</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 
