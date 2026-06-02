@@ -78,6 +78,26 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
     const [searchTerm, setSearchTerm] = useState('');
     const [isAllergiesDropdownOpen, setIsAllergiesDropdownOpen] = useState(false);
     const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
+
     const [formData, setFormData] = useState({
         // Parent Info
         parent_name: parentName,
@@ -160,11 +180,11 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 message: 'You are currently in the middle of a clinical intake process. Are you sure you want to stop? All entered medical history and profiling data will be permanently lost.',
                 onConfirm: () => {
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                    onClose();
+                    triggerCloseAnimation();
                 }
             });
         } else {
-            onClose();
+            triggerCloseAnimation();
         }
     };
 
@@ -242,7 +262,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             const res = await api.post('/nutritionist/create-client', payload);
 
             if (onClientAdded) onClientAdded();
-            onClose();
+            triggerCloseAnimation();
             setStep(0);
             setFormData({
                 parent_name: '', parent_email: '', child_name: '', date_of_birth: '', gender: 'Male',
@@ -635,10 +655,21 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={(e) => {
-            if (e.target === e.currentTarget && !loading) handleClose();
-        }}>
-            <Card className="w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center sm:p-6 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" : "bg-slate-900/0 dark:bg-black/0 backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !loading) handleClose();
+            }}
+        >
+            <Card 
+                className={cn(
+                    "w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+            >
                 {/* Header with Stepper */}
                 <div className="bg-[var(--color-divider)] p-5 sm:px-8 sm:pt-6 sm:pb-5 shrink-0">
                     <div className="flex justify-between items-center mb-6 sm:mb-8">

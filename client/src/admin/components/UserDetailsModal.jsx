@@ -1,10 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { User, XCircle, Shield, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export default function UserDetailsModal({ selectedUserDetails, currentUser, onClose, loading }) {
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (selectedUserDetails) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [selectedUserDetails]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
+
     useEffect(() => {
         if (selectedUserDetails || loading) {
             document.body.style.overflow = 'hidden';
@@ -43,11 +63,17 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center sm:bg-black/60 sm:backdrop-blur-md sm:p-6 animate-in sm:fade-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 duration-300"
-            onClick={onClose}
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center sm:p-6 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "sm:bg-black/60 sm:backdrop-blur-md" : "sm:bg-black/0 sm:backdrop-blur-none"
+            )}
+            onClick={triggerCloseAnimation}
         >
             <Card
-                className="max-w-2xl w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[3rem] overflow-hidden shadow-none sm:shadow-2xl bg-[var(--color-bg-card)] flex flex-col relative"
+                className={cn(
+                    "max-w-2xl w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[3rem] overflow-hidden shadow-none sm:shadow-2xl bg-[var(--color-bg-card)] flex flex-col relative transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="overflow-y-auto flex-1 scrollbar-hide p-4 sm:p-10 space-y-5 sm:space-y-8">
@@ -74,7 +100,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                             </div>
                         </div>
                         <button
-                            onClick={onClose}
+                            onClick={triggerCloseAnimation}
                             className="p-2 sm:p-3 hover:bg-[var(--color-bg-page)] rounded-2xl transition-all text-[var(--color-text-muted)]"
                         >
                             <XCircle size={20} className="sm:hidden" />
@@ -200,7 +226,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                 </div>
                 <div className="p-4 sm:p-8 bg-gray-50/50 dark:bg-white/5 border-t border-[var(--color-divider)] flex justify-center pb-8 sm:pb-8">
                     <Button
-                        onClick={onClose}
+                        onClick={triggerCloseAnimation}
                         className="w-full h-11 sm:h-14 bg-white dark:bg-zinc-900 border-2 border-[var(--color-divider)] text-zinc-900 dark:text-zinc-100 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
                     >
                         Dismiss

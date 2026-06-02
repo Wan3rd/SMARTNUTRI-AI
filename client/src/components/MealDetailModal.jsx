@@ -15,6 +15,19 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const [nutritionist, setNutritionist] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
     const [previewImage, setPreviewImage] = useState(null);
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    const handleClose = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Editable state for parent resubmission
     const [isEditing, setIsEditing] = useState(false);
@@ -89,7 +102,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
 
     React.useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') handleClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         
@@ -100,7 +113,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
             window.removeEventListener('keydown', handleKeyDown);
             document.body.style.overflow = 'auto'; // Restore scrolling
         };
-    }, [onClose]);
+    }, [handleClose]);
 
     React.useEffect(() => {
         if (log.status === 'reviewed' || log.status === 'verified' || log.status === 'rejected') {
@@ -206,11 +219,17 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     return (
         <>
         <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-0 sm:p-4 animate-in fade-in transition-all duration-300"
-            onClick={onClose}
+            className={cn(
+                "fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-black/60 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
+            )}
+            onClick={handleClose}
         >
             <div 
-                className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500"
+                className={cn(
+                    "bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
                 onClick={(e) => e.stopPropagation()}
             >
                 {(isResubmitting || isDeleting) && (
@@ -265,7 +284,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                             {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl sm:rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center p-0">
+                    <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-xl sm:rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center p-0">
                         <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                 </div>
@@ -879,7 +898,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     ) : (
                         <Button
                             className="flex-1 sm:flex-initial sm:ml-auto h-10 sm:h-11 rounded-xl sm:rounded-2xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] px-2 sm:px-10 font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] shadow-lg shadow-emerald-500/20 flex items-center justify-center"
-                            onClick={onClose}
+                            onClick={handleClose}
                         >
                             <span className="hidden sm:inline">Close Details</span>
                             <span className="inline sm:hidden">Close</span>

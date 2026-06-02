@@ -3,12 +3,33 @@ import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { X, UserPlus, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '../lib/api';
+import { cn } from '../lib/utils';
 import Notification from './common/Notification';
 
 export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
+
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
 
     React.useEffect(() => {
         if (isOpen) {
@@ -21,7 +42,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
         };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,7 +51,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
         try {
             await api.post('/nutritionist/invite', { email });
             if (onClientAdded) onClientAdded();
-            onClose();
+            triggerCloseAnimation();
         } catch (err) {
             setMessage({
                 type: 'error',
@@ -42,10 +63,24 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-            <Card className="w-full max-w-md relative shadow-2xl overflow-hidden border-2 border-[var(--color-divider)] rounded-[32px]">
+        <div 
+            className={cn(
+                "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-black/70 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !loading) triggerCloseAnimation();
+            }}
+        >
+            <Card 
+                className={cn(
+                    "w-full max-w-md relative shadow-2xl overflow-hidden border-2 border-[var(--color-divider)] rounded-[32px] transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button
-                    onClick={() => !loading && onClose()}
+                    onClick={() => !loading && triggerCloseAnimation()}
                     disabled={loading}
                     className="absolute right-6 top-6 z-20 text-white/80 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -92,7 +127,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
                                     type="button"
                                     variant="outline"
                                     className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs border-2 border-[var(--color-divider)]"
-                                    onClick={onClose}
+                                    onClick={triggerCloseAnimation}
                                 >
                                     Cancel
                                 </Button>

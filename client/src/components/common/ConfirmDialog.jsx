@@ -14,6 +14,26 @@ export default function ConfirmDialog({
     isDestructive = false,
     loading = false 
 }) {
+    const [isClosing, setIsClosing] = React.useState(false);
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
+
     React.useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -23,11 +43,21 @@ export default function ConfirmDialog({
         };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[var(--color-bg-card)] rounded-2xl shadow-2xl max-w-sm w-full border border-[var(--color-divider)] overflow-hidden">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0 backdrop-blur-none"
+            )}
+        >
+            <div 
+                className={cn(
+                    "bg-[var(--color-bg-card)] rounded-2xl shadow-2xl max-w-sm w-full border border-[var(--color-divider)] overflow-hidden transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+            >
                 <div className="p-6">
                     <div className="flex justify-center mb-4">
                         {isDestructive ? (
@@ -53,7 +83,7 @@ export default function ConfirmDialog({
                         <Button
                             variant="secondary"
                             className="flex-1"
-                            onClick={onClose}
+                            onClick={triggerCloseAnimation}
                             disabled={loading}
                         >
                             {cancelText}

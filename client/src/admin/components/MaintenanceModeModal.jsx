@@ -1,8 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wrench, ShieldAlert, X, Users, BrainCircuit, AlertTriangle, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, currentlyEnabled, isLoading }) {
     const enabling = !currentlyEnabled;
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
 
     useEffect(() => {
         if (isOpen) {
@@ -13,7 +33,7 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
         return () => { document.body.style.overflow = 'unset'; };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     const enableEffects = [
         {
@@ -73,8 +93,22 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
     const effects = enabling ? enableEffects : disableEffects;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:bg-black/70 sm:backdrop-blur-md sm:p-4 animate-in sm:fade-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 duration-300">
-            <div className="w-full sm:max-w-lg h-[100dvh] sm:h-auto sm:max-h-[92vh] overflow-y-auto bg-[var(--color-bg-card)] sm:rounded-[2.5rem] border-0 sm:border-2 sm:border-[var(--color-divider)] shadow-none sm:shadow-2xl flex flex-col">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "sm:bg-black/70 sm:backdrop-blur-md" : "sm:bg-black/0 sm:backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !isLoading) triggerCloseAnimation();
+            }}
+        >
+            <div 
+                className={cn(
+                    "w-full sm:max-w-lg h-[100dvh] sm:h-auto sm:max-h-[92vh] overflow-y-auto bg-[var(--color-bg-card)] sm:rounded-[2.5rem] border-0 sm:border-2 sm:border-[var(--color-divider)] shadow-none sm:shadow-2xl flex flex-col transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
 
                 {/* Header */}
                 <div className={`p-6 sm:p-8 shrink-0 ${enabling ? 'bg-rose-600' : 'bg-emerald-600'} relative overflow-hidden`}>
@@ -104,7 +138,7 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
                             </p>
                         </div>
                         <button
-                            onClick={() => !isLoading && onClose()}
+                            onClick={() => !isLoading && triggerCloseAnimation()}
                             disabled={isLoading}
                             className="h-9 w-9 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-white transition-colors shrink-0 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -151,7 +185,7 @@ export default function MaintenanceModeModal({ isOpen, onClose, onConfirm, curre
                 {/* Footer Actions */}
                 <div className="p-6 sm:p-8 pt-0 flex flex-col sm:flex-row gap-3 shrink-0 pb-10 sm:pb-8">
                     <button
-                        onClick={() => !isLoading && onClose()}
+                        onClick={() => !isLoading && triggerCloseAnimation()}
                         disabled={isLoading}
                         className="flex-1 py-3.5 rounded-2xl border-2 border-[var(--color-divider)] text-[var(--color-text-muted)] font-black uppercase tracking-widest text-xs hover:bg-[var(--color-bg-page)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >

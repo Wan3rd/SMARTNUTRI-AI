@@ -3,6 +3,7 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { XCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import { cn } from '../../lib/utils';
 
 export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
     const [createForm, setCreateForm] = useState({ 
@@ -16,6 +17,26 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
     const [processingId, setProcessingId] = useState(null);
     const [errorMsg, setErrorMsg] = useState('');
 
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
+
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -25,7 +46,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
         return () => { document.body.style.overflow = 'unset'; };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     const handleCreateUser = async (e) => {
         e.preventDefault();
@@ -35,7 +56,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
             await api.post('/admin/users', createForm);
             onSuccess('Administrative account provisioned successfully.');
             setCreateForm({ full_name: '', email: '', password: '', role: 'parent', professional_id: '', clinic: '' });
-            onClose();
+            triggerCloseAnimation();
         } catch (err) {
             setErrorMsg(err.response?.data?.message || 'Provisioning failed');
         } finally {
@@ -44,8 +65,21 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:bg-black/60 sm:backdrop-blur-md sm:p-4 animate-in sm:fade-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 duration-300">
-            <Card className="max-w-md w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-y-auto scrollbar-hide shadow-none sm:shadow-2xl bg-[var(--color-bg-card)]">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "sm:bg-black/60 sm:backdrop-blur-md" : "sm:bg-black/0 sm:backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && processingId !== 'creating') triggerCloseAnimation();
+            }}
+        >
+            <Card 
+                className={cn(
+                    "max-w-md w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[2.5rem] overflow-y-auto scrollbar-hide shadow-none sm:shadow-2xl bg-[var(--color-bg-card)] transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+            >
                 <form onSubmit={handleCreateUser} className="p-8 pb-10 sm:pb-8 space-y-6">
                     <div className="flex justify-between items-center mb-2">
                         <div>
@@ -54,7 +88,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                         </div>
                         <button 
                             type="button" 
-                            onClick={() => processingId !== 'creating' && onClose()} 
+                            onClick={() => processingId !== 'creating' && triggerCloseAnimation()} 
                             disabled={processingId === 'creating'}
                             className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] disabled:opacity-50 disabled:cursor-not-allowed"
                         >

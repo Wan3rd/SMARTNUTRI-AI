@@ -1123,59 +1123,59 @@ export default function Profile() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-6 sm:space-y-8 max-w-4xl mx-auto pb-10 px-4 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
+            className="space-y-3 sm:space-y-8 max-w-4xl mx-auto pb-6 sm:pb-10 px-1 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
         >
             {/* ── PARENT ACCOUNT SECTION ── */}
-            <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
-                <div className="p-5 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6">
+            <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
+                <div className="p-3 sm:p-8 flex flex-row items-center sm:items-start text-left gap-3 sm:gap-6">
                     {/* Parent Avatar */}
                     <div className="relative flex-shrink-0 group">
-                        <div className="h-20 w-20 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-4 border-white shadow-lg flex items-center justify-center text-slate-400 text-2xl font-black">
+                        <div className="h-12 w-12 sm:h-20 sm:w-20 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 sm:border-4 border-white shadow-lg flex items-center justify-center text-slate-400 text-sm sm:text-2xl font-black">
                             {parentData.profileImageUrl ? (
                                 <img src={parentData.profileImageUrl} alt="Parent" className="h-full w-full object-cover" />
                             ) : (
-                                <User size={32} />
+                                <User size={20} className="sm:w-8 sm:h-8" />
                             )}
                         </div>
                         <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
                             <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'parent')} accept="image/*" />
-                            <Camera size={20} />
+                            <Camera size={16} />
                         </label>
                     </div>
 
-                    <div className="flex-1 text-center sm:text-left space-y-2 min-w-0 w-full">
-                        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
-                            <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight truncate w-full text-center sm:text-left">{parentData.fullName || 'Parent Account'}</h2>
-                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-md border border-slate-200 dark:border-slate-700 whitespace-nowrap">Account Holder</span>
+                    <div className="flex-1 text-left space-y-1 sm:space-y-2 min-w-0 w-full">
+                        <div className="flex flex-row items-center justify-start gap-1.5 sm:gap-2 flex-wrap">
+                            <h2 className="text-sm sm:text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight text-left break-words">{parentData.fullName || 'Parent Account'}</h2>
+                            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[7px] sm:text-[8px] font-black uppercase tracking-widest rounded-md border border-slate-200 dark:border-slate-700 whitespace-nowrap">Account Holder</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 sm:gap-4">
-                            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1.5 truncate">
+                        <div className="flex flex-row flex-wrap items-center justify-start gap-1.5 sm:gap-4">
+                            <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 truncate max-w-[150px] sm:max-w-none">
                                 <Link2 size={10} className="text-slate-400 flex-shrink-0" /> <span className="truncate">{parentData.email}</span>
                             </p>
                             {parentData.phone && (
-                                <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap">
+                                <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
                                     <Phone size={10} className="text-slate-400" /> {parentData.phone}
                                 </p>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                         {!parentEditing ? (
                             <button
                                 onClick={() => setParentEditing(true)}
-                                className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)] text-[var(--color-primary)] hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--color-primary)]/20 cursor-pointer shadow-sm hover:shadow-md"
+                                className="px-2.5 sm:px-4 py-2 sm:py-2 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)] text-[var(--color-primary)] hover:text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--color-primary)]/20 cursor-pointer shadow-sm hover:shadow-md"
                             >Edit Account</button>
                         ) : (
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <div className="flex flex-row gap-1.5 sm:gap-2 w-auto">
                                 <button
                                     onClick={handleCancelParent}
-                                    className="px-4 py-3 sm:py-2 bg-gray-100 dark:bg-white/5 text-[var(--color-text-muted)] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer order-2 sm:order-1"
+                                    className="px-2.5 sm:px-4 py-2 sm:py-2 bg-gray-100 dark:bg-white/5 text-[var(--color-text-muted)] rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
                                 >Cancel</button>
                                 <button
                                     onClick={handleParentSave}
                                     disabled={parentSaving}
-                                    className="px-4 py-3 sm:py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-60 order-1 sm:order-2"
+                                    className="px-2.5 sm:px-4 py-2 sm:py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-60"
                                 >
                                     {parentSaving ? <Loader2 size={12} className="animate-spin" /> : 'Save'}
                                 </button>
@@ -1185,7 +1185,7 @@ export default function Profile() {
                 </div>
 
                 {parentEditing && (
-                    <div className="px-5 sm:px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="px-3 sm:px-8 pb-4 sm:pb-8 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 animate-in slide-in-from-top-2 duration-300">
                         <InfoField label="Account Full Name" name="fullName" value={parentData.fullName} onChange={(n, v) => setParentData(p => ({ ...p, fullName: v }))} isEditing={true} />
                         <InfoField label="Contact Phone" name="phone" value={parentData.phone} onChange={(n, v) => setParentData(p => ({ ...p, phone: v }))} isEditing={true} />
                     </div>
@@ -1195,7 +1195,7 @@ export default function Profile() {
             </motion.div>
 
             {/* Divider */}
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 overflow-hidden">
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 overflow-hidden">
                 <div className="flex items-center gap-2 sm:gap-4 flex-1 w-full">
                     <div className="h-[1px] sm:h-[2px] flex-1 bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent" />
                     <span className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.15em] sm:tracking-[0.3em] whitespace-nowrap sm:whitespace-nowrap text-center">Clinical Child Profiles</span>
@@ -1203,7 +1203,7 @@ export default function Profile() {
                 </div>
                 <Button
                     onClick={() => setIsAddChildOpen(true)}
-                    className="w-full sm:w-auto h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white text-[10px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-[var(--color-primary)]/20"
+                    className="w-full sm:w-auto h-9 sm:h-11 px-4 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-[var(--color-primary)]/20"
                 >
                     <Plus size={16} /> Add Child
                 </Button>
@@ -1217,7 +1217,7 @@ export default function Profile() {
                             key={p.id}
                             onClick={() => fetchProfile(p.id)}
                             className={cn(
-                                "flex-shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 transition-all",
+                                "flex-shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 transition-all",
                                 profileData.id === p.id
                                     ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-md"
                                     : "bg-white dark:bg-white/5 border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]"
@@ -1232,14 +1232,14 @@ export default function Profile() {
             {allProfiles.length === 0 ? (
                 <motion.div
                     variants={itemVariants}
-                    className="p-8 sm:p-10 bg-white dark:bg-white/5 border-2 border-dashed border-[var(--color-divider)] rounded-[2rem] text-center space-y-6 max-w-xl mx-auto shadow-sm my-6 animate-in fade-in duration-300"
+                    className="p-6 sm:p-10 bg-white dark:bg-white/5 border-2 border-dashed border-[var(--color-divider)] rounded-2xl sm:rounded-[2rem] text-center space-y-4 sm:space-y-6 max-w-xl mx-auto shadow-sm my-4 sm:my-6 animate-in fade-in duration-300"
                 >
-                    <div className="mx-auto w-14 h-14 bg-gradient-to-br from-emerald-500/10 to-teal-600/10 rounded-2xl flex items-center justify-center text-[var(--color-primary)]">
-                        <Plus size={28} />
+                    <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-500/10 to-teal-600/10 rounded-2xl flex items-center justify-center text-[var(--color-primary)]">
+                        <Plus size={24} className="sm:w-7 sm:h-7" />
                     </div>
                     <div className="space-y-2">
-                        <h3 className="text-lg font-black uppercase text-[var(--color-secondary)] tracking-wider">No Child Profiles Added</h3>
-                        <p className="text-xs font-semibold text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
+                        <h3 className="text-base sm:text-lg font-black uppercase text-[var(--color-secondary)] tracking-wider">No Child Profiles Added</h3>
+                        <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
                             To customize dietary settings, log vaccines, and track growth charts, please click the <strong>Add Child</strong> button on the top right.
                         </p>
                     </div>
@@ -1247,13 +1247,13 @@ export default function Profile() {
             ) : (
                 <>
                     {/* Header Section (Child-Focused) */}
-                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-4 sm:mb-10 p-5 sm:p-6 bg-white dark:bg-white/5 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6 mb-4 sm:mb-8 p-3 sm:p-6 bg-white dark:bg-white/5 rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
                             <div className="relative group">
-                                <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-4 border-white">
+                                <div className="h-14 w-14 sm:h-24 sm:w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl sm:rounded-3xl flex items-center justify-center text-white text-2xl sm:text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-2 sm:border-4 border-white">
                                     {isUploadingPhoto ? (
                                         <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
-                                            <Loader2 size={24} className="animate-spin text-white" />
+                                            <Loader2 size={18} className="animate-spin text-white" />
                                         </div>
                                     ) : profileData.profileImageUrl ? (
                                         <img
@@ -1267,13 +1267,13 @@ export default function Profile() {
                                 </div>
                                 {isEditing && !isUploadingPhoto && (
                                     <>
-                                        <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                                        <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-xl sm:rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
                                             <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'child')} accept="image/*" />
-                                            <Camera size={28} className="animate-bounce" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
+                                            <Camera size={16} className="sm:size-28 animate-bounce" />
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
                                         </label>
-                                        <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-[var(--color-primary)] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
-                                            <Camera size={14} />
+                                        <div className="absolute -bottom-1 -right-1 h-5 w-5 sm:h-8 sm:w-8 bg-[var(--color-primary)] text-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
+                                            <Camera size={10} className="sm:size-14" />
                                         </div>
                                     </>
                                 )}
@@ -1290,7 +1290,7 @@ export default function Profile() {
                                             </button>
                                         </CardHeader>
                                         <CardContent className="p-0">
-                                            <div className="relative h-80 w-full bg-gray-100">
+                                            <div className="relative h-56 sm:h-80 w-full bg-gray-100">
                                                 <Cropper
                                                     image={imageToCrop}
                                                     crop={crop}
@@ -1303,7 +1303,7 @@ export default function Profile() {
                                                     showGrid={true}
                                                 />
                                             </div>
-                                            <div className="p-8 space-y-6">
+                                            <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
                                                 <div className="space-y-3">
                                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Zoom Level</label>
                                                     <input
@@ -1320,14 +1320,14 @@ export default function Profile() {
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => setImageToCrop(null)}
-                                                        className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                                        className="flex-1 h-10 sm:h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs"
                                                     >
                                                         Cancel
                                                     </Button>
                                                     <Button
                                                         onClick={handlePhotoUpload}
                                                         disabled={isUploadingPhoto}
-                                                        className="flex-1 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-xs gap-2"
+                                                        className="flex-1 h-10 sm:h-12 rounded-2xl bg-[var(--color-primary)] text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2"
                                                     >
                                                         {isUploadingPhoto ? (
                                                             <>
@@ -1343,31 +1343,31 @@ export default function Profile() {
                                 </div>
                             )}
                             <div className="w-full min-w-0">
-                                <h1 className={cn("text-2xl sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight truncate", user?.privacy_mode && "privacy-blur")}>{profileData.childName || 'Child Profile'}</h1>
-                                <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium italic truncate">Parent Account &bull; {user?.full_name}</p>
+                                <h1 className={cn("text-lg sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight break-words", user?.privacy_mode && "privacy-blur")}>{profileData.childName || 'Child Profile'}</h1>
+                                <p className="text-[9px] sm:text-xs text-[var(--color-text-muted)] font-medium italic truncate">Parent Account &bull; {user?.full_name}</p>
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                             {!isEditing ? (
                                 <Button
                                     onClick={() => setIsEditing(true)}
-                                    className="w-full sm:w-auto h-11 px-6 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-md shadow-[var(--color-primary)]/20 flex items-center justify-center border-b-2 border-black/10 active:border-b-0 active:translate-y-[1px] pt-[1px]"
+                                    className="w-full sm:w-auto h-9 sm:h-11 px-4 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-md shadow-[var(--color-primary)]/20 flex items-center justify-center border-b-2 border-black/10 active:border-b-0 active:translate-y-[1px] pt-[1px]"
                                 >
                                     <Edit2 size={14} /> Edit Profile
                                 </Button>
                             ) : (
-                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                                     <Button
                                         variant="outline"
                                         onClick={handleCancelProfile}
-                                        className="w-full sm:w-auto h-11 px-6 rounded-xl border-2 border-[var(--color-divider)] font-black uppercase tracking-widest text-[10px] order-2 sm:order-1"
+                                        className="w-full sm:w-auto h-9 sm:h-11 px-4 sm:px-6 rounded-xl border-2 border-[var(--color-divider)] font-black uppercase tracking-widest text-[9px] sm:text-[10px] order-2 sm:order-1"
                                     >
                                         Cancel
                                     </Button>
                                     <Button
                                         onClick={handleSave}
                                         disabled={saving}
-                                        className="w-full sm:w-auto h-11 px-8 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20 order-1 sm:order-2"
+                                        className="w-full sm:w-auto h-9 sm:h-11 px-5 sm:px-8 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-all font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-lg shadow-[var(--color-primary)]/20 order-1 sm:order-2"
                                     >
                                         <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
                                     </Button>
@@ -1379,54 +1379,54 @@ export default function Profile() {
 
 
                     {/* Profile Form Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                         <motion.div variants={itemVariants}>
-                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]"><User size={20} /> Basic Information</CardTitle>
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-3 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]"><User size={16} className="sm:size-5" /> Basic Information</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-5 sm:p-8 space-y-6">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Child's Name</label>
+                                <CardContent className="p-3 sm:p-8 space-y-3.5 sm:space-y-6">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Child's Name</label>
                                         <input
                                             type="text"
                                             name="childName"
                                             value={profileData.childName}
                                             onChange={handleChange}
                                             disabled={!isEditing}
-                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-lg sm:disabled:text-xl disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-xl disabled:font-black disabled:uppercase disabled:tracking-tight"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age (Years)</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age (Years)</label>
                                             <input
                                                 type="number"
                                                 name="age"
                                                 value={profileData.age}
                                                 onChange={handleChange}
                                                 disabled={!isEditing}
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
                                             <select
                                                 name="gender"
                                                 value={profileData.gender}
                                                 onChange={handleChange}
                                                 disabled={!isEditing}
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
+                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
                                             >
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                                        <div className="space-y-1">
                                             <div className="flex items-center justify-between ml-1">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
                                                     Height ({user?.measurement_system === 'imperial' ? 'ft/in' : 'cm'})
                                                 </label>
                                                 {!isEditing && (
@@ -1445,7 +1445,7 @@ export default function Profile() {
                                                                 placeholder="Feet"
                                                                 value={profileData.heightFeet}
                                                                 onChange={handleChange}
-                                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                                             />
                                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">FT</span>
                                                         </div>
@@ -1456,7 +1456,7 @@ export default function Profile() {
                                                                 placeholder="Inches"
                                                                 value={profileData.heightInches}
                                                                 onChange={handleChange}
-                                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                                             />
                                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)]">IN</span>
                                                         </div>
@@ -1467,11 +1467,11 @@ export default function Profile() {
                                                         name="height"
                                                         value={profileData.height}
                                                         onChange={handleChange}
-                                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                                     />
                                                 )
                                             ) : (
-                                                <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
+                                                <div className="text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
                                                     {user?.measurement_system === 'imperial' ? (
                                                         (() => {
                                                             const h = convertHeight(profileData.height, 'imperial');
@@ -1483,9 +1483,9 @@ export default function Profile() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1">
                                             <div className="flex items-center justify-between ml-1">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
                                                     Weight ({user?.measurement_system === 'imperial' ? 'lbs' : 'kg'})
                                                 </label>
                                                 {!isEditing && (
@@ -1500,10 +1500,10 @@ export default function Profile() {
                                                     name="weight"
                                                     value={profileData.weight}
                                                     onChange={handleChange}
-                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all"
+                                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                                 />
                                             ) : (
-                                                <div className="text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
+                                                <div className="text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
                                                     {user?.measurement_system === 'imperial' ? (
                                                         `${convertWeight(profileData.weight, 'imperial').value} lbs`
                                                     ) : (
@@ -1516,11 +1516,11 @@ export default function Profile() {
 
                                     {/* Real-time BMI Display */}
                                     {profileData.height && profileData.weight && (
-                                        <div className="p-4 rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-page)]/50 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
+                                        <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-page)]/50 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-3 sm:gap-4">
                                             <div className="text-center sm:text-left">
-                                                <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
+                                                <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
                                                 <div className="flex items-center justify-center sm:justify-start gap-3">
-                                                    <span className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)]">
+                                                    <span className="text-xl sm:text-3xl font-black text-[var(--color-text-main)]">
                                                         {calculateBMI(
                                                             user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
                                                             user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
@@ -1538,18 +1538,18 @@ export default function Profile() {
                                                 </div>
                                             </div>
                                             <div className="text-center sm:text-right border-t sm:border-t-0 border-[var(--color-divider)] pt-3 sm:pt-0 w-full sm:w-auto">
-                                                <p className="text-[8px] sm:text-[9px] text-[var(--color-text-muted)] font-bold uppercase max-w-full sm:max-w-[100px] leading-tight mx-auto sm:ml-auto">Pediatric Clinical Estimate</p>
+                                                <p className="text-[7px] sm:text-[9px] text-[var(--color-text-muted)] font-bold uppercase max-w-full sm:max-w-[100px] leading-tight mx-auto sm:ml-auto">Pediatric Clinical Estimate</p>
                                             </div>
                                         </div>
                                     )}
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Activity Level</label>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Activity Level</label>
                                         <select
                                             name="activityLevel"
                                             value={profileData.activityLevel}
                                             onChange={handleChange}
                                             disabled={!isEditing}
-                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
+                                            className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
                                         >
                                             <option value="sedentary">Sedentary</option>
                                             <option value="light">Light</option>
@@ -1562,20 +1562,20 @@ export default function Profile() {
                         </motion.div>
 
                         <motion.div variants={itemVariants}>
-                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl shadow-lg">
-                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🍽️ Dietary & Allergies</CardTitle>
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-3xl shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-3 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">🍽️ Dietary & Allergies</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-5 sm:p-8 space-y-8">
+                                <CardContent className="p-3 sm:p-8 space-y-4 sm:space-y-8">
                                     <div>
-                                        <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
+                                        <label className="block mb-3 text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Dietary Preferences</label>
                                         <div className="flex flex-wrap gap-2 sm:gap-2.5">
                                             {DIETARY_OPTIONS.map(option => (
                                                 <button
                                                     key={option}
                                                     onClick={() => toggleSelection('dietaryPreferences', option)}
                                                     disabled={!isEditing}
-                                                    className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-tight transition-all border-2 ${profileData.dietaryPreferences.includes(option)
+                                                    className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-tight transition-all border-2 ${profileData.dietaryPreferences.includes(option)
                                                         ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-md'
                                                         : 'bg-[var(--color-bg-page)] text-[var(--color-text-main)] border-[var(--color-divider)]'
                                                         } ${!isEditing ? 'cursor-default' : 'cursor-pointer hover:border-[var(--color-primary)] hover:translate-y-[-1px] active:scale-95'}`}
@@ -1587,7 +1587,7 @@ export default function Profile() {
                                     </div>
 
                                     <div>
-                                        <label className="block mb-4 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
+                                        <label className="block mb-3 text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Known Allergies</label>
 
                                         {isEditing && (
                                             <div className="mb-4 relative">
@@ -1595,7 +1595,7 @@ export default function Profile() {
                                                     type="button"
                                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                                     className={cn(
-                                                        "w-full h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
+                                                        "w-full h-9 sm:h-11 px-4 flex items-center justify-between rounded-xl border-2 transition-all cursor-pointer bg-[var(--color-bg-page)]",
                                                         isDropdownOpen ? "border-red-400 ring-4 ring-red-400/10" : "border-[var(--color-divider)]"
                                                     )}
                                                 >
@@ -1653,12 +1653,12 @@ export default function Profile() {
 
                                         <div className="flex flex-wrap gap-2">
                                             {(profileData.allergies?.filter(Boolean).length === 0 || (profileData.allergies?.filter(Boolean).length === 1 && profileData.allergies?.filter(Boolean)[0] === "None")) ? (
-                                                <div className="px-3 py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
+                                                <div className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg border-2 border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 text-green-600 text-[9px] font-black uppercase tracking-widest">None</div>
                                             ) : (
                                                 profileData.allergies?.filter(Boolean).map((allergy, idx) => (
                                                     <div
                                                         key={`${allergy}-${idx}`}
-                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
+                                                        className={`flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-[0.1em] transition-all animate-in zoom-in-95 duration-200 ${allergy === 'None'
                                                             ? 'bg-green-50 dark:bg-green-950/20 text-green-600 border-green-100 dark:border-green-900/30'
                                                             : 'bg-red-50 dark:bg-red-950/20 text-red-600 border-red-100 dark:border-red-900/30'
                                                             }`}
@@ -1683,21 +1683,21 @@ export default function Profile() {
 
                         {/* Clinical Data section spanning 2 columns */}
                         <motion.div variants={itemVariants} className="md:col-span-2">
-                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-5 sm:p-6">
-                                    <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
-                                        <Stethoscope size={18} className="text-blue-500" /> Advanced Clinical Profile
+                            <Card className="h-full border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg">
+                                <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-3 sm:p-6">
+                                    <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
+                                        <Stethoscope size={16} className="text-blue-500 sm:size-[18px]" /> Advanced Clinical Profile
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-5 sm:p-8 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <CardContent className="p-3 sm:p-8 space-y-4 sm:space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                         <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
                                                 {isEditing && !isAddingVaccine && (
                                                     <Button
                                                         onClick={() => setIsAddingVaccine(true)}
-                                                        className="h-8 px-3 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
+                                                        className="h-8 px-2.5 rounded-xl bg-[var(--color-primary)] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
                                                     >
                                                         <Plus size={14} /> Add Vaccine
                                                     </Button>
@@ -1705,7 +1705,7 @@ export default function Profile() {
                                             </div>
 
                                             {isAddingVaccine && (
-                                                <div className="mb-6 p-5 bg-[var(--color-bg-page)] rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
+                                                <div className="mb-4 p-3 sm:p-5 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                                         <div className="space-y-1.5">
                                                             <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
@@ -1750,15 +1750,15 @@ export default function Profile() {
 
                                             <div className="space-y-3">
                                                 {childVaccinations.length === 0 ? (
-                                                    <div className="p-6 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-2xl">
+                                                    <div className="p-4 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-xl sm:rounded-2xl">
                                                         <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
                                                     </div>
                                                 ) : (
                                                     <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                                                         {childVaccinations.map(v => (
-                                                            <div key={v.id} className="group relative flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white dark:bg-white/5 rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
+                                                            <div key={v.id} className="group relative flex items-start gap-3 sm:gap-4 p-2.5 sm:p-4 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
                                                                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                    <Check size={18} className="sm:w-5 sm:h-5" />
+                                                                    <Check size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight mb-1">
@@ -1785,12 +1785,12 @@ export default function Profile() {
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>
+                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>
                                             {isEditing ? (
                                                 <textarea
                                                     name="medications"
                                                     rows="4"
-                                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
                                                     placeholder="e.g. Daily multivitamins, Vitamin C, Iron drops..."
                                                     value={profileData.medications}
                                                     onChange={handleChange}
@@ -1803,12 +1803,12 @@ export default function Profile() {
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History / Surgical History</label>
+                                        <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Medical History / Surgical History</label>
                                         {isEditing ? (
                                             <textarea
                                                 name="medicalHistory"
                                                 rows="4"
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
+                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-medium text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all resize-none"
                                                 placeholder="e.g. History of mild asthma, no previous surgeries..."
                                                 value={profileData.medicalHistory}
                                                 onChange={handleChange}
@@ -1819,27 +1819,27 @@ export default function Profile() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Standard Weigh-in Conditions</label>
+                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Standard Weigh-in Conditions</label>
                                             <input
                                                 type="text"
                                                 name="weighInConditions"
                                                 disabled={!isEditing}
-                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
                                                 placeholder="e.g. Morning, Before Breakfast, Wearing Diaper Only"
                                                 value={profileData.weighInConditions}
                                                 onChange={handleChange}
                                             />
                                         </div>
                                         <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Bristol Stool Scale (Gastrointestinal Assessment)</label>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Bristol Stool Scale (Gastrointestinal Assessment)</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 sm:gap-3">
                                                 {BRISTOL_TYPES.map(type => (
                                                     <button
                                                         key={type.type}
                                                         onClick={() => isEditing && setProfileData({ ...profileData, bristolStoolScale: type.type })}
-                                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${profileData.bristolStoolScale === type.type
+                                                        className={`flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl border-2 transition-all group ${profileData.bristolStoolScale === type.type
                                                             ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg'
                                                             : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]'
                                                             } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
@@ -1872,15 +1872,15 @@ export default function Profile() {
                         </motion.div>
                     </div>
 
-                    <motion.div variants={itemVariants} className="mt-6 pt-6 border-t border-red-500/10">
-                        <div className="flex flex-col md:flex-row items-center justify-between p-5 bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-2xl gap-4">
+                    <motion.div variants={itemVariants} className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-red-500/10">
+                        <div className="flex flex-col md:flex-row items-center justify-between p-3 sm:p-5 bg-red-50/30 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-xl sm:rounded-2xl gap-3 sm:gap-4">
                             <div>
-                                <h3 className="text-sm font-black text-red-600 uppercase tracking-widest">Danger Zone</h3>
-                                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mt-0.5 opacity-80">Permanently delete this child's clinical record</p>
+                                <h3 className="text-xs sm:text-sm font-black text-red-600 uppercase tracking-widest">Danger Zone</h3>
+                                <p className="text-[9px] sm:text-[10px] font-bold text-red-400 uppercase tracking-wider mt-0.5 opacity-80">Permanently delete this child's clinical record</p>
                             </div>
                             <Button
                                 onClick={() => setIsDeleteModalOpen(true)}
-                                className="h-11 px-6 rounded-xl bg-red-500/10 dark:bg-red-500/20 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/30 transition-all font-black uppercase tracking-widest text-[9px] gap-2 shadow-sm"
+                                className="w-full sm:w-auto h-9 sm:h-11 px-4 sm:px-6 rounded-xl bg-red-500/10 dark:bg-red-500/20 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/30 transition-all font-black uppercase tracking-widest text-[9px] gap-2 shadow-sm"
                             >
                                 <Trash2 size={14} /> Delete Profile
                             </Button>
@@ -1889,11 +1889,11 @@ export default function Profile() {
                 </>
             )}
 
-            <motion.div variants={itemVariants} className="flex justify-center pt-10 border-t-2 border-[var(--color-divider)]">
+            <motion.div variants={itemVariants} className="flex justify-center pt-6 sm:pt-10 border-t-2 border-[var(--color-divider)]">
                 <Button
                     variant="outline"
                     onClick={handleLogout}
-                    className="h-14 px-10 rounded-2xl text-red-500 border-2 border-red-100 hover:bg-red-50 hover:border-red-200 transition-all font-black uppercase tracking-[0.2em] text-xs gap-3 shadow-lg shadow-red-500/5"
+                    className="h-11 sm:h-14 px-6 sm:px-10 rounded-xl sm:rounded-2xl text-red-500 border-2 border-red-100 hover:bg-red-50 hover:border-red-200 transition-all font-black uppercase tracking-widest sm:tracking-[0.2em] text-[10px] sm:text-xs gap-3 shadow-lg shadow-red-500/5"
                 >
                     <LogOut size={20} /> Sign Out
                 </Button>

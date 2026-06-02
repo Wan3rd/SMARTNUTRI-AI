@@ -4,6 +4,7 @@ import { Button } from './common/Button';
 import { X, ShieldAlert, Lock, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { cn } from '../lib/utils';
 
 export default function DeactivateAccountModal({ isOpen, onClose }) {
     const { logout } = useAuth();
@@ -12,6 +13,25 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [step, setStep] = useState(1); // 1: Info, 2: Password Confirmation
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
 
     const deactivationReasons = [
         "Met child's health goals",
@@ -31,7 +51,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     const handleDeactivate = async (e) => {
         e.preventDefault();
@@ -52,11 +72,25 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md shadow-2xl border border-[var(--color-divider)] overflow-hidden rounded-3xl animate-in zoom-in duration-300 relative">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-black/60 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !loading) triggerCloseAnimation();
+            }}
+        >
+            <Card 
+                className={cn(
+                    "w-full max-w-md shadow-2xl border border-[var(--color-divider)] overflow-hidden rounded-3xl relative transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Absolute Close Button */}
                 <button
-                    onClick={() => !loading && onClose()}
+                    onClick={() => !loading && triggerCloseAnimation()}
                     disabled={loading}
                     className="absolute top-4 right-4 z-20 p-2 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 rounded-full transition-all duration-300 text-[var(--color-danger)] backdrop-blur-sm group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -116,7 +150,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                                 <Button
                                     variant="ghost"
                                     className="w-full text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]"
-                                    onClick={onClose}
+                                    onClick={triggerCloseAnimation}
                                 >
                                     Cancel
                                 </Button>

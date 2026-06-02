@@ -3,6 +3,7 @@ import { Lock, Eye, EyeOff, Loader2, ShieldCheck, X } from 'lucide-react';
 import { Button } from './common/Button';
 import { Card, CardContent } from './common/Card';
 import api from '../lib/api';
+import { cn } from '../lib/utils';
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
     const [formData, setFormData] = useState({
@@ -13,6 +14,26 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     const [showPasswords, setShowPasswords] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    const [isClosing, setIsClosing] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+        } else {
+            setIsMounted(false);
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const triggerCloseAnimation = React.useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 500);
+    }, [onClose]);
 
     React.useEffect(() => {
         if (isOpen) {
@@ -25,7 +46,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !isMounted) return null;
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -60,7 +81,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
             setMessage({ type: 'success', text: 'Password updated successfully' });
 
             setTimeout(() => {
-                onClose();
+                triggerCloseAnimation();
                 setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 setMessage({ type: '', text: '' });
                 setLoading(false);
@@ -75,8 +96,21 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="w-full max-w-md animate-in zoom-in duration-300">
+        <div 
+            className={cn(
+                "fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                isMounted && !isClosing ? "bg-black/60 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
+            )}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !(loading || message.type === 'success')) triggerCloseAnimation();
+            }}
+        >
+            <div 
+                className={cn(
+                    "w-full max-w-md transition-all duration-500 ease-out transform",
+                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
+                )}
+            >
                 <Card className="border-2 border-[var(--color-divider)] rounded-[32px] overflow-hidden shadow-2xl">
                     <CardContent className="p-8">
                         <div className="flex justify-between items-center mb-6">
@@ -87,7 +121,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                 <h2 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Security Update</h2>
                             </div>
                             <button
-                                onClick={() => !(loading || message.type === 'success') && onClose()}
+                                onClick={() => !(loading || message.type === 'success') && triggerCloseAnimation()}
                                 disabled={loading || message.type === 'success'}
                                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -160,7 +194,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                                     <Button
                                         type="button"
                                         variant="secondary"
-                                        onClick={onClose}
+                                        onClick={triggerCloseAnimation}
                                         className="flex-1 h-12 rounded-xl"
                                     >
                                         Cancel
