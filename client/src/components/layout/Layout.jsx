@@ -93,7 +93,7 @@ export function Layout({ children }) {
     const getMobileNavItems = () => {
         if (user?.role === 'admin') {
             return [
-                { icon: Home, path: '/', label: 'Home' },
+                { icon: Home, path: '/dashboard', label: 'Home' },
                 { icon: Users, path: '/admin/users', label: 'Users' },
                 { icon: History, path: '/admin/audit', label: 'Audit' },
                 { icon: Settings, path: '/settings', label: 'Settings' },
@@ -101,14 +101,14 @@ export function Layout({ children }) {
         }
         if (user?.role === 'nutritionist') {
             return [
-                { icon: Home, path: '/', label: 'Home' },
+                { icon: Home, path: '/dashboard', label: 'Home' },
                 { icon: Utensils, path: '/meals', label: 'Meals' },
                 { icon: User, path: '/profile', label: 'Profile' },
                 { icon: Settings, path: '/settings', label: 'Settings' },
             ];
         }
         return [
-            { icon: Home, path: '/', label: 'Home' },
+            { icon: Home, path: '/dashboard', label: 'Home' },
             { icon: Calendar, path: '/calendar', label: 'Calendar' },
             { isFab: true },
             { icon: ChefHat, path: '/ai-kitchen', label: 'AI Kitchen' },

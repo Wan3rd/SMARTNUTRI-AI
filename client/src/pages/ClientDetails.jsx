@@ -2326,13 +2326,13 @@ export default function ClientDetails() {
                                                             animate={{ opacity: 1, x: 0, scale: 1 }}
                                                             exit={{ opacity: 0, x: -10, scale: 0.95 }}
                                                             transition={{ duration: 0.15, ease: 'easeOut' }}
-                                                            className="absolute left-[64px] top-1/2 -translate-y-1/2 hidden lg:flex flex-col min-w-[140px] p-3 rounded-2xl border border-white/40 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-2xl z-50 text-left pointer-events-none"
+                                                            className="absolute left-[64px] top-1/2 -translate-y-1/2 hidden lg:flex flex-col min-w-[140px] p-3 rounded-2xl border border-primary/20 dark:border-divider/30 bg-bg-card/90 backdrop-blur-xl shadow-2xl z-50 text-left pointer-events-none"
                                                         >
                                                             {/* Glow Effect */}
                                                             <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/5 to-transparent rounded-2xl pointer-events-none" />
 
                                                             {/* Caret Arrow */}
-                                                            <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/90 dark:bg-slate-900/90 border-l border-b border-white/40 dark:border-white/10 rotate-45" />
+                                                            <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-bg-card/90 border-l border-b border-primary/20 dark:border-divider/30 rotate-45" />
 
                                                             {/* Detailed Pediatric Metadata */}
                                                             <div className="relative z-10 space-y-1">
@@ -2390,12 +2390,10 @@ export default function ClientDetails() {
                         <div className="flex-1 min-w-0 w-full max-w-full space-y-6">
                             {selectedProfile && (
                                 <Card className="w-[calc(100%+2rem)] sm:w-full -mx-4 sm:mx-0 rounded-none sm:rounded-2xl border-x-0 sm:border-x overflow-hidden">
-                                    <CardHeader>
-                                        <CardTitle className="truncate">Profile: {selectedProfile.child_name}</CardTitle>
-                                    </CardHeader>
+
                                     <CardContent>
                                         {/* --- Grouped Clinical Modules (Pillars) --- */}
-                                        <div className="flex flex-col gap-3.5 mb-4">
+                                        <div className="flex flex-col gap-3.5 mb-4 pt-4 sm:pt-6">
                                             {/* Pillar Switcher */}
                                             <div className="bg-[var(--color-bg-page)] p-1.5 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-[var(--color-divider)] flex items-center justify-between gap-1 overflow-x-auto scrollbar-none pb-1.5 -mx-4 px-4 sm:mx-0 sm:px-1.5 sm:pb-1.5 shadow-inner whitespace-nowrap">
                                                 {[

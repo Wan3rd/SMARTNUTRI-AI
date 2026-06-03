@@ -284,8 +284,8 @@ export default function Calendar() {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-bold text-[var(--color-secondary)]">Nutrition Calendar</h1>
-                    <p className="text-[var(--color-text-muted)] mt-1">Plan and track your meals for the month.</p>
+                    <h1 className="text-xl md:text-3xl font-bold text-[var(--color-secondary)]">Nutrition Calendar</h1>
+                    <p className="text-[var(--color-text-muted)] text-xs md:text-sm mt-1">Plan and track your meals for the month.</p>
                 </div>
                 {!showGuide && (
                     <button 

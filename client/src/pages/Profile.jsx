@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -768,7 +769,7 @@ export default function Profile() {
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="space-y-4 sm:space-y-6 max-w-4xl mx-auto pb-8 sm:pb-12 px-4 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
+                className="space-y-3 sm:space-y-6 max-w-4xl mx-auto pb-8 sm:pb-12 px-1.5 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
             >
 
                 {/* ── HERO BANNER ── */}
@@ -779,7 +780,7 @@ export default function Profile() {
                     <div className="absolute top-[-50%] right-[-10%] w-[350px] h-[350px] rounded-full bg-[var(--color-primary)]/8 blur-[80px] pointer-events-none" />
                     <div className="absolute bottom-[-30%] left-[20%] w-[250px] h-[250px] rounded-full bg-[var(--color-info)]/8 blur-[60px] pointer-events-none" />
 
-                    <div className="relative px-6 sm:px-8 py-8 sm:py-10 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 overflow-hidden">
+                    <div className="relative px-3 sm:px-8 py-6 sm:py-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 overflow-hidden">
                         {/* Avatar with pulse ring */}
                         <div className="relative flex-shrink-0 group">
                             <div className="absolute inset-0 rounded-3xl bg-[var(--color-primary)]/20 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
@@ -901,7 +902,7 @@ export default function Profile() {
                                 )}
                             </div>
                         </CardHeader>
-                        <CardContent className="p-4 sm:p-5 pt-2 space-y-4">
+                        <CardContent className="p-3.5 sm:p-5 pt-2 space-y-4">
                             <InfoField label="Full Name" name="fullName" icon={User} placeholder="Your full name" value={nutri.fullName} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
                             <InfoField label="Specialization" name="specialization" icon={Stethoscope} placeholder="e.g. Pediatric Nutrition" value={nutri.specialization} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
                             <InfoField label="License / PRC ID No." name="licenseNo" icon={BadgeCheck} placeholder="e.g. PRC-0012345" value={nutri.licenseNo} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
@@ -917,7 +918,7 @@ export default function Profile() {
                                 <ShieldCheck size={18} className="text-emerald-500 shrink-0" /> <span className="truncate">Verification</span>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 sm:p-6 space-y-6">
+                        <CardContent className="p-3.5 sm:p-6 space-y-6">
                             <div className="flex items-start gap-4 p-4 bg-[var(--color-primary)]/10 rounded-2xl border border-[var(--color-primary)]/30">
                                 <Shield className="text-[var(--color-primary)] flex-shrink-0 mt-0.5" size={16} />
                                 <div className="space-y-1">
@@ -979,12 +980,12 @@ export default function Profile() {
                     <div className="flex flex-col gap-6">
                         {/* Account Details */}
                         <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-4 sm:p-6">
                                 <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
                                     <User size={18} className="text-blue-500" /> Account Details
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-5 pt-2 space-y-4">
+                            <CardContent className="p-3.5 sm:p-5 pt-2 space-y-4">
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Email Address</label>
                                     <div className="p-3 sm:p-4 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)] text-xs sm:text-sm flex items-center gap-3 overflow-hidden">
@@ -1018,12 +1019,12 @@ export default function Profile() {
 
                         {/* Security & Sign Out */}
                         <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-lg">
-                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)]">
+                            <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-4 sm:p-6">
                                 <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[var(--color-secondary)]">
                                     <Lock size={18} className="text-red-400" /> Security
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 sm:p-6 space-y-4">
+                            <CardContent className="p-3.5 sm:p-6 space-y-4">
                                 <div className="flex items-start gap-3 p-3 sm:p-4 bg-[var(--color-warning)]/10 rounded-2xl border border-[var(--color-warning)]/30">
                                     <Shield size={16} className="text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
                                     <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-warning)] leading-relaxed">
@@ -1043,8 +1044,8 @@ export default function Profile() {
                 </div>
 
                 {/* Image Cropper Modal */}
-                {imageToCrop && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                {imageToCrop && createPortal(
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
                         <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
                             <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-4 sm:p-6">
                                 <CardTitle className="text-[10px] sm:text-sm font-black uppercase tracking-widest">
@@ -1105,7 +1106,8 @@ export default function Profile() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
+                    </div>,
+                    document.body
                 )}
                 <ConfirmDialog
                     {...confirmDialog}
@@ -1280,8 +1282,8 @@ export default function Profile() {
                             </div>
 
                             {/* Image Cropper Modal */}
-                            {imageToCrop && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                            {imageToCrop && createPortal(
+                                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
                                     <Card className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-3xl overflow-hidden border-none shadow-2xl">
                                         <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-divider)] p-6">
                                             <CardTitle className="text-sm font-black uppercase tracking-widest">Adjust Profile Photo</CardTitle>
@@ -1340,7 +1342,8 @@ export default function Profile() {
                                             </div>
                                         </CardContent>
                                     </Card>
-                                </div>
+                                </div>,
+                                document.body
                             )}
                             <div className="w-full min-w-0">
                                 <h1 className={cn("text-lg sm:text-3xl font-black text-[var(--color-text-main)] uppercase tracking-tight break-words", user?.privacy_mode && "privacy-blur")}>{profileData.childName || 'Child Profile'}</h1>
@@ -1923,7 +1926,7 @@ export default function Profile() {
             />
 
             {/* Delete Profile Confirmation Modal */}
-            {isDeleteModalOpen && profileData.id && (
+            {isDeleteModalOpen && profileData.id && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="w-full max-w-md animate-in zoom-in duration-300">
                         <Card className="border border-[var(--color-divider)] rounded-[32px] overflow-hidden shadow-2xl bg-white dark:bg-gray-900">
@@ -1974,7 +1977,8 @@ export default function Profile() {
                             </CardContent>
                         </Card>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
 

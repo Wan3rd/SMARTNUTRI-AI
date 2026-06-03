@@ -107,7 +107,7 @@ export default function AdminAuditLogs() {
                         <div className="h-10 w-10 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center">
                             <History size={24} />
                         </div>
-                        <h1 className="text-4xl font-black text-[var(--color-text-main)] tracking-tight">Compliance Ledger</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-[var(--color-text-main)] tracking-tight">Compliance Ledger</h1>
                     </div>
                     <p className="text-[var(--color-text-muted)] font-medium max-w-lg">Immutable administrative audit trail. Monitor platform authority actions and practitioner verification history.</p>
                 </div>
@@ -126,7 +126,7 @@ export default function AdminAuditLogs() {
                     </button>
                 </div>
             </div>
-
+ 
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-[2rem] shadow-sm">
                 <div className="flex items-center gap-2 px-4 py-2 border-b lg:border-b-0 lg:border-r border-[var(--color-divider)]">
                     <Filter size={14} className="text-[var(--color-text-muted)]" />
@@ -144,11 +144,11 @@ export default function AdminAuditLogs() {
                             <option key={action} value={action} className="dark:bg-[#0f172a]">{action.replace(/_/g, ' ')}</option>
                         ))}
                     </select>
-
-                    <div className="flex items-center gap-2 flex-1 px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)]">
-                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-transparent text-[10px] font-black uppercase outline-none text-[var(--color-text-main)]" />
-                        <span className="text-[10px] text-[var(--color-text-muted)] font-black">TO</span>
-                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-transparent text-[10px] font-black uppercase outline-none text-[var(--color-text-main)]" />
+ 
+                    <div className="flex flex-row items-center gap-2 flex-1 px-2 sm:px-4 py-2.5 lg:py-2 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)] w-full justify-between sm:justify-start">
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-[45%] sm:w-auto bg-transparent text-[10px] font-black uppercase outline-none text-[var(--color-text-main)]" />
+                        <span className="text-[10px] text-[var(--color-text-muted)] font-black shrink-0">TO</span>
+                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-[45%] sm:w-auto bg-transparent text-[10px] font-black uppercase outline-none text-[var(--color-text-main)]" />
                     </div>
                 </div>
 

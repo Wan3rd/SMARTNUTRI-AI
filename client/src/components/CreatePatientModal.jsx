@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import {
@@ -654,10 +655,10 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         }
     };
 
-    return (
+    return createPortal(
         <div 
             className={cn(
-                "fixed inset-0 z-[100] flex items-center justify-center sm:p-6 transition-all duration-500 ease-out",
+                "fixed inset-0 z-[200] flex items-center justify-center sm:p-6 transition-all duration-500 ease-out",
                 isMounted && !isClosing ? "bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" : "bg-slate-900/0 dark:bg-black/0 backdrop-blur-none"
             )}
             onClick={(e) => {
@@ -779,6 +780,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                 onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
                 isDestructive={true}
             />
-        </div>
+        </div>,
+        document.body
     );
 }

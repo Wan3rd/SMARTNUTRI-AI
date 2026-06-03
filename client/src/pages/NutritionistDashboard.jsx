@@ -264,14 +264,14 @@ export default function NutritionistDashboard() {
 
                     <div className="flex flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                         <Button
-                            className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border-none shadow-lg shadow-emerald-500/10 font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                            className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border-none shadow-lg shadow-emerald-500/10 font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] h-10 sm:h-12 px-1.5 xs:px-3 sm:px-6 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsModalOpen(true)}
                         >
                             <UserPlus size={14} className="xs:w-4 xs:h-4" />
                             <span className="whitespace-nowrap">Link Parent</span>
                         </Button>
                         <Button
-                            className="bg-[var(--color-bg-card)] text-[var(--color-info)] hover:bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-sm hover:shadow-md font-black uppercase tracking-widest text-[8px] xs:text-[10px] sm:text-[10px] h-12 sm:h-12 px-2 xs:px-4 sm:px-8 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-col xs:flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                            className="bg-[var(--color-bg-card)] text-[var(--color-info)] hover:bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-sm hover:shadow-md font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] h-10 sm:h-12 px-1.5 xs:px-3 sm:px-6 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsProfilingOpen(true)}
                         >
                             <Stethoscope size={14} className="xs:w-4 xs:h-4" />

@@ -279,24 +279,30 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                                 }}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 relative group',
+                                        'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium relative group transition-colors duration-200',
                                         isActive
-                                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary)]/5 hover:text-[var(--color-primary)]'
+                                            ? 'text-[var(--color-primary)]'
+                                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5'
                                     )
                                 }
                             >
                                 {({ isActive }) => (
                                     <>
-                                        <item.icon size={18} className="transition-transform group-hover:scale-110" />
-                                        <span className="flex-1 font-bold">{item.label}</span>
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeSidebarLink"
+                                                className="absolute inset-0 bg-[var(--color-primary)]/10 rounded-xl"
+                                                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                            >
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--color-primary)] rounded-r-full" />
+                                            </motion.div>
+                                        )}
+                                        <item.icon size={18} className="relative z-10 transition-transform group-hover:scale-110" />
+                                        <span className="relative z-10 flex-1 font-bold">{item.label}</span>
                                         {item.label === 'Meal History' && newReviewsCount > 0 && (
-                                            <span className="flex items-center justify-center min-w-[18px] h-[18px] bg-emerald-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-emerald-500/20 animate-pulse">
+                                            <span className="relative z-10 flex items-center justify-center min-w-[18px] h-[18px] bg-emerald-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-emerald-500/20 animate-pulse">
                                                 {newReviewsCount}
                                             </span>
-                                        )}
-                                        {isActive && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--color-primary)] rounded-r-full" />
                                         )}
                                     </>
                                 )}

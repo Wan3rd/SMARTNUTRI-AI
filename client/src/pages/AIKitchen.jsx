@@ -306,7 +306,7 @@ export default function AIKitchen() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-0 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 relative">
             {/* High-DPI PDF Generation Premium Overlay Spinner */}
             {exportingPDF && (
                 <div className="fixed inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-md z-50 flex items-center justify-center animate-in fade-in duration-300">

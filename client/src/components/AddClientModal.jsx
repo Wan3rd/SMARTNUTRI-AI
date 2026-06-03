@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
 import { X, UserPlus, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
@@ -62,10 +63,10 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
         }
     };
 
-    return (
+    return createPortal(
         <div 
             className={cn(
-                "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                "fixed inset-0 z-[150] flex items-center justify-center p-4 transition-all duration-500 ease-out",
                 isMounted && !isClosing ? "bg-black/70 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
             )}
             onClick={(e) => {
@@ -143,6 +144,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }) {
                     </form>
                 </CardContent>
             </Card>
-        </div>
+        </div>,
+        document.body
     );
 }

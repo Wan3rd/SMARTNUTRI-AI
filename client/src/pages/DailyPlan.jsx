@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
@@ -441,8 +442,8 @@ export default function DailyPlan() {
             </div>
 
             {/* Static Swap Dictionary Modal (Pop-up from bottom) */}
-            {activeSwap && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+            {activeSwap && createPortal(
+                <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-[var(--color-bg-card)] w-full max-w-md rounded-[2rem] border-2 border-[var(--color-divider)] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
                         <div className="p-6 border-b-2 border-[var(--color-divider)] flex items-center justify-between bg-gray-50 dark:bg-white/5">
                             <div className="flex items-center gap-3">
@@ -472,7 +473,8 @@ export default function DailyPlan() {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

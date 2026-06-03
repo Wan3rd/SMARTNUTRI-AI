@@ -262,11 +262,11 @@ export default function AdminUsersList() {
                         <div className="h-10 w-10 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center">
                             <Users size={24} />
                         </div>
-                        <h1 className="text-4xl font-black text-[var(--color-text-main)] tracking-tight">User Directory</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-[var(--color-text-main)] tracking-tight">User Directory</h1>
                     </div>
                     <p className="text-[var(--color-text-muted)] font-medium">Complete administrative oversight of all platform accounts.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <button onClick={exportCSV} className="h-12 px-5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm shrink-0">
                         <Download size={14} /> Export CSV
                     </button>
