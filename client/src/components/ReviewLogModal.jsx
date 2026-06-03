@@ -71,12 +71,30 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [isOpen]);
 
     const isDirty = React.useCallback(() => {
-        if (!log) return false;
+        if (!log || !editedAnalysis) return false;
         const initialReview = log.nutritionist_review?.comment || '';
         const initialAnalysis = JSON.stringify(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
         const currentAnalysis = JSON.stringify(editedAnalysis);
 
-        return review !== initialReview || initialAnalysis !== currentAnalysis || editedWater !== (log.water_ml || 0);
+        const isReviewDirty = review !== initialReview;
+        const isAnalysisDirty = initialAnalysis !== currentAnalysis;
+        const isWaterDirty = editedWater !== (log.water_ml || 0);
+
+        console.log('isDirty Debug:', {
+            isReviewDirty,
+            review,
+            initialReview,
+            isAnalysisDirty,
+            currentAnalysisLength: currentAnalysis?.length,
+            initialAnalysisLength: initialAnalysis?.length,
+            currentAnalysis: currentAnalysis,
+            initialAnalysis: initialAnalysis,
+            isWaterDirty,
+            editedWater,
+            logWater: log.water_ml
+        });
+
+        return isReviewDirty || isAnalysisDirty || isWaterDirty;
     }, [log, editedAnalysis, review, editedWater]);
 
     const handleDismiss = React.useCallback(() => {
@@ -122,7 +140,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, previewImage]);
+    }, [onClose, previewImage, handleDismiss]);
 
     // Prevent background scrolling when modal is open
     useEffect(() => {
@@ -154,13 +172,13 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [isOpen]);
 
     useEffect(() => {
-        if (log) {
+        if (log && isOpen) {
             setReview(log.nutritionist_review?.comment || '');
             setEditedAnalysis(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
             setEditedWater(log.water_ml || 0);
             setNotif({ show: false, message: '', type: 'success' });
         }
-    }, [log]);
+    }, [log, isOpen]);
 
     const macros = editedAnalysis?.macros_est || {};
     const allergies = log?.profile?.allergies || [];
@@ -942,7 +960,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     title={confirmDialog.title}
                     message={confirmDialog.message}
                     onConfirm={confirmDialog.onConfirm}
-                    onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                    onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
                     isDestructive={true}
                 />
             </div>
