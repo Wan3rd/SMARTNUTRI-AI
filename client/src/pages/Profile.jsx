@@ -572,8 +572,15 @@ export default function Profile() {
     };
 
     const handleAddVaccine = async () => {
-        if (!newVaccine.typeId) return;
-        if (newVaccine.date && new Date(newVaccine.date) > new Date()) {
+        if (!newVaccine.typeId) {
+            showNotification('Please select a vaccine type', 'error');
+            return;
+        }
+        if (!newVaccine.date) {
+            showNotification('Please select a vaccination date', 'error');
+            return;
+        }
+        if (new Date(newVaccine.date) > new Date()) {
             showNotification('Vaccination date cannot be in the future', 'error');
             return;
         }

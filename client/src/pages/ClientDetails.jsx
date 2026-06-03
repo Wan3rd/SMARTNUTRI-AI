@@ -1148,6 +1148,7 @@ export default function ClientDetails() {
             setSelectedProfile(res.data);
             setProfiles(prev => prev.map(p => p.id === res.data.id ? res.data : p));
             setIsClinicalEditing(false);
+            setIsAddingVaccine(false);
             showNotif("Clinical profile updated successfully!");
         } catch (err) {
             console.error("Failed to update clinical profile", err);
@@ -1306,8 +1307,15 @@ export default function ClientDetails() {
     };
 
     const handleAddVaccine = async () => {
-        if (!newVaccine.typeId) return;
-        if (newVaccine.date && new Date(newVaccine.date) > new Date()) {
+        if (!newVaccine.typeId) {
+            showNotif("Please select a vaccine type.", "error");
+            return;
+        }
+        if (!newVaccine.date) {
+            showNotif("Please select a vaccination date.", "error");
+            return;
+        }
+        if (new Date(newVaccine.date) > new Date()) {
             showNotif("Vaccination date cannot be in the future.", "error");
             return;
         }
@@ -2290,6 +2298,8 @@ export default function ClientDetails() {
                                                          setGrowthLogs([]);
                                                          setChildVaccinations([]);
                                                          setLogsLoading(true);
+                                                         setIsClinicalEditing(false);
+                                                         setIsAddingVaccine(false);
                                                      }
                                                  }}
                                                 onMouseEnter={() => setHoveredProfileId(profile.id)}
@@ -2917,6 +2927,7 @@ export default function ClientDetails() {
                                                                                 variant="ghost"
                                                                                 onClick={() => {
                                                                                     setIsClinicalEditing(false);
+                                                                                    setIsAddingVaccine(false);
                                                                                     if (selectedProfile) {
                                                                                         setClinicalForm({
                                                                                             child_name: selectedProfile.child_name || '',
