@@ -29,6 +29,37 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
         setIsMounted(true);
     }, []);
 
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartY = React.useRef(0);
+
+    const handleTouchStart = React.useCallback((e) => {
+        if (window.innerWidth >= 640) return;
+        dragStartY.current = e.touches[0].clientY;
+        setIsDragging(true);
+    }, []);
+
+    const handleTouchMove = React.useCallback((e) => {
+        if (!isDragging) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - dragStartY.current;
+        if (deltaY > 0) {
+            setDragY(deltaY);
+        } else {
+            setDragY(0);
+        }
+    }, [isDragging]);
+
+    const handleTouchEnd = React.useCallback(() => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        if (dragY > 120) {
+            handleClose();
+        } else {
+            setDragY(0);
+        }
+    }, [isDragging, dragY, handleClose]);
+
     // Editable state for parent resubmission
     const [isEditing, setIsEditing] = useState(false);
     const [editedConsumption, setEditedConsumption] = useState(log?.consumption_percent ?? 100);
@@ -216,20 +247,30 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const complianceBadge = getComplianceBadge(log, rules);
     const ComplianceIcon = complianceBadge.icon;
 
+    const dragProgress = Math.min(dragY / 300, 1);
+    const backdropOpacity = isMounted && !isClosing ? (1 - dragProgress) : 0;
+
     return (
         <>
         <div 
-            className={cn(
-                "fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 transition-all duration-500 ease-out",
-                isMounted && !isClosing ? "bg-black/60 backdrop-blur-md" : "bg-black/0 backdrop-blur-none"
-            )}
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
+            style={{
+                backgroundColor: `rgba(0, 0, 0, ${backdropOpacity * 0.6})`,
+                backdropFilter: `blur(${backdropOpacity * 12}px)`,
+                WebkitBackdropFilter: `blur(${backdropOpacity * 12}px)`,
+                transition: isDragging ? 'none' : 'background-color 0.4s ease-out, backdrop-filter 0.4s ease-out, -webkit-backdrop-filter 0.4s ease-out'
+            }}
             onClick={handleClose}
         >
             <div 
-                className={cn(
-                    "bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transition-all duration-500 ease-out transform",
-                    isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
-                )}
+                className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transform"
+                style={{
+                    transform: isDragging
+                        ? `translateY(${dragY}px)`
+                        : (isMounted && !isClosing ? 'translateY(0)' : 'translateY(100%)'),
+                    opacity: isClosing ? 0 : 1,
+                    transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out'
+                }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {(isResubmitting || isDeleting) && (
@@ -268,8 +309,22 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         </div>
                     </div>
                 )}
+                {/* Mobile Drag Handle */}
+                <div 
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className="w-full flex justify-center py-2.5 sm:hidden bg-[var(--color-bg-card)] cursor-grab active:cursor-grabbing flex-shrink-0 select-none"
+                >
+                    <div className="w-12 h-1.5 bg-gray-300 dark:bg-zinc-700 rounded-full" />
+                </div>
                 {/* Header */}
-                <div className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10">
+                <div 
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10 select-none cursor-grab active:cursor-grabbing"
+                >
                     <div>
                         <h2 className="text-base sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
                         <p className="text-[8px] xs:text-[9px] sm:text-sm font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5 sm:mt-1 flex flex-wrap items-center gap-1 sm:gap-2 opacity-70">
@@ -284,7 +339,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                             {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-xl sm:rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center p-0">
+                    <Button variant="ghost" size="icon" onClick={handleClose} onTouchStart={(e) => e.stopPropagation()} className="rounded-xl sm:rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center p-0">
                         <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                 </div>

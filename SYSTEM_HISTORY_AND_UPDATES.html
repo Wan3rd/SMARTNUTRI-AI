@@ -502,6 +502,7 @@
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
                             <li><span class="tech-tag">Client</span><strong>Portal-based Overlay Mounts:</strong> Ported the <code>AddChildModal.jsx</code> layout to mount at the root of the document body using React Portals (<code>createPortal</code>). This completely bypasses layout transitions/stacking contexts, ensuring the overlay properly stacks on top of the fixed header and mobile navigation bars.</li>
                             <li><span class="tech-tag">Client</span><strong>Mobile Layout Isolation:</strong> Preserved full-screen sizing on mobile devices while scaling down to standard dialog layouts on larger screens.</li>
+                            <li><span class="tech-tag">Client</span><strong>Drag-to-Dismiss Meal Details:</strong> Added interactive touch gesture tracking to <code>MealDetailModal.jsx</code> on mobile. Caregivers can now drag the modal downwards from the header or a dedicated visual handle to close it with dynamic backdrop opacity/blur scaling, snapping back smoothly if the gesture threshold is not met.</li>
                         </ul>
                     </div>
                 </div>
