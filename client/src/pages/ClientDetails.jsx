@@ -5509,7 +5509,7 @@ export default function ClientDetails() {
                     title="Delete Template"
                     message={`Are you sure you want to delete the template "${templateToDelete?.template_name}"?`}
                     onConfirm={executeDeleteTemplate}
-                    onCancel={() => setTemplateToDelete(null)}
+                    onClose={() => setTemplateToDelete(null)}
                 />
 
                 {/* Edit Meal Modal */}
