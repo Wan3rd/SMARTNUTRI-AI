@@ -7,7 +7,11 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      babel: {
+        compact: false
+      }
+    }),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
