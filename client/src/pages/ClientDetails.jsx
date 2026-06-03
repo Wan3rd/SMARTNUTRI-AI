@@ -2248,20 +2248,54 @@ export default function ClientDetails() {
                                         const pendingCount = allClientPendingLogs.filter(l => l.profile_id === profile.id).length;
                                         const isSelected = selectedProfile?.id === profile.id;
                                         return (
-                                            <div
+                                            <motion.div
                                                 key={profile.id}
-                                                onClick={() => { setSelectedProfile(profile); setActiveTab('overview'); }}
+                                                onClick={() => {
+                                                     if (selectedProfile?.id !== profile.id) {
+                                                         setSelectedProfile(profile);
+                                                         setActiveTab('overview');
+                                                         setLogs([]);
+                                                         setGrowthLogs([]);
+                                                         setChildVaccinations([]);
+                                                         setLogsLoading(true);
+                                                     }
+                                                 }}
                                                 onMouseEnter={() => setHoveredProfileId(profile.id)}
                                                 onMouseLeave={() => setHoveredProfileId(null)}
+                                                whileHover={{ scale: 1.03 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                animate={{ 
+                                                     borderRadius: isSidebarMinimized ? "26px" : "16px" 
+                                                }}
+                                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                                 className={cn(
-                                                    "h-[52px] rounded-2xl cursor-pointer transition-all border-2 relative shrink-0 snap-start flex items-center",
+                                                    "h-[52px] cursor-pointer transition-colors border-2 relative shrink-0 snap-start flex items-center z-10",
                                                     isSelected
-                                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20'
-                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50',
+                                                        ? 'bg-[var(--color-primary)]/5 border-[var(--color-primary)]/30 dark:bg-emerald-500/5 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-bg-card)]/80',
                                                     "w-[52px] sm:w-[200px] justify-center sm:justify-start px-0 sm:px-3 gap-0 sm:gap-2.5",
                                                     isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center lg:gap-0" : "lg:w-full"
                                                 )}
                                             >
+                                                {isSelected && (
+                                                    <motion.div
+                                                        layoutId="activeRosterProfileIndicator"
+                                                        className={cn(
+                                                            "absolute bg-[var(--color-primary)] rounded-full z-20 hidden lg:block",
+                                                            isSidebarMinimized 
+                                                                ? "left-0 top-1/2 -translate-y-1/2 w-[4px] h-6" 
+                                                                : "left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-6"
+                                                        )}
+                                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                    />
+                                                )}
+                                                {isSelected && (
+                                                    <motion.div
+                                                        layoutId="activeRosterProfileIndicatorMobile"
+                                                        className="absolute bottom-1 left-3 right-3 h-[3px] bg-[var(--color-primary)] rounded-full z-20 lg:hidden"
+                                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                    />
+                                                )}
                                                 {pendingCount > 0 && (
                                                     <div className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
                                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
@@ -2277,21 +2311,21 @@ export default function ClientDetails() {
                                                     <div className={cn(
                                                         "h-9 w-9 rounded-full overflow-hidden flex-shrink-0 border-2 transition-all duration-300",
                                                         isSelected
-                                                            ? 'border-transparent ring-2 ring-white/80 dark:ring-emerald-400/80 ring-offset-1 ring-offset-[var(--color-primary)] dark:ring-offset-slate-900 scale-105 shadow-md bg-white/20'
+                                                            ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30 ring-offset-1 ring-offset-[var(--color-bg-card)] dark:ring-offset-slate-900 scale-105 shadow-md bg-white/20'
                                                             : 'border-[var(--color-divider)] bg-white/10'
                                                     )}>
                                                         {profile.profile_image_url ? (
                                                             <img src={profile.profile_image_url} alt={profile.child_name} className="h-full w-full object-cover" />
                                                         ) : (
                                                             <div className="h-full w-full flex items-center justify-center">
-                                                                <User size={18} className={isSelected ? 'text-white' : 'text-[var(--color-text-main)]'} />
+                                                                <User size={18} className={isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'} />
                                                             </div>
                                                         )}
                                                     </div>
 
                                                     {/* Active Living Pulse Ring Indicator */}
                                                     {isSelected && (
-                                                        <div className="absolute inset-0 rounded-full ring-[3px] ring-white/30 dark:ring-emerald-400/30 animate-pulse pointer-events-none -m-0.5" />
+                                                        <div className="absolute inset-0 rounded-full ring-[3px] ring-[var(--color-primary)]/20 animate-pulse pointer-events-none -m-0.5" />
                                                     )}
                                                 </div>
                                                 <AnimatePresence initial={false}>
@@ -2303,14 +2337,14 @@ export default function ClientDetails() {
                                                             transition={{ duration: 0.25, ease: 'easeInOut' }}
                                                             className="min-w-0 flex-1 flex-col justify-center hidden sm:flex overflow-hidden"
                                                         >
-                                                            <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
+                                                            <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]')}>
                                                                 {profile.child_name}
                                                             </div>
                                                             <div className="flex items-center justify-between">
-                                                                <div className={cn("text-[8px] font-bold uppercase tracking-wider whitespace-nowrap", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
+                                                                <div className={cn("text-[8px] font-bold uppercase tracking-wider whitespace-nowrap", isSelected ? 'text-[var(--color-primary)]/75' : 'text-[var(--color-text-muted)]')}>
                                                                     {getAgeSafe(profile.date_of_birth)} • {profile.gender.charAt(0)}
                                                                 </div>
-                                                                <div className={cn("text-[8px] font-black whitespace-nowrap", isSelected ? 'text-white/90' : 'text-[var(--color-primary)]')}>
+                                                                <div className={cn("text-[8px] font-black whitespace-nowrap", isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary)]')}>
                                                                     {profile.weight_kg || '--'}KG
                                                                 </div>
                                                             </div>
@@ -2336,7 +2370,7 @@ export default function ClientDetails() {
 
                                                             {/* Detailed Pediatric Metadata */}
                                                             <div className="relative z-10 space-y-1">
-                                                                <p className="font-black text-xs uppercase tracking-tight text-[var(--color-text-main)] truncate leading-none">
+                                                                 <p className="font-black text-xs uppercase tracking-tight text-[var(--color-text-main)] truncate leading-none">
                                                                     {profile.child_name}
                                                                 </p>
                                                                 <div className="flex items-center gap-1.5 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-none pt-0.5">
@@ -2353,16 +2387,18 @@ export default function ClientDetails() {
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
-                                            </div>
+                                            </motion.div>
                                         );
                                     })}
-                                    <button
+                                    <motion.button
                                         onClick={() => setIsAddProfileOpen(true)}
                                         className={cn(
-                                            "shrink-0 h-[52px] rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-all group flex items-center justify-center snap-start",
+                                            "shrink-0 h-[52px] border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-colors group flex items-center justify-center snap-start",
                                             "w-[52px] sm:w-[200px] gap-0 sm:gap-3",
                                             isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:gap-0" : "lg:w-full"
                                         )}
+                                        animate={{ borderRadius: isSidebarMinimized ? "26px" : "16px" }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                         title={isSidebarMinimized ? "Add New Profile" : undefined}
                                     >
                                         <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform shrink-0">
@@ -2381,7 +2417,7 @@ export default function ClientDetails() {
                                                 </motion.span>
                                             )}
                                         </AnimatePresence>
-                                    </button>
+                                    </motion.button>
                                 </div>
                             </div>
                         </div>
@@ -2415,26 +2451,27 @@ export default function ClientDetails() {
                                                             key={group.id}
                                                             onClick={() => setTab(group.tabs[0])}
                                                             className={cn(
-                                                                "flex-shrink-0 min-w-[110px] sm:min-w-0 sm:flex-grow sm:flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-[1.5rem] transition-all relative font-black uppercase tracking-tight sm:tracking-widest text-[9px] sm:text-[10px]",
+                                                                "flex-shrink-0 min-w-[110px] sm:min-w-0 sm:flex-grow sm:flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-[1.5rem] transition-colors relative font-black uppercase tracking-tight sm:tracking-widest text-[9px] sm:text-[10px] z-10",
                                                                 isGroupActive
-                                                                    ? "bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-xl border border-[var(--color-primary)]/10"
+                                                                    ? "text-[var(--color-primary)]"
                                                                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                                                             )}
                                                         >
-                                                            <GroupIcon size={14} className={isGroupActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"} />
-                                                            <span className="hidden sm:inline">{group.label}</span>
-                                                            <span className="sm:hidden">{group.label.split(' ')[0]}</span>
+                                                            <GroupIcon size={14} className={cn("relative z-10 transition-colors", isGroupActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]")} />
+                                                            <span className="hidden sm:inline relative z-10">{group.label}</span>
+                                                            <span className="sm:hidden relative z-10">{group.label.split(' ')[0]}</span>
 
                                                             {groupBadge > 0 && (
-                                                                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[7px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--color-bg-page)] animate-pulse shadow-md">
+                                                                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[7px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--color-bg-page)] animate-pulse shadow-md z-20">
                                                                     {groupBadge}
                                                                 </span>
                                                             )}
 
                                                             {isGroupActive && (
                                                                 <motion.div
-                                                                    layoutId="pillar-bg"
-                                                                    className="absolute inset-0 bg-[var(--color-primary)]/5 rounded-[1.5rem] z-[-1]"
+                                                                    layoutId="activePillarTab"
+                                                                    className="absolute inset-0 bg-[var(--color-bg-card)] border border-[var(--color-primary)]/10 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-[1.4rem] z-[1]"
+                                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
                                                                 />
                                                             )}
                                                         </button>
@@ -2478,16 +2515,23 @@ export default function ClientDetails() {
                                                                 key={tab.id}
                                                                 onClick={() => setTab(tab.id)}
                                                                 className={cn(
-                                                                    "px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-sm flex-shrink-0",
+                                                                    "px-4 py-2 rounded-full border-2 transition-colors flex items-center gap-2 whitespace-nowrap font-black uppercase text-[8px] sm:text-[9px] tracking-widest flex-shrink-0 relative z-10",
                                                                     isTabActive
-                                                                        ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-emerald-500/20"
+                                                                        ? "text-white border-transparent shadow-md shadow-emerald-500/10"
                                                                         : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50"
                                                                 )}
                                                             >
-                                                                <TabIcon size={12} />
-                                                                {tab.label}
+                                                                <TabIcon size={12} className="relative z-10" />
+                                                                <span className="relative z-10">{tab.label}</span>
                                                                 {isPending && (
-                                                                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(251,146,60,0.8)]" />
+                                                                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(251,146,60,0.8)] relative z-10" />
+                                                                )}
+                                                                {isTabActive && (
+                                                                    <motion.div
+                                                                        layoutId="activeSubTabBg"
+                                                                        className="absolute inset-0 bg-[var(--color-primary)] rounded-full z-[-1] shadow-lg shadow-emerald-500/20"
+                                                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                                    />
                                                                 )}
                                                             </button>
                                                         );
