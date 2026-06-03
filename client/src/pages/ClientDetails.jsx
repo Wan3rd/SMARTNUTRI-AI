@@ -804,30 +804,62 @@ export default function ClientDetails() {
         const heightM = selectedProfile.height_cm / 100;
         const bmi = (selectedProfile.weight_kg / (heightM * heightM)).toFixed(1);
 
+        const latestGrowth = growthLogs && growthLogs.length > 0 ? growthLogs[growthLogs.length - 1] : null;
+        const clinicalStatus = latestGrowth?.clinical_analysis?.weight?.status;
+
         let status = 'Healthy Weight';
         let color = 'text-emerald-700 dark:text-emerald-300';
         let bgColor = 'bg-emerald-50 dark:bg-emerald-500/10';
         let borderColor = 'border-emerald-200 dark:border-emerald-500/20';
 
-        if (bmi < 18.5) {
-            status = 'Underweight';
-            color = 'text-amber-700 dark:text-amber-300';
-            bgColor = 'bg-amber-50 dark:bg-amber-500/10';
-            borderColor = 'border-amber-200 dark:border-amber-500/20';
-        } else if (bmi >= 25 && bmi < 30) {
-            status = 'Overweight';
-            color = 'text-orange-700 dark:text-orange-300';
-            bgColor = 'bg-orange-50 dark:bg-orange-500/10';
-            borderColor = 'border-orange-200 dark:border-orange-500/20';
-        } else if (bmi >= 30) {
-            status = 'Obese';
-            color = 'text-red-700 dark:text-red-300';
-            bgColor = 'bg-red-50 dark:bg-red-500/10';
-            borderColor = 'border-red-200 dark:border-red-500/20';
+        if (clinicalStatus) {
+            if (clinicalStatus === 'Normal') {
+                status = 'Healthy Weight';
+                color = 'text-emerald-700 dark:text-emerald-300';
+                bgColor = 'bg-emerald-50 dark:bg-emerald-500/10';
+                borderColor = 'border-emerald-200 dark:border-emerald-500/20';
+            } else if (clinicalStatus === 'Underweight') {
+                status = 'Underweight';
+                color = 'text-amber-700 dark:text-amber-300';
+                bgColor = 'bg-amber-50 dark:bg-amber-500/10';
+                borderColor = 'border-amber-200 dark:border-amber-500/20';
+            } else if (clinicalStatus === 'Severely Underweight') {
+                status = 'Severely Underweight';
+                color = 'text-rose-700 dark:text-rose-300';
+                bgColor = 'bg-rose-50 dark:bg-rose-500/10';
+                borderColor = 'border-rose-200 dark:border-rose-500/20';
+            } else if (clinicalStatus === 'Overweight') {
+                status = 'Overweight';
+                color = 'text-orange-700 dark:text-orange-300';
+                bgColor = 'bg-orange-50 dark:bg-orange-500/10';
+                borderColor = 'border-orange-200 dark:border-orange-500/20';
+            } else if (clinicalStatus === 'Obese') {
+                status = 'Obese';
+                color = 'text-red-700 dark:text-red-300';
+                bgColor = 'bg-red-50 dark:bg-red-500/10';
+                borderColor = 'border-red-200 dark:border-red-500/20';
+            }
+        } else {
+            if (bmi < 18.5) {
+                status = 'Underweight';
+                color = 'text-amber-700 dark:text-amber-300';
+                bgColor = 'bg-amber-50 dark:bg-amber-500/10';
+                borderColor = 'border-amber-200 dark:border-amber-500/20';
+            } else if (bmi >= 25 && bmi < 30) {
+                status = 'Overweight';
+                color = 'text-orange-700 dark:text-orange-300';
+                bgColor = 'bg-orange-50 dark:bg-orange-500/10';
+                borderColor = 'border-orange-200 dark:border-orange-500/20';
+            } else if (bmi >= 30) {
+                status = 'Obese';
+                color = 'text-red-700 dark:text-red-300';
+                bgColor = 'bg-red-50 dark:bg-red-500/10';
+                borderColor = 'border-red-200 dark:border-red-500/20';
+            }
         }
 
         return { bmi, status, color, bgColor, borderColor };
-    }, [selectedProfile]);
+    }, [selectedProfile, growthLogs]);
 
     const growthDeltas = useMemo(() => {
         if (!growthLogs || growthLogs.length < 2) return { weight: '0.0', height: '0.0', weightVel: '0.00', heightVel: '0.00' };

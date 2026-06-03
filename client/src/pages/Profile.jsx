@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
@@ -76,8 +76,25 @@ const calculateBMI = (weight, height) => {
     return bmi.toFixed(1);
 };
 
-const getBMIStatus = (bmi) => {
+const getBMIStatus = (bmi, clinicalStatus = null) => {
     if (!bmi) return null;
+    if (clinicalStatus) {
+        if (clinicalStatus === 'Normal') {
+            return { label: 'Normal Weight', color: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border border-[var(--color-success)]/30' };
+        }
+        if (clinicalStatus === 'Underweight') {
+            return { label: 'Underweight', color: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border border-[var(--color-info)]/30' };
+        }
+        if (clinicalStatus === 'Severely Underweight') {
+            return { label: 'Severely Underweight', color: 'text-[var(--color-danger)] bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30' };
+        }
+        if (clinicalStatus === 'Overweight') {
+            return { label: 'Overweight', color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30' };
+        }
+        if (clinicalStatus === 'Obese') {
+            return { label: 'Obese', color: 'text-[var(--color-danger)] bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30' };
+        }
+    }
     if (bmi < 18.5) return { label: 'Underweight', color: 'text-[var(--color-info)] bg-[var(--color-info)]/10 border border-[var(--color-info)]/30' };
     if (bmi < 25) return { label: 'Normal Weight', color: 'text-[var(--color-success)] bg-[var(--color-success)]/10 border border-[var(--color-success)]/30' };
     if (bmi < 30) return { label: 'Overweight', color: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30' };
@@ -186,6 +203,7 @@ export default function Profile() {
     });
 
     const [childVaccinations, setChildVaccinations] = useState([]);
+    const [growthLogs, setGrowthLogs] = useState([]);
     const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
     const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
@@ -207,6 +225,35 @@ export default function Profile() {
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [cropTarget, setCropTarget] = useState('child'); // 'parent' or 'child' or 'nutritionist' or 'license'
+
+    const bmiData = useMemo(() => {
+        const h = user?.measurement_system === 'imperial' 
+            ? toMetricHeight(profileData.heightFeet, profileData.heightInches) 
+            : parseFloat(profileData.height);
+        const w = user?.measurement_system === 'imperial' 
+            ? toMetricWeight(profileData.weight) 
+            : parseFloat(profileData.weight);
+
+        if (!h || !w || isNaN(h) || isNaN(w)) return null;
+
+        const bmiVal = calculateBMI(w, h);
+
+        const latestGrowth = growthLogs && growthLogs.length > 0 ? growthLogs[growthLogs.length - 1] : null;
+        
+        // Match latest logged height & weight (allow small float differences due to conversions)
+        const isMatchingLatest = latestGrowth && 
+            Math.abs(latestGrowth.weight_kg - w) < 0.1 &&
+            Math.abs(latestGrowth.height_cm - h) < 0.1;
+
+        const clinicalStatus = isMatchingLatest ? latestGrowth?.clinical_analysis?.weight?.status : null;
+        const statusObj = getBMIStatus(bmiVal, clinicalStatus);
+
+        return {
+            bmi: bmiVal,
+            status: statusObj?.label || 'Healthy Weight',
+            color: statusObj?.color || ''
+        };
+    }, [profileData.height, profileData.heightFeet, profileData.heightInches, profileData.weight, growthLogs, user?.measurement_system]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -415,6 +462,15 @@ export default function Profile() {
         }
     };
 
+    const fetchGrowthLogs = async (profileId) => {
+        try {
+            const res = await api.get(`/profiles/${profileId}/growth`);
+            setGrowthLogs(res.data);
+        } catch (err) {
+            console.error("Error fetching growth logs", err);
+        }
+    };
+
     const fetchProfile = async (specificProfileId = null) => {
         try {
             const res = await api.get('/profiles');
@@ -434,6 +490,8 @@ export default function Profile() {
                     : (profileData.id ? (res.data.find(p => p.id === profileData.id) || res.data[0]) : res.data[0]);
 
                 if (!profile) return;
+
+                fetchGrowthLogs(profile.id);
 
                 // Calculate age from DOB
                 let age = '';
@@ -745,6 +803,8 @@ export default function Profile() {
 
             showNotification('Child clinical profile updated', 'success');
             setIsEditing(false);
+            await refreshProfiles();
+            await fetchProfile(profileData.id);
         } catch (err) {
             console.error(err);
             showNotification(err.response?.data?.message || 'Failed to update clinical profile data', 'error');
@@ -1518,25 +1578,16 @@ export default function Profile() {
                                     </div>
 
                                     {/* Real-time BMI Display */}
-                                    {profileData.height && profileData.weight && (
+                                    {bmiData && (
                                         <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-page)]/50 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-3 sm:gap-4">
                                             <div className="text-center sm:text-left">
                                                 <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Calculated BMI</p>
                                                 <div className="flex items-center justify-center sm:justify-start gap-3">
                                                     <span className="text-xl sm:text-3xl font-black text-[var(--color-text-main)]">
-                                                        {calculateBMI(
-                                                            user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                            user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                                        )}
+                                                        {bmiData.bmi}
                                                     </span>
-                                                    <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${getBMIStatus(calculateBMI(
-                                                        user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                        user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                                    )).color}`}>
-                                                        {getBMIStatus(calculateBMI(
-                                                            user?.measurement_system === 'imperial' ? toMetricWeight(profileData.weight) : profileData.weight,
-                                                            user?.measurement_system === 'imperial' ? toMetricHeight(profileData.heightFeet, profileData.heightInches) : profileData.height
-                                                        )).label}
+                                                    <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border-2 ${bmiData.color}`}>
+                                                        {bmiData.status}
                                                     </span>
                                                 </div>
                                             </div>
