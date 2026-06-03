@@ -256,22 +256,22 @@ export default function MealHistory() {
 
     const getComplianceBadge = (status) => {
         const badges = {
-            compliant: { color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300', icon: CheckCircle2, label: 'Compliant' },
-            flagged: { color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300', icon: AlertCircle, label: 'Flagged' },
-            pending: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300', icon: Clock, label: 'Pending' }
+            compliant: { color: 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20', icon: CheckCircle2, label: 'Compliant' },
+            flagged: { color: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20', icon: AlertCircle, label: 'Flagged' },
+            pending: { color: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20', icon: Clock, label: 'Pending' }
         };
         return badges[status] || badges.pending;
     };
 
     const getStatusBadge = (status) => {
         if (status === 'verified') {
-            return { color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300', label: 'Clinically Verified' };
+            return { color: 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20', label: 'Clinically Verified' };
         } else if (status === 'reviewed') {
-            return { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', label: 'Reviewed' };
+            return { color: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20', label: 'Reviewed' };
         } else if (status === 'rejected') {
-            return { color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50', label: 'Correction Needed' };
+            return { color: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20', label: 'Correction Needed' };
         } else {
-            return { color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', label: 'Awaiting Review' };
+            return { color: 'bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] border border-[var(--color-divider)]', label: 'Awaiting Review' };
         }
     };
 
@@ -385,29 +385,29 @@ export default function MealHistory() {
                             
                             <div className="space-y-3 pt-1.5 border-t border-[var(--color-divider)] border-dashed">
                                 <div className="flex items-start gap-2.5">
-                                    <div className="h-5 w-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    <div className="h-5 w-5 rounded-full bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 flex items-center justify-center shrink-0 text-[var(--color-success)]">
+                                        <span className="w-2 h-2 rounded-full bg-[var(--color-success)]" />
                                     </div>
                                     <div>
-                                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">🟢 Safe / Compliant</span>
+                                        <span className="text-[10px] font-black text-[var(--color-success)] uppercase tracking-wider block">🟢 Safe / Compliant</span>
                                         <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Fully matches child profile thresholds and contains no active allergen threats.</span>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2.5">
-                                    <div className="h-5 w-5 rounded-full bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-500">
-                                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                                    <div className="h-5 w-5 rounded-full bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 flex items-center justify-center shrink-0 text-[var(--color-danger)]">
+                                        <span className="w-2 h-2 rounded-full bg-[var(--color-danger)]" />
                                     </div>
                                     <div>
-                                        <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider block">🔴 Flagged / Hazard</span>
+                                        <span className="text-[10px] font-black text-[var(--color-danger)] uppercase tracking-wider block">🔴 Flagged / Hazard</span>
                                         <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Contains ingredients matching your child's specified food allergens or dietary exclusions.</span>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-2.5">
-                                    <div className="h-5 w-5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-500">
-                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    <div className="h-5 w-5 rounded-full bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 flex items-center justify-center shrink-0 text-[var(--color-info)]">
+                                        <span className="w-2 h-2 rounded-full bg-[var(--color-info)] animate-pulse" />
                                     </div>
                                     <div>
-                                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider block">🔵 Clinician Reviewed</span>
+                                        <span className="text-[10px] font-black text-[var(--color-info)] uppercase tracking-wider block">🔵 Clinician Reviewed</span>
                                         <span className="text-[10.5px] font-semibold text-[var(--color-text-muted)] leading-tight block">Verified by an expert nutritionist. AI errors have been manually corrected.</span>
                                     </div>
                                 </div>
@@ -448,10 +448,10 @@ export default function MealHistory() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm ${
-                                                    dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                    dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                    dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                    'bg-gray-300'
+                                                    dayStatuses[date] === 'danger' ? 'bg-[var(--color-danger)]' :
+                                                    dayStatuses[date] === 'warning' ? 'bg-[var(--color-warning)]' :
+                                                    dayStatuses[date] === 'success' ? 'bg-[var(--color-success)]' :
+                                                    'bg-zinc-300'
                                                 }`} />
                                                 <div className="text-left">
                                                     <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}`}>{date}</div>
@@ -484,17 +484,17 @@ export default function MealHistory() {
                                             {new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-500/20 shrink-0">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-success)]/10 text-[var(--color-success)] rounded-xl border border-[var(--color-success)]/20 shrink-0">
                                         <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Tracking Active</span>
                                     </div>
                                 </div>
 
                                 {/* VIOLATIONS ALERT PANEL */}
                                 {dailyViolations.length > 0 && (
-                                    <div className="mb-4 p-3 bg-rose-50/50 dark:bg-rose-500/5 border-2 border-rose-100 dark:border-rose-500/20 rounded-2xl animate-in fade-in duration-500">
+                                    <div className="mb-4 p-3 bg-[var(--color-danger)]/5 border-2 border-[var(--color-danger)]/20 rounded-2xl animate-in fade-in duration-500">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                                            <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Clinical Limit Alerts</span>
+                                            <div className="w-2 h-2 rounded-full bg-[var(--color-danger)] animate-pulse" />
+                                            <span className="text-[10px] font-black text-[var(--color-danger)] uppercase tracking-[0.2em]">Clinical Limit Alerts</span>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {dailyViolations.map((v, i) => (
@@ -549,9 +549,11 @@ export default function MealHistory() {
                                                     {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                                 <div className={`absolute bottom-2 left-2 sm:bottom-4 sm:left-4 px-2 py-1 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-lg ${
-                                                    log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
+                                                    log.compliance_status === 'flagged' ? 'bg-[var(--color-danger)] text-white' : 
+                                                    log.compliance_status === 'pending' ? 'bg-[var(--color-warning)] text-white' :
+                                                    'bg-[var(--color-success)] text-white'
                                                 }`}>
-                                                    {log.compliance_status === 'flagged' ? 'Flagged' : 'OK'}
+                                                    {log.compliance_status === 'flagged' ? 'Flagged' : log.compliance_status === 'pending' ? 'Pending' : 'OK'}
                                                 </div>
                                             </div>
                                             {/* Meal info */}

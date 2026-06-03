@@ -823,7 +823,7 @@ export default function ParentDashboard() {
                                                 <div className="w-full sm:w-32 h-32 sm:h-32 bg-zinc-100 flex-shrink-0 relative overflow-hidden">
                                                     <img src={log.image_url} alt="Meal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                                     {(log.status === 'reviewed' || log.status === 'verified') && (
-                                                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-green-500 text-white p-1 sm:p-1.5 rounded-full shadow-lg border border-white/20">
+                                                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[var(--color-success)] text-white p-1 sm:p-1.5 rounded-full shadow-lg border border-white/20">
                                                             <CheckCircle2 size={10} />
                                                         </div>
                                                     )}
@@ -833,17 +833,23 @@ export default function ParentDashboard() {
                                                         <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest leading-tight">{new Date(log.logged_at).toLocaleDateString()} • {log.meal_category}</span>
                                                         <div className="flex gap-1.5 shrink-0 ml-1">
                                                             {log.compliance_status === 'flagged' && (
-                                                                <span className="text-[7px] sm:text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-red-100 text-red-700 flex items-center gap-0.5">
+                                                                <span className="text-[7px] sm:text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20 flex items-center gap-0.5">
                                                                     <AlertCircle size={7} /> Flagged
                                                                 </span>
                                                             )}
-                                                            <span className={`text-[7px] sm:text-[8px] font-black px-1.5 sm:px-2 py-0.5 rounded-full uppercase ${(log.status === 'reviewed' || log.status === 'verified')
-                                                                ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400'
-                                                                : log.status === 'rejected'
-                                                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
-                                                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
-                                                                }`}>
-                                                                {log.status === 'rejected' ? 'Correction Needed' : log.status}
+                                                            <span className={`text-[7px] sm:text-[8px] font-black px-1.5 sm:px-2 py-0.5 rounded-full uppercase ${
+                                                                log.status === 'verified'
+                                                                    ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20'
+                                                                    : log.status === 'reviewed'
+                                                                        ? 'bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20'
+                                                                        : log.status === 'rejected'
+                                                                            ? 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20'
+                                                                            : 'bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] border border-[var(--color-divider)]'
+                                                            }`}>
+                                                                {log.status === 'verified' ? 'Clinically Verified' : 
+                                                                 log.status === 'reviewed' ? 'Reviewed' : 
+                                                                 log.status === 'rejected' ? 'Correction Needed' : 
+                                                                 'Awaiting Review'}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -851,7 +857,7 @@ export default function ParentDashboard() {
                                                         {log.nutritionist_review?.title || log.ai_analysis?.items?.map(i => i.name).join(', ') || 'Evaluating...'}
                                                     </h4>
                                                     {log.compliance_status === 'flagged' && log.violation_details?.violations?.length > 0 && (
-                                                        <p className="text-[8px] sm:text-[9px] font-black text-red-600 uppercase mb-1 flex items-center gap-1">
+                                                        <p className="text-[8px] sm:text-[9px] font-black text-[var(--color-danger)] uppercase mb-1 flex items-center gap-1">
                                                             Reason: {log.violation_details.violations[0].rule || log.violation_details.violations[0].rule_name}
                                                         </p>
                                                     )}

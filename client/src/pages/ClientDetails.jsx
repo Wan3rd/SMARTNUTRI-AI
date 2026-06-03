@@ -3850,9 +3850,9 @@ export default function ClientDetails() {
                                                                                                         <h5 className="text-[10px] sm:text-sm font-black text-[var(--color-secondary)] uppercase tracking-tight truncate">{log.meal_category}</h5>
                                                                                                         <div className={cn(
                                                                                                             "px-1.5 py-0.5 rounded-full text-[6px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
-                                                                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50' :
-                                                                                                                log.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50' :
-                                                                                                                    'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50'
+                                                                                                            (log.status === 'verified' || log.status === 'reviewed') ? 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20' :
+                                                                                                                log.status === 'rejected' ? 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20' :
+                                                                                                                    'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20'
                                                                                                         )}>
                                                                                                             {(log.status === 'verified' || log.status === 'reviewed') ? 'Verified' : log.status === 'rejected' ? 'Correction Requested' : 'Pending'}
                                                                                                         </div>
@@ -3940,11 +3940,11 @@ export default function ClientDetails() {
                                                             {logs.filter(l => l.status === 'rejected').length > 0 && (
                                                                 <div className="mt-8 pt-8 border-t border-[var(--color-divider)]">
                                                                     <div className="flex justify-between items-center mb-4">
-                                                                        <h3 className="font-bold text-lg text-rose-700 dark:text-rose-400 flex items-center gap-2">
-                                                                            <AlertCircle size={20} className="text-rose-600 dark:text-rose-400 animate-pulse" />
+                                                                        <h3 className="font-bold text-lg text-[var(--color-danger)] flex items-center gap-2">
+                                                                            <AlertCircle size={20} className="text-[var(--color-danger)] animate-pulse" />
                                                                             Rejections Sent (Awaiting Parent Correction)
                                                                         </h3>
-                                                                        <span className="bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-rose-200 dark:border-rose-900/50">
+                                                                        <span className="bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-[var(--color-danger)]/20">
                                                                             {logs.filter(l => l.status === 'rejected').length} Correction{logs.filter(l => l.status === 'rejected').length > 1 ? 's' : ''} Requested
                                                                         </span>
                                                                     </div>
@@ -3954,14 +3954,14 @@ export default function ClientDetails() {
                                                                             <Card
                                                                                 key={log.id}
                                                                                 onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
-                                                                                className="hover:shadow-xl transition-all cursor-pointer border-2 border-rose-200 dark:border-rose-900/50 hover:border-rose-400 dark:hover:border-rose-700 bg-rose-50/10 dark:bg-rose-950/5 overflow-hidden group"
+                                                                                className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-danger)]/20 hover:border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 overflow-hidden group"
                                                                             >
                                                                                 <CardContent className="p-0">
                                                                                     <div className="h-40 relative overflow-hidden">
                                                                                         <img src={log.image_url} alt="Meal" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                                                                         <div className="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors" />
                                                                                         <div className="absolute top-3 right-3">
-                                                                                            <span className="bg-rose-600 text-white text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                                                                            <span className="bg-[var(--color-danger)] text-white text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
                                                                                                 <Clock size={10} />
                                                                                                 Correction Pending
                                                                                             </span>

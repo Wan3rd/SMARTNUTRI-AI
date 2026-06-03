@@ -220,9 +220,9 @@ export default function Calendar() {
                             {status && (
                                 <div className={cn(
                                     "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full shadow-sm",
-                                    status === 'danger' ? 'bg-red-500 shadow-red-500/50' :
-                                    status === 'warning' ? 'bg-amber-500 shadow-amber-500/50' :
-                                    'bg-emerald-500 shadow-emerald-500/50'
+                                    status === 'danger' ? 'bg-[var(--color-danger)] shadow-[var(--color-danger)]/50' :
+                                    status === 'warning' ? 'bg-[var(--color-warning)] shadow-[var(--color-warning)]/50' :
+                                    'bg-[var(--color-success)] shadow-[var(--color-success)]/50'
                                 )} />
                             )}
                             {hasPrescribedPlan && (
@@ -232,7 +232,7 @@ export default function Calendar() {
                                 />
                             )}
                             {dayLogs.length > 1 && (
-                                <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-blue-400 opacity-40 hidden sm:block" />
+                                <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--color-info)] opacity-40 hidden sm:block" />
                             )}
                         </div>
 
@@ -246,7 +246,7 @@ export default function Calendar() {
                             {dayLogs.slice(0, 2).map((log, idx) => (
                                 <div key={idx} className={cn(
                                     "text-[8px] p-1.5 rounded-lg font-black uppercase tracking-tighter truncate border-l-4",
-                                    log.compliance_status === 'flagged' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                                    log.compliance_status === 'flagged' ? 'bg-[var(--color-danger)]/10 border-[var(--color-danger)] text-[var(--color-danger)]' : 'bg-[var(--color-success)]/10 border-[var(--color-success)] text-[var(--color-success)]'
                                 )}>
                                     {log.meal_category}
                                 </div>
@@ -481,7 +481,9 @@ export default function Calendar() {
                                                         </div>
                                                         <span className={cn(
                                                             "text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm",
-                                                            log.compliance_status === 'flagged' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
+                                                            log.compliance_status === 'flagged' ? 'bg-[var(--color-danger)] text-white' :
+                                                            log.compliance_status === 'pending' ? 'bg-[var(--color-warning)] text-white' :
+                                                            'bg-[var(--color-success)] text-white'
                                                         )}>
                                                             {log.compliance_status}
                                                         </span>
