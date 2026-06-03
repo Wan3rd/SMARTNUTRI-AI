@@ -481,6 +481,31 @@
                     </div>
                 </div>
 
+                <!-- MAY 31 - JUNE 02 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">May 31 - June 02, 2026</div>
+                    <div class="timeline-title">UI Polish, Modal Animations & Theme Token Standardization</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span><strong>Modal Animations & Safe Closures:</strong> Integrated <code>framer-motion</code> with <code>AnimatePresence</code> to support smooth mount and unmount exit animations across all modals (e.g., <code>AddChildModal.jsx</code>, <code>CreatePatientModal.jsx</code>). Replaced direct close callbacks with a delayed <code>triggerCloseAnimation</code> and added event <code>stopPropagation</code> to prevent accidental background clicks from disrupting interactions.</li>
+                            <li><span class="tech-tag">Client</span><strong>System-wide Theme Token Standardization:</strong> Stripped out hardcoded utility colors across the app (<code>ClientDetails.jsx</code>, <code>Profile.jsx</code>, <code>Settings.jsx</code>) and replaced them with unified CSS design variables (e.g., <code>bg-bg-card</code>, <code>text-text-main</code>). This ensures a consistent, resilient dark/light mode experience and standardizes button sizing, notification visuals, and input heights.</li>
+                            <li><span class="tech-tag">Client</span><strong>Responsive Layout & Mobile Ergonomics:</strong> Overhauled the <code>AddChildModal.jsx</code> into a dynamic mobile slide-up container, ensuring form scrollability while locking the action footer. Adjusted grid layouts globally via the <code>cn</code> utility to reflow gracefully when the sidebar is toggled or minimized.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- JUNE 03 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 03, 2026</div>
+                    <div class="timeline-title">Portal-based Modal Porting & Mobile Overlap Resolution</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span><strong>Portal-based Overlay Mounts:</strong> Ported the <code>AddChildModal.jsx</code> layout to mount at the root of the document body using React Portals (<code>createPortal</code>). This completely bypasses layout transitions/stacking contexts, ensuring the overlay properly stacks on top of the fixed header and mobile navigation bars.</li>
+                            <li><span class="tech-tag">Client</span><strong>Mobile Layout Isolation:</strong> Preserved full-screen sizing on mobile devices while scaling down to standard dialog layouts on larger screens.</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Calendar, Baby, Activity, Info, Loader2, X, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, Plus, ChevronDown } from 'lucide-react';
 import { Button } from './common/Button';
 import { Card, CardContent } from './common/Card';
@@ -199,7 +200,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         }
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
@@ -569,6 +570,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
             </motion.div>
         </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }
