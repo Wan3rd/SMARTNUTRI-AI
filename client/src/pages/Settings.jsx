@@ -527,7 +527,7 @@ export default function Settings() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-20 px-2 sm:px-0">
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto pb-20 px-2 sm:px-0">
             <div className="pt-2 sm:pt-0 px-1 sm:px-0">
                 <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-secondary)]">Settings</h1>
                 <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">Manage app preferences and clinical configurations.</p>

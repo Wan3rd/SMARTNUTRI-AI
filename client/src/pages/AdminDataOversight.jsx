@@ -46,16 +46,16 @@ export default function AdminContentOversight() {
     const renderResultCard = (item) => {
         if (contentType === 'profiles') {
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                <div key={item.id} className="p-3 sm:p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-xl sm:rounded-2xl flex items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
-                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{item.child_name}</div>
-                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Parent: {item.users?.email || 'N/A'}</div>
+                        <div className="font-black text-xs sm:text-sm truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">{item.child_name}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--color-text-muted)] truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">Parent: {item.users?.email || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'profiles', id: item.id, title: item.child_name })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
+                        className="p-1.5 sm:p-2 text-rose-500 bg-rose-500/10 rounded-lg sm:rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                 </div>
             );
@@ -64,17 +64,17 @@ export default function AdminContentOversight() {
         if (contentType === 'meals') {
             const mealName = item.nutritionist_review?.meal_summary || item.ai_analysis?.meal_summary || item.ai_analysis?.items?.map(i => i.name).join(', ') || 'Unnamed Meal';
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                <div key={item.id} className="p-3 sm:p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-xl sm:rounded-2xl flex items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
-                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">{mealName}</div>
-                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Profile: {item.profiles?.child_name || 'N/A'} ({item.profiles?.users?.email || 'N/A'})</div>
-                        <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-bold truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Category: <span className="uppercase text-[var(--color-primary)]">{item.meal_category || 'other'}</span> | Logged: {item.logged_at ? new Date(item.logged_at).toLocaleDateString() : 'N/A'}</div>
+                        <div className="font-black text-xs sm:text-sm truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">{mealName}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--color-text-muted)] truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">Profile: {item.profiles?.child_name || 'N/A'} ({item.profiles?.users?.email || 'N/A'})</div>
+                        <div className="text-[9px] sm:text-[10px] text-[var(--color-text-muted)] mt-0.5 sm:mt-1 font-bold truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">Category: <span className="uppercase text-[var(--color-primary)]">{item.meal_category || 'other'}</span> | Logged: {item.logged_at ? new Date(item.logged_at).toLocaleDateString() : 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'meals', id: item.id, title: 'this meal log' })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
+                        className="p-1.5 sm:p-2 text-rose-500 bg-rose-500/10 rounded-lg sm:rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                 </div>
             );
@@ -82,16 +82,16 @@ export default function AdminContentOversight() {
 
         if (contentType === 'notes') {
             return (
-                <div key={item.id} className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl flex items-center justify-between gap-4">
+                <div key={item.id} className="p-3 sm:p-4 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-xl sm:rounded-2xl flex items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
-                        <div className="font-black text-sm truncate max-w-[200px] sm:max-w-md">Dx: {item.diagnosis || 'No Diagnosis'}</div>
-                        <div className="text-xs text-[var(--color-text-muted)] truncate max-w-[200px] xs:max-w-[260px] sm:max-w-md">Author: {item.nutritionist?.full_name || 'Nutritionist'} | Patient: {item.profiles?.child_name || 'N/A'}</div>
+                        <div className="font-black text-xs sm:text-sm truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">Dx: {item.diagnosis || 'No Diagnosis'}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--color-text-muted)] truncate max-w-[180px] xs:max-w-[240px] sm:max-w-md">Author: {item.nutritionist?.full_name || 'Nutritionist'} | Patient: {item.profiles?.child_name || 'N/A'}</div>
                     </div>
                     <button
                         onClick={() => setConfirmDelete({ isOpen: true, type: 'notes', id: item.id, title: 'this clinical note' })}
-                        className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
+                        className="p-1.5 sm:p-2 text-rose-500 bg-rose-500/10 rounded-lg sm:rounded-xl hover:bg-rose-500 hover:text-white transition-colors shrink-0"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                 </div>
             );
@@ -99,25 +99,25 @@ export default function AdminContentOversight() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+        <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-500 max-w-6xl mx-auto pb-20 px-2 sm:px-4">
             <div>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                        <Database size={24} />
+                <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <Database className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
                     </div>
-                    <h1 className="text-3xl font-black text-[var(--color-text-main)] tracking-tight">Data Oversight</h1>
+                    <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-text-main)] tracking-tight">Data Oversight</h1>
                 </div>
-                <p className="text-[var(--color-text-muted)] font-medium max-w-lg">
+                <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium max-w-lg">
                     Search and forcefully remove orphaned or rogue content from the database.
                 </p>
             </div>
 
-            <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] p-6">
-                <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 mb-8">
+            <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] p-4 sm:p-6">
+                <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5">
                     <select
                         value={contentType}
                         onChange={(e) => { setContentType(e.target.value); setResults([]); }}
-                        className="px-4 py-3 bg-[var(--color-bg-page)] rounded-xl font-black uppercase tracking-widest text-[10px] outline-none text-[var(--color-text-main)] border border-[var(--color-divider)]"
+                        className="px-3 py-2.5 sm:px-4 sm:py-3 bg-[var(--color-bg-page)] rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] outline-none text-[var(--color-text-main)] border border-[var(--color-divider)] cursor-pointer"
                     >
                         <option value="profiles">Patient Profiles</option>
                         <option value="meals">Meal Logs</option>
@@ -125,31 +125,31 @@ export default function AdminContentOversight() {
                     </select>
 
                     <div className="flex-1 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={18} />
+                        <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] opacity-50" size={16} />
                         <input
                             type="text"
                             placeholder="Search by name, diagnosis, or content..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)] outline-none font-bold text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-primary)] transition-colors"
+                            className="w-full pl-10 pr-3 py-2.5 sm:pl-12 sm:pr-4 sm:py-3 bg-[var(--color-bg-page)] rounded-xl border border-[var(--color-divider)] outline-none font-bold text-xs sm:text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-primary)] transition-colors"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-black tracking-widest uppercase text-xs hover:bg-[var(--color-primary-hover)] transition-all"
+                        className="px-4 py-2.5 sm:px-6 sm:py-3 bg-[var(--color-primary)] text-white rounded-xl font-black tracking-widest uppercase text-[10px] sm:text-xs hover:bg-[var(--color-primary-hover)] transition-all"
                     >
                         {loading ? 'Searching...' : 'Search'}
                     </button>
                 </form>
 
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-2.5">
                     {results.length > 0 ? (
                         results.map(renderResultCard)
                     ) : (
-                        <div className="p-12 text-center text-[var(--color-text-muted)] font-medium bg-[var(--color-bg-page)] rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
-                            <ShieldAlert size={32} className="mx-auto mb-3 opacity-20" />
+                        <div className="p-6 sm:p-12 text-xs sm:text-sm text-center text-[var(--color-text-muted)] font-medium bg-[var(--color-bg-page)] rounded-2xl sm:rounded-3xl border-2 border-dashed border-[var(--color-divider)]">
+                            <ShieldAlert className="mx-auto mb-2 sm:mb-3 opacity-20 w-6 h-6 sm:w-8 sm:h-8" />
                             No rogue data found matching your query.
                         </div>
                     )}

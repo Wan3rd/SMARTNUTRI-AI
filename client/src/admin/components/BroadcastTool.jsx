@@ -94,7 +94,7 @@ export default function BroadcastTool() {
                 onClose={() => setMessage({ ...message, text: '' })}
             />
             
-            <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)]">
+            <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)]">
                 <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-[var(--color-divider)]">
                     <div className="md:w-1/3 p-8 bg-zinc-50 dark:bg-white/5">
                         <div className="flex items-center gap-3 mb-4">

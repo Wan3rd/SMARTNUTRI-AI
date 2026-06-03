@@ -115,7 +115,7 @@ export default function RegistrationQueue({ onStatsUpdate }) {
                     </div>
                 </div>
 
-                <Card className="border-2 border-[var(--color-divider)] rounded-3xl overflow-hidden shadow-xl bg-[var(--color-bg-card)]">
+                <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl bg-[var(--color-bg-card)]">
                     <CardHeader className="bg-[var(--color-bg-page)] border-b border-[var(--color-divider)] p-6">
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                             <Users size={18} className="text-emerald-500" /> Professional Registration Queue

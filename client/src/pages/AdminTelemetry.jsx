@@ -26,10 +26,10 @@ const TelemetryDial = ({ value, label, unit, icon: Icon, color, max = 100 }) => 
     }
 
     return (
-        <div className="flex flex-col items-center p-6 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-3xl shadow-sm relative group hover:shadow-xl transition-all duration-300">
-            <div className="relative w-28 h-28 flex items-center justify-center">
+        <div className="flex flex-col items-center p-3 sm:p-6 bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-2xl sm:rounded-3xl shadow-sm relative group hover:shadow-xl transition-all duration-300">
+            <div className="relative w-16 h-16 sm:w-28 sm:h-28 flex items-center justify-center">
                 {/* Background pulse aura */}
-                <div className={`absolute inset-3 rounded-full blur-xl animate-pulse ${bgPulse}`} />
+                <div className={`absolute inset-2 sm:inset-3 rounded-full blur-lg sm:blur-xl animate-pulse ${bgPulse}`} />
                 
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle
@@ -55,14 +55,14 @@ const TelemetryDial = ({ value, label, unit, icon: Icon, color, max = 100 }) => 
                     />
                 </svg>
                 <div className="absolute flex flex-col items-center select-none text-center">
-                    <Icon size={16} className={`${color} mb-1`} />
-                    <span className="text-xl font-black tracking-tighter text-[var(--color-text-main)] leading-none tabular-nums">
+                    <Icon className={`${color} mb-0.5 sm:mb-1 w-3.5 h-3.5 sm:w-4 sm:h-4`} />
+                    <span className="text-xs sm:text-xl font-black tracking-tighter text-[var(--color-text-main)] leading-none tabular-nums">
                         {value}
                     </span>
-                    <span className="text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">{unit}</span>
+                    <span className="text-[6px] sm:text-[7px] font-black text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">{unit}</span>
                 </div>
             </div>
-            <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-4">{label}</span>
+            <span className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mt-2 sm:mt-4 text-center truncate w-full">{label}</span>
         </div>
     );
 };
@@ -160,35 +160,35 @@ const TelemetryChart = ({ data, keyName, label, color, range }) => {
     const rangeText = range === 'week' ? '7 Days' : range === 'year' ? '12 Months' : '30 Days';
 
     return (
-        <Card className="border-2 border-[var(--color-divider)] rounded-[2.2rem] overflow-hidden bg-[var(--color-bg-card)] p-6 sm:p-8 shadow-sm hover:shadow-lg transition-all duration-300">
+        <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[2.2rem] overflow-hidden bg-[var(--color-bg-card)] p-4 sm:p-8 shadow-sm hover:shadow-lg transition-all duration-300">
             {/* Chart Title and Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4 sm:mb-6">
                 <div>
-                    <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">Observability Range: {rangeText}</span>
-                    <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight mt-0.5">{label}</h3>
+                    <span className="text-[7px] sm:text-[8px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">Observability Range: {rangeText}</span>
+                    <h3 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight mt-0.5">{label}</h3>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-divider)] text-[9px] font-black uppercase text-[var(--color-text-main)] select-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-ping" />
-                    <span>Live Tracking</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[var(--color-divider)] text-[8px] sm:text-[9px] font-black uppercase text-[var(--color-text-main)] select-none">
+                    <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-[var(--color-primary)] animate-ping" />
+                    <span>Live</span>
                 </div>
             </div>
 
             {/* KPI Metrics Insights Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-8 border-b border-[var(--color-divider)] pb-6 select-none">
-                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
-                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Sum Total</span>
-                    <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] mt-1 block tabular-nums">{total.toLocaleString()}</span>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-8 border-b border-[var(--color-divider)] pb-4 sm:pb-6 select-none">
+                <div className="p-2 sm:p-3 bg-gray-50/30 dark:bg-white/5 rounded-xl sm:rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[7px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Sum Total</span>
+                    <span className="text-xs sm:text-xl font-black text-[var(--color-text-main)] mt-0.5 sm:mt-1 block tabular-nums">{total.toLocaleString()}</span>
                 </div>
-                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
-                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">{range === 'year' ? 'Monthly Avg' : 'Daily Avg'}</span>
-                    <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] mt-1 block tabular-nums">{average}</span>
+                <div className="p-2 sm:p-3 bg-gray-50/30 dark:bg-white/5 rounded-xl sm:rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[7px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">{range === 'year' ? 'Monthly Avg' : 'Daily Avg'}</span>
+                    <span className="text-xs sm:text-xl font-black text-[var(--color-text-main)] mt-0.5 sm:mt-1 block tabular-nums">{average}</span>
                 </div>
-                <div className="p-3 bg-gray-50/30 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)]">
-                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Record Peak</span>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 mt-1">
-                        <span className="text-lg sm:text-xl font-black text-[var(--color-text-main)] tabular-nums">{peakVal}</span>
+                <div className="p-2 sm:p-3 bg-gray-50/30 dark:bg-white/5 rounded-xl sm:rounded-2xl border border-[var(--color-divider)]">
+                    <span className="text-[7px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest block">Peak</span>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
+                        <span className="text-xs sm:text-xl font-black text-[var(--color-text-main)] tabular-nums">{peakVal}</span>
                         {peakVal > 0 && (
-                            <span className="text-[8px] font-black text-[var(--color-primary)] uppercase bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded-full truncate">
+                            <span className="text-[6px] sm:text-[8px] font-black text-[var(--color-primary)] uppercase bg-[var(--color-primary)]/10 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-full truncate max-w-full block">
                                 {formatPeakDate(peakDate)}
                             </span>
                         )}
@@ -278,7 +278,7 @@ export default function AdminTelemetry() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto pb-20 px-2 sm:px-4">
             {/* ── HEADER ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -353,7 +353,7 @@ export default function AdminTelemetry() {
                         className="space-y-8"
                     >
                         {/* Metrics Dials */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-6">
                             <TelemetryDial
                                 value={stats?.serverTelemetry?.cpuUsage ?? 8}
                                 label="CPU Usage"

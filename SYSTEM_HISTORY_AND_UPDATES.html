@@ -443,8 +443,12 @@
                                 progress states, and beautifully color-coded (Healthy/Failed) HSL cards showing live
                                 response speed stats.
                             </li>
-                            <li><span class="tech-tag">Server</span>Exposed a public, static endpoint <code>GET /system-updates</code> that delivers this Change Log documentary page directly from the repository root.</li>
-                            <li><span class="tech-tag">Client</span>Integrated a dynamically-resolving "See System Updates" button in the landing page footer to easily access public developer specifications and system history.</li>
+                            <li><span class="tech-tag">Server</span>Exposed a public, static endpoint
+                                <code>GET /system-updates</code> that delivers this Change Log documentary page directly
+                                from the repository root.</li>
+                            <li><span class="tech-tag">Client</span>Integrated a dynamically-resolving "See System
+                                Updates" button in the landing page footer to easily access public developer
+                                specifications and system history.</li>
                         </ul>
                     </div>
                 </div>
@@ -452,16 +456,60 @@
                 <!-- MAY 30 (TODAY) -->
                 <div class="timeline-item">
                     <div class="timeline-date">May 30, 2026 (Today)</div>
-                    <div class="timeline-title">Global Rules Engine "Min" Target Enforcement, Dual-Layer Future Date Validations & Clinical Workspace Hardening</div>
+                    <div class="timeline-title">Global Rules Engine "Min" Target Enforcement, Dual-Layer Future Date
+                        Validations & Clinical Workspace Hardening</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Client</span><strong>Unified Rules Engine Minimum Target Support:</strong> Audited and overhauled nutritional rule checks across both portals. Day statuses and daily violations dashboards now fully recognize and assert minimum (<code>min</code>) targets in addition to maximum limits, highlighting under-consumption anomalies for calories, protein, carbs, fats, sodium, and water across <code>ClientDetails.jsx</code>, <code>MealHistory.jsx</code>, <code>Calendar.jsx</code>, and <code>ParentDashboard.jsx</code>.</li>
-                            <li><span class="tech-tag">Client</span><strong>System-wide Future Date Restraints:</strong> Placed native <code>max</code> calendar boundaries and double-layered validation blocks across all birthdate entry points (clinician and caregiver registration modals and settings), vaccination logging, growth log updates, and caregiver meal logs (<code>CreatePatientModal.jsx</code>, <code>Onboarding.jsx</code>, <code>AddChildModal.jsx</code>, <code>Profile.jsx</code>, and <code>MealLogger.jsx</code>) to hard-block impossible future inputs.</li>
-                            <li><span class="tech-tag">Client</span><strong>Resilient Pediatric Growth Velocity Calculations:</strong> Refactored biometric velocity tracking inside the client dashboard to precompute height and weight growth velocities strictly between the two newest consecutive logs, preventing mathematical drift.</li>
-                            <li><span class="tech-tag">Client</span><strong>Clinical Workspace State Isolation & Sync:</strong> Fully secured the nutritionist's clinical drafts against profile leakage by resetting text areas on switch, flushing empty local caches, and expanding the edit form cancellation state payload to seamlessly restore all 17 clinical and medical attributes.</li>
-                            <li><span class="tech-tag">Client</span><strong>Personalization & Unit Preference Check:</strong> Verified system-wide application of Settings preferences. Implemented dynamic unit and decimal precision formats inside <code>ClientDetails.jsx</code>, <code>ReviewLogModal.jsx</code>, and <code>Profile.jsx</code>. Biometric cards now automatically swap primary/secondary units between Metric (cm, kg) and Imperial (lbs, ft/in) styles based on <code>measurement_system</code>, calorie/macro breakdowns dynamically render rounded whole numbers or precise decimal fractions following the user's <code>nutrient_precision</code> settings, all clinician-side growth deltas, monthly velocities, and Clinical Intelligence warnings convert to Imperial (lbs, lbs/m, in, in/m), and caregiver-side child profile trend badges dynamically adjust to imperial metrics (<code>+1.1 lbs trend</code> and <code>+0.5 in trend</code>) when active.</li>
-                            <li><span class="tech-tag">Server</span><strong>Clinician Log Review Validation Fix:</strong> Added <code>'verified'</code> to the allowed API <code>VALID_REVIEW_STATUSES</code> list in the nutritionist private router, resolving the 400 Bad Request blockage when submitting verified logs from the review workspace.</li>
-                            <li><span class="tech-tag">Client</span><strong>Nutritional Limit Alerts Label & Water Rule Integration:</strong> Synchronized warning alert panels across clinician (<code>ClientDetails.jsx</code>) and caregiver (<code>MealHistory.jsx</code>) portals to dynamically display <code>Min Goal</code> instead of a confusing <code>Limit</code> label for under-consumption rules. Integrated complete, multi-portal water volume accumulation (<code>water_ml</code>) and rule checks across details, history logs, and calendar heatmap calculations (<code>Calendar.jsx</code>), preventing water tracking from resetting to zero and triggering false nutritional alerts, and added an interactive glasses-of-water select dropdown directly into the clinical review workspace (<code>ReviewLogModal.jsx</code>) to enable editable hydration tracking.</li>
+                            <li><span class="tech-tag">Client</span><strong>Unified Rules Engine Minimum Target
+                                    Support:</strong> Audited and overhauled nutritional rule checks across both
+                                portals. Day statuses and daily violations dashboards now fully recognize and assert
+                                minimum (<code>min</code>) targets in addition to maximum limits, highlighting
+                                under-consumption anomalies for calories, protein, carbs, fats, sodium, and water across
+                                <code>ClientDetails.jsx</code>, <code>MealHistory.jsx</code>, <code>Calendar.jsx</code>,
+                                and <code>ParentDashboard.jsx</code>.</li>
+                            <li><span class="tech-tag">Client</span><strong>System-wide Future Date Restraints:</strong>
+                                Placed native <code>max</code> calendar boundaries and double-layered validation blocks
+                                across all birthdate entry points (clinician and caregiver registration modals and
+                                settings), vaccination logging, growth log updates, and caregiver meal logs
+                                (<code>CreatePatientModal.jsx</code>, <code>Onboarding.jsx</code>,
+                                <code>AddChildModal.jsx</code>, <code>Profile.jsx</code>, and
+                                <code>MealLogger.jsx</code>) to hard-block impossible future inputs.</li>
+                            <li><span class="tech-tag">Client</span><strong>Resilient Pediatric Growth Velocity
+                                    Calculations:</strong> Refactored biometric velocity tracking inside the client
+                                dashboard to precompute height and weight growth velocities strictly between the two
+                                newest consecutive logs, preventing mathematical drift.</li>
+                            <li><span class="tech-tag">Client</span><strong>Clinical Workspace State Isolation &
+                                    Sync:</strong> Fully secured the nutritionist's clinical drafts against profile
+                                leakage by resetting text areas on switch, flushing empty local caches, and expanding
+                                the edit form cancellation state payload to seamlessly restore all 17 clinical and
+                                medical attributes.</li>
+                            <li><span class="tech-tag">Client</span><strong>Personalization & Unit Preference
+                                    Check:</strong> Verified system-wide application of Settings preferences.
+                                Implemented dynamic unit and decimal precision formats inside
+                                <code>ClientDetails.jsx</code>, <code>ReviewLogModal.jsx</code>, and
+                                <code>Profile.jsx</code>. Biometric cards now automatically swap primary/secondary units
+                                between Metric (cm, kg) and Imperial (lbs, ft/in) styles based on
+                                <code>measurement_system</code>, calorie/macro breakdowns dynamically render rounded
+                                whole numbers or precise decimal fractions following the user's
+                                <code>nutrient_precision</code> settings, all clinician-side growth deltas, monthly
+                                velocities, and Clinical Intelligence warnings convert to Imperial (lbs, lbs/m, in,
+                                in/m), and caregiver-side child profile trend badges dynamically adjust to imperial
+                                metrics (<code>+1.1 lbs trend</code> and <code>+0.5 in trend</code>) when active.</li>
+                            <li><span class="tech-tag">Server</span><strong>Clinician Log Review Validation
+                                    Fix:</strong> Added <code>'verified'</code> to the allowed API
+                                <code>VALID_REVIEW_STATUSES</code> list in the nutritionist private router, resolving
+                                the 400 Bad Request blockage when submitting verified logs from the review workspace.
+                            </li>
+                            <li><span class="tech-tag">Client</span><strong>Nutritional Limit Alerts Label & Water Rule
+                                    Integration:</strong> Synchronized warning alert panels across clinician
+                                (<code>ClientDetails.jsx</code>) and caregiver (<code>MealHistory.jsx</code>) portals to
+                                dynamically display <code>Min Goal</code> instead of a confusing <code>Limit</code>
+                                label for under-consumption rules. Integrated complete, multi-portal water volume
+                                accumulation (<code>water_ml</code>) and rule checks across details, history logs, and
+                                calendar heatmap calculations (<code>Calendar.jsx</code>), preventing water tracking
+                                from resetting to zero and triggering false nutritional alerts, and added an interactive
+                                glasses-of-water select dropdown directly into the clinical review workspace
+                                (<code>ReviewLogModal.jsx</code>) to enable editable hydration tracking.</li>
                         </ul>
                     </div>
                 </div>
@@ -469,14 +517,46 @@
                 <!-- MAY 30 — EVENING SESSION -->
                 <div class="timeline-item">
                     <div class="timeline-date">May 30, 2026 — Evening</div>
-                    <div class="timeline-title">UX Onboarding Guides, Fluid Tracker Bug Fix & Meal History Calendar Overlap Resolution</div>
+                    <div class="timeline-title">UX Onboarding Guides, Fluid Tracker Bug Fix & Meal History Calendar
+                        Overlap Resolution</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Client</span><strong>Hideable Onboarding Guides System:</strong> Introduced a persistent, localStorage-backed guide visibility pattern across multiple components. Users can dismiss any guide panel with a close button and restore it via a "Show Guide" toggle in the page header. The hidden state survives page reloads. Guides were added to <code>AddChildModal.jsx</code> (step-by-step child registration walkthrough for all 4 form steps), <code>MealLogger.jsx</code> (a collapsible "How to use the Meal Logger" panel), <code>MealHistory.jsx</code> (a compliance legend card in the date sidebar), and <code>Calendar.jsx</code> (a heatmap legend and interaction guide). Each uses a unique <code>localStorage</code> key (e.g. <code>smartnutri_hide_logger_guide</code>, <code>smartnutri_hide_history_guide</code>).</li>
-                            <li><span class="tech-tag">Client</span><strong>Meal History Compliance Legend:</strong> Added a color-coded legend card inside the date sidebar of <code>MealHistory.jsx</code> explaining 🟢 Safe/Compliant, 🔴 Flagged/Hazard, and 🔵 Clinician Reviewed statuses. Includes a Caregiver Tip callout guiding parents on how to select a date to view macro charts and tap individual entries to request an audit or correction. Hideable via the "Show Guide" button in the page header.</li>
-                            <li><span class="tech-tag">Client</span><strong>Calendar Heatmap Legend:</strong> Added a persistent but dismissible guide card to <code>Calendar.jsx</code> explaining the calendar heatmap dot system — 🟢 Optimal, 🟡 Warning, 🔴 Critical/Danger, ⚪ No Data — and instructing caregivers to tap any date to drill into per-day macro summaries and compliance alerts.</li>
-                            <li><span class="tech-tag">Bug Fix</span><strong>Daily Fluid Tracker Incorrect Count:</strong> Resolved a bug in <code>ParentDashboard.jsx</code> where hydration entries logged through the Meal Logger (via the <code>water_ml</code> field) were not contributing to the Daily Fluid Tracker card glass count. The counter now aggregates both manual glass button taps and water volume from meal logs using a unified <code>totalIntakeMl / 250</code> calculation.</li>
-                            <li><span class="tech-tag">Bug Fix</span><strong>Meal History Date Card Scale Overlap:</strong> Fixed a visual layout defect in <code>MealHistory.jsx</code> where the selected date button applied a CSS <code>scale(1.02)</code> transform on desktop, causing it to overflow its container and visually overlap the adjacent daily log detail panel. Removed <code>md:scale-[1.02]</code> and <code>z-10</code> from the selected state class and replaced with a stronger drop shadow (<code>shadow-xl shadow-emerald-500/30</code>) to preserve the active selection visual without disrupting layout.</li>
+                            <li><span class="tech-tag">Client</span><strong>Hideable Onboarding Guides System:</strong>
+                                Introduced a persistent, localStorage-backed guide visibility pattern across multiple
+                                components. Users can dismiss any guide panel with a close button and restore it via a
+                                "Show Guide" toggle in the page header. The hidden state survives page reloads. Guides
+                                were added to <code>AddChildModal.jsx</code> (step-by-step child registration
+                                walkthrough for all 4 form steps), <code>MealLogger.jsx</code> (a collapsible "How to
+                                use the Meal Logger" panel), <code>MealHistory.jsx</code> (a compliance legend card in
+                                the date sidebar), and <code>Calendar.jsx</code> (a heatmap legend and interaction
+                                guide). Each uses a unique <code>localStorage</code> key (e.g.
+                                <code>smartnutri_hide_logger_guide</code>, <code>smartnutri_hide_history_guide</code>).
+                            </li>
+                            <li><span class="tech-tag">Client</span><strong>Meal History Compliance Legend:</strong>
+                                Added a color-coded legend card inside the date sidebar of <code>MealHistory.jsx</code>
+                                explaining 🟢 Safe/Compliant, 🔴 Flagged/Hazard, and 🔵 Clinician Reviewed statuses.
+                                Includes a Caregiver Tip callout guiding parents on how to select a date to view macro
+                                charts and tap individual entries to request an audit or correction. Hideable via the
+                                "Show Guide" button in the page header.</li>
+                            <li><span class="tech-tag">Client</span><strong>Calendar Heatmap Legend:</strong> Added a
+                                persistent but dismissible guide card to <code>Calendar.jsx</code> explaining the
+                                calendar heatmap dot system — 🟢 Optimal, 🟡 Warning, 🔴 Critical/Danger, ⚪ No Data —
+                                and instructing caregivers to tap any date to drill into per-day macro summaries and
+                                compliance alerts.</li>
+                            <li><span class="tech-tag">Bug Fix</span><strong>Daily Fluid Tracker Incorrect
+                                    Count:</strong> Resolved a bug in <code>ParentDashboard.jsx</code> where hydration
+                                entries logged through the Meal Logger (via the <code>water_ml</code> field) were not
+                                contributing to the Daily Fluid Tracker card glass count. The counter now aggregates
+                                both manual glass button taps and water volume from meal logs using a unified
+                                <code>totalIntakeMl / 250</code> calculation.</li>
+                            <li><span class="tech-tag">Bug Fix</span><strong>Meal History Date Card Scale
+                                    Overlap:</strong> Fixed a visual layout defect in <code>MealHistory.jsx</code> where
+                                the selected date button applied a CSS <code>scale(1.02)</code> transform on desktop,
+                                causing it to overflow its container and visually overlap the adjacent daily log detail
+                                panel. Removed <code>md:scale-[1.02]</code> and <code>z-10</code> from the selected
+                                state class and replaced with a stronger drop shadow
+                                (<code>shadow-xl shadow-emerald-500/30</code>) to preserve the active selection visual
+                                without disrupting layout.</li>
                         </ul>
                     </div>
                 </div>
@@ -487,9 +567,24 @@
                     <div class="timeline-title">UI Polish, Modal Animations & Theme Token Standardization</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Client</span><strong>Modal Animations & Safe Closures:</strong> Integrated <code>framer-motion</code> with <code>AnimatePresence</code> to support smooth mount and unmount exit animations across all modals (e.g., <code>AddChildModal.jsx</code>, <code>CreatePatientModal.jsx</code>). Replaced direct close callbacks with a delayed <code>triggerCloseAnimation</code> and added event <code>stopPropagation</code> to prevent accidental background clicks from disrupting interactions.</li>
-                            <li><span class="tech-tag">Client</span><strong>System-wide Theme Token Standardization:</strong> Stripped out hardcoded utility colors across the app (<code>ClientDetails.jsx</code>, <code>Profile.jsx</code>, <code>Settings.jsx</code>) and replaced them with unified CSS design variables (e.g., <code>bg-bg-card</code>, <code>text-text-main</code>). This ensures a consistent, resilient dark/light mode experience and standardizes button sizing, notification visuals, and input heights.</li>
-                            <li><span class="tech-tag">Client</span><strong>Responsive Layout & Mobile Ergonomics:</strong> Overhauled the <code>AddChildModal.jsx</code> into a dynamic mobile slide-up container, ensuring form scrollability while locking the action footer. Adjusted grid layouts globally via the <code>cn</code> utility to reflow gracefully when the sidebar is toggled or minimized.</li>
+                            <li><span class="tech-tag">Client</span><strong>Modal Animations & Safe Closures:</strong>
+                                Integrated <code>framer-motion</code> with <code>AnimatePresence</code> to support
+                                smooth mount and unmount exit animations across all modals (e.g.,
+                                <code>AddChildModal.jsx</code>, <code>CreatePatientModal.jsx</code>). Replaced direct
+                                close callbacks with a delayed <code>triggerCloseAnimation</code> and added event
+                                <code>stopPropagation</code> to prevent accidental background clicks from disrupting
+                                interactions.</li>
+                            <li><span class="tech-tag">Client</span><strong>System-wide Theme Token
+                                    Standardization:</strong> Stripped out hardcoded utility colors across the app
+                                (<code>ClientDetails.jsx</code>, <code>Profile.jsx</code>, <code>Settings.jsx</code>)
+                                and replaced them with unified CSS design variables (e.g., <code>bg-bg-card</code>,
+                                <code>text-text-main</code>). This ensures a consistent, resilient dark/light mode
+                                experience and standardizes button sizing, notification visuals, and input heights.</li>
+                            <li><span class="tech-tag">Client</span><strong>Responsive Layout & Mobile
+                                    Ergonomics:</strong> Overhauled the <code>AddChildModal.jsx</code> into a dynamic
+                                mobile slide-up container, ensuring form scrollability while locking the action footer.
+                                Adjusted grid layouts globally via the <code>cn</code> utility to reflow gracefully when
+                                the sidebar is toggled or minimized.</li>
                         </ul>
                     </div>
                 </div>
@@ -500,9 +595,33 @@
                     <div class="timeline-title">Portal-based Modal Porting & Mobile Overlap Resolution</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Client</span><strong>Portal-based Overlay Mounts:</strong> Ported the <code>AddChildModal.jsx</code> layout to mount at the root of the document body using React Portals (<code>createPortal</code>). This completely bypasses layout transitions/stacking contexts, ensuring the overlay properly stacks on top of the fixed header and mobile navigation bars.</li>
-                            <li><span class="tech-tag">Client</span><strong>Mobile Layout Isolation:</strong> Preserved full-screen sizing on mobile devices while scaling down to standard dialog layouts on larger screens.</li>
-                            <li><span class="tech-tag">Client</span><strong>Drag-to-Dismiss Meal Details:</strong> Added interactive touch gesture tracking to <code>MealDetailModal.jsx</code> on mobile. Caregivers can now drag the modal downwards from the header or a dedicated visual handle to close it with dynamic backdrop opacity/blur scaling, snapping back smoothly if the gesture threshold is not met.</li>
+                            <li><span class="tech-tag">Client</span><strong>Portal-based Overlay Mounts:</strong> Ported
+                                the <code>AddChildModal.jsx</code> layout to mount at the root of the document body
+                                using React Portals (<code>createPortal</code>). This completely bypasses layout
+                                transitions/stacking contexts, ensuring the overlay properly stacks on top of the fixed
+                                header and mobile navigation bars.</li>
+                            <li><span class="tech-tag">Client</span><strong>Mobile Layout Isolation:</strong> Preserved
+                                full-screen sizing on mobile devices while scaling down to standard dialog layouts on
+                                larger screens.</li>
+                            <li><span class="tech-tag">Client</span><strong>Drag-to-Dismiss Meal Details:</strong> Added
+                                interactive touch gesture tracking to <code>MealDetailModal.jsx</code> on mobile.
+                                Caregivers can now drag the modal downwards from the header or a dedicated visual handle
+                                to close it with dynamic backdrop opacity/blur scaling, snapping back smoothly if the
+                                gesture threshold is not met.</li>
+                            <li><span class="tech-tag">Client</span><strong>Settings Layout Harmonization:</strong>
+                                Synced the settings layout width in <code>Settings.jsx</code> to <code>max-w-4xl</code>
+                                to match the standard sizing of the user profiles, dashboard containers, and visual
+                                skeletons.</li>
+                            <li><span class="tech-tag">Client</span><strong>Responsive Admin Data Oversight:</strong>
+                                Redesigned the <code>AdminDataOversight.jsx</code> container, search form controls, and
+                                record cards to be highly compact, space-efficient, and fully responsive on mobile
+                                screen viewports. Smaller text metrics, dynamic paddings, responsive icons, truncated
+                                text boundaries, and tighter list spacing (down to <code>space-y-2</code>) were
+                                introduced to fit small screens without content overflow.</li>
+                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Card Layout Harmonization:</strong>
+                                Standardized admin console wrappers (<code>AdminDashboard.jsx</code>, <code>AdminDataOversight.jsx</code>, and <code>AdminTelemetry.jsx</code>) to use a unified <code>max-w-6xl mx-auto px-2 sm:px-4</code> layout. This maximizes layout utility by allowing cards to take most of the horizontal space on width while keeping neat, professional padding boundaries.</li>
+                            <li><span class="tech-tag">Client</span><strong>Mobile Telemetry Console Overhaul:</strong>
+                                Optimized the <code>AdminTelemetry.jsx</code> dashboard for mobile screens. Configured the three observability dials to display side-by-side (using <code>grid-cols-3</code>) with compact scale-down metrics rather than stacking into large, empty, single-column blocks. Scaled down dial circle sizes, SVGs, inner metrics, text, and card paddings (to <code>p-4 sm:p-8</code>) inside <code>TelemetryChart</code>, <code>AIHealthMonitor</code>, and <code>PlatformDiagnostics</code>.</li>
                         </ul>
                     </div>
                 </div>

@@ -11,8 +11,8 @@ export default function AIHealthMonitor({ stats }) {
     const successRate = totalRequests === 0 ? 100 : Math.round((successfulRequests / totalRequests) * 100);
 
     return (
-        <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] mt-8">
-            <div className="p-6 sm:p-8 bg-zinc-900 text-white relative overflow-hidden">
+        <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] mt-4 sm:mt-8">
+            <div className="p-4 sm:p-8 bg-zinc-900 text-white relative overflow-hidden">
                 <div className="absolute -right-10 -bottom-10 opacity-10">
                     <BrainCircuit size={200} />
                 </div>
@@ -53,41 +53,41 @@ export default function AIHealthMonitor({ stats }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--color-divider)]">
-                <div className="p-6 sm:p-8 flex flex-col gap-2">
+                <div className="p-4 sm:p-8 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                         <BrainCircuit size={14} /> Total Invocations
                     </div>
-                    <div className="text-4xl font-black text-[var(--color-text-main)] tracking-tighter">
+                    <div className="text-3xl sm:text-4xl font-black text-[var(--color-text-main)] tracking-tighter">
                         {totalRequests.toLocaleString()}
                     </div>
                 </div>
 
-                <div className="p-6 sm:p-8 flex flex-col gap-2 bg-emerald-500/5">
+                <div className="p-4 sm:p-8 flex flex-col gap-2 bg-emerald-500/5">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
                         <CheckCircle2 size={14} /> Successful Analyses
                     </div>
-                    <div className="text-4xl font-black text-emerald-600 tracking-tighter">
+                    <div className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tighter">
                         {successfulRequests.toLocaleString()}
                     </div>
                     <div className="text-xs font-bold text-emerald-600/70">{successRate}% Success Rate</div>
                 </div>
 
-                <div className="p-6 sm:p-8 flex flex-col gap-2 bg-rose-500/5">
+                <div className="p-4 sm:p-8 flex flex-col gap-2 bg-rose-500/5">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-600">
                         <ServerCrash size={14} /> Hard Failures
                     </div>
-                    <div className="text-4xl font-black text-rose-600 tracking-tighter">
+                    <div className="text-3xl sm:text-4xl font-black text-rose-600 tracking-tighter">
                         {failedRequests.toLocaleString()}
                     </div>
                     <div className="text-xs font-bold text-rose-600/70">Failed to analyze completely</div>
                 </div>
             </div>
 
-            <div className="p-6 bg-[var(--color-bg-page)] border-t border-[var(--color-divider)]">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4">Key Rotation Burnout Tracking</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="p-4 sm:p-6 bg-[var(--color-bg-page)] border-t border-[var(--color-divider)]">
+                <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-3 sm:mb-4">Key Rotation Burnout Tracking</div>
+                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                     {failuresByKey.map((fails, index) => (
-                        <div key={index} className="p-4 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] flex items-center justify-between shadow-sm">
+                        <div key={index} className="p-3 sm:p-4 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${lastUsedKeyIndex === index ? 'bg-violet-500 text-white' : 'bg-[var(--color-bg-page)] text-[var(--color-text-muted)]'}`}>
                                     #{index + 1}

@@ -45,8 +45,8 @@ export default function PlatformDiagnostics() {
     };
 
     return (
-        <Card className="border-2 border-[var(--color-divider)] rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] p-8">
-            <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8 select-none">
+        <Card className="border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-xl bg-[var(--color-bg-card)] p-4 sm:p-8">
+            <div className="flex flex-col md:flex-row items-start justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 select-none font-outfit">
                 <div>
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-2xl">
@@ -83,9 +83,9 @@ export default function PlatformDiagnostics() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 {/* 1. DATABASE COMPONENT */}
-                <div className="p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
+                <div className="p-4 sm:p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-2xl sm:rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl">
                             <Database size={20} />
@@ -120,7 +120,7 @@ export default function PlatformDiagnostics() {
                 </div>
 
                 {/* 2. GEMINI AI COMPONENT */}
-                <div className="p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
+                <div className="p-4 sm:p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-2xl sm:rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <div className="p-2.5 bg-violet-500/10 text-violet-500 rounded-xl">
                             <BrainCircuit size={20} />
@@ -155,7 +155,7 @@ export default function PlatformDiagnostics() {
                 </div>
 
                 {/* 3. CLOUDINARY COMPONENT */}
-                <div className="p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
+                <div className="p-4 sm:p-6 bg-zinc-50/50 dark:bg-white/5 border border-[var(--color-divider)] rounded-2xl sm:rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300 select-none">
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl">
                             <Cloud size={20} />
