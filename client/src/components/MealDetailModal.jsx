@@ -75,6 +75,17 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const [isResubmitting, setIsResubmitting] = useState(false);
     const fileAfterInputRef = React.useRef(null);
 
+    // Helper to format ISO date to local datetime-local value
+    const toLocalDatetimeString = (dateVal) => {
+        if (!dateVal) return '';
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return '';
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+    };
+
+    const [editedLoggedAt, setEditedLoggedAt] = useState(log?.logged_at ? toLocalDatetimeString(log.logged_at) : '');
+
     // Robust normalization of allergies (handle strings from DB, arrays, or null)
     const allergyList = React.useMemo(() => {
         const sourceAllergies = (allergies && allergies.length > 0) ? allergies : (log.profile?.allergies || []);
@@ -175,6 +186,12 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 uploadedImageUrl = uploadRes.data.image_url;
             }
 
+            if (!editedLoggedAt) {
+                setNotif({ show: true, message: "Meal time cannot be empty.", type: 'error' });
+                setIsResubmitting(false);
+                return;
+            }
+
             await api.patch(`/logs/${log.id}`, {
                 consumption_percent: editedConsumption,
                 hidden_ingredients: editedHiddenIngredients,
@@ -183,7 +200,8 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 physical_activity: editedActivity,
                 meal_category: editedCategory,
                 cooking_method: editedCookingMethod,
-                image_after_url: uploadedImageUrl
+                image_after_url: uploadedImageUrl,
+                logged_at: new Date(editedLoggedAt).toISOString()
             });
 
             const successMsg = log.status === 'rejected'
@@ -521,14 +539,14 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         </div>
 
                         {/* Metadata Bar */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                                 <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Category</p>
                                 {isEditing ? (
                                     <select
                                         value={editedCategory}
                                         onChange={(e) => setEditedCategory(e.target.value)}
-                                        className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
+                                        className="w-full bg-[var(--color-bg-card)] text-[10px] sm:text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
                                     >
                                         {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner', 'Other'].map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
@@ -536,6 +554,21 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                     </select>
                                 ) : (
                                     <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">{log.meal_category || 'Other'}</p>
+                                )}
+                            </div>
+                            <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
+                                <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Logged Time</p>
+                                {isEditing ? (
+                                    <input
+                                        type="datetime-local"
+                                        value={editedLoggedAt}
+                                        onChange={(e) => setEditedLoggedAt(e.target.value)}
+                                        className="w-full bg-[var(--color-bg-card)] text-[10px] sm:text-xs font-black text-[var(--color-text-main)] border border-[var(--color-divider)] rounded-xl px-2 py-1 focus:border-[var(--color-primary)] outline-none"
+                                    />
+                                ) : (
+                                    <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">
+                                        {new Date(log.logged_at).toLocaleDateString([], { month: 'short', day: 'numeric' })} • {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
                                 )}
                             </div>
                             <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
@@ -918,6 +951,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                     setEditedCookingMethod(log.cooking_method || 'Standard');
                                     setEditedImageAfter(null);
                                     setEditedImageAfterPreview(log.image_after_url || '');
+                                    setEditedLoggedAt(log.logged_at ? toLocalDatetimeString(log.logged_at) : '');
                                 }}
                             >
                                 <span className="hidden sm:inline">Cancel Edits</span>

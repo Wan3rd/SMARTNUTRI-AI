@@ -560,7 +560,8 @@ router.patch('/:id', verifyToken, async (req, res) => {
         physical_activity,
         hidden_ingredients,
         meal_category,
-        image_after_url
+        image_after_url,
+        logged_at
     } = req.body;
 
     // --- Input Validation (before DB query) ---
@@ -600,6 +601,13 @@ router.patch('/:id', verifyToken, async (req, res) => {
         if (physical_activity !== undefined) dataToUpdate.physical_activity = physical_activity;
         if (meal_category !== undefined) dataToUpdate.meal_category = meal_category;
         if (image_after_url !== undefined) dataToUpdate.image_after_url = image_after_url;
+        if (logged_at !== undefined) {
+            const parsedDate = new Date(logged_at);
+            if (isNaN(parsedDate.getTime())) {
+                return res.status(400).json({ message: 'Invalid logged_at date format' });
+            }
+            dataToUpdate.logged_at = parsedDate;
+        }
 
         // If the log was previously rejected, resubmitting it sets status back to pending
         if (log.status === 'rejected') {
@@ -636,8 +644,8 @@ router.patch('/:id', verifyToken, async (req, res) => {
         }
 
         // Recalculate daily compliance
-        if (dataToUpdate.total_calories !== undefined || dataToUpdate.status === 'pending') {
-            const logDate = new Date(log.logged_at);
+        if (dataToUpdate.total_calories !== undefined || dataToUpdate.status === 'pending' || dataToUpdate.logged_at !== undefined) {
+            const logDate = dataToUpdate.logged_at ? new Date(dataToUpdate.logged_at) : new Date(log.logged_at);
             const startOfDay = new Date(logDate);
             startOfDay.setHours(0, 0, 0, 0);
             const endOfDay = new Date(logDate);
