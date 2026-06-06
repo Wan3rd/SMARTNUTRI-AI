@@ -647,6 +647,18 @@
                     </div>
                 </div>
 
+                <!-- JUNE 06 — EMAIL CARD LAYOUT FIX -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 06, 2026 — Email Card Layout Fix</div>
+                    <div class="timeline-title">Gmail Clipping Bypass &amp; Table-based Pill Badge Migration</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span><strong>Table-Based Badge Migration:</strong> Replaced the <code>display: inline-block</code> wrapper divs for the approval badge (<code>sendApprovalEmail</code>) and rejection badge (<code>sendRejectionEmail</code>) in <code>mailer.js</code> with secure table-based layouts (<code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;</code>) and added <code>white-space: nowrap</code> CSS styles to completely eliminate email container clipping, text wrapping, and overflow across Gmail and other strict email clients.</li>
+                            <li><span class="tech-tag">Server</span><strong>Gmail Threading Bypass:</strong> Integrated dynamic, hidden reference IDs (using unique hashes and execution timestamps) into the templates of the shared HTML email wrapper, OTP verification email, and password recovery email. This ensures that consecutive emails do not share duplicate layout footprints, preventing Gmail from collapsing/trimming message bodies under the grey ellipsis (<code>...</code>) "See more" thread trimmer.</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- JUNE 06 — PRODUCTION READINESS AUDIT -->
                 <div class="timeline-item">
                     <div class="timeline-date">June 06, 2026 — Production Readiness Audit</div>

@@ -77,6 +77,10 @@ const buildEmailWrapper = (innerHtml) => `
         <!-- Footer -->
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
         <p style="font-size: 10px; color: #94a3b8; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin: 0;">© 2026 SmartNutri-AI Clinical Station</p>
+        <!-- Unique code to bypass Gmail thread trimming/collapsing -->
+        <div style="display: none !important; max-height: 0px; overflow: hidden; height: 0; width: 0; font-size: 1px; line-height: 1px; color: #ffffff; opacity: 0;">
+            [Ref: ${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now()}]
+        </div>
     </div>
 `;
 
@@ -108,6 +112,10 @@ export const sendOtpEmail = async (email, otpCode, fullName) => {
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
             
             <p style="font-size: 11px; color: #94a3b8; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">© 2026 SmartNutri-AI Clinical Station</p>
+            <!-- Unique code to bypass Gmail thread trimming/collapsing -->
+            <div style="display: none !important; max-height: 0px; overflow: hidden; height: 0; width: 0; font-size: 1px; line-height: 1px; color: #ffffff; opacity: 0;">
+                [Ref: ${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now()}]
+            </div>
         </div>
     `;
 
@@ -151,6 +159,10 @@ export const sendResetPasswordEmail = async (email, token, fullName) => {
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
             
             <p style="font-size: 11px; color: #94a3b8; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">© 2026 SmartNutri-AI Clinical Engine</p>
+            <!-- Unique code to bypass Gmail thread trimming/collapsing -->
+            <div style="display: none !important; max-height: 0px; overflow: hidden; height: 0; width: 0; font-size: 1px; line-height: 1px; color: #ffffff; opacity: 0;">
+                [Ref: ${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now()}]
+            </div>
         </div>
     `;
 
@@ -171,11 +183,13 @@ export const sendApprovalEmail = async (nutritionist) => {
 
     const inner = `
         <!-- Badge -->
-        <div style="text-align: center; margin-bottom: 28px;">
-            <div style="display: inline-block; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #6ee7b7; border-radius: 50px; padding: 10px 24px;">
-                <span style="color: #065f46; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">✅ Account Approved</span>
-            </div>
-        </div>
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 28px auto; text-align: center;">
+            <tr>
+                <td style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #6ee7b7; border-radius: 50px; padding: 10px 24px;">
+                    <span style="color: #065f46; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; display: block;">✅ Account Approved</span>
+                </td>
+            </tr>
+        </table>
 
         <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 12px 0;">Hi <strong style="color: #0f172a;">${full_name || 'Nutritionist'}</strong>,</p>
 
@@ -228,11 +242,13 @@ export const sendRejectionEmail = async (nutritionist, reason = null) => {
 
     const inner = `
         <!-- Badge -->
-        <div style="text-align: center; margin-bottom: 28px;">
-            <div style="display: inline-block; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid #fca5a5; border-radius: 50px; padding: 10px 24px;">
-                <span style="color: #991b1b; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Application Status Update</span>
-            </div>
-        </div>
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 28px auto; text-align: center;">
+            <tr>
+                <td style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid #fca5a5; border-radius: 50px; padding: 10px 24px;">
+                    <span style="color: #991b1b; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; display: block;">Application Status Update</span>
+                </td>
+            </tr>
+        </table>
 
         <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 12px 0;">Hi <strong style="color: #0f172a;">${full_name || 'Applicant'}</strong>,</p>
 
