@@ -27,7 +27,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
     // Lock down pending nutritionists: allow only permitted routes (root, meals, profile, settings, and force-password-reset)
     if (user.role === 'nutritionist' && user.status !== 'approved') {
-        const allowedPaths = ['', '/meals', '/profile', '/settings', '/force-password-reset'];
+        const allowedPaths = ['', '/dashboard', '/meals', '/profile', '/settings', '/force-password-reset'];
         const isAllowed = allowedPaths.some(allowed => currentPath === allowed || currentPath.startsWith('/meals/'));
         if (!isAllowed) {
             return <Navigate to="/" replace />;

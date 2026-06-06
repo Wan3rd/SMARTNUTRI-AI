@@ -123,6 +123,110 @@ const InfoField = ({ label, name, icon: Icon, placeholder, type = 'text', value,
     </div>
 );
 
+const currentYear = new Date().getFullYear();
+const startYear = currentYear - 18;
+const endYear = currentYear - 100;
+const DOB_YEARS = Array.from({ length: startYear - endYear + 1 }, (_, i) => startYear - i);
+
+const DOB_MONTHS = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+];
+
+const getDaysInMonth = (monthStr, yearStr) => {
+    if (!monthStr) return 31;
+    const month = parseInt(monthStr);
+    const year = yearStr ? parseInt(yearStr) : 2000;
+    return new Date(year, month, 0).getDate();
+};
+
+const DobDropdownField = ({ label, name, icon: Icon, value, onChange, isEditing }) => {
+    const [year, month, day] = value ? value.split('-') : ['', '', ''];
+
+    const daysCount = getDaysInMonth(month, year);
+    const DOB_DAYS = Array.from({ length: daysCount }, (_, i) => (i + 1).toString().padStart(2, '0'));
+
+    const handleMonthChange = (m) => {
+        const newMaxDays = getDaysInMonth(m, year);
+        let correctedDay = day;
+        if (day && parseInt(day) > newMaxDays) {
+            correctedDay = '';
+        }
+        onChange(name, m && correctedDay && year ? `${year}-${m}-${correctedDay}` : '');
+    };
+
+    const handleDayChange = (d) => {
+        onChange(name, month && d && year ? `${year}-${month}-${d}` : '');
+    };
+
+    const handleYearChange = (y) => {
+        const newMaxDays = getDaysInMonth(month, y);
+        let correctedDay = day;
+        if (day && parseInt(day) > newMaxDays) {
+            correctedDay = '';
+        }
+        onChange(name, month && correctedDay && y ? `${y}-${month}-${correctedDay}` : '');
+    };
+
+    return (
+        <div className="space-y-1.5">
+            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                {Icon && <Icon size={10} />}{label}
+            </label>
+            {isEditing ? (
+                <div className="grid grid-cols-3 gap-2">
+                    <select
+                        value={month}
+                        onChange={(e) => handleMonthChange(e.target.value)}
+                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all cursor-pointer"
+                    >
+                        <option value="">Month</option>
+                        {DOB_MONTHS.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={day}
+                        onChange={(e) => handleDayChange(e.target.value)}
+                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all cursor-pointer"
+                    >
+                        <option value="">Day</option>
+                        {DOB_DAYS.map(d => (
+                            <option key={d} value={d}>{parseInt(d)}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={year}
+                        onChange={(e) => handleYearChange(e.target.value)}
+                        className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all cursor-pointer"
+                    >
+                        <option value="">Year</option>
+                        {DOB_YEARS.map(y => (
+                            <option key={y} value={y.toString()}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+            ) : (
+                <div className="p-3 sm:p-4 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] font-bold text-[var(--color-text-main)] text-xs sm:text-sm min-h-[48px] sm:min-h-[54px] flex items-center">
+                    {value || <span className="text-[var(--color-text-muted)] italic font-medium text-xs">Not set</span>}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function Profile() {
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -166,7 +270,8 @@ export default function Profile() {
         licenseNo: '',
         clinic: '',
         profileImageUrl: '',
-        licenseImageUrl: user?.license_image_url || ''
+        licenseImageUrl: user?.license_image_url || '',
+        dateOfBirth: user?.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : ''
     });
     const [nutriEditing, setNutriEditing] = useState(false);
     const [nutriSaving, setNutriSaving] = useState(false);
@@ -178,7 +283,8 @@ export default function Profile() {
         fullName: user?.full_name || '',
         email: user?.email || '',
         phone: user?.phone || '',
-        profileImageUrl: user?.profile_image_url || ''
+        profileImageUrl: user?.profile_image_url || '',
+        dateOfBirth: user?.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : ''
     });
     const [parentEditing, setParentEditing] = useState(false);
     const [parentSaving, setParentSaving] = useState(false);
@@ -227,11 +333,11 @@ export default function Profile() {
     const [cropTarget, setCropTarget] = useState('child'); // 'parent' or 'child' or 'nutritionist' or 'license'
 
     const bmiData = useMemo(() => {
-        const h = user?.measurement_system === 'imperial' 
-            ? toMetricHeight(profileData.heightFeet, profileData.heightInches) 
+        const h = user?.measurement_system === 'imperial'
+            ? toMetricHeight(profileData.heightFeet, profileData.heightInches)
             : parseFloat(profileData.height);
-        const w = user?.measurement_system === 'imperial' 
-            ? toMetricWeight(profileData.weight) 
+        const w = user?.measurement_system === 'imperial'
+            ? toMetricWeight(profileData.weight)
             : parseFloat(profileData.weight);
 
         if (!h || !w || isNaN(h) || isNaN(w)) return null;
@@ -239,9 +345,9 @@ export default function Profile() {
         const bmiVal = calculateBMI(w, h);
 
         const latestGrowth = growthLogs && growthLogs.length > 0 ? growthLogs[growthLogs.length - 1] : null;
-        
+
         // Match latest logged height & weight (allow small float differences due to conversions)
-        const isMatchingLatest = latestGrowth && 
+        const isMatchingLatest = latestGrowth &&
             Math.abs(latestGrowth.weight_kg - w) < 0.1 &&
             Math.abs(latestGrowth.height_cm - h) < 0.1;
 
@@ -266,7 +372,8 @@ export default function Profile() {
                         fullName: res.data.full_name || '',
                         email: res.data.email || '',
                         phone: res.data.phone || '',
-                        profileImageUrl: res.data.profile_image_url || ''
+                        profileImageUrl: res.data.profile_image_url || '',
+                        dateOfBirth: res.data.date_of_birth ? new Date(res.data.date_of_birth).toISOString().split('T')[0] : ''
                     });
                 } else {
                     // Fetch linked client count for nutritionist stats
@@ -285,7 +392,8 @@ export default function Profile() {
                         licenseNo: data.license_no || '',
                         clinic: data.clinic || '',
                         profileImageUrl: data.profile_image_url || '',
-                        licenseImageUrl: data.license_image_url || ''
+                        licenseImageUrl: data.license_image_url || '',
+                        dateOfBirth: data.date_of_birth ? new Date(data.date_of_birth).toISOString().split('T')[0] : ''
                     }));
                 }
             } catch (err) {
@@ -298,6 +406,20 @@ export default function Profile() {
     }, [user]);
 
     const handleNutriSave = async () => {
+        if (nutri.dateOfBirth) {
+            const dob = new Date(nutri.dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age < 18) {
+                showNotification('Nutritionists must be at least 18 years old', 'error');
+                return;
+            }
+        }
+
         setNutriSaving(true);
         try {
             const res = await api.put('/auth/profile', {
@@ -306,7 +428,8 @@ export default function Profile() {
                 specialization: nutri.specialization,
                 license_no: nutri.licenseNo,
                 clinic: nutri.clinic,
-                profile_image_url: nutri.profileImageUrl
+                profile_image_url: nutri.profileImageUrl,
+                date_of_birth: nutri.dateOfBirth || null
             });
             showNotification('Nutritionist professional profile updated', 'success');
 
@@ -314,8 +437,9 @@ export default function Profile() {
             if (updateUser) {
                 updateUser({
                     ...user,
-                    full_name: nutri.fullName,
-                    profile_image_url: nutri.profileImageUrl
+                    full_name: res.data.full_name,
+                    profile_image_url: res.data.profile_image_url,
+                    date_of_birth: res.data.date_of_birth
                 });
             }
 
@@ -329,20 +453,36 @@ export default function Profile() {
     };
 
     const handleParentSave = async () => {
+        if (parentData.dateOfBirth) {
+            const dob = new Date(parentData.dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age < 18) {
+                showNotification('Account holder must be at least 18 years old', 'error');
+                return;
+            }
+        }
+
         setParentSaving(true);
         try {
-            await api.put('/auth/profile', {
+            const res = await api.put('/auth/profile', {
                 full_name: parentData.fullName,
                 phone: parentData.phone,
-                profile_image_url: parentData.profileImageUrl
+                profile_image_url: parentData.profileImageUrl,
+                date_of_birth: parentData.dateOfBirth || null
             });
             showNotification('Account information updated', 'success');
 
             if (updateUser) {
                 updateUser({
                     ...user,
-                    full_name: parentData.fullName,
-                    profile_image_url: parentData.profileImageUrl
+                    full_name: res.data.full_name,
+                    profile_image_url: res.data.profile_image_url,
+                    date_of_birth: res.data.date_of_birth
                 });
             }
             setParentEditing(false);
@@ -355,11 +495,13 @@ export default function Profile() {
     };
 
     const handleCancelNutri = () => {
+        const initialDob = user?.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : '';
         const isDirty = nutri.fullName !== (user?.full_name || '') ||
             nutri.phone !== (user?.phone || '') ||
             nutri.specialization !== (user?.specialization || 'Pediatric Nutrition') ||
             nutri.licenseNo !== (user?.license_no || '') ||
-            nutri.clinic !== (user?.clinic || '');
+            nutri.clinic !== (user?.clinic || '') ||
+            nutri.dateOfBirth !== initialDob;
 
         if (isDirty) {
             setConfirmDialog({
@@ -376,7 +518,8 @@ export default function Profile() {
                         phone: user?.phone || '',
                         specialization: user?.specialization || 'Pediatric Nutrition',
                         licenseNo: user?.license_no || '',
-                        clinic: user?.clinic || ''
+                        clinic: user?.clinic || '',
+                        dateOfBirth: initialDob
                     }));
                 }
             });
@@ -386,8 +529,10 @@ export default function Profile() {
     };
 
     const handleCancelParent = () => {
+        const initialDob = user?.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : '';
         const isDirty = parentData.fullName !== (user?.full_name || '') ||
-            parentData.phone !== (user?.phone || '');
+            parentData.phone !== (user?.phone || '') ||
+            parentData.dateOfBirth !== initialDob;
 
         if (isDirty) {
             setConfirmDialog({
@@ -401,7 +546,8 @@ export default function Profile() {
                     setParentData(prev => ({
                         ...prev,
                         fullName: user?.full_name || '',
-                        phone: user?.phone || ''
+                        phone: user?.phone || '',
+                        dateOfBirth: initialDob
                     }));
                 }
             });
@@ -847,14 +993,14 @@ export default function Profile() {
                     <div className="absolute top-[-50%] right-[-10%] w-[350px] h-[350px] rounded-full bg-[var(--color-primary)]/8 blur-[80px] pointer-events-none" />
                     <div className="absolute bottom-[-30%] left-[20%] w-[250px] h-[250px] rounded-full bg-[var(--color-info)]/8 blur-[60px] pointer-events-none" />
 
-                    <div className="relative px-3 sm:px-8 py-6 sm:py-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 overflow-hidden">
+                    <div className="relative p-4 sm:px-8 sm:py-6 flex flex-row items-center gap-4 sm:gap-8 overflow-hidden">
                         {/* Avatar with pulse ring */}
                         <div className="relative flex-shrink-0 group">
-                            <div className="absolute inset-0 rounded-3xl bg-[var(--color-primary)]/20 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
-                            <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden bg-[var(--color-bg-page)] rounded-3xl border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-primary)] text-2xl sm:text-3xl font-black shadow-md select-none transition-all group-hover:border-[var(--color-primary)]/50">
+                            <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-[var(--color-primary)]/20 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
+                            <div className="relative h-14 w-14 sm:h-24 sm:w-24 overflow-hidden bg-[var(--color-bg-page)] rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] flex items-center justify-center text-[var(--color-primary)] text-xl sm:text-3xl font-black shadow-md select-none transition-all group-hover:border-[var(--color-primary)]/50">
                                 {isUploadingPhoto ? (
                                     <div className="flex flex-col items-center justify-center bg-black/20 w-full h-full backdrop-blur-sm">
-                                        <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
+                                        <Loader2 size={20} className="animate-spin text-[var(--color-primary)] sm:size-8" />
                                     </div>
                                 ) : nutri.profileImageUrl ? (
                                     <img
@@ -868,14 +1014,14 @@ export default function Profile() {
                             </div>
                             {!isUploadingPhoto && (
                                 <>
-                                    <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] z-10">
+                                    <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-2xl sm:rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] z-10">
                                         <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'nutritionist')} accept="image/*" />
-                                        <Camera size={28} className="animate-bounce" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
+                                        <Camera size={14} className="animate-bounce sm:size-7" />
+                                        <span className="text-[7px] sm:text-[10px] font-black uppercase tracking-widest mt-0.5 hidden sm:inline">Change</span>
                                     </label>
                                     {user?.status === 'approved' && (
-                                        <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-500 rounded-xl border-2 border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
-                                            <BadgeCheck size={14} className="text-white" />
+                                        <div className="absolute -bottom-1 -right-1 h-5 w-5 sm:h-7 sm:w-7 bg-emerald-500 rounded-lg sm:rounded-xl border border-[var(--color-bg-card)] flex items-center justify-center z-20 shadow-lg">
+                                            <BadgeCheck size={10} className="text-white sm:size-3.5" />
                                         </div>
                                     )}
                                 </>
@@ -883,24 +1029,27 @@ export default function Profile() {
                         </div>
 
                         {/* Name & role */}
-                        <div className="flex-1 text-center sm:text-left min-w-0">
-                            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 mb-2 sm:mb-1.5">
-                                <h1 className="text-xl sm:text-3xl font-black text-[var(--color-text-main)] tracking-tight truncate max-w-full text-center sm:text-left leading-tight">{nutri.fullName}</h1>
-                                <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm whitespace-nowrap">
+                        <div className="flex-1 text-left min-w-0 space-y-1">
+                            <div className="flex flex-row items-center justify-start gap-1.5 sm:gap-2 flex-wrap">
+                                <h1 className="text-sm sm:text-2xl font-black text-[var(--color-text-main)] tracking-tight leading-tight uppercase truncate">{nutri.fullName}</h1>
+                                <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[7px] sm:text-[9px] font-black uppercase tracking-widest rounded-md border border-[var(--color-primary)]/20 backdrop-blur-sm whitespace-nowrap">
                                     Nutritionist
                                 </span>
                             </div>
-                            <p className="text-[var(--color-text-muted)] font-medium text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-2 truncate">
-                                <Stethoscope size={14} className="shrink-0 text-[var(--color-primary)]" />
-                                <span>{nutri.specialization} &bull; {nutri.clinic || 'SmartNutri Clinical'}</span>
+                            <p className="text-[var(--color-text-muted)] font-semibold text-[9px] sm:text-xs flex items-center gap-1.5 sm:gap-2 truncate">
+                                <Stethoscope size={10} className="shrink-0 text-[var(--color-primary)] sm:size-3.5" />
+                                <span className="truncate">{nutri.specialization} &bull; {nutri.clinic || 'SmartNutri Clinical'}</span>
+                            </p>
+                            <p className="sm:hidden text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.05em] flex items-center gap-1">
+                                <Calendar size={10} className="text-slate-400" /> Joined {memberSince}
                             </p>
                         </div>
 
                         {/* Member since pill */}
-                        <div className="flex-shrink-0 text-center w-full sm:w-auto mt-2 sm:mt-0">
-                            <div className="px-4 sm:px-5 py-2 sm:py-3 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0 shadow-sm">
-                                <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest sm:mb-0.5">Member Since:</p>
-                                <p className="text-lg sm:text-xl font-black text-[var(--color-text-main)]">{memberSince}</p>
+                        <div className="hidden sm:block flex-shrink-0 text-center">
+                            <div className="px-4 py-2 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex flex-col items-center justify-center shadow-sm">
+                                <p className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-0.5">Member Since</p>
+                                <p className="text-sm font-black text-[var(--color-text-main)]">{memberSince}</p>
                             </div>
                         </div>
                     </div>
@@ -971,6 +1120,7 @@ export default function Profile() {
                         </CardHeader>
                         <CardContent className="p-3.5 sm:p-5 pt-2 space-y-4">
                             <InfoField label="Full Name" name="fullName" icon={User} placeholder="Your full name" value={nutri.fullName} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
+                            <DobDropdownField label="Date of Birth" name="dateOfBirth" icon={Calendar} value={nutri.dateOfBirth} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
                             <InfoField label="Specialization" name="specialization" icon={Stethoscope} placeholder="e.g. Pediatric Nutrition" value={nutri.specialization} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
                             <InfoField label="License / PRC ID No." name="licenseNo" icon={BadgeCheck} placeholder="e.g. PRC-0012345" value={nutri.licenseNo} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
                             <InfoField label="Clinic / Institution" name="clinic" icon={Building2} placeholder="e.g. SmartNutri Health Center" value={nutri.clinic} onChange={handleNutriFieldChange} isEditing={nutriEditing} />
@@ -1226,6 +1376,11 @@ export default function Profile() {
                                     <Phone size={10} className="text-slate-400" /> {parentData.phone}
                                 </p>
                             )}
+                            {parentData.dateOfBirth && (
+                                <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                                    <Calendar size={10} className="text-slate-400" /> {parentData.dateOfBirth}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -1254,9 +1409,10 @@ export default function Profile() {
                 </div>
 
                 {parentEditing && (
-                    <div className="px-3 sm:px-8 pb-4 sm:pb-8 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="px-3 sm:px-8 pb-4 sm:pb-8 grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 animate-in slide-in-from-top-2 duration-300">
                         <InfoField label="Account Full Name" name="fullName" value={parentData.fullName} onChange={(n, v) => setParentData(p => ({ ...p, fullName: v }))} isEditing={true} />
                         <InfoField label="Contact Phone" name="phone" value={parentData.phone} onChange={(n, v) => setParentData(p => ({ ...p, phone: v }))} isEditing={true} />
+                        <DobDropdownField label="Date of Birth" name="dateOfBirth" icon={Calendar} value={parentData.dateOfBirth} onChange={(n, v) => setParentData(p => ({ ...p, dateOfBirth: v }))} isEditing={true} />
                     </div>
                 )}
 

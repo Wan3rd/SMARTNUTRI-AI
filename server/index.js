@@ -168,7 +168,7 @@ app.post('/api/support/ticket', ticketLimiter, async (req, res) => {
         if (mailResult.success) {
             return res.status(200).json({ message: 'Support ticket successfully dispatched.' });
         } else {
-            return res.status(500).json({ error: 'Failed to send support ticket. Please contact support or check your SENDGRID_API_KEY environment variable.' });
+            return res.status(500).json({ error: 'Failed to send support ticket. Please contact us directly at snutri244@gmail.com.' });
         }
     } catch (err) {
         console.error('Support ticket route error:', err);

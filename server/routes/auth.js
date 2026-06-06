@@ -48,7 +48,7 @@ router.get('/check-email', async (req, res) => {
 // Active OTP storage in memory
 const activeOtps = new Map();
 
-// SEND OTP EMAIL (via SendGrid)
+// SEND OTP EMAIL (via Brevo)
 router.post('/send-otp', async (req, res) => {
     const { email, fullName } = req.body;
     if (!email || !validateEmail(email)) {
@@ -63,15 +63,15 @@ router.post('/send-otp', async (req, res) => {
         const expiresAt = Date.now() + 2 * 60 * 1000;
         activeOtps.set(email.toLowerCase(), { otpCode, expiresAt });
 
-        // Dispatch via SendGrid
+        // Dispatch via Brevo
         const mailResult = await sendOtpEmail(email.toLowerCase(), otpCode, fullName);
         
         if (mailResult.success) {
             return res.json({ success: true, message: 'Verification OTP sent successfully' });
         } else {
-            console.error("SendGrid failed to dispatch OTP:", mailResult.error);
+            console.error("Brevo failed to dispatch OTP:", mailResult.error);
             return res.status(500).json({ 
-                message: 'Failed to send verification email. Please contact support or check your SENDGRID_API_KEY environment variable.' 
+                message: 'Failed to send verification email. Please contact support.' 
             });
         }
     } catch (err) {
@@ -117,7 +117,7 @@ router.post('/register', (req, res, next) => {
         next();
     });
 }, async (req, res) => {
-    const { password, full_name, role, professional_id, phone, specialization, license_no, clinic } = req.body;
+    const { password, full_name, role, professional_id, phone, specialization, license_no, clinic, date_of_birth } = req.body;
     const email = req.body.email?.toLowerCase();
 
     // Input Validation
@@ -132,6 +132,28 @@ router.post('/register', (req, res, next) => {
     }
     if (!role || !VALID_ROLES.includes(role)) {
         return res.status(400).json({ message: 'Role must be either "parent" or "nutritionist"' });
+    }
+
+    if (role === 'nutritionist') {
+        if (!date_of_birth) {
+            return res.status(400).json({ message: 'Date of birth is required for nutritionist accounts' });
+        }
+        const dob = new Date(date_of_birth);
+        if (isNaN(dob.getTime())) {
+            return res.status(400).json({ message: 'Invalid Date of Birth format' });
+        }
+        
+        // Calculate age
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        
+        if (age < 18) {
+            return res.status(400).json({ message: 'Nutritionists must be at least 18 years old to register' });
+        }
     }
 
     try {
@@ -189,7 +211,8 @@ router.post('/register', (req, res, next) => {
                 specialization,
                 license_no,
                 clinic,
-                license_image_url
+                license_image_url,
+                date_of_birth: (role === 'nutritionist' && date_of_birth) ? new Date(date_of_birth) : null
             },
             select: {
                 id: true,
@@ -197,6 +220,7 @@ router.post('/register', (req, res, next) => {
                 full_name: true,
                 role: true,
                 status: true,
+                date_of_birth: true,
                 theme_preference: true,
                 privacy_mode: true,
                 measurement_system: true,
@@ -299,7 +323,8 @@ router.post('/login', loginLimiter, async (req, res) => {
                 notif_compliance: user.notif_compliance ?? true,
                 notif_reminders: user.notif_reminders ?? true,
                 research_anonymize: user.research_anonymize ?? false,
-                profile_image_url: user.profile_image_url || null
+                profile_image_url: user.profile_image_url || null,
+                date_of_birth: user.date_of_birth
             },
             token,
         });
@@ -328,7 +353,7 @@ router.get('/me', verifyToken, async (req, res) => {
 
 // UPDATE PROFILE
 router.put('/profile', verifyToken, async (req, res) => {
-    const { full_name, phone, specialization, license_no, clinic, profile_image_url } = req.body;
+    const { full_name, phone, specialization, license_no, clinic, profile_image_url, date_of_birth } = req.body;
 
     // --- Input Validation ---
     if (full_name !== undefined && full_name !== null && full_name !== '') {
@@ -362,6 +387,25 @@ router.put('/profile', verifyToken, async (req, res) => {
         }
     }
 
+    if (date_of_birth !== undefined && date_of_birth !== null && date_of_birth !== '') {
+        const dob = new Date(date_of_birth);
+        if (isNaN(dob.getTime())) {
+            return res.status(400).json({ message: 'Invalid Date of Birth format' });
+        }
+        
+        // Calculate age
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        
+        if (age < 18) {
+            return res.status(400).json({ message: 'Account holder must be at least 18 years old' });
+        }
+    }
+
     try {
         const updatedUser = await prisma.users.update({
             where: { id: req.user.id },
@@ -371,7 +415,10 @@ router.put('/profile', verifyToken, async (req, res) => {
                 specialization: specialization !== undefined ? (specialization === '' ? null : specialization.trim()) : undefined,
                 license_no: license_no !== undefined ? (license_no === '' ? null : license_no.trim()) : undefined,
                 clinic: clinic !== undefined ? (clinic === '' ? null : clinic.trim()) : undefined,
-                profile_image_url
+                profile_image_url,
+                date_of_birth: date_of_birth !== undefined 
+                    ? (date_of_birth === '' || date_of_birth === null ? null : new Date(date_of_birth)) 
+                    : undefined
             }
         });
         const { password_hash, ...safeUser } = updatedUser;

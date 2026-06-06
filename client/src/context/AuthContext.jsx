@@ -86,6 +86,9 @@ export const AuthProvider = ({ children }) => {
                 data.append('phone', userData.phone);
                 data.append('clinic', userData.clinic);
                 data.append('license', userData.licenseFile);
+                if (userData.dateOfBirth) {
+                    data.append('date_of_birth', userData.dateOfBirth);
+                }
                 headers = { 'Content-Type': 'multipart/form-data' };
             } else {
                 // Use standard JSON
@@ -96,7 +99,8 @@ export const AuthProvider = ({ children }) => {
                     role: userData.role,
                     professional_id: userData.professionalId,
                     phone: userData.phone,
-                    clinic: userData.clinic
+                    clinic: userData.clinic,
+                    date_of_birth: userData.dateOfBirth || null
                 };
             }
 

@@ -9,6 +9,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import api from '../lib/api';
 
+const currentYear = new Date().getFullYear();
+const startYear = currentYear - 18;
+const endYear = currentYear - 100;
+const DOB_YEARS = Array.from({ length: startYear - endYear + 1 }, (_, i) => startYear - i);
+
+const DOB_MONTHS = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+];
+
+const getDaysInMonth = (monthStr, yearStr) => {
+    if (!monthStr) return 31;
+    const month = parseInt(monthStr);
+    const year = yearStr ? parseInt(yearStr) : 2000;
+    return new Date(year, month, 0).getDate();
+};
+
 export default function Register() {
     const { register } = useAuth();
     const navigate = useNavigate();
@@ -17,6 +44,7 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+    const [wizardStep, setWizardStep] = useState(1);
 
     // Clinical OTP Verification Flow States
     const [otpMode, setOtpMode] = useState(false);
@@ -35,8 +63,37 @@ export default function Register() {
         phone: '',
         clinic: '',
         licenseFile: null,
-        termsAccepted: false
+        termsAccepted: false,
+        dateOfBirth: ''
     });
+
+    React.useEffect(() => {
+        setWizardStep(1);
+        setError(null);
+    }, [formData.role]);
+
+    const [dobDay, setDobDay] = useState('');
+    const [dobMonth, setDobMonth] = useState('');
+    const [dobYear, setDobYear] = useState('');
+
+    const daysCount = getDaysInMonth(dobMonth, dobYear);
+    const DOB_DAYS = Array.from({ length: daysCount }, (_, i) => {
+        return (i + 1).toString().padStart(2, '0');
+    });
+
+    React.useEffect(() => {
+        if (formData.role === 'nutritionist' && dobDay && dobMonth && dobYear) {
+            setFormData(prev => ({
+                ...prev,
+                dateOfBirth: `${dobYear}-${dobMonth}-${dobDay}`
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                dateOfBirth: ''
+            }));
+        }
+    }, [dobDay, dobMonth, dobYear, formData.role]);
 
     // 1. OTP Countdown Timer Effect
     React.useEffect(() => {
@@ -208,14 +265,16 @@ export default function Register() {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const handleNextStep = async () => {
         setError(null);
+        
+        if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            setError("A valid email address is required");
+            return;
+        }
 
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match");
-            setLoading(false);
             return;
         }
 
@@ -228,17 +287,10 @@ export default function Register() {
 
         if (password.length < 8 || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
             setError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
-            setLoading(false);
             return;
         }
 
-        if (!formData.termsAccepted) {
-            setError("You must accept the Terms & Conditions");
-            setLoading(false);
-            return;
-        }
-
-        // Check if email is already registered before proceeding
+        setLoading(true);
         try {
             const checkRes = await api.get(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
             if (!checkRes.data.available) {
@@ -246,15 +298,123 @@ export default function Register() {
                 setLoading(false);
                 return;
             }
+            setWizardStep(2);
         } catch (err) {
             console.error("Email check failed:", err);
             setError("Unable to verify email availability. Please check your connection and try again.");
+        } finally {
             setLoading(false);
-            return;
         }
+    };
 
-        // Email is available, trigger SendGrid OTP verification
-        sendOtpEmailService();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        if (formData.role === 'parent') {
+            if (!formData.fullName || formData.fullName.trim().length < 2) {
+                setError("Full name is required (minimum 2 characters)");
+                setLoading(false);
+                return;
+            }
+            if (!formData.phone) {
+                setError("Contact number is required");
+                setLoading(false);
+                return;
+            }
+            if (formData.password !== formData.confirmPassword) {
+                setError("Passwords do not match");
+                setLoading(false);
+                return;
+            }
+
+            // Strong password policy validation
+            const password = formData.password;
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasLowercase = /[a-z]/.test(password);
+            const hasDigit = /[0-9]/.test(password);
+            const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+            if (password.length < 8 || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+                setError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
+                setLoading(false);
+                return;
+            }
+
+            if (!formData.termsAccepted) {
+                setError("You must accept the Terms & Conditions");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const checkRes = await api.get(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
+                if (!checkRes.data.available) {
+                    setError("This email is already registered. Please use a different email or log in.");
+                    setLoading(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Email check failed:", err);
+                setError("Unable to verify email availability. Please check your connection and try again.");
+                setLoading(false);
+                return;
+            }
+
+            sendOtpEmailService();
+        } else {
+            // Nutritionist Step 2 validation
+            if (!formData.fullName || formData.fullName.trim().length < 2) {
+                setError("Full name is required (minimum 2 characters)");
+                setLoading(false);
+                return;
+            }
+            if (!formData.phone) {
+                setError("Contact number is required");
+                setLoading(false);
+                return;
+            }
+            if (!dobDay || !dobMonth || !dobYear) {
+                setError("Please select your Date of Birth");
+                setLoading(false);
+                return;
+            }
+            
+            const dob = new Date(`${dobYear}-${dobMonth}-${dobDay}`);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            
+            if (age < 18) {
+                setError("Nutritionists must be at least 18 years old to register");
+                setLoading(false);
+                return;
+            }
+
+            if (!formData.professionalId) {
+                setError("License / Professional ID is required");
+                setLoading(false);
+                return;
+            }
+
+            if (!formData.clinic) {
+                setError("Clinic / Hospital is required");
+                setLoading(false);
+                return;
+            }
+
+            if (!formData.termsAccepted) {
+                setError("You must accept the Terms & Conditions");
+                setLoading(false);
+                return;
+            }
+
+            sendOtpEmailService();
+        }
     };
 
     return (
@@ -304,49 +464,256 @@ export default function Register() {
                             </button>
                         </div>
 
+                        {formData.role === 'nutritionist' && (
+                            <div className="flex items-center justify-between mb-2 px-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-md border border-indigo-200/30 dark:border-indigo-900/30">
+                                        Step {wizardStep} of 2
+                                    </span>
+                                    <span className="text-xs font-bold text-[var(--color-text-main)]">
+                                        {wizardStep === 1 ? 'Account Credentials' : 'Professional Verification'}
+                                    </span>
+                                </div>
+                                <div className="flex gap-1 w-16 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                    <div className={`h-full bg-indigo-500 rounded-full transition-all duration-300 ${wizardStep === 1 ? 'w-1/2' : 'w-full'}`} />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div>
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">{formData.role === 'nutritionist' ? 'Full Name' : "Parent's Full Name"}</label>
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    required
-                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-                                    placeholder="John Doe"
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Contact Number</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    required
-                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-                                    placeholder="+63 9xx xxx xxxx"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            <div className={formData.role === 'nutritionist' ? 'col-span-1' : 'col-span-1 md:col-span-2'}>
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Email Address</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    required
-                                    className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-                                    placeholder="you@example.com"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            {formData.role === 'nutritionist' && (
+                            {/* Parent signup fields */}
+                            {formData.role === 'parent' && (
                                 <>
-                                    <div className="animate-in slide-in-from-right-4 duration-300">
+                                    <div>
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Parent's Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="fullName"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+                                            placeholder="John Doe"
+                                            value={formData.fullName}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Contact Number</label>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+                                            placeholder="+63 9xx xxx xxxx"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Email Address</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+                                            placeholder="you@example.com"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                required
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+                                                placeholder="••••••••"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Confirm Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                required
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+                                                placeholder="••••••••"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Nutritionist Step 1 fields */}
+                            {formData.role === 'nutritionist' && wizardStep === 1 && (
+                                <>
+                                    <div className="col-span-1 md:col-span-2 animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Email Address</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            placeholder="you@example.com"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                required
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                placeholder="••••••••"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Confirm Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                required
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                placeholder="••••••••"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Nutritionist Step 2 fields */}
+                            {formData.role === 'nutritionist' && wizardStep === 2 && (
+                                <>
+                                    <div className="animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="fullName"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            placeholder="John Doe"
+                                            value={formData.fullName}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Contact Number</label>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            required
+                                            className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            placeholder="+63 9xx xxx xxxx"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="col-span-1 md:col-span-2 animate-in fade-in duration-300">
+                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1.5 block">Date of Birth (Mandatory)</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Month */}
+                                            <select
+                                                value={dobMonth}
+                                                onChange={(e) => {
+                                                    setDobMonth(e.target.value);
+                                                    const maxDays = getDaysInMonth(e.target.value, dobYear);
+                                                    if (dobDay && parseInt(dobDay) > maxDays) {
+                                                        setDobDay('');
+                                                    }
+                                                }}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer"
+                                            >
+                                                <option value="">Month</option>
+                                                {DOB_MONTHS.map(m => (
+                                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                                ))}
+                                            </select>
+
+                                            {/* Day */}
+                                            <select
+                                                value={dobDay}
+                                                onChange={(e) => setDobDay(e.target.value)}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer"
+                                            >
+                                                <option value="">Day</option>
+                                                {DOB_DAYS.map(d => (
+                                                    <option key={d} value={d}>{parseInt(d)}</option>
+                                                ))}
+                                            </select>
+
+                                            {/* Year */}
+                                            <select
+                                                value={dobYear}
+                                                onChange={(e) => {
+                                                    setDobYear(e.target.value);
+                                                    const maxDays = getDaysInMonth(dobMonth, e.target.value);
+                                                    if (dobDay && parseInt(dobDay) > maxDays) {
+                                                        setDobDay('');
+                                                    }
+                                                }}
+                                                className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer"
+                                            >
+                                                <option value="">Year</option>
+                                                {DOB_YEARS.map(y => (
+                                                    <option key={y} value={y.toString()}>{y}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="animate-in fade-in duration-300">
                                         <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">License / Professional ID</label>
                                         <input
                                             type="text"
@@ -358,7 +725,8 @@ export default function Register() {
                                             onChange={handleChange}
                                         />
                                     </div>
-                                    <div className="animate-in slide-in-from-right-4 duration-300 md:col-span-2">
+
+                                    <div className="animate-in fade-in duration-300">
                                         <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Clinic / Hospital</label>
                                         <input
                                             type="text"
@@ -370,7 +738,8 @@ export default function Register() {
                                             onChange={handleChange}
                                         />
                                     </div>
-                                    <div className="animate-in slide-in-from-right-4 duration-300 md:col-span-2">
+
+                                    <div className="col-span-1 md:col-span-2 animate-in fade-in duration-300">
                                         <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Upload License / PRC ID Photo (Optional)</label>
                                         <div className="relative group">
                                             <input
@@ -382,94 +751,101 @@ export default function Register() {
                                             />
                                             <label 
                                                 htmlFor="license-upload"
-                                                className={`flex items-center justify-between w-full p-4 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${formData.licenseFile ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-[var(--color-divider)] hover:border-indigo-500 hover:bg-indigo-50/30'}`}
+                                                className={`flex items-center justify-between w-full p-3.5 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${formData.licenseFile ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-[var(--color-divider)] hover:border-indigo-500 hover:bg-indigo-50/30'}`}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${formData.licenseFile ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-indigo-500/10 text-indigo-500'}`}>
-                                                        {formData.licenseFile ? <ShieldCheck size={20} /> : <FileUp size={20} />}
+                                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${formData.licenseFile ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-indigo-500/10 text-indigo-500'}`}>
+                                                        {formData.licenseFile ? <ShieldCheck size={16} /> : <FileUp size={16} />}
                                                     </div>
                                                     <div className="text-left">
-                                                        <p className="text-sm font-black text-[var(--color-text-main)] truncate max-w-[160px] sm:max-w-[200px]">
+                                                        <p className="text-xs font-black text-[var(--color-text-main)] truncate max-w-[140px] sm:max-w-[180px]">
                                                             {formData.licenseFile ? formData.licenseFile.name : 'Choose ID Photo'}
                                                         </p>
-                                                        <p className="text-[9px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider">JPG, PNG or PDF (Max 5MB)</p>
+                                                        <p className="text-[8px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider">JPG, PNG or PDF (Max 5MB)</p>
                                                     </div>
                                                 </div>
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl group-hover:bg-indigo-200">Browse</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-indigo-600 px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg group-hover:bg-indigo-200">Browse</span>
                                             </label>
                                         </div>
                                     </div>
                                 </>
                             )}
-
-                            <div>
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Password</label>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        required
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-                                        placeholder="••••••••"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1 mb-1 block">Confirm Password</label>
-                                <div className="relative">
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="confirmPassword"
-                                        required
-                                        className="w-full p-4 rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] text-sm font-semibold outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
-                                        placeholder="••••••••"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    >
-                                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-                            <div className="flex items-center gap-2 select-none">
-                                <input
-                                    type="checkbox"
-                                    name="termsAccepted"
-                                    id="terms"
-                                    checked={formData.termsAccepted}
-                                    onChange={handleChange}
-                                    className="w-4 h-4 text-[var(--color-primary)] rounded focus:ring-[var(--color-primary)] cursor-pointer"
-                                />
-                                <label htmlFor="terms" className="text-xs text-[var(--color-text-muted)] select-none">
-                                    I agree to the <button type="button" onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-primary)] font-black hover:underline cursor-pointer">Terms & Conditions</button>
-                                </label>
-                            </div>
+                        {/* Footer / Submit Buttons based on Wizard Step */}
+                        {formData.role === 'parent' && (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                                <div className="flex items-center gap-2 select-none">
+                                    <input
+                                        type="checkbox"
+                                        name="termsAccepted"
+                                        id="terms"
+                                        checked={formData.termsAccepted}
+                                        onChange={handleChange}
+                                        className="w-4 h-4 text-[var(--color-primary)] rounded focus:ring-[var(--color-primary)] cursor-pointer"
+                                    />
+                                    <label htmlFor="terms" className="text-xs text-[var(--color-text-muted)] select-none">
+                                        I agree to the <button type="button" onClick={() => setIsTermsModalOpen(true)} className="text-[var(--color-primary)] font-black hover:underline cursor-pointer">Terms & Conditions</button>
+                                    </label>
+                                </div>
 
-                            <Button 
-                                type="submit" 
-                                className="w-full sm:w-auto px-8 h-14 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-transform text-sm" 
-                                disabled={loading}
-                            >
-                                {loading ? 'Creating Account...' : 'Create Account'}
-                            </Button>
-                        </div>
+                                <Button 
+                                    type="submit" 
+                                    className="w-full sm:w-auto px-8 h-14 rounded-2xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-transform text-sm" 
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Creating Account...' : 'Create Account'}
+                                </Button>
+                            </div>
+                        )}
+
+                        {formData.role === 'nutritionist' && wizardStep === 1 && (
+                            <div className="flex justify-end pt-2">
+                                <Button 
+                                    type="button" 
+                                    onClick={handleNextStep}
+                                    className="w-full sm:w-auto px-8 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-transform text-sm" 
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Validating...' : 'Next Step'}
+                                </Button>
+                            </div>
+                        )}
+
+                        {formData.role === 'nutritionist' && wizardStep === 2 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                                <div className="flex items-center gap-2 select-none">
+                                    <input
+                                        type="checkbox"
+                                        name="termsAccepted"
+                                        id="terms"
+                                        checked={formData.termsAccepted}
+                                        onChange={handleChange}
+                                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                                    />
+                                    <label htmlFor="terms" className="text-xs text-[var(--color-text-muted)] select-none">
+                                        I agree to the <button type="button" onClick={() => setIsTermsModalOpen(true)} className="text-indigo-600 font-black hover:underline cursor-pointer">Terms & Conditions</button>
+                                    </label>
+                                </div>
+
+                                <div className="flex gap-3 w-full sm:w-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => setWizardStep(1)}
+                                        className="flex-1 sm:flex-none px-6 h-14 rounded-2xl bg-gray-100 dark:bg-white/5 text-[var(--color-text-muted)] font-black uppercase tracking-widest text-xs transition-all hover:bg-gray-200/50 dark:hover:bg-white/10 cursor-pointer"
+                                    >
+                                        Back
+                                    </button>
+                                    <Button 
+                                        type="submit" 
+                                        className="flex-[2] sm:flex-none px-8 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-transform text-sm" 
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Creating Account...' : 'Create Account'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </form>
 
                     <div className="text-center text-xs text-[var(--color-text-muted)] mt-8 font-semibold">
@@ -565,9 +941,9 @@ export default function Register() {
 
                                     {/* Spam Check Notice */}
                                     <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-200/50 dark:border-amber-900/30">
-                                        <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 leading-normal text-center flex items-center justify-center gap-1.5">
+                                        <p className="text-[10px] font-bold text-[var(--color-text-muted)] leading-normal text-center flex items-center justify-center gap-1.5">
                                             <AlertCircle size={12} className="text-amber-500 shrink-0" />
-                                            Don't see the email? Please check your <strong className="font-black underline">Spam / Junk</strong> folder.
+                                            Don't see the email? Please check your <strong className="font-black underline text-[var(--color-text-main)]">Spam / Junk</strong> folder.
                                         </p>
                                     </div>
 

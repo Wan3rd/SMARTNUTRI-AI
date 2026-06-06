@@ -135,7 +135,7 @@ export default function NutritionistDashboard() {
 
     if (user?.role === 'nutritionist' && user?.status !== 'approved') {
         return (
-            <div className="min-h-[75vh] w-full flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-outfit py-4 sm:py-8 rounded-3xl animate-in fade-in duration-500">
+            <div className="min-h-[60vh] w-full flex items-center justify-center p-4 relative overflow-hidden font-outfit py-4 rounded-3xl animate-in fade-in duration-500">
                 {/* Mesh Background */}
                 <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-20 rounded-3xl">
                     <div className="absolute inset-0 mesh-emerald opacity-60" />
@@ -145,73 +145,70 @@ export default function NutritionistDashboard() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="w-full max-w-xl glass rounded-[2rem] sm:rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl p-5 sm:p-8 text-center relative z-10 space-y-5 sm:space-y-7"
+                    className="w-full max-w-md glass rounded-[2rem] border border-white/40 dark:border-white/10 shadow-2xl p-6 text-center relative z-10 space-y-4"
                 >
                     {/* ── MINIMAL STATUS INDICATOR ── */}
                     <div className="relative inline-flex items-center justify-center">
-                        <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
+                        <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-2xl animate-pulse" />
                         <motion.div 
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-[1.5rem] bg-white dark:bg-zinc-900 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-xl transition-all"
+                            className="relative h-14 w-14 rounded-2xl bg-white dark:bg-zinc-900 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-xl transition-all"
                         >
-                            <ShieldAlert size={28} className="sm:size-[32px] animate-bounce" />
+                            <ShieldAlert size={24} className="animate-bounce" />
                         </motion.div>
                     </div>
 
                     {/* ── WELL-INFORMED MESSAGING ── */}
-                    <div className="space-y-2.5 sm:space-y-3">
-                        <h1 className="text-2xl sm:text-4xl font-black text-[var(--color-text-main)] tracking-tight leading-tight uppercase">
-                            Clinical Verification <br className="sm:hidden" />
-                            <span className="text-emerald-500">Pending</span>
+                    <div className="space-y-1.5">
+                        <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-main)] tracking-tight leading-tight uppercase">
+                            Verification <span className="text-emerald-500">Pending</span>
                         </h1>
-                        <p className="text-[var(--color-text-muted)] text-xs sm:text-sm font-semibold leading-relaxed max-w-md mx-auto">
-                            Hello, <span className="text-[var(--color-text-main)] font-black">Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance and data security.
+                        <p className="text-[var(--color-text-muted)] text-xs font-semibold leading-relaxed max-w-sm mx-auto">
+                            Hello, <span className="text-[var(--color-text-main)] font-black">Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance.
                         </p>
                     </div>
 
-                    {/* ── INFORMATION GRID ── */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                        <motion.div 
-                            whileHover={{ y: -4 }}
-                            className="p-5 sm:p-6 bg-white/40 dark:bg-black/10 backdrop-blur-md rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm transition-all group"
-                        >
-                            <div className="h-10 w-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 mb-4 transition-transform group-hover:scale-110">
-                                <Clock size={20} />
+                    {/* ── INFORMATION LIST ── */}
+                    <div className="border border-[var(--color-divider)] bg-white/30 dark:bg-black/5 backdrop-blur-md rounded-2xl p-4 text-left divide-y divide-[var(--color-divider)]">
+                        <div className="flex gap-3 pb-3 items-start">
+                            <div className="flex-shrink-0 h-8 w-8 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500">
+                                <Clock size={16} />
                             </div>
-                            <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Audit Timeline</h3>
-                            <p className="text-xs text-[var(--color-text-muted)] font-bold leading-relaxed">Standard verification typically takes <span className="text-[var(--color-text-main)] font-black">12-24 business hours</span>.</p>
-                        </motion.div>
-                        <motion.div 
-                            whileHover={{ y: -4 }}
-                            className="p-5 sm:p-6 bg-white/40 dark:bg-black/10 backdrop-blur-md rounded-[2rem] border-2 border-[var(--color-divider)] shadow-sm transition-all group"
-                        >
-                            <div className="h-10 w-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 mb-4 transition-transform group-hover:scale-110">
-                                <Lock size={20} />
+                            <div className="space-y-0.5">
+                                <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.1em]">Audit Timeline</h3>
+                                <p className="text-[11px] text-[var(--color-text-muted)] font-bold leading-normal">Typically verified within <span className="text-[var(--color-text-main)] font-black">12-24 business hours</span>.</p>
                             </div>
-                            <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.2em] mb-1 font-outfit">Data Status</h3>
-                            <p className="text-xs text-[var(--color-text-muted)] font-bold leading-relaxed">All patient clinical profiles remain <span className="text-[var(--color-text-main)] font-black">encrypted & secure</span> during this audit.</p>
-                        </motion.div>
+                        </div>
+                        <div className="flex gap-3 pt-3 items-start">
+                            <div className="flex-shrink-0 h-8 w-8 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500">
+                                <Lock size={16} />
+                            </div>
+                            <div className="space-y-0.5">
+                                <h3 className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-[0.1em]">Data Status</h3>
+                                <p className="text-[11px] text-[var(--color-text-muted)] font-bold leading-normal">Patient profiles are <span className="text-[var(--color-text-main)] font-black">encrypted & secure</span> during this audit.</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* ── ACTIONS ── */}
-                    <div className="pt-2 sm:pt-4 flex flex-col items-center gap-4">
+                    <div className="pt-2 flex flex-col items-center gap-3">
                         <motion.div
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="w-full sm:w-auto"
+                            className="w-full"
                         >
                             <Button
                                 onClick={logout}
-                                className="w-full sm:w-auto px-8 py-3 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/30 hover:border-red-500/50 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all"
+                                className="w-full px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/30 hover:border-red-500/50 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all"
                             >
-                                <LogOut size={14} />
+                                <LogOut size={12} />
                                 Sign Out
                             </Button>
                         </motion.div>
                         
-                        <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-black uppercase tracking-wider flex items-center gap-2">
-                            Require assistance? <a href="mailto:clinical@smartnutri.ai" className="text-emerald-500 border-b-2 border-emerald-500/20 hover:border-emerald-500 transition-all pb-0.5">Contact Support</a>
+                        <p className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider flex items-center gap-2">
+                            Require assistance? <a href="mailto:clinical@smartnutri.ai" className="text-emerald-500 border-b border-emerald-500/20 hover:border-emerald-500 transition-all pb-0.5">Contact Support</a>
                         </p>
                     </div>
                 </motion.div>
@@ -271,7 +268,7 @@ export default function NutritionistDashboard() {
                             <span className="whitespace-nowrap">Link Parent</span>
                         </Button>
                         <Button
-                            className="bg-[var(--color-bg-card)] text-[var(--color-info)] hover:bg-[var(--color-bg-page)] border border-[var(--color-divider)] shadow-sm hover:shadow-md font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] h-10 sm:h-12 px-1.5 xs:px-3 sm:px-6 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                            className="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/30 shadow-sm hover:shadow-md font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] h-10 sm:h-12 px-1.5 xs:px-3 sm:px-6 rounded-2xl sm:rounded-3xl flex-1 sm:flex-none flex flex-row items-center justify-center gap-1 xs:gap-2 transition-all hover:scale-[1.02] active:scale-95"
                             onClick={() => setIsProfilingOpen(true)}
                         >
                             <Stethoscope size={14} className="xs:w-4 xs:h-4" />

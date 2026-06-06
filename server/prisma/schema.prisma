@@ -213,6 +213,7 @@ model users {
   is_suspended                                                     Boolean?               @default(false)
   force_password_reset                                             Boolean?               @default(false)
   license_image_url                                                String?
+  date_of_birth                                                    DateTime?              @db.Date
   theme_preference                                                 String?                @default("light") @db.VarChar(20)
   privacy_mode                                                     Boolean?               @default(false)
   measurement_system                                               String?                @default("metric") @db.VarChar(20)

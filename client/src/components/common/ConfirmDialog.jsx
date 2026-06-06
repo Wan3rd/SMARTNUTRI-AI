@@ -12,7 +12,9 @@ export default function ConfirmDialog({
     confirmText = 'Confirm', 
     cancelText = 'Cancel',
     isDestructive = false,
-    loading = false 
+    loading = false,
+    confirmDisabled = false,
+    children
 }) {
     const [isClosing, setIsClosing] = React.useState(false);
     const [isMounted, setIsMounted] = React.useState(false);
@@ -75,11 +77,13 @@ export default function ConfirmDialog({
                         {title}
                     </h2>
                     
-                    <p className="text-sm text-center text-[var(--color-text-muted)] mb-6">
+                    <p className="text-sm text-center text-[var(--color-text-muted)] mb-4">
                         {message}
                     </p>
+
+                    {children}
                     
-                    <div className="flex gap-3 w-full">
+                    <div className="flex gap-3 w-full mt-6">
                         <Button
                             variant="secondary"
                             className="flex-1"
@@ -96,7 +100,7 @@ export default function ConfirmDialog({
                                 : "bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-[var(--color-primary)]/20"
                             )}
                             onClick={onConfirm}
-                            disabled={loading}
+                            disabled={loading || confirmDisabled}
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">

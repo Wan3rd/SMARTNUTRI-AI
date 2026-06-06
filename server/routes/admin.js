@@ -1,3 +1,4 @@
+// Trigger Nodemon reload
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
@@ -5,6 +6,7 @@ import { verifyAdmin } from '../middleware/auth.js';
 import { logAuditAction } from '../lib/auditLogger.js';
 import { aiStats } from '../services/gemini.js';
 import { systemConfig } from '../lib/systemConfig.js';
+import { sendStatusEmailWithRetry } from '../lib/mailer.js';
 import os from 'os';
 
 const router = express.Router();
@@ -272,7 +274,8 @@ router.get('/nutritionists', verifyAdmin, async (req, res) => {
                 created_at: true,
                 profile_image_url: true,
                 license_image_url: true,
-                is_suspended: true
+                is_suspended: true,
+                date_of_birth: true
             },
             orderBy: { created_at: 'desc' }
         });
@@ -286,14 +289,18 @@ router.get('/nutritionists', verifyAdmin, async (req, res) => {
 // PATCH /admin/nutritionists/:id/verify - Approve/Reject a nutritionist
 router.patch('/nutritionists/:id/verify', verifyAdmin, async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; // 'approved' or 'rejected'
+    const { status, reason } = req.body; // 'approved' or 'rejected', optional rejection reason
 
     if (!['approved', 'rejected', 'pending'].includes(status)) {
         return res.status(400).json({ message: 'Invalid status' });
     }
 
     try {
-        const oldUser = await prisma.users.findUnique({ where: { id }, select: { status: true } });
+        // Fetch before-state AND email/name needed for notification
+        const oldUser = await prisma.users.findUnique({
+            where: { id },
+            select: { status: true, email: true, full_name: true, profile_image_url: true }
+        });
 
         const updatedUser = await prisma.users.update({
             where: { id },
@@ -317,6 +324,17 @@ router.patch('/nutritionists/:id/verify', verifyAdmin, async (req, res) => {
             },
             ipAddress: req.ip
         });
+
+        // Fire status email asynchronously — never blocks the admin response
+        if (['approved', 'rejected'].includes(status)) {
+            sendStatusEmailWithRetry({
+                status,
+                nutritionist: { id, email: oldUser.email, full_name: oldUser.full_name, profile_image_url: oldUser.profile_image_url || null },
+                logAuditFn: logAuditAction,
+                adminId: req.user.id,
+                rejectionReason: reason || null
+            }).catch(err => console.error('[Admin] Background email send failed:', err));
+        }
 
         res.json({ message: `Nutritionist account ${status}`, user: updatedUser });
     } catch (err) {
@@ -394,7 +412,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
 
 // PATCH /admin/users/bulk-status
 router.patch('/users/bulk-status', verifyAdmin, async (req, res) => {
-    const { userIds, status } = req.body;
+    const { userIds, status, reason } = req.body;
     if (!['approved', 'rejected', 'pending'].includes(status) || !Array.isArray(userIds)) {
         return res.status(400).json({ message: 'Invalid data' });
     }
@@ -410,6 +428,32 @@ router.patch('/users/bulk-status', verifyAdmin, async (req, res) => {
             details: { count: userIds.length, target_ids: userIds },
             ipAddress: req.ip
         });
+
+        // Fire individual emails asynchronously for each affected nutritionist
+        if (['approved', 'rejected'].includes(status)) {
+            (async () => {
+                try {
+                    const nutritionists = await prisma.users.findMany({
+                        where: { id: { in: userIds }, role: 'nutritionist' },
+                        select: { id: true, email: true, full_name: true, profile_image_url: true }
+                    });
+                    await Promise.allSettled(
+                        nutritionists.map(n =>
+                            sendStatusEmailWithRetry({
+                                status,
+                                nutritionist: n,
+                                logAuditFn: logAuditAction,
+                                adminId: req.user.id,
+                                rejectionReason: reason || null
+                            })
+                        )
+                    );
+                } catch (emailErr) {
+                    console.error('[Admin] Bulk email dispatch failed:', emailErr);
+                }
+            })();
+        }
+
         res.json({ message: `Bulk status updated to ${status}` });
     } catch (err) {
         res.status(500).json({ message: 'Server Error' });
@@ -617,7 +661,8 @@ router.get('/users/:id/details', verifyAdmin, async (req, res) => {
                 },
                 license_image_url: true,
                 is_suspended: true,
-                profile_image_url: true
+                profile_image_url: true,
+                date_of_birth: true
             }
         });
 

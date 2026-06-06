@@ -455,7 +455,7 @@
 
                 <!-- MAY 30 (TODAY) -->
                 <div class="timeline-item">
-                    <div class="timeline-date">May 30, 2026 (Today)</div>
+                    <div class="timeline-date">May 30, 2026</div>
                     <div class="timeline-title">Global Rules Engine "Min" Target Enforcement, Dual-Layer Future Date
                         Validations & Clinical Workspace Hardening</div>
                     <div class="timeline-content">
@@ -631,6 +631,38 @@
                     </div>
                 </div>
 
+                <!-- JUNE 06 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 06, 2026</div>
+                    <div class="timeline-title">Nutritionist Approval Notifications, Admin Registration Queue &amp; Email Retry Pipeline</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span><strong>Approval/Rejection Email Pipeline:</strong> Built a full email notification system for nutritionist account decisions. The <code>sendApprovalEmail</code> and <code>sendRejectionEmail</code> functions dispatch richly-styled Brevo transactional emails on admin approve/reject actions, including login CTAs, rejection reason blocks, and appeal-to-support links.</li>
+                            <li><span class="tech-tag">Server</span><strong>Exponential Backoff Retry Wrapper:</strong> Implemented <code>sendStatusEmailWithRetry</code> in <code>mailer.js</code> — a resilient retry wrapper that attempts email delivery up to 3 times with 0 / 2s / 5s delays. All success and failure outcomes are written to <code>audit_logs</code> as <code>EMAIL_APPROVAL_SENT</code>, <code>EMAIL_REJECTION_SENT</code>, or <code>EMAIL_SEND_FAILED</code> records.</li>
+                            <li><span class="tech-tag">Server</span><strong>Admin Verification Route Hardening:</strong> Refactored <code>PATCH /admin/nutritionists/:id/verify</code> to use the retry mailer, passing the <code>logAuditAction</code> helper as a parameter to avoid circular imports. Optional rejection reasons are now forwarded into the email body.</li>
+                            <li><span class="tech-tag">Client</span><strong>Registration Queue Component:</strong> Built <code>RegistrationQueue.jsx</code> — a dedicated admin panel listing all pending nutritionist registrations with license image previews, professional details, and inline Approve / Reject controls. Rejection triggers a reason input dialog before submitting.</li>
+                            <li><span class="tech-tag">Client</span><strong>User Details Modal — Pending State:</strong> Extended <code>UserDetailsModal.jsx</code> with a prominent pending-nutritionist banner and inline approve/reject buttons, keeping admin workflow consolidated inside the existing user management interface.</li>
+                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Integration:</strong> Wired the Registration Queue into the <code>AdminDashboard.jsx</code> overview, displaying a live count badge of pending applications and routing to the dedicated queue tab.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- JUNE 06 — PRODUCTION READINESS AUDIT -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 06, 2026 — Production Readiness Audit</div>
+                    <div class="timeline-title">Full System Production Audit: Security Headers, Configuration Review &amp; Deployment Checklist</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Audit</span><strong>Critical Blockers Identified:</strong> Conducted a comprehensive production-readiness sweep across the entire codebase. Key blockers found: <code>IS_PRODUCTION = false</code> in <code>env_config.js</code> (master URL/keep-alive switch), <code>helmet</code> installed but never applied in <code>server/index.js</code>, <code>JWT_SECRET</code> using a weak default in local <code>.env</code>, <code>DATABASE_URL</code> pointing to localhost instead of the Supabase production URL, and OTP codes stored in an in-memory <code>Map</code> which is wiped on every Render server restart.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Security Headers Gap:</strong> Confirmed that <code>helmet</code> (HTTP security headers middleware — <code>X-Frame-Options</code>, <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options</code>, etc.) is listed as a dependency but is missing from the Express middleware chain. Flagged for immediate addition before production push.</li>
+                            <li><span class="tech-tag">Audit</span><strong>In-Memory OTP Fragility:</strong> Documented that the registration OTP system stores active codes in a JavaScript <code>Map</code> in process memory. On Render free tier, server spin-down and restarts silently destroy all active OTP sessions, causing mid-registration users to receive "No active verification code found" errors. Flagged for migration to a database-backed OTP table.</li>
+                            <li><span class="tech-tag">Audit</span><strong>NODE_ENV &amp; Mailer Fallback Risk:</strong> Identified that if <code>NODE_ENV=production</code> is not explicitly set on Render, the Brevo mailer's mock-email console fallback could silently swallow real emails in production. Documented as a required environment variable.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Production-Ready Systems Verified:</strong> Confirmed fully production-compliant: CORS allowlist enforcement, DB-level auth checks on every request (suspended/deleted/force-reset), all admin routes protected by <code>verifyAdmin</code>, bcryptjs password hashing (salt=10), strict password validation, rate limiting on login/auth/tickets, JWT with DB-level user status verification, MIME-filtered file uploads (5MB cap), Cloudinary old-file cleanup on re-upload, ORM-enforced immutable audit logs (Prisma extension), no-enumeration forgot-password flow, Vercel SPA rewrite rules, PWA manifest &amp; service worker, code splitting (MUI/Recharts/Quill), Socket.io room-based CORS, health check endpoint, maintenance mode, email retry with exponential backoff, and <code>.gitignore</code> covering all <code>.env</code> files.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Pre-Launch Checklist Generated:</strong> Produced a structured pre-launch checklist covering: toggling the production flag, adding <code>helmet()</code>, setting strong environment secrets on Render, running <code>prisma migrate deploy</code> against the production Supabase instance, and validating email links, admin access, and the full registration-to-login flow on the live environment.</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -650,7 +682,7 @@
         <!-- Footer -->
         <footer
             style="text-align: center; font-size: 11px; color: var(--color-text-muted); border-t: 1px solid var(--color-divider); padding-top: 20px;">
-            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Production Stable
+            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Last Updated: June 06, 2026 &bull; Pre-Production
         </footer>
 
     </div>
