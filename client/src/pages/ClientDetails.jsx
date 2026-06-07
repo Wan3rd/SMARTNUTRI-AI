@@ -2268,9 +2268,9 @@ export default function ClientDetails() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className={cn("flex flex-col lg:flex-row items-start w-full max-w-full transition-all duration-300", isSidebarMinimized ? "lg:gap-4" : "gap-4 lg:gap-8")}>
+                    <div className={cn("flex flex-col lg:flex-row items-start w-full max-w-full transition-[gap] duration-300", isSidebarMinimized ? "lg:gap-4" : "gap-4 lg:gap-8")}>
                         {/* Left Sidebar: Profiles (Command Center) */}
-                        <div className={cn("transition-all duration-300 ease-in-out shrink-0 w-full max-w-full lg:relative lg:z-10", isSidebarMinimized ? "lg:w-[60px]" : "lg:w-72")}>
+                        <div className={cn("transition-[width] duration-300 ease-in-out shrink-0 w-full max-w-full lg:relative lg:z-10", isSidebarMinimized ? "lg:w-[60px]" : "lg:w-72")}>
                             <div className="sticky top-[72px] lg:top-8 z-10 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-2 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
                                 <div className={cn("flex items-center justify-between", isSidebarMinimized ? "mb-0" : "mb-4")}>
                                     <h3 className={cn("font-black text-[var(--color-secondary)] uppercase text-[10px] tracking-[0.2em] flex items-center gap-2 transition-opacity duration-200", isSidebarMinimized ? "lg:opacity-0 lg:w-0 lg:overflow-hidden lg:m-0" : "opacity-100 w-auto")}>
@@ -2308,17 +2308,13 @@ export default function ClientDetails() {
                                                 onMouseLeave={() => setHoveredProfileId(null)}
                                                 whileHover={{ scale: 1.03 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                animate={{ 
-                                                     borderRadius: isSidebarMinimized ? "26px" : "16px" 
-                                                }}
-                                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                                 className={cn(
-                                                    "h-[52px] cursor-pointer transition-colors border-2 relative shrink-0 snap-start flex items-center z-10",
+                                                    "h-[52px] cursor-pointer transition-[colors,width,padding,gap,border-radius] duration-300 ease-in-out border-2 relative shrink-0 snap-start flex items-center z-10",
                                                     isSelected
                                                         ? 'bg-[var(--color-primary)]/5 border-[var(--color-primary)]/30 dark:bg-emerald-500/5 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/5'
                                                         : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-bg-card)]/80',
                                                     "w-[52px] sm:w-[200px] justify-center sm:justify-start px-0 sm:px-3 gap-0 sm:gap-2.5",
-                                                    isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center lg:gap-0" : "lg:w-full"
+                                                    isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:justify-center lg:gap-0 rounded-[26px]" : "lg:w-full rounded-[16px]"
                                                 )}
                                             >
                                                 {isSelected && (
@@ -2375,10 +2371,10 @@ export default function ClientDetails() {
                                                 <AnimatePresence initial={false}>
                                                     {!isSidebarMinimized && (
                                                         <motion.div
-                                                            initial={{ opacity: 0, width: 0, x: -10 }}
-                                                            animate={{ opacity: 1, width: 'auto', x: 0 }}
-                                                            exit={{ opacity: 0, width: 0, x: -10 }}
-                                                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                            initial={{ opacity: 0, x: -8 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            exit={{ opacity: 0, x: -8 }}
+                                                            transition={{ duration: 0.2, ease: 'easeInOut' }}
                                                             className="min-w-0 flex-1 flex-col justify-center hidden sm:flex overflow-hidden"
                                                         >
                                                             <div className={cn("font-black truncate uppercase text-xs sm:text-sm tracking-tight leading-none mb-0.5", isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]')}>
@@ -2437,12 +2433,10 @@ export default function ClientDetails() {
                                     <motion.button
                                         onClick={() => setIsAddProfileOpen(true)}
                                         className={cn(
-                                            "shrink-0 h-[52px] border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-colors group flex items-center justify-center snap-start",
+                                            "shrink-0 h-[52px] border-2 border-dashed border-[var(--color-divider)] bg-[var(--color-bg-card)]/50 hover:bg-[var(--color-primary)]/5 hover:border-[var(--color-primary)] transition-[colors,width,padding,gap,border-radius] duration-300 ease-in-out group flex items-center justify-center snap-start",
                                             "w-[52px] sm:w-[200px] gap-0 sm:gap-3",
-                                            isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:gap-0" : "lg:w-full"
+                                            isSidebarMinimized ? "lg:w-[52px] lg:px-0 lg:gap-0 rounded-[26px]" : "lg:w-full rounded-[16px]"
                                         )}
-                                        animate={{ borderRadius: isSidebarMinimized ? "26px" : "16px" }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                         title={isSidebarMinimized ? "Add New Profile" : undefined}
                                     >
                                         <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] group-hover:scale-110 transition-transform shrink-0">
@@ -2451,10 +2445,10 @@ export default function ClientDetails() {
                                         <AnimatePresence initial={false}>
                                             {!isSidebarMinimized && (
                                                 <motion.span
-                                                    initial={{ opacity: 0, width: 0, x: -10 }}
-                                                    animate={{ opacity: 1, width: 'auto', x: 0 }}
-                                                    exit={{ opacity: 0, width: 0, x: -10 }}
-                                                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                    initial={{ opacity: 0, x: -8 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -8 }}
+                                                    transition={{ duration: 0.2, ease: 'easeInOut' }}
                                                     className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] hidden sm:block overflow-hidden whitespace-nowrap"
                                                 >
                                                     Add New

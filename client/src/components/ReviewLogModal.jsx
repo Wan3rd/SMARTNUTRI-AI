@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Plus, Minus, Loader2 } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';
@@ -18,7 +18,6 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [editedWater, setEditedWater] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
-    const [zoomScale, setZoomScale] = useState(1);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [isScrolled, setIsScrolled] = useState(false);
@@ -30,6 +29,107 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [dragY, setDragY] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const dragStartY = React.useRef(0);
+
+    // Zoom/Pan/Rotate states for image lightbox
+    const [imgScale, setImgScale] = useState(1);
+    const [imgPosition, setImgPosition] = useState({ x: 0, y: 0 });
+    const [imgRotation, setImgRotation] = useState(0);
+    const [isImgDragging, setIsImgDragging] = useState(false);
+    const imageRef = useRef(null);
+    const imgScaleRef = useRef(1);
+    const imgPositionRef = useRef({ x: 0, y: 0 });
+    const imgDragStartRef = useRef({ x: 0, y: 0 });
+    const imgDragStartPosRef = useRef({ x: 0, y: 0 });
+    const imgDragTotalDistRef = useRef(0);
+
+    // Keep zoom refs in sync
+    useEffect(() => { imgScaleRef.current = imgScale; }, [imgScale]);
+    useEffect(() => { imgPositionRef.current = imgPosition; }, [imgPosition]);
+
+    // Wheel-to-zoom on the lightbox image
+    useEffect(() => {
+        const img = imageRef.current;
+        if (!img || !previewImage) return;
+        const onWheelEvent = (e) => {
+            e.preventDefault();
+            const zoomStep = 0.2;
+            const direction = e.deltaY < 0 ? 1 : -1;
+            const prevScale = imgScaleRef.current;
+            const newScale = Math.max(1, Math.min(4, prevScale + direction * zoomStep));
+            if (newScale === prevScale) return;
+            if (newScale === 1) {
+                setImgScale(1);
+                setImgPosition({ x: 0, y: 0 });
+            } else {
+                const container = img.parentElement;
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    const cursorX = e.clientX - (rect.left + rect.width / 2);
+                    const cursorY = e.clientY - (rect.top + rect.height / 2);
+                    const prevPos = imgPositionRef.current;
+                    const factor = newScale / prevScale;
+                    setImgScale(newScale);
+                    setImgPosition({
+                        x: cursorX - (cursorX - prevPos.x) * factor,
+                        y: cursorY - (cursorY - prevPos.y) * factor
+                    });
+                }
+            }
+        };
+        img.addEventListener('wheel', onWheelEvent, { passive: false });
+        return () => img.removeEventListener('wheel', onWheelEvent);
+    }, [previewImage]);
+
+    const handleImgZoomIn = () => setImgScale(prev => Math.min(prev + 0.25, 4));
+    const handleImgZoomOut = () => setImgScale(prev => {
+        const next = Math.max(prev - 0.25, 1);
+        if (next === 1) setImgPosition({ x: 0, y: 0 });
+        return next;
+    });
+    const handleImgRotate = () => setImgRotation(prev => (prev + 90) % 360);
+    const handleImgReset = () => { setImgScale(1); setImgPosition({ x: 0, y: 0 }); setImgRotation(0); };
+
+    const handleImgPointerDown = (e) => {
+        if (imgScale <= 1) return;
+        e.preventDefault();
+        try { e.target.setPointerCapture(e.pointerId); } catch (err) { console.error(err); }
+        setIsImgDragging(true);
+        imgDragStartRef.current = { x: e.clientX, y: e.clientY };
+        imgDragStartPosRef.current = { ...imgPositionRef.current };
+        imgDragTotalDistRef.current = 0;
+    };
+    const handleImgPointerMove = (e) => {
+        if (!isImgDragging) return;
+        e.preventDefault();
+        const dx = e.clientX - imgDragStartRef.current.x;
+        const dy = e.clientY - imgDragStartRef.current.y;
+        imgDragTotalDistRef.current = Math.sqrt(dx * dx + dy * dy);
+        setImgPosition({ x: imgDragStartPosRef.current.x + dx, y: imgDragStartPosRef.current.y + dy });
+    };
+    const handleImgPointerUp = (e) => {
+        if (!isImgDragging) return;
+        try { e.target.releasePointerCapture(e.pointerId); } catch (err) { console.error(err); }
+        setIsImgDragging(false);
+        if (imgDragTotalDistRef.current < 5) {
+            // toggle zoom on click
+            if (imgScale > 1) {
+                handleImgReset();
+            } else {
+                const img = imageRef.current;
+                const container = img?.parentElement;
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    const cursorX = e.clientX - (rect.left + rect.width / 2);
+                    const cursorY = e.clientY - (rect.top + rect.height / 2);
+                    const targetScale = 2.5;
+                    setImgScale(targetScale);
+                    setImgPosition({ x: cursorX - cursorX * targetScale, y: cursorY - cursorY * targetScale });
+                }
+            }
+        }
+    };
+
+    const closeLightbox = () => { setPreviewImage(null); handleImgReset(); };
 
     const handleCloseWithAnimation = React.useCallback(() => {
         setIsClosing(true);
@@ -131,8 +231,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
                 if (previewImage) {
-                    setPreviewImage(null);
-                    setZoomScale(1);
+                    closeLightbox();
                 } else {
                     handleDismiss();
                 }
@@ -888,64 +987,68 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                         </div>
                     </div>
                 </div>
-                {/* Image Preview Overlay */}
-                <AnimatePresence>
-                    {previewImage && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4"
-                            onWheel={(e) => {
-                                const zoomDelta = e.deltaY * -0.002;
-                                setZoomScale(s => Math.min(Math.max(0.5, s + zoomDelta), 4));
-                            }}
+                {/* Image Preview Lightbox */}
+                {previewImage && (
+                    <div
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 md:p-12 animate-in fade-in duration-300"
+                        onClick={closeLightbox}
+                    >
+                        <button
+                            onClick={closeLightbox}
+                            className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors p-4 bg-white/5 rounded-full border border-white/10 z-[210] cursor-pointer"
                         >
-                            {/* Hint pill */}
-                            <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/15 px-4 py-1.5 rounded-full z-[110] pointer-events-none">
-                                <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Flick up or down to dismiss</p>
+                            <X size={32} />
+                        </button>
+                        <div
+                            className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-8"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center space-y-2">
+                                <h2 className="text-2xl font-black text-white tracking-tight uppercase">Image Preview</h2>
+                                <p className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.3em]">Scroll or pinch to zoom • Drag to pan • Click to toggle</p>
                             </div>
-
-                            {/* Zoom Controls */}
-                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-2xl flex items-center gap-4 z-[110]">
-                                <button onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
-                                    <Minus size={18} />
-                                </button>
-                                <span className="text-white font-black text-xs min-w-[60px] text-center">{Math.round(zoomScale * 100)}%</span>
-                                <button onClick={() => setZoomScale(s => Math.min(3, s + 0.25))} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
-                                    <Plus size={18} />
-                                </button>
-                                <div className="w-[1px] h-6 bg-white/20 mx-2" />
-                                <button onClick={() => { setZoomScale(1); setPreviewImage(null); }} className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            {/* #3: Draggable image — flick up/down to dismiss */}
-                            <motion.div
-                                drag
-                                dragConstraints={{ left: -400, right: 400, top: -400, bottom: 400 }}
-                                dragElastic={0.2}
-                                style={{ scale: zoomScale }}
-                                className="relative cursor-grab active:cursor-grabbing"
-                                onDragEnd={(_, info) => {
-                                    const { velocity, offset } = info;
-                                    // Dismiss if flicked fast enough OR dragged far enough vertically
-                                    if (Math.abs(velocity.y) > 500 || Math.abs(offset.y) > 160) {
-                                        setZoomScale(1);
-                                        setPreviewImage(null);
-                                    }
-                                }}
-                            >
+                            <div className="flex-1 w-full max-h-[70vh] overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/50 flex items-center justify-center relative select-none">
                                 <img
+                                    ref={imageRef}
                                     src={previewImage}
                                     alt="Preview"
-                                    className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none select-none"
+                                    onPointerDown={handleImgPointerDown}
+                                    onPointerMove={handleImgPointerMove}
+                                    onPointerUp={handleImgPointerUp}
+                                    onPointerLeave={handleImgPointerUp}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                        transform: `translate(${imgPosition.x}px, ${imgPosition.y}px) scale(${imgScale}) rotate(${imgRotation}deg)`,
+                                        cursor: imgScale > 1 ? (isImgDragging ? 'grabbing' : 'grab') : 'zoom-in',
+                                        transition: isImgDragging ? 'none' : 'transform 0.15s ease-out',
+                                        touchAction: 'none'
+                                    }}
+                                    className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl shadow-black/50 border border-white/10 select-none"
                                 />
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </div>
+
+                            {/* Control Toolbar */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-5 z-[210] animate-in slide-in-from-bottom-5">
+                                <button onClick={handleImgZoomOut} className="text-white/75 hover:text-white p-1 transition-colors cursor-pointer" title="Zoom Out">
+                                    <ZoomOut size={20} />
+                                </button>
+                                <span className="text-white/60 text-xs font-black font-mono w-10 text-center select-none">
+                                    {Math.round(imgScale * 100)}%
+                                </span>
+                                <button onClick={handleImgZoomIn} className="text-white/75 hover:text-white p-1 transition-colors cursor-pointer" title="Zoom In">
+                                    <ZoomIn size={20} />
+                                </button>
+                                <div className="w-px h-4 bg-white/20" />
+                                <button onClick={handleImgRotate} className="text-white/75 hover:text-white p-1 transition-colors cursor-pointer" title="Rotate Clockwise">
+                                    <RotateCw size={18} />
+                                </button>
+                                <button onClick={handleImgReset} className="text-white/75 hover:text-white p-1 transition-colors cursor-pointer" title="Reset View">
+                                    <Maximize2 size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <Notification
                     key="modal-notif"
