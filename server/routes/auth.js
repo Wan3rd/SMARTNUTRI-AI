@@ -154,6 +154,16 @@ router.post('/register', (req, res, next) => {
         if (age < 18) {
             return res.status(400).json({ message: 'Nutritionists must be at least 18 years old to register' });
         }
+        if (specialization) {
+            if (typeof specialization !== 'string' || specialization.trim().length > 150) {
+                return res.status(400).json({ message: 'Specialization must be 150 characters or less' });
+            }
+        }
+        if (license_no) {
+            if (typeof license_no !== 'string' || license_no.trim().length > 50) {
+                return res.status(400).json({ message: 'License number must be 50 characters or less' });
+            }
+        }
     }
 
     try {

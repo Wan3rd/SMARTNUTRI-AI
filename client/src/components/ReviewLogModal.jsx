@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Save, Edit2, Info, ChefHat, Eye, EyeOff, Activity, Droplets, Pill, PieChart, ShieldAlert, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
 import Notification from './common/Notification';

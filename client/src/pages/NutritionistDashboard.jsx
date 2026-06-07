@@ -50,7 +50,7 @@ export default function NutritionistDashboard() {
             onConfirm: () => {
                 startLoading('Unlinking caregiver...');
                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                api.delete(`/nutritionist/client/${client.id}`)
+                api.delete(`/nutritionist/clients/${client.id}`)
                     .then(() => {
                         showNotif(`Successfully unlinked caregiver "${client.full_name}".`);
                         fetchData();
@@ -121,7 +121,7 @@ export default function NutritionistDashboard() {
             setClients(clientsRes.data);
             setPendingLogs(pendingRes.data);
             setStats({
-                clients: clientsRes.data.length,
+                clients: clientsRes.data.filter(c => c.status === 'active').length,
                 pending: pendingRes.data.length
             });
         } catch (err) {

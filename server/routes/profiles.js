@@ -443,26 +443,42 @@ router.delete('/growth-record/:logId', verifyToken, async (req, res) => {
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized: You cannot delete this record' });
 
-        await prisma.growth_logs.delete({ where: { id: logId } });
-        console.log(`[DELETE] Successfully deleted log record ${logId}`);
-
-        // Update profile with the next latest available log
-        const latestLog = await prisma.growth_logs.findFirst({
+        // Check if the log being deleted is the latest log
+        const latestBeforeDelete = await prisma.growth_logs.findFirst({
             where: { profile_id: log.profile_id },
             orderBy: { logged_at: 'desc' }
         });
+        const isLatest = latestBeforeDelete && latestBeforeDelete.id === logId;
 
-        if (latestLog) {
-            console.log(`[DELETE] Updating profile ${log.profile_id} biometrics from next latest log`);
-            await prisma.profiles.update({
-                where: { id: log.profile_id },
-                data: {
-                    height_cm: latestLog.height_cm,
-                    weight_kg: latestLog.weight_kg
-                }
+        await prisma.growth_logs.delete({ where: { id: logId } });
+        console.log(`[DELETE] Successfully deleted log record ${logId}`);
+
+        if (isLatest) {
+            // Update profile with the next latest available log
+            const latestLog = await prisma.growth_logs.findFirst({
+                where: { profile_id: log.profile_id },
+                orderBy: { logged_at: 'desc' }
             });
-        } else {
-            console.log(`[DELETE] No remaining logs for profile ${log.profile_id}. Biometrics remain as they are.`);
+
+            if (latestLog) {
+                console.log(`[DELETE] Updating profile ${log.profile_id} biometrics from next latest log`);
+                await prisma.profiles.update({
+                    where: { id: log.profile_id },
+                    data: {
+                        height_cm: latestLog.height_cm,
+                        weight_kg: latestLog.weight_kg
+                    }
+                });
+            } else {
+                console.log(`[DELETE] No remaining logs for profile ${log.profile_id}. Setting biometrics to null.`);
+                await prisma.profiles.update({
+                    where: { id: log.profile_id },
+                    data: {
+                        height_cm: null,
+                        weight_kg: null
+                    }
+                });
+            }
         }
 
         res.json({ message: 'Growth record deleted successfully' });

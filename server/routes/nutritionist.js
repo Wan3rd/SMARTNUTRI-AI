@@ -1,3 +1,4 @@
+
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
@@ -338,7 +339,7 @@ router.patch('/clients/:id/restore', verifyToken, isNutritionist, async (req, re
                 data: {
                     deleted_at: null,
                     deactivation_reason: null,
-                    status: 'active'
+                    status: 'approved'
                 }
             }),
             // Update Link Status
@@ -656,6 +657,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
                 profile_id: true, 
                 logged_at: true,
                 meal_category: true,
+                ai_analysis: true,
                 profiles: {
                     select: {
                         allergies: true,
@@ -713,7 +715,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
 
         // 4. Check Compliance (Dynamic Import)
         const { checkCompliance } = await import('../utils/compliance.js');
-        const complianceResult = checkCompliance({ nutritionist_review }, rules, dailyTotals, log.profiles?.allergies || []);
+        const complianceResult = checkCompliance({ nutritionist_review, ai_analysis: log.ai_analysis }, rules, dailyTotals, log.profiles?.allergies || []);
 
         // 5. Update Log with first-class nutritional columns
         const verified = nutritionist_review?.verified_analysis || {};
