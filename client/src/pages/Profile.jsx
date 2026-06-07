@@ -151,8 +151,23 @@ const getDaysInMonth = (monthStr, yearStr) => {
 };
 
 const DobDropdownField = ({ label, name, icon: Icon, value, onChange, isEditing }) => {
-    const [year, month, day] = value ? value.split('-') : ['', '', ''];
+    const parseDateStr = (val) => {
+        if (!val) return { year: '', month: '', day: '' };
+        const parts = val.split('-');
+        return {
+            year: parts[0] || '',
+            month: parts[1] || '',
+            day: parts[2] || ''
+        };
+    };
 
+    const [parts, setParts] = useState(() => parseDateStr(value));
+
+    useEffect(() => {
+        setParts(parseDateStr(value));
+    }, [value]);
+
+    const { year, month, day } = parts;
     const daysCount = getDaysInMonth(month, year);
     const DOB_DAYS = Array.from({ length: daysCount }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
@@ -162,11 +177,25 @@ const DobDropdownField = ({ label, name, icon: Icon, value, onChange, isEditing 
         if (day && parseInt(day) > newMaxDays) {
             correctedDay = '';
         }
-        onChange(name, m && correctedDay && year ? `${year}-${m}-${correctedDay}` : '');
+        const updated = { ...parts, month: m, day: correctedDay };
+        setParts(updated);
+
+        if (updated.year && updated.month && updated.day) {
+            onChange(name, `${updated.year}-${updated.month}-${updated.day}`);
+        } else {
+            onChange(name, '');
+        }
     };
 
     const handleDayChange = (d) => {
-        onChange(name, month && d && year ? `${year}-${month}-${d}` : '');
+        const updated = { ...parts, day: d };
+        setParts(updated);
+
+        if (updated.year && updated.month && updated.day) {
+            onChange(name, `${updated.year}-${updated.month}-${updated.day}`);
+        } else {
+            onChange(name, '');
+        }
     };
 
     const handleYearChange = (y) => {
@@ -175,7 +204,14 @@ const DobDropdownField = ({ label, name, icon: Icon, value, onChange, isEditing 
         if (day && parseInt(day) > newMaxDays) {
             correctedDay = '';
         }
-        onChange(name, month && correctedDay && y ? `${y}-${month}-${correctedDay}` : '');
+        const updated = { ...parts, year: y, day: correctedDay };
+        setParts(updated);
+
+        if (updated.year && updated.month && updated.day) {
+            onChange(name, `${updated.year}-${updated.month}-${updated.day}`);
+        } else {
+            onChange(name, '');
+        }
     };
 
     return (
@@ -294,6 +330,7 @@ export default function Profile() {
         id: '',
         childName: '',
         age: '',
+        dateOfBirth: '',
         gender: 'Male',
         height: '',
         weight: '',
@@ -586,8 +623,9 @@ export default function Profile() {
             return;
         }
 
+        const initialDob = initial.date_of_birth ? new Date(initial.date_of_birth).toISOString().split('T')[0] : '';
         const isDirty = profileData.childName !== (initial.child_name || '') ||
-            profileData.age !== (initial.age?.toString() || '') ||
+            profileData.dateOfBirth !== initialDob ||
             profileData.height.toString() !== (initial.height_cm?.toString() || '') ||
             profileData.weight.toString() !== (initial.weight_kg?.toString() || '') ||
             profileData.medicalHistory !== (initial.medical_history || '');
@@ -647,11 +685,13 @@ export default function Profile() {
                     age = Math.abs(new Date(diff).getUTCFullYear() - 1970).toString();
                 }
 
+                const initialDob = profile.date_of_birth ? new Date(profile.date_of_birth).toISOString().split('T')[0] : '';
                 const hConv = convertHeight(profile.height_cm, user?.measurement_system);
                 setProfileData({
                     id: profile.id,
                     childName: profile.child_name || '',
                     age: age,
+                    dateOfBirth: initialDob,
                     gender: profile.gender || 'Male',
                     height: profile.height_cm || '',
                     heightFeet: hConv.feet || '',
@@ -918,18 +958,32 @@ export default function Profile() {
             showNotification("Please enter a valid child's name.", "error");
             return;
         }
-        const parsedAge = parseInt(profileData.age);
-        if (isNaN(parsedAge) || parsedAge < 0 || parsedAge > 18) {
-            showNotification("Please enter a valid age between 0 and 18 years.", "error");
+        if (!profileData.dateOfBirth) {
+            showNotification("Please select a valid date of birth.", "error");
+            return;
+        }
+
+        const dob = new Date(profileData.dateOfBirth);
+        if (dob > new Date()) {
+            showNotification("Date of birth cannot be in the future.", "error");
+            return;
+        }
+
+        // Calculate exact age
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+
+        if (age < 0 || age > 18) {
+            showNotification("Please select a valid date of birth corresponding to a pediatric age (0 to 18 years).", "error");
             return;
         }
 
         setSaving(true);
         try {
-            // Calculate rough DOB from age again
-            const dob = new Date();
-            dob.setFullYear(dob.getFullYear() - parsedAge);
-
             let finalHeight = parseFloat(profileData.height);
             let finalWeight = parseFloat(profileData.weight);
 
@@ -1342,7 +1396,7 @@ export default function Profile() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-3 sm:space-y-8 max-w-4xl mx-auto pb-6 sm:pb-10 px-1 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
+            className="space-y-3 sm:space-y-5 max-w-4xl mx-auto pb-6 sm:pb-10 px-1 sm:px-0 overflow-x-hidden sm:overflow-x-visible"
         >
             {/* ── PARENT ACCOUNT SECTION ── */}
             <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-xl bg-[var(--color-bg-card)]">
@@ -1426,17 +1480,11 @@ export default function Profile() {
                     <span className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.15em] sm:tracking-[0.3em] whitespace-nowrap sm:whitespace-nowrap text-center">Clinical Child Profiles</span>
                     <div className="h-[1px] sm:h-[2px] flex-1 bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent" />
                 </div>
-                <Button
-                    onClick={() => setIsAddChildOpen(true)}
-                    className="w-full sm:w-auto h-9 sm:h-11 px-4 sm:px-6 rounded-xl bg-[var(--color-primary)] text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-[var(--color-primary)]/20"
-                >
-                    <Plus size={16} /> Add Child
-                </Button>
             </motion.div>
 
             {/* Profile Switcher */}
-            {allProfiles.length > 1 && (
-                <motion.div variants={itemVariants} className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-x-visible pb-4 sm:pb-0 scrollbar-hide px-0">
+            {allProfiles.length > 0 && (
+                <motion.div variants={itemVariants} className="flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto sm:overflow-x-visible pb-4 sm:pb-0 scrollbar-hide px-0">
                     {allProfiles.map(p => (
                         <button
                             key={p.id}
@@ -1451,6 +1499,12 @@ export default function Profile() {
                             {p.child_name}
                         </button>
                     ))}
+                    <button
+                        onClick={() => setIsAddChildOpen(true)}
+                        className="flex-shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-transparent border-2 border-dashed border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest gap-1.5 transition-all flex items-center cursor-pointer"
+                    >
+                        <Plus size={14} className="flex-shrink-0" /> Add Child
+                    </button>
                 </motion.div>
             )}
 
@@ -1472,7 +1526,7 @@ export default function Profile() {
             ) : (
                 <>
                     {/* Header Section (Child-Focused) */}
-                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6 mb-4 sm:mb-8 p-3 sm:p-6 bg-white dark:bg-white/5 rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-6 p-3 sm:p-6 bg-white dark:bg-white/5 rounded-2xl sm:rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
                             <div className="relative group">
                                 <div className="h-14 w-14 sm:h-24 sm:w-24 overflow-hidden bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl sm:rounded-3xl flex items-center justify-center text-white text-2xl sm:text-4xl font-black shadow-xl shadow-[var(--color-primary)]/20 border-2 sm:border-4 border-white">
@@ -1492,13 +1546,11 @@ export default function Profile() {
                                 </div>
                                 {isEditing && !isUploadingPhoto && (
                                     <>
-                                        <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white rounded-xl sm:rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                                        <label className="absolute inset-0 bg-black/0 hover:bg-black/30 rounded-xl sm:rounded-3xl cursor-pointer transition-colors duration-200">
                                             <input type="file" className="hidden" onChange={(e) => handleFileSelect(e, 'child')} accept="image/*" />
-                                            <Camera size={16} className="sm:size-28 animate-bounce" />
-                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest mt-1">Change</span>
                                         </label>
-                                        <div className="absolute -bottom-1 -right-1 h-5 w-5 sm:h-8 sm:w-8 bg-[var(--color-primary)] text-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
-                                            <Camera size={10} className="sm:size-14" />
+                                        <div className="absolute -bottom-1 -right-1 h-5 w-5 sm:h-8 sm:w-8 bg-[var(--color-primary)] text-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg border-2 border-white pointer-events-none transition-transform duration-200 group-hover:scale-110">
+                                            <Camera className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-white" />
                                         </div>
                                     </>
                                 )}
@@ -1605,7 +1657,7 @@ export default function Profile() {
 
 
                     {/* Profile Form Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <motion.div variants={itemVariants}>
                             <Card className="h-full border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg">
                                 <CardHeader className="bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] p-3 sm:p-6">
@@ -1623,32 +1675,51 @@ export default function Profile() {
                                             className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-xl disabled:font-black disabled:uppercase disabled:tracking-tight"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age (Years)</label>
-                                            <input
-                                                type="number"
-                                                name="age"
-                                                value={profileData.age}
-                                                onChange={handleChange}
-                                                disabled={!isEditing}
-                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                    {isEditing ? (
+                                        <div className="space-y-3.5 sm:space-y-6">
+                                            <DobDropdownField
+                                                label="Date of Birth"
+                                                name="dateOfBirth"
+                                                icon={Calendar}
+                                                value={profileData.dateOfBirth}
+                                                onChange={(n, v) => setProfileData(p => ({ ...p, dateOfBirth: v }))}
+                                                isEditing={true}
                                             />
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
+                                                <select
+                                                    name="gender"
+                                                    value={profileData.gender}
+                                                    onChange={handleChange}
+                                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all cursor-pointer"
+                                                >
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
-                                            <select
-                                                name="gender"
-                                                value={profileData.gender}
-                                                onChange={handleChange}
-                                                disabled={!isEditing}
-                                                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight appearance-none cursor-pointer"
-                                            >
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
-                                            </select>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Age</label>
+                                                <input
+                                                    type="text"
+                                                    disabled={true}
+                                                    value={profileData.age ? `${profileData.age} Years Old` : 'Not set'}
+                                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Gender</label>
+                                                <input
+                                                    type="text"
+                                                    disabled={true}
+                                                    value={profileData.gender}
+                                                    className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:p-0 disabled:text-sm sm:disabled:text-base disabled:font-black disabled:uppercase disabled:tracking-tight"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between ml-1">

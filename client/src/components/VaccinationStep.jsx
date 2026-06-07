@@ -62,9 +62,9 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
         >
-            <div className="flex justify-between items-center gap-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] whitespace-nowrap">Immunization Records</label>
-                <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)]">Immunization Records</label>
+                <div className="relative w-full sm:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]/50" size={14} />
                     <input
                         type="text"
@@ -77,7 +77,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:max-h-[400px] sm:overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 gap-3 sm:max-h-[400px] sm:overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                 {loading ? (
                     <div className="py-10 text-center">
                         <div className="animate-spin h-6 w-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -94,7 +94,7 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                                 <div
                                     key={type.id}
                                     onClick={() => !disabled && toggleVaccine(type)}
-                                    className={`group p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-[0.98]'} ${isSelected ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/50 shadow-md' : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/40'}`}
+                                    className={`group p-4 rounded-2xl border-2 transition-all flex ${isSelected ? 'flex-col sm:flex-row items-start sm:items-center' : 'flex-row items-center'} justify-between gap-4 ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-[0.98]'} ${isSelected ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/50 shadow-md' : 'bg-[var(--color-bg-page)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/40'}`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-page)] border border-[var(--color-divider)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-primary)]/10 group-hover:text-[var(--color-primary)]'}`}>
@@ -106,8 +106,8 @@ export default function VaccinationStep({ formData, setFormData, field = 'vaccin
                                         </div>
                                     </div>
                                     {isSelected ? (
-                                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto" onClick={e => e.stopPropagation()}>
-                                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto" onClick={e => e.stopPropagation()}>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                                 <input
                                                     type="date"
                                                     max={new Date().toISOString().split('T')[0]}

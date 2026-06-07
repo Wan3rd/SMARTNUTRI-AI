@@ -233,7 +233,7 @@ const AutocompleteMatrixCell = ({ value, onChange, item }) => {
         <div className="flex flex-col items-center relative w-full h-full min-h-[40px]">
             <textarea
                 rows={2}
-                className="w-full h-full bg-transparent border-0 text-center text-sm font-bold text-text-main focus:ring-0 placeholder:text-text-muted/40 resize-none overflow-y-auto scrollbar-hide py-2"
+                className="w-full h-full bg-transparent border-0 text-center text-xs sm:text-sm font-bold text-text-main focus:ring-0 placeholder:text-text-muted/40 resize-none overflow-y-auto scrollbar-hide py-1.5 sm:py-2"
                 placeholder="e.g. 1/2 cup"
                 value={val}
                 onChange={(e) => onChange(e.target.value)}
@@ -625,6 +625,8 @@ export default function ClientDetails() {
     const [portionTemplates, setPortionTemplates] = useState([]);
     const [mealTemplates, setMealTemplates] = useState([]);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [isPortionTemplateDropdownOpen, setIsPortionTemplateDropdownOpen] = useState(false);
+    const [isMealTemplateDropdownOpen, setIsMealTemplateDropdownOpen] = useState(false);
 
     // Meal Templates & Grid Editing
     const [editingMeal, setEditingMeal] = useState(null); // { id, recipe_name, calories, protein_g, carbs_g, fats_g, meal_type }
@@ -2583,7 +2585,7 @@ export default function ClientDetails() {
                                         </div>
 
                                         {/* TAB SLIDE CONTAINER */}
-                                        <div className="relative overflow-hidden">
+                                        <div className="relative overflow-visible">
                                             <AnimatePresence mode="wait" custom={tabDirection}>
                                                 <motion.div
                                                     key={activeTab}
@@ -3620,49 +3622,79 @@ export default function ClientDetails() {
                                                         }, {})).sort((a, b) => new Date(b) - new Date(a));
 
                                                         return (
-                                                            <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-8 min-h-[600px]">
+                                                            <div className="animate-in fade-in duration-500 flex flex-col md:flex-row gap-6 md:gap-8 min-h-[600px]">
                                                                 {/* LEFT SIDEBAR: DATE SELECTION (Timeline) */}
-                                                                <div className="w-full md:w-72 flex-shrink-0 space-y-4">
+                                                                <div className="w-full md:w-52 flex-shrink-0">
                                                                     {/* DESKTOP TIMELINE: Hidden on Mobile */}
                                                                     <div className="hidden md:block">
-                                                                        <div className="sticky top-[140px] lg:top-8 z-20 bg-[var(--color-bg-page)]/95 backdrop-blur-xl -mx-4 px-4 py-4 lg:mx-0 lg:px-0 lg:py-0 lg:static lg:bg-transparent transition-all border-b lg:border-none border-[var(--color-divider)]">
-                                                                            <h3 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.2em] px-2 mb-3">Clinical Timeline</h3>
-                                                                            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[700px] scrollbar-hide pb-2 md:pb-0">
-                                                                                {uniqueDates.map(date => {
+                                                                        <div className="sticky top-8 z-20">
+                                                                            {/* Header */}
+                                                                            <div className="flex items-center gap-2 mb-4 px-1">
+                                                                                <div className="w-1 h-4 rounded-full bg-[var(--color-primary)]" />
+                                                                                <h3 className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.25em]">Clinical Timeline</h3>
+                                                                            </div>
+                                                                            {/* Timeline List */}
+                                                                            <div className="relative flex flex-col overflow-y-auto max-h-[680px] scrollbar-hide pb-2">
+                                                                                {/* Vertical spine line */}
+                                                                                {uniqueDates.length > 1 && (
+                                                                                    <div className="absolute left-[13px] top-5 bottom-5 w-px bg-gradient-to-b from-[var(--color-primary)]/30 via-[var(--color-divider)] to-transparent z-0" />
+                                                                                )}
+                                                                                {uniqueDates.map((date, idx) => {
                                                                                     const isSelected = selectedHistoryDate === date;
                                                                                     const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === date);
+                                                                                    const kcal = Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0));
+                                                                                    const status = dayStatuses[date];
+                                                                                    const dotColor = status === 'danger' ? '#ef4444' : status === 'warning' ? '#f59e0b' : status === 'success' ? '#10b981' : 'var(--color-divider)';
+                                                                                    const dateObj = new Date(date);
+                                                                                    const dayNum = dateObj.getDate();
+                                                                                    const month = dateObj.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+                                                                                    const weekday = dateObj.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
                                                                                     return (
-                                                                                        <button
-                                                                                            key={date}
-                                                                                            onClick={() => setSelectedHistoryDate(date)}
-                                                                                            className={cn(
-                                                                                                "flex-shrink-0 flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left shadow-sm w-full",
-                                                                                                isSelected
-                                                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-[1.02]'
-                                                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50'
-                                                                                            )}
-                                                                                        >
-                                                                                            <div className="flex items-center gap-3">
-                                                                                                <div className={cn(
-                                                                                                    "w-3 h-3 rounded-full border-2 shadow-sm transition-colors",
-                                                                                                    isSelected ? "border-white/50" : "border-white dark:border-zinc-800",
-                                                                                                    dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                                        dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                                            dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                                                'bg-gray-300'
-                                                                                                )} />
-                                                                                                <div className="text-left">
-                                                                                                    <div className={cn("text-xs md:text-sm font-black tracking-tight", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>{date}</div>
-                                                                                                    <div className={cn("text-[9px] font-bold uppercase tracking-tighter mt-0.5", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
-                                                                                                        {dayLogs.length} Entries • {Math.round(dayLogs.reduce((s, l) => s + (l.total_calories || 0), 0))} kcal
-                                                                                                    </div>
+                                                                                        <div key={date} className="relative flex items-start gap-2.5 mb-2 z-10">
+                                                                                            {/* Timeline dot */}
+                                                                                            <div className="flex-shrink-0 flex flex-col items-center pt-1">
+                                                                                                <div
+                                                                                                    className={cn(
+                                                                                                        "w-[26px] h-[26px] rounded-full flex items-center justify-center border-2 transition-all duration-200 shadow-sm",
+                                                                                                        isSelected
+                                                                                                            ? 'bg-[var(--color-primary)] border-[var(--color-primary)] shadow-[0_0_0_3px_var(--color-primary)/20]'
+                                                                                                            : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/60'
+                                                                                                    )}
+                                                                                                    style={isSelected ? {} : { borderColor: dotColor + '80' }}
+                                                                                                >
+                                                                                                    <div
+                                                                                                        className="w-2 h-2 rounded-full transition-all"
+                                                                                                        style={{ backgroundColor: isSelected ? 'white' : dotColor }}
+                                                                                                    />
                                                                                                 </div>
                                                                                             </div>
-                                                                                        </button>
+                                                                                            {/* Date chip */}
+                                                                                            <button
+                                                                                                onClick={() => setSelectedHistoryDate(date)}
+                                                                                                className={cn(
+                                                                                                    "flex-1 flex items-center justify-between py-1.5 px-2.5 rounded-xl border transition-all text-left group min-w-0",
+                                                                                                    isSelected
+                                                                                                        ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40 shadow-sm'
+                                                                                                        : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-primary)]/5'
+                                                                                                )}
+                                                                                            >
+                                                                                                <div className="min-w-0">
+                                                                                                    <div className={cn("text-[10px] font-black tracking-tight leading-tight truncate", isSelected ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]')}>
+                                                                                                        {weekday}, {month} {dayNum}
+                                                                                                    </div>
+                                                                                                    <div className="text-[8px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5">
+                                                                                                        {dayLogs.length} log{dayLogs.length !== 1 ? 's' : ''} · {kcal} kcal
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                {isSelected && (
+                                                                                                    <div className="flex-shrink-0 w-1 h-4 rounded-full bg-[var(--color-primary)] ml-1" />
+                                                                                                )}
+                                                                                            </button>
+                                                                                        </div>
                                                                                     );
                                                                                 })}
                                                                                 {uniqueDates.length === 0 && (
-                                                                                    <div className="p-8 text-center text-[var(--color-text-muted)] italic text-sm">No log history available.</div>
+                                                                                    <div className="py-8 text-center text-[var(--color-text-muted)] italic text-xs">No log history available.</div>
                                                                                 )}
                                                                             </div>
                                                                         </div>
@@ -3752,13 +3784,16 @@ export default function ClientDetails() {
 
                                                                         {/* ULTRA COMPACT HORIZONTAL CALENDAR PILL SWIPER */}
                                                                         {uniqueDates.length > 0 && (
-                                                                            <div className="flex items-center gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x px-2 w-full">
-                                                                                <div className="w-1.5 shrink-0" />
+                                                                            <div className="flex items-center gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x px-1 w-full">
+                                                                                <div className="w-1 shrink-0" />
                                                                                 {uniqueDates.map(date => {
                                                                                     const isSelected = selectedHistoryDate === date;
                                                                                     const dateObj = new Date(date);
                                                                                     const monthStr = dateObj.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
                                                                                     const dayStr = dateObj.getDate();
+                                                                                    const weekdayStr = dateObj.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+                                                                                    const status = dayStatuses[date];
+                                                                                    const statusColor = status === 'danger' ? '#ef4444' : status === 'warning' ? '#f59e0b' : status === 'success' ? '#10b981' : '#9ca3af';
 
                                                                                     return (
                                                                                         <button
@@ -3766,30 +3801,30 @@ export default function ClientDetails() {
                                                                                             type="button"
                                                                                             onClick={() => setSelectedHistoryDate(date)}
                                                                                             className={cn(
-                                                                                                "flex-shrink-0 snap-start w-[64px] h-[68px] flex flex-col items-center justify-between p-2 rounded-2xl border-2 transition-all relative shadow-sm",
+                                                                                                "flex-shrink-0 snap-start w-[56px] flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-2xl border-2 transition-all relative",
                                                                                                 isSelected
-                                                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg scale-105'
-                                                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/40'
+                                                                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/30 scale-105'
+                                                                                                    : 'bg-[var(--color-bg-card)] border-[var(--color-divider)] hover:border-[var(--color-primary)]/50'
                                                                                             )}
+                                                                                            style={!isSelected ? { borderColor: statusColor + '55' } : {}}
                                                                                         >
-                                                                                            <span className={cn("text-[8px] font-black uppercase tracking-wider", isSelected ? 'text-white/80' : 'text-[var(--color-text-muted)]')}>
-                                                                                                {monthStr}
+                                                                                            <span className={cn("text-[7.5px] font-black uppercase tracking-wider", isSelected ? 'text-white/70' : 'text-[var(--color-text-muted)]')}>
+                                                                                                {weekdayStr}
                                                                                             </span>
-                                                                                            <span className={cn("text-base font-black tracking-tight leading-none", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
+                                                                                            <span className={cn("text-[17px] font-black leading-none", isSelected ? 'text-white' : 'text-[var(--color-text-main)]')}>
                                                                                                 {dayStr}
                                                                                             </span>
-                                                                                            <div className={cn(
-                                                                                                "w-1.5 h-1.5 rounded-full border-xs",
-                                                                                                isSelected ? "border-white/30" : "border-white dark:border-zinc-800",
-                                                                                                dayStatuses[date] === 'danger' ? 'bg-red-500' :
-                                                                                                    dayStatuses[date] === 'warning' ? 'bg-amber-500' :
-                                                                                                        dayStatuses[date] === 'success' ? 'bg-emerald-500' :
-                                                                                                            'bg-gray-300'
-                                                                                            )} />
+                                                                                            <span className={cn("text-[7px] font-bold uppercase", isSelected ? 'text-white/60' : 'text-[var(--color-text-muted)]')}>
+                                                                                                {monthStr}
+                                                                                            </span>
+                                                                                            <div
+                                                                                                className="w-1.5 h-1.5 rounded-full mt-0.5"
+                                                                                                style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.7)' : statusColor }}
+                                                                                            />
                                                                                         </button>
                                                                                     );
                                                                                 })}
-                                                                                <div className="w-1.5 shrink-0" />
+                                                                                <div className="w-1 shrink-0" />
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -3800,68 +3835,69 @@ export default function ClientDetails() {
                                                                     {selectedHistoryDate && (
                                                                         <>
                                                                             {/* DAILY SUMMARY CARD */}
-                                                                            <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
-                                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                                                                    <div>
-                                                                                        <h3 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">Daily Summary</h3>
-                                                                                        <p className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                                                            <div className="p-3 sm:p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] shadow-sm">
+                                                                                {/* Header row — single line on mobile */}
+                                                                                <div className="flex items-center justify-between gap-2 mb-3">
+                                                                                    <div className="min-w-0">
+                                                                                        <h3 className="text-[10px] sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest leading-tight">Daily Summary</h3>
+                                                                                        <p className="text-[8px] sm:text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-tighter truncate">{new Date(selectedHistoryDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
                                                                                     </div>
-                                                                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                                                                        <div className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
-                                                                                            <Activity size={12} />
-                                                                                            <span className="text-[9px] font-black uppercase tracking-widest">Analytics Active</span>
+                                                                                    {/* Action buttons — compact on mobile */}
+                                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                                        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                                                                            <Activity size={10} />
+                                                                                            <span className="text-[8px] font-black uppercase tracking-widest">Analytics Active</span>
                                                                                         </div>
                                                                                         {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length > 0 && (
-                                                                                            <Button
-                                                                                                variant="ghost"
+                                                                                            <button
                                                                                                 onClick={() => handleVerifyAllForDay(selectedHistoryDate)}
-                                                                                                className="flex-1 sm:flex-none h-7 px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                                className="h-6 sm:h-7 px-2 sm:px-3 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-lg border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)] hover:text-white transition-all font-black text-[8px] sm:text-[9px] uppercase tracking-widest flex items-center gap-1"
                                                                                             >
-                                                                                                <Check size={12} className="mr-1" />
-                                                                                                Verify All ({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
-                                                                                            </Button>
+                                                                                                <Check size={10} />
+                                                                                                <span className="hidden sm:inline">Verify All </span>({logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate && l.status === 'pending').length})
+                                                                                            </button>
                                                                                         )}
-                                                                                        <Button
-                                                                                            variant="ghost"
+                                                                                        <button
                                                                                             onClick={() => handleClearLogsForDay(selectedHistoryDate)}
-                                                                                            className="flex-1 sm:flex-none h-7 px-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-600 hover:text-white transition-all group font-black text-[9px] uppercase tracking-widest flex items-center justify-center"
+                                                                                            className="h-6 sm:h-7 px-2 sm:px-3 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-500/20 hover:bg-red-500 hover:text-white transition-all font-black text-[8px] sm:text-[9px] uppercase tracking-widest flex items-center gap-1 group"
                                                                                         >
-                                                                                            <Trash2 size={12} className="mr-1 group-hover:scale-110" />
-                                                                                            Clear Day
-                                                                                        </Button>
+                                                                                            <Trash2 size={10} className="group-hover:scale-110 transition-transform" />
+                                                                                            <span className="hidden sm:inline">Clear Day</span>
+                                                                                        </button>
                                                                                     </div>
                                                                                 </div>
 
                                                                                 {/* VIOLATIONS ALERT PANEL */}
                                                                                 {dailyViolations.length > 0 && (
-                                                                                    <div className="mb-4 p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
-                                                                                        <div className="flex items-center gap-2 mb-1 px-1">
+                                                                                    <div className="mb-3 p-1.5 sm:p-2 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl animate-in fade-in duration-500">
+                                                                                        <div className="flex items-center gap-1.5 mb-1 px-1">
                                                                                             <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                                                                                            <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
+                                                                                            <span className="text-[8px] sm:text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Nutritional Limit Alerts</span>
                                                                                         </div>
-                                                                                        <div className="flex flex-wrap gap-2 px-1">
+                                                                                        <div className="flex flex-wrap gap-1 sm:gap-2 px-1">
                                                                                             {dailyViolations.map((v, i) => (
-                                                                                                <div key={i} className="text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-3 py-1.5 rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                                                    <span className="text-[var(--color-danger)] mr-2 uppercase tracking-tight">{v.name}</span>
+                                                                                                <div key={i} className="text-[8px] sm:text-[10px] font-black flex items-center bg-[var(--color-bg-page)] px-2 py-1 rounded-lg border border-[var(--color-divider)] shadow-sm">
+                                                                                                    <span className="text-[var(--color-danger)] mr-1.5 uppercase tracking-tight">{v.name}</span>
                                                                                                     <span className="text-[var(--color-text-main)]">{v.actual}{v.unit}</span>
-                                                                                                    <span className="mx-2 text-[var(--color-text-muted)] opacity-30">/</span>
-                                                                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-bold">{v.rule_type === 'min' ? 'Min Goal' : 'Limit'} {v.limit}{v.unit}</span>
+                                                                                                    <span className="mx-1 text-[var(--color-text-muted)] opacity-30">/</span>
+                                                                                                    <span className="text-[var(--color-text-muted)] font-bold">{v.rule_type === 'min' ? 'Min' : 'Lim'} {v.limit}{v.unit}</span>
                                                                                                 </div>
                                                                                             ))}
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
 
-                                                                                <div className={cn("grid grid-cols-2 gap-4", isSidebarMinimized ? "md:grid-cols-4" : "xl:grid-cols-4")}>
+                                                                                {/* NUTRIENT STAT TILES */}
+                                                                                <div className={cn("grid grid-cols-2 gap-2 sm:gap-3", isSidebarMinimized ? "md:grid-cols-4" : "xl:grid-cols-4")}>
                                                                                     {[
-                                                                                        { label: 'Total Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
-                                                                                        { label: 'Total Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
-                                                                                        { label: 'Total Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
-                                                                                        { label: 'Total Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
+                                                                                        { label: 'Calories', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_calories || 0), 0), unit: 'kcal', color: 'text-[var(--color-primary)]' },
+                                                                                        { label: 'Protein', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_protein_g || 0), 0), unit: 'g', color: 'text-blue-500' },
+                                                                                        { label: 'Carbs', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_carbs_g || 0), 0), unit: 'g', color: 'text-orange-500' },
+                                                                                        { label: 'Fat', value: logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).reduce((sum, l) => sum + (l.total_fat_g || 0), 0), unit: 'g', color: 'text-amber-500' }
                                                                                     ].map((stat, idx) => (
-                                                                                        <div key={idx} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                                                            <div className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{stat.label}</div>
-                                                                                            <div className={`text-xl font-black ${stat.color} dark:brightness-125`}>{formatValue(stat.value, user?.nutrient_precision)} <span className="text-[10px] opacity-70">{stat.unit}</span></div>
+                                                                                        <div key={idx} className="p-2.5 sm:p-4 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border border-[var(--color-divider)]">
+                                                                                            <div className="text-[8px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-0.5 sm:mb-1">{stat.label}</div>
+                                                                                            <div className={`text-base sm:text-xl font-black ${stat.color} dark:brightness-125 leading-tight`}>{formatValue(stat.value, user?.nutrient_precision)} <span className="text-[8px] sm:text-[10px] opacity-70">{stat.unit}</span></div>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
@@ -4599,36 +4635,36 @@ export default function ClientDetails() {
                                                     {activeTab === 'plan' && (
                                                         <div className="space-y-6 animate-in fade-in duration-500">
                                                             {/* PLANNER HEADER & NAV */}
-                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[var(--color-bg-page)] dark:bg-white/5 p-6 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-[var(--color-bg-page)] dark:bg-white/5 p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                                                                 <div>
-                                                                    <h3 className="font-black text-xl text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-3">
-                                                                        <ChefHat className="text-[var(--color-primary)]" size={24} />
+                                                                    <h3 className="font-black text-base md:text-sm text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-2">
+                                                                        <ChefHat className="text-[var(--color-primary)]" size={18} />
                                                                         Weekly Clinical Planner
                                                                     </h3>
-                                                                    <p className="text-xs font-bold text-[var(--color-text-muted)] mt-1 flex items-center gap-2">
+                                                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 flex items-center gap-1.5">
                                                                         Week of {format(currentWeekStart, 'MMMM d, yyyy')} — {format(addDays(currentWeekStart, 6), 'MMMM d, yyyy')}
                                                                     </p>
                                                                 </div>
 
-                                                                <div className="flex items-center gap-2 w-full md:w-auto">
-                                                                    <div className="flex items-center bg-[var(--color-bg-card)] rounded-2xl border-2 border-[var(--color-divider)] p-1">
+                                                                <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 w-full md:w-auto">
+                                                                    <div className="flex items-center bg-[var(--color-bg-card)] rounded-xl border-2 border-[var(--color-divider)] p-0.5 flex-grow md:flex-grow-0 flex-shrink-0 justify-between md:justify-start">
                                                                         <button
                                                                             onClick={handlePrevWeek}
-                                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all"
+                                                                            className="p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-lg transition-all"
                                                                         >
-                                                                            <ArrowLeft size={18} />
+                                                                            <ArrowLeft size={14} />
                                                                         </button>
                                                                         <button
                                                                             onClick={handleThisWeek}
-                                                                            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
+                                                                            className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
                                                                         >
                                                                             Today
                                                                         </button>
                                                                         <button
                                                                             onClick={handleNextWeek}
-                                                                            className="p-2 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-xl transition-all rotate-180"
+                                                                            className="p-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-main)] hover:text-[var(--color-primary)] rounded-lg transition-all rotate-180"
                                                                         >
-                                                                            <ArrowLeft size={18} />
+                                                                            <ArrowLeft size={14} />
                                                                         </button>
                                                                     </div>
                                                                     {/* SAVE WEEK AS TEMPLATE */}
@@ -4636,66 +4672,79 @@ export default function ClientDetails() {
                                                                         <Button
                                                                             onClick={() => setIsSaveTemplateModalOpen(true)}
                                                                             variant="outline"
-                                                                            className="w-full md:w-auto h-11 px-4 rounded-2xl border border-divider text-text-main hover:bg-primary/10 hover:text-primary flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-bg-card shadow-sm"
+                                                                            className="w-full md:w-auto h-8 px-3 rounded-xl border border-divider text-text-main hover:bg-primary/10 hover:text-primary flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-bg-card shadow-sm flex-grow md:flex-grow-0 flex-shrink-0"
                                                                         >
-                                                                            <BookmarkPlus size={18} /> Save as Template
+                                                                            <BookmarkPlus size={14} /> Save as Template
                                                                         </Button>
                                                                     )}
 
                                                                     {/* LOAD WEEKLY MEAL TEMPLATE */}
                                                                     {mealTemplates.length > 0 && (
-                                                                        <div className="relative group/meal-template flex-grow md:flex-none">
+                                                                        <div className="relative flex-grow md:flex-grow-0 flex-shrink-0">
                                                                             <Button
                                                                                 variant="outline"
-                                                                                className="w-full md:w-auto h-11 px-4 rounded-2xl border border-divider text-primary hover:bg-primary/10 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-bg-card shadow-sm"
+                                                                                onClick={() => setIsMealTemplateDropdownOpen(!isMealTemplateDropdownOpen)}
+                                                                                className="w-full h-8 px-3 rounded-xl border border-divider text-primary hover:bg-primary/10 flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-bg-card shadow-sm"
                                                                             >
-                                                                                <ListFilter size={18} /> Load Template
+                                                                                <ListFilter size={14} /> Load Template
                                                                             </Button>
-                                                                            <div className="absolute top-full right-0 pt-2 w-80 opacity-0 invisible group-hover/meal-template:opacity-100 group-hover/meal-template:visible transition-all z-50">
-                                                                                <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
-                                                                                    <div className="px-3 py-2 bg-primary/10 border-b border-divider text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1">
-                                                                                        <span>🍽️ Weekly Meal Templates</span>
-                                                                                    </div>
-                                                                                    <div className="max-h-80 overflow-y-auto scrollbar-thin">
-                                                                                        {mealTemplates.map(t => (
-                                                                                            <div
-                                                                                                key={t.id}
-                                                                                                className="p-3 border-b border-divider last:border-0 hover:bg-primary/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
-                                                                                                onClick={() => handleApplyMealTemplate(t.id)}
-                                                                                            >
-                                                                                                <div className="flex-grow min-w-0">
-                                                                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                                                                        <span className="text-xs font-black text-text-main group-hover/mitem:text-primary transition-colors line-clamp-1">{t.name}</span>
-                                                                                                        {t.is_default && (
-                                                                                                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-wider rounded-md border border-primary/20 shrink-0">Starter</span>
-                                                                                                        )}
-                                                                                                    </div>
-                                                                                                    <div className="text-[10px] text-text-muted mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
-                                                                                                </div>
-                                                                                                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/mitem:opacity-100 transition-opacity">
-                                                                                                    <button
-                                                                                                        onClick={(e) => {
-                                                                                                            e.stopPropagation();
-                                                                                                            handleOpenTemplateEditor(t);
-                                                                                                        }}
-                                                                                                        className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                                                                                                        title="Edit Template"
-                                                                                                    >
-                                                                                                        <Edit2 size={12} />
-                                                                                                    </button>
-                                                                                                    <button
-                                                                                                        onClick={(e) => handleDeleteMealTemplate(t.id, e)}
-                                                                                                        className="p-1 text-danger hover:text-danger/80 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
-                                                                                                        title="Delete Template"
-                                                                                                    >
-                                                                                                        <Trash2 size={12} />
-                                                                                                    </button>
-                                                                                                </div>
+                                                                            {isMealTemplateDropdownOpen && (
+                                                                                <>
+                                                                                    <div className="fixed inset-0 z-40" onClick={() => setIsMealTemplateDropdownOpen(false)} />
+                                                                                    <div className="fixed md:absolute top-1/2 md:top-full left-1/2 md:left-auto right-auto md:right-0 -translate-x-1/2 md:translate-x-0 -translate-y-1/2 md:translate-y-0 pt-2 w-[calc(100vw-2rem)] md:w-80 max-w-sm md:max-w-none z-50 animate-in fade-in duration-200">
+                                                                                        <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
+                                                                                            <div className="px-3 py-2 bg-primary/10 border-b border-divider text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1">
+                                                                                                <span>🍽️ Weekly Meal Templates</span>
                                                                                             </div>
-                                                                                        ))}
+                                                                                            <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                                                                                                {mealTemplates.map(t => (
+                                                                                                    <div
+                                                                                                        key={t.id}
+                                                                                                        className="p-3 border-b border-divider last:border-0 hover:bg-primary/5 cursor-pointer transition-colors group/mitem flex justify-between items-start gap-2"
+                                                                                                        onClick={() => {
+                                                                                                            handleApplyMealTemplate(t.id);
+                                                                                                            setIsMealTemplateDropdownOpen(false);
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        <div className="flex-grow min-w-0">
+                                                                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                                                <span className="text-xs font-black text-text-main group-hover/mitem:text-primary transition-colors line-clamp-1">{t.name}</span>
+                                                                                                                {t.is_default && (
+                                                                                                                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-wider rounded-md border border-primary/20 shrink-0">Starter</span>
+                                                                                                                )}
+                                                                                                            </div>
+                                                                                                            <div className="text-[10px] text-text-muted mt-1 font-medium leading-relaxed line-clamp-2">{t.description}</div>
+                                                                                                        </div>
+                                                                                                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/mitem:opacity-100 transition-opacity">
+                                                                                                            <button
+                                                                                                                onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    handleOpenTemplateEditor(t);
+                                                                                                                    setIsMealTemplateDropdownOpen(false);
+                                                                                                                }}
+                                                                                                                className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                                                                                                                title="Edit Template"
+                                                                                                            >
+                                                                                                                <Edit2 size={12} />
+                                                                                                            </button>
+                                                                                                            <button
+                                                                                                                onClick={(e) => {
+                                                                                                                    handleDeleteMealTemplate(t.id, e);
+                                                                                                                    setIsMealTemplateDropdownOpen(false);
+                                                                                                                }}
+                                                                                                                className="p-1 text-danger hover:text-danger/80 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
+                                                                                                                title="Delete Template"
+                                                                                                            >
+                                                                                                                <Trash2 size={12} />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
-                                                                                </div>
-                                                                            </div>
+                                                                                </>
+                                                                            )}
                                                                         </div>
                                                                     )}
 
@@ -4709,9 +4758,9 @@ export default function ClientDetails() {
                                                                             });
                                                                         }}
                                                                         variant="ghost"
-                                                                        className="flex-grow md:flex-none h-11 px-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/30"
+                                                                        className="flex-grow md:flex-grow-0 flex-shrink-0 h-8 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/30 justify-center flex items-center"
                                                                     >
-                                                                        <Trash2 size={18} />
+                                                                        <Trash2 size={15} />
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -4851,18 +4900,18 @@ export default function ClientDetails() {
                                                                                 key={day.toString()}
                                                                                 onClick={() => setActivePlannerDay(i)}
                                                                                 className={cn(
-                                                                                    "flex-shrink-0 flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all w-[72px] text-center select-none shadow-sm snap-start",
+                                                                                    "flex-shrink-0 flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl border-2 transition-all w-[64px] sm:w-[72px] text-center select-none shadow-sm snap-start",
                                                                                     isSelected
                                                                                         ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-emerald-500/20 scale-[1.02]"
                                                                                         : "bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50",
                                                                                     isToday && !isSelected ? "border-[var(--color-primary)]/30" : ""
                                                                                 )}
                                                                             >
-                                                                                <span className={cn("text-[9px] font-black uppercase tracking-wider block", isSelected ? "text-white/80" : "text-[var(--color-text-muted)]")}>{format(day, 'EEE')}</span>
-                                                                                <span className="text-sm font-black mt-0.5">{format(day, 'd')}</span>
+                                                                                <span className={cn("text-[8px] sm:text-[9px] font-black uppercase tracking-wider block", isSelected ? "text-white/80" : "text-[var(--color-text-muted)]")}>{format(day, 'EEE')}</span>
+                                                                                <span className="text-xs sm:text-sm font-black mt-0.5">{format(day, 'd')}</span>
                                                                                 {totalCal > 0 ? (
                                                                                     <span className={cn(
-                                                                                        "text-[7px] font-black mt-1 px-1 py-0.5 rounded-md border tracking-tighter",
+                                                                                        "text-[6.5px] sm:text-[7px] font-black mt-1 px-1 py-0.5 rounded-md border tracking-tighter",
                                                                                         isSelected
                                                                                             ? "bg-white/20 text-white border-white/20"
                                                                                             : "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20"
@@ -4870,7 +4919,7 @@ export default function ClientDetails() {
                                                                                         {totalCal} kcal
                                                                                     </span>
                                                                                 ) : (
-                                                                                    <span className="text-[7px] font-bold mt-1 opacity-40 uppercase tracking-tighter">0 kcal</span>
+                                                                                    <span className="text-[6.5px] sm:text-[7px] font-bold mt-1 opacity-40 uppercase tracking-tighter">0 kcal</span>
                                                                                 )}
                                                                             </button>
                                                                         );
@@ -4883,48 +4932,48 @@ export default function ClientDetails() {
                                                                         const selectedDayDate = weekDays[activePlannerDay];
                                                                         const dayMeals = mealPlan.filter(m => isSameDay(parseISO(m.date), selectedDayDate) && m.meal_type === type);
                                                                         return (
-                                                                            <div key={type} className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] p-5 space-y-4 shadow-sm">
-                                                                                <div className="flex justify-between items-center border-b border-[var(--color-divider)] pb-3">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <div className="h-8 w-8 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-primary)]/20">
-                                                                                            <Utensils size={14} />
+                                                                            <div key={type} className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-sm">
+                                                                                <div className="flex justify-between items-center border-b border-[var(--color-divider)] pb-2.5 sm:pb-3">
+                                                                                    <div className="flex items-center gap-1.5 sm:gap-2">
+                                                                                        <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-xl bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-primary)]/20 shrink-0">
+                                                                                            <Utensils size={12} className="sm:size-[14px]" />
                                                                                         </div>
-                                                                                        <span className="text-xs font-black text-[var(--color-secondary)] uppercase tracking-wider">{type}</span>
+                                                                                        <span className="text-[11px] sm:text-xs font-black text-[var(--color-secondary)] uppercase tracking-wider">{type}</span>
                                                                                     </div>
-                                                                                    <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest bg-[var(--color-bg-page)] px-2.5 py-1 rounded-full border border-[var(--color-divider)]">
+                                                                                    <span className="text-[8px] sm:text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest bg-[var(--color-bg-page)] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-[var(--color-divider)]">
                                                                                         {dayMeals.length} Scheduled
                                                                                     </span>
                                                                                 </div>
 
                                                                                 {dayMeals.length > 0 ? (
-                                                                                    <div className="space-y-3">
+                                                                                    <div className="space-y-2.5 sm:space-y-3">
                                                                                         {dayMeals.map(meal => (
-                                                                                            <div key={meal.id} className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex justify-between items-center shadow-sm">
+                                                                                            <div key={meal.id} className="p-3 sm:p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)] flex justify-between items-center shadow-sm">
                                                                                                 <div className="min-w-0 pr-2">
-                                                                                                    <div className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight line-clamp-1">{meal.recipe_name}</div>
-                                                                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                                                                        <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                                                                                    <div className="text-[11px] sm:text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight line-clamp-1">{meal.recipe_name}</div>
+                                                                                                    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
+                                                                                                        <span className="px-1.5 py-0.5 sm:px-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[7.5px] sm:text-[8px] font-black uppercase rounded-lg border border-blue-100 dark:border-blue-800/30">
                                                                                                             {meal.calories || '--'} kcal
                                                                                                         </span>
-                                                                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
+                                                                                                        <span className="px-1.5 py-0.5 sm:px-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[7.5px] sm:text-[8px] font-black uppercase rounded-lg border border-emerald-100 dark:border-emerald-800/30">
                                                                                                             {meal.protein_g || '--'}g P
                                                                                                         </span>
                                                                                                     </div>
                                                                                                 </div>
-                                                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                                                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                                                                                                     <button
                                                                                                         onClick={() => handleEditMeal(meal)}
-                                                                                                        className="p-2 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-xl transition-all border border-transparent hover:border-[var(--color-primary)]/20"
+                                                                                                        className="p-1.5 sm:p-2 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-xl transition-all border border-transparent hover:border-[var(--color-primary)]/20"
                                                                                                         title="Edit Meal"
                                                                                                     >
-                                                                                                        <Edit2 size={14} />
+                                                                                                        <Edit2 size={12} className="sm:size-[14px]" />
                                                                                                     </button>
                                                                                                     <button
                                                                                                         onClick={() => handleDeleteMeal(meal.id)}
-                                                                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all border border-transparent hover:border-red-100/20"
+                                                                                                        className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all border border-transparent hover:border-red-100/20"
                                                                                                         title="Delete Meal"
                                                                                                     >
-                                                                                                        <Trash2 size={14} />
+                                                                                                        <Trash2 size={12} className="sm:size-[14px]" />
                                                                                                     </button>
                                                                                                 </div>
                                                                                             </div>
@@ -4942,7 +4991,7 @@ export default function ClientDetails() {
                                                                                         setMealForm(prev => ({ ...prev, meal_type: type }));
                                                                                         setIsMealModalOpen(true);
                                                                                     }}
-                                                                                    className="w-full py-3.5 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--color-bg-page)]/50"
+                                                                                    className="w-full py-2.5 sm:py-3.5 border-2 border-dashed border-[var(--color-divider)] rounded-2xl text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-[var(--color-bg-page)]/50"
                                                                                 >
                                                                                     <Plus size={14} /> Schedule {type}
                                                                                 </button>
@@ -4953,13 +5002,13 @@ export default function ClientDetails() {
                                                             </div>
 
                                                             {/* FOOTER INFO */}
-                                                            <div className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border-2 border-amber-100 dark:border-amber-800/30 flex gap-4 items-start">
-                                                                <div className="p-3 bg-amber-100 dark:bg-amber-800/50 rounded-2xl text-amber-600 dark:text-amber-400">
-                                                                    <AlertCircle size={20} />
+                                                            <div className="p-4 sm:p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border-2 border-amber-100 dark:border-amber-800/30 flex gap-3 sm:gap-4 items-start">
+                                                                <div className="p-2 sm:p-3 bg-amber-100 dark:bg-amber-800/50 rounded-2xl text-amber-600 dark:text-amber-400 shrink-0">
+                                                                    <AlertCircle size={18} className="sm:size-[20px]" />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest text-xs mb-1">Weekly Planning Guidelines</h4>
-                                                                    <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
+                                                                    <h4 className="font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest text-[10px] sm:text-xs mb-1">Weekly Planning Guidelines</h4>
+                                                                    <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
                                                                         Ensure the total daily calories across all slots align with the child's clinical targets. Parents will see this schedule on their dashboard in real-time. Use the <strong>"Insights"</strong> tab to verify the nutritional balance of your proposed plan.
                                                                     </p>
                                                                 </div>
@@ -4970,73 +5019,92 @@ export default function ClientDetails() {
                                                     {/* TAB: PORTION EXCHANGE */}
                                                     {activeTab === 'portions' && (
                                                         <div className="space-y-6 animate-in fade-in duration-500">
-                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-bg-card p-5 rounded-[1.5rem] border border-divider shadow-sm">
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-[var(--color-bg-page)] dark:bg-white/5 p-4 rounded-3xl border-2 border-[var(--color-divider)] shadow-sm">
                                                                 <div>
-                                                                    <h3 className="font-black text-lg text-secondary uppercase tracking-tight flex items-center gap-2">
-                                                                        <Table className="text-primary" size={20} />
+                                                                    <h3 className="font-black text-base md:text-sm text-[var(--color-text-main)] uppercase tracking-tight flex items-center gap-2">
+                                                                        <Table className="text-[var(--color-primary)]" size={18} />
                                                                         Portion Exchange Matrix
                                                                     </h3>
-                                                                    <p className="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest opacity-70">
+                                                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 uppercase tracking-widest opacity-70">
                                                                         Medical Grade Portion Distribution Plan
                                                                     </p>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 w-full md:w-auto">
                                                                     {portionTemplates.length > 0 && (() => {
                                                                         const universalTemplates = portionTemplates.filter(t => !t.nutritionist_id);
                                                                         const customTemplates = portionTemplates.filter(t => t.nutritionist_id);
                                                                         return (
-                                                                            <div className="relative group/template">
-                                                                                <Button variant="outline" className="h-9 px-3 rounded-lg border border-success/30 text-success hover:text-success/80 hover:bg-success/10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-bg-card">
+                                                                            <div className="relative flex-grow md:flex-grow-0 flex-shrink-0">
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    onClick={() => setIsPortionTemplateDropdownOpen(!isPortionTemplateDropdownOpen)}
+                                                                                    className="w-full h-8 px-3 rounded-xl border border-divider text-primary hover:bg-primary/10 flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-bg-card shadow-sm"
+                                                                                >
                                                                                     <ListFilter size={14} /> Load Template
                                                                                 </Button>
-                                                                                <div className="absolute top-full right-0 pt-2 w-72 opacity-0 invisible group-hover/template:opacity-100 group-hover/template:visible transition-all z-50">
-                                                                                    <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
-                                                                                        <div className="max-h-80 overflow-y-auto scrollbar-thin">
-                                                                                            {universalTemplates.length > 0 && (
-                                                                                                <div>
-                                                                                                    <div className="px-3 py-2 bg-success/10 border-b border-divider text-[9px] font-black text-success uppercase tracking-widest flex items-center gap-1">
-                                                                                                        <span>🌿 Clinical Standards</span>
-                                                                                                    </div>
-                                                                                                    {universalTemplates.map(t => (
-                                                                                                        <div
-                                                                                                            key={t.id}
-                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-divider hover:bg-primary/5 cursor-pointer transition-colors"
-                                                                                                            onClick={() => applyPortionTemplate(t)}
-                                                                                                        >
-                                                                                                            <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
-                                                                                                            <span className="px-1.5 py-0.5 bg-success/10 text-success text-[8px] font-black uppercase tracking-tight rounded-md border border-success/20">
-                                                                                                                Universal
-                                                                                                            </span>
+                                                                                {isPortionTemplateDropdownOpen && (
+                                                                                    <>
+                                                                                        <div className="fixed inset-0 z-40" onClick={() => setIsPortionTemplateDropdownOpen(false)} />
+                                                                                        <div className="fixed md:absolute top-1/2 md:top-full left-1/2 md:left-auto right-auto md:right-0 -translate-x-1/2 md:translate-x-0 -translate-y-1/2 md:translate-y-0 pt-2 w-[calc(100vw-2rem)] md:w-72 max-w-sm md:max-w-none z-50 animate-in fade-in duration-200">
+                                                                                            <div className="bg-bg-card border border-divider rounded-2xl shadow-xl overflow-hidden">
+                                                                                                <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                                                                                                    {universalTemplates.length > 0 && (
+                                                                                                        <div>
+                                                                                                            <div className="px-3 py-2 bg-success/10 border-b border-divider text-[9px] font-black text-success uppercase tracking-widest flex items-center gap-1">
+                                                                                                                <span>🌿 Clinical Standards</span>
+                                                                                                            </div>
+                                                                                                            {universalTemplates.map(t => (
+                                                                                                                <div
+                                                                                                                    key={t.id}
+                                                                                                                    className="flex items-center justify-between px-3 py-2.5 border-b border-divider hover:bg-primary/5 cursor-pointer transition-colors"
+                                                                                                                    onClick={() => {
+                                                                                                                        applyPortionTemplate(t);
+                                                                                                                        setIsPortionTemplateDropdownOpen(false);
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
+                                                                                                                    <span className="px-1.5 py-0.5 bg-success/10 text-success text-[8px] font-black uppercase tracking-tight rounded-md border border-success/20">
+                                                                                                                        Universal
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            ))}
                                                                                                         </div>
-                                                                                                    ))}
-                                                                                                </div>
-                                                                                            )}
+                                                                                                    )}
 
-                                                                                            {customTemplates.length > 0 && (
-                                                                                                <div>
-                                                                                                    <div className="px-3 py-2 bg-bg-page/80 border-b border-divider text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
-                                                                                                        <span>👤 Your Saved Templates</span>
-                                                                                                    </div>
-                                                                                                    {customTemplates.map(t => (
-                                                                                                        <div
-                                                                                                            key={t.id}
-                                                                                                            className="flex items-center justify-between px-3 py-2.5 border-b border-divider last:border-b-0 hover:bg-primary/5 group/titem cursor-pointer transition-colors"
-                                                                                                            onClick={() => applyPortionTemplate(t)}
-                                                                                                        >
-                                                                                                            <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
-                                                                                                            <button
-                                                                                                                onClick={(e) => { e.stopPropagation(); setTemplateToDelete(t); }}
-                                                                                                                className="text-danger hover:text-danger/80 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-danger/10 rounded-md"
-                                                                                                            >
-                                                                                                                <Trash2 size={12} />
-                                                                                                            </button>
+                                                                                                    {customTemplates.length > 0 && (
+                                                                                                        <div>
+                                                                                                            <div className="px-3 py-2 bg-bg-page/80 border-b border-divider text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
+                                                                                                                <span>👤 Your Saved Templates</span>
+                                                                                                            </div>
+                                                                                                            {customTemplates.map(t => (
+                                                                                                                <div
+                                                                                                                    key={t.id}
+                                                                                                                    className="flex items-center justify-between px-3 py-2.5 border-b border-divider last:border-b-0 hover:bg-primary/5 group/titem cursor-pointer transition-colors"
+                                                                                                                    onClick={() => {
+                                                                                                                        applyPortionTemplate(t);
+                                                                                                                        setIsPortionTemplateDropdownOpen(false);
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    <span className="text-xs font-bold text-text-main truncate pr-2">{t.template_name}</span>
+                                                                                                                    <button
+                                                                                                                        onClick={(e) => {
+                                                                                                                            e.stopPropagation();
+                                                                                                                            setTemplateToDelete(t);
+                                                                                                                            setIsPortionTemplateDropdownOpen(false);
+                                                                                                                        }}
+                                                                                                                        className="text-danger hover:text-danger/80 opacity-0 group-hover/titem:opacity-100 transition-opacity p-1 bg-danger/10 rounded-md"
+                                                                                                                    >
+                                                                                                                        <Trash2 size={12} />
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            ))}
                                                                                                         </div>
-                                                                                                    ))}
+                                                                                                    )}
                                                                                                 </div>
-                                                                                            )}
+                                                                                            </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                </div>
+                                                                                    </>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })()}
@@ -5044,7 +5112,7 @@ export default function ClientDetails() {
                                                                     <Button
                                                                         onClick={() => setIsTemplateModalOpen(true)}
                                                                         variant="outline"
-                                                                        className="h-9 px-3 rounded-lg border border-success/30 text-success hover:text-success/80 hover:bg-success/10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-bg-card"
+                                                                        className="h-8 px-3 rounded-xl border border-divider text-text-main hover:bg-primary/10 hover:text-primary flex items-center justify-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-bg-card shadow-sm flex-grow md:flex-grow-0 flex-shrink-0"
                                                                         title="Save current matrix as a template"
                                                                     >
                                                                         <BookmarkPlus size={14} /> Save Template
@@ -5053,7 +5121,7 @@ export default function ClientDetails() {
                                                                     <Button
                                                                         onClick={handleSavePortions}
                                                                         disabled={isSavingPortions}
-                                                                        className="h-9 px-4 rounded-lg bg-success hover:bg-primary-hover text-white shadow-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                                                                        className="h-8 px-3 rounded-xl bg-success hover:bg-primary-hover text-white shadow-lg text-[9px] md:text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 flex-grow md:flex-grow-0 flex-shrink-0"
                                                                     >
                                                                         {isSavingPortions ? 'Saving...' : <><Save size={14} /> Update Matrix</>}
                                                                     </Button>
@@ -5144,8 +5212,8 @@ export default function ClientDetails() {
                                                                 <div className="block lg:hidden space-y-4">
                                                                     {['Breakfast', 'AM Snack', 'Lunch', 'PM Snack', 'Dinner'].map(meal => (
                                                                         <div key={meal} className="bg-bg-card rounded-[1.5rem] border border-divider overflow-hidden shadow-sm">
-                                                                            <div className="bg-bg-page p-3 border-b border-divider text-center shadow-inner">
-                                                                                <span className="font-black text-primary uppercase tracking-widest text-[11px]">{meal}</span>
+                                                                            <div className="bg-bg-page p-2 sm:p-3 border-b border-divider text-center shadow-inner">
+                                                                                <span className="font-black text-primary uppercase tracking-widest text-[10px] sm:text-[11px]">{meal}</span>
                                                                             </div>
                                                                             <div className="divide-y divide-divider">
                                                                                 {[
@@ -5157,12 +5225,12 @@ export default function ClientDetails() {
                                                                                     { id: 'fat', label: 'Fat/Oil', icon: <Droplets size={14} />, unit: '1 tsp' }
                                                                                 ].map(item => (
                                                                                     <div key={item.id} className="flex items-stretch bg-bg-card">
-                                                                                        <div className="flex items-center gap-2 p-3 w-1/2 border-r border-divider">
-                                                                                            <div className="p-1.5 bg-bg-page rounded-lg text-primary shrink-0">
+                                                                                        <div className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-3 w-1/2 border-r border-divider">
+                                                                                            <div className="p-1 sm:p-1.5 bg-bg-page rounded-lg text-primary shrink-0">
                                                                                                 {item.icon}
                                                                                             </div>
                                                                                             <div className="min-w-0">
-                                                                                                <div className="text-[10px] font-black text-text-main uppercase tracking-tight truncate">{item.label}</div>
+                                                                                                <div className="text-[9px] sm:text-[10px] font-black text-text-main uppercase tracking-tight truncate">{item.label}</div>
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className="w-1/2 relative bg-bg-page/30">
@@ -5180,17 +5248,17 @@ export default function ClientDetails() {
 
                                                                     {/* Mobile Sugar / Clinical Note Card — plain text only, NOT connected to rule engine */}
                                                                     <div className="bg-warning/5 rounded-[1.5rem] border border-warning/30 overflow-hidden shadow-sm">
-                                                                        <div className="p-3 border-b border-warning/30 flex items-center justify-center gap-2">
+                                                                        <div className="p-2 sm:p-3 border-b border-warning/30 flex items-center justify-center gap-1.5 sm:gap-2">
                                                                             <AlertCircle size={14} className="text-warning" />
                                                                             <div className="text-center">
-                                                                                <h4 className="font-black text-warning uppercase tracking-widest text-[11px]">Sugar / Clinical Note</h4>
-                                                                                <p className="text-[9px] font-bold text-warning/60 mt-0.5">Text only · displayed as warning to parents</p>
+                                                                                <h4 className="font-black text-warning uppercase tracking-widest text-[10px] sm:text-[11px]">Sugar / Clinical Note</h4>
+                                                                                <p className="text-[8px] sm:text-[9px] font-bold text-warning/60 mt-0.5">Text only · displayed as warning to parents</p>
                                                                             </div>
                                                                         </div>
                                                                         <div className="p-1">
                                                                             <textarea
                                                                                 rows={2}
-                                                                                className="w-full bg-transparent border-0 p-3 text-sm font-bold text-text-main focus:ring-0 outline-none placeholder:text-warning/40 resize-none"
+                                                                                className="w-full bg-transparent border-0 p-2 sm:p-3 text-xs sm:text-sm font-bold text-text-main focus:ring-0 outline-none placeholder:text-warning/40 resize-none"
                                                                                 placeholder="e.g. Limit intake of sugar, sugary products..."
                                                                                 value={portionMatrix.find(r => r.meal_type === 'Breakfast')?.sugar || ''}
                                                                                 onChange={(e) => updatePortionCell('Breakfast', 'sugar', e.target.value)}

@@ -37,14 +37,19 @@ const STEPS = [
     { title: 'Dietary', icon: Info }
 ];
 
-const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const getDaysInMonth = (monthStr, yearStr) => {
+    if (!monthStr) return 31;
+    const month = parseInt(monthStr);
+    const year = yearStr ? parseInt(yearStr) : new Date().getFullYear();
+    return new Date(year, month, 0).getDate();
+};
 const MONTHS = [
     { val: '01', label: 'January' }, { val: '02', label: 'February' }, { val: '03', label: 'March' },
     { val: '04', label: 'April' }, { val: '05', label: 'May' }, { val: '06', label: 'June' },
     { val: '07', label: 'July' }, { val: '08', label: 'August' }, { val: '09', label: 'September' },
     { val: '10', label: 'October' }, { val: '11', label: 'November' }, { val: '12', label: 'December' }
 ];
-const YEARS = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() - i).toString());
+const YEARS = Array.from({ length: 22 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId = null }) {
     const [step, setStep] = useState(1);
@@ -59,6 +64,9 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         year: new Date().getFullYear().toString()
     });
 
+    const daysCount = getDaysInMonth(dobParts.month, dobParts.year);
+    const DAYS = Array.from({ length: daysCount }, (_, i) => (i + 1).toString().padStart(2, '0'));
+
     const [formData, setFormData] = useState({
         childName: '',
         dateOfBirth: '',
@@ -71,7 +79,16 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         vaccinations: []
     });
 
-
+    // Ensure day is valid for selected month and year
+    React.useEffect(() => {
+        const maxDays = getDaysInMonth(dobParts.month, dobParts.year);
+        if (parseInt(dobParts.day) > maxDays) {
+            setDobParts(prev => ({
+                ...prev,
+                day: maxDays.toString().padStart(2, '0')
+            }));
+        }
+    }, [dobParts.month, dobParts.year, dobParts.day]);
 
     // Sync DOB parts to formData
     React.useEffect(() => {

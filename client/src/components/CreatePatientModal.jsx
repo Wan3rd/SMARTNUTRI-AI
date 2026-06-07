@@ -468,13 +468,13 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-warning)] flex items-center gap-2 mb-2">
                                 <Activity size={12} /> Bristol Stool Scale (Baseline)
                             </label>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-1.5 sm:gap-2">
                                 {BRISTOL_TYPES.map(type => (
                                     <button
                                         key={type.type}
                                         type="button"
                                         onClick={() => setFormData({ ...formData, bristol_stool_scale: type.type })}
-                                        className={`flex flex-col items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-2xl border-2 transition-all group ${formData.bristol_stool_scale === type.type
+                                        className={`flex flex-col items-center justify-center gap-1 sm:gap-2 p-1.5 sm:p-3 rounded-xl sm:rounded-2xl border-2 transition-all group ${formData.bristol_stool_scale === type.type
                                             ? 'bg-[var(--color-warning)] border-[var(--color-warning)] text-white shadow-lg shadow-[var(--color-warning)]/20'
                                             : 'bg-[var(--color-bg-page)] text-[var(--color-warning)] border-[var(--color-divider)] hover:border-[var(--color-warning)]/40'
                                             }`}
@@ -667,7 +667,7 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
         >
             <Card 
                 className={cn(
-                    "w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none min-h-[100dvh] sm:min-h-0 sm:max-h-[90vh] flex flex-col transition-all duration-500 ease-out transform",
+                    "w-full sm:max-w-2xl relative shadow-2xl overflow-hidden rounded-none sm:rounded-[2.5rem] bg-[var(--color-bg-card)] border-none h-[100dvh] max-h-[100dvh] sm:h-auto sm:min-h-0 sm:max-h-[90vh] flex flex-col transition-all duration-500 ease-out transform",
                     isMounted && !isClosing ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"
                 )}
             >
