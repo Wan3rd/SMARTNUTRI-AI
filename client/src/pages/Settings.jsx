@@ -325,9 +325,15 @@ export default function Settings() {
                             <button
                                 onClick={() => setShowMaintenanceModal(true)}
                                 disabled={maintenanceLoading}
-                                className={`w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner ${maintenanceMode ? 'bg-rose-500 shadow-rose-500/30' : 'bg-gray-300 dark:bg-zinc-700'}`}
+                                className={`w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner focus:outline-none ${maintenanceMode ? 'bg-rose-500 shadow-rose-500/30' : 'bg-gray-300 dark:bg-zinc-700'}`}
                             >
-                                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm ${maintenanceMode ? 'right-1 scale-110' : 'left-1'}`} />
+                                <div 
+                                    className={`w-5 h-5 bg-white rounded-full absolute top-1 left-1 shadow-sm ${maintenanceMode ? 'scale-110' : ''}`}
+                                    style={{ 
+                                        transform: maintenanceMode ? 'translateX(28px)' : 'translateX(0)',
+                                        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }}
+                                />
                             </button>
                         )
                     }
@@ -561,9 +567,15 @@ export default function Settings() {
                                     ) : item.toggle ? (
                                         <button
                                             onClick={item.onToggle}
-                                            className={`w-12 h-6 rounded-full relative transition-all duration-300 ${item.active ? 'bg-[var(--color-primary)]' : 'bg-gray-300 dark:bg-zinc-700'}`}
+                                            className={`w-12 h-6 rounded-full relative transition-all duration-300 focus:outline-none ${item.active ? 'bg-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20' : 'bg-gray-300 dark:bg-zinc-700'}`}
                                         >
-                                            <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300 ${item.active ? 'right-1' : 'left-1 shadow-sm'}`} />
+                                            <div 
+                                                className="w-4 h-4 bg-white rounded-full absolute top-1 left-1 shadow-sm"
+                                                style={{ 
+                                                    transform: item.active ? 'translateX(24px)' : 'translateX(0)',
+                                                    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                }}
+                                            />
                                         </button>
                                     ) : (
                                         <ChevronRight size={18} className="text-[var(--color-text-muted)]" />
