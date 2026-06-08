@@ -301,11 +301,11 @@ export default function Profile() {
     const [nutri, setNutri] = useState({
         fullName: user?.full_name || '',
         email: user?.email || '',
-        phone: '',
-        specialization: 'Pediatric Nutrition',
-        licenseNo: '',
-        clinic: '',
-        profileImageUrl: '',
+        phone: user?.phone || '',
+        specialization: user?.specialization || 'Pediatric Nutrition',
+        licenseNo: user?.license_no || user?.professional_id || '',
+        clinic: user?.clinic || '',
+        profileImageUrl: user?.profile_image_url || '',
         licenseImageUrl: user?.license_image_url || '',
         dateOfBirth: user?.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : ''
     });
@@ -426,7 +426,7 @@ export default function Profile() {
                         email: data.email || user?.email || '',
                         phone: data.phone || '',
                         specialization: data.specialization || 'Pediatric Nutrition',
-                        licenseNo: data.license_no || '',
+                        licenseNo: data.license_no || data.professional_id || '',
                         clinic: data.clinic || '',
                         profileImageUrl: data.profile_image_url || '',
                         licenseImageUrl: data.license_image_url || '',
@@ -475,6 +475,10 @@ export default function Profile() {
                 updateUser({
                     ...user,
                     full_name: res.data.full_name,
+                    phone: res.data.phone,
+                    specialization: res.data.specialization,
+                    license_no: res.data.license_no,
+                    clinic: res.data.clinic,
                     profile_image_url: res.data.profile_image_url,
                     date_of_birth: res.data.date_of_birth
                 });
@@ -518,6 +522,7 @@ export default function Profile() {
                 updateUser({
                     ...user,
                     full_name: res.data.full_name,
+                    phone: res.data.phone,
                     profile_image_url: res.data.profile_image_url,
                     date_of_birth: res.data.date_of_birth
                 });
@@ -536,7 +541,7 @@ export default function Profile() {
         const isDirty = nutri.fullName !== (user?.full_name || '') ||
             nutri.phone !== (user?.phone || '') ||
             nutri.specialization !== (user?.specialization || 'Pediatric Nutrition') ||
-            nutri.licenseNo !== (user?.license_no || '') ||
+            nutri.licenseNo !== (user?.license_no || user?.professional_id || '') ||
             nutri.clinic !== (user?.clinic || '') ||
             nutri.dateOfBirth !== initialDob;
 
@@ -554,7 +559,7 @@ export default function Profile() {
                         fullName: user?.full_name || '',
                         phone: user?.phone || '',
                         specialization: user?.specialization || 'Pediatric Nutrition',
-                        licenseNo: user?.license_no || '',
+                        licenseNo: user?.license_no || user?.professional_id || '',
                         clinic: user?.clinic || '',
                         dateOfBirth: initialDob
                     }));
@@ -893,6 +898,9 @@ export default function Profile() {
                 });
 
                 setNutri(prev => ({ ...prev, licenseImageUrl: res.data.user.license_image_url }));
+                if (updateUser) {
+                    updateUser({ ...user, license_image_url: res.data.user.license_image_url });
+                }
                 showNotification('Credential document uploaded', 'success');
             } else {
                 const formData = new FormData();

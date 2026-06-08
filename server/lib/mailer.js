@@ -6,10 +6,10 @@ dotenv.config();
 
 // ─── Brevo (Sendinblue) Transport ─────────────────────────────────────────────
 const BREVO_API_KEY = process.env.BREVO_API_KEY?.trim();
-const FROM_EMAIL    = process.env.FROM_EMAIL?.trim() || 'snutri244@gmail.com';
-const FROM_NAME     = 'SmartNutri-AI';
-const APP_URL       = config.client.url;
-const LOGO_URL      = 'https://smartnutri-ai-xmn9.vercel.app/SmartNutri-logo.png';
+const FROM_EMAIL = process.env.FROM_EMAIL?.trim() || 'snutri244@gmail.com';
+const FROM_NAME = 'SmartNutri-AI';
+const APP_URL = config.client.url;
+const LOGO_URL = 'https://smartnutri-ai-xmn9.vercel.app/SmartNutri-logo.png';
 
 /**
  * Core Brevo send helper — mirrors Katebea Trading's emailService.js pattern.
@@ -30,18 +30,18 @@ const sendViaBrevo = async ({ to, subject, html, text }) => {
 
     try {
         const payload = {
-            sender:      { email: FROM_EMAIL, name: FROM_NAME },
-            to:          [{ email: to }],
-            subject:     subject,
+            sender: { email: FROM_EMAIL, name: FROM_NAME },
+            to: [{ email: to }],
+            subject: subject,
             htmlContent: html || text,
             textContent: text,
         };
 
         const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
             headers: {
-                'api-key':      BREVO_API_KEY,
+                'api-key': BREVO_API_KEY,
                 'Content-Type': 'application/json',
-                'Accept':       'application/json',
+                'Accept': 'application/json',
             },
         });
 
@@ -120,10 +120,10 @@ export const sendOtpEmail = async (email, otpCode, fullName) => {
     `;
 
     return sendViaBrevo({
-        to:      email,
+        to: email,
         subject: 'Your SmartNutri-AI Verification Code',
         html,
-        text:    `Hello ${fullName || 'Valued User'},\n\nYour SmartNutri-AI verification code is: ${otpCode}\n\nThis code is valid for 2 minutes. Never share it with anyone.`,
+        text: `Hello ${fullName || 'Valued User'},\n\nYour SmartNutri-AI verification code is: ${otpCode}\n\nThis code is valid for 2 minutes. Never share it with anyone.`,
     });
 };
 
@@ -167,10 +167,10 @@ export const sendResetPasswordEmail = async (email, token, fullName) => {
     `;
 
     return sendViaBrevo({
-        to:      email,
+        to: email,
         subject: 'Reset Your SmartNutri-AI Password',
         html,
-        text:    `Hello ${fullName || 'there'},\n\nReset your SmartNutri-AI password using this link (valid 1 hour):\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
+        text: `Hello ${fullName || 'there'},\n\nReset your SmartNutri-AI password using this link (valid 1 hour):\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
     });
 };
 
@@ -219,10 +219,10 @@ export const sendApprovalEmail = async (nutritionist) => {
     `;
 
     return sendViaBrevo({
-        to:      email,
+        to: email,
         subject: '🎉 Your SmartNutri-AI Account Has Been Approved!',
-        html:    buildEmailWrapper(inner),
-        text:    `Hi ${full_name},\n\nCongratulations! Your SmartNutri-AI nutritionist account has been approved.\n\nYou can now log in and access your dashboard:\n${loginUrl}\n\nWelcome aboard,\nThe SmartNutri-AI Team\nsnutri244@gmail.com`,
+        html: buildEmailWrapper(inner),
+        text: `Hi ${full_name},\n\nCongratulations! Your SmartNutri-AI nutritionist account has been approved.\n\nYou can now log in and access your dashboard:\n${loginUrl}\n\nWelcome aboard,\nThe SmartNutri-AI Team\nsnutri244@gmail.com`,
     });
 };
 
@@ -282,10 +282,10 @@ export const sendRejectionEmail = async (nutritionist, reason = null) => {
     `;
 
     return sendViaBrevo({
-        to:      email,
+        to: email,
         subject: 'Your SmartNutri-AI Application Status Update',
-        html:    buildEmailWrapper(inner),
-        text:    `Hi ${full_name},\n\nWe regret to inform you that your SmartNutri-AI nutritionist application was not approved at this time.\n${reason ? `\nReason: ${reason}\n` : ''}\nIf you would like to appeal or resubmit, please contact us:\n${supportEmail}\n\nThank you for your interest,\nThe SmartNutri-AI Team`,
+        html: buildEmailWrapper(inner),
+        text: `Hi ${full_name},\n\nWe regret to inform you that your SmartNutri-AI nutritionist application was not approved at this time.\n${reason ? `\nReason: ${reason}\n` : ''}\nIf you would like to appeal or resubmit, please contact us:\n${supportEmail}\n\nThank you for your interest,\nThe SmartNutri-AI Team`,
     });
 };
 
@@ -331,12 +331,12 @@ export const sendStatusEmailWithRetry = async ({
             // Log success to audit_logs
             await logAuditFn({
                 adminId,
-                targetId:   nutritionist.id,
-                action:     status === 'approved' ? 'EMAIL_APPROVAL_SENT' : 'EMAIL_REJECTION_SENT',
+                targetId: nutritionist.id,
+                action: status === 'approved' ? 'EMAIL_APPROVAL_SENT' : 'EMAIL_REJECTION_SENT',
                 entityType: 'USER',
-                entityId:   nutritionist.id,
+                entityId: nutritionist.id,
                 details: {
-                    to:       nutritionist.email,
+                    to: nutritionist.email,
                     status,
                     attempts: attempt,
                     provider: result.provider || 'brevo',
@@ -352,15 +352,15 @@ export const sendStatusEmailWithRetry = async ({
     // All retries exhausted — log the failure
     await logAuditFn({
         adminId,
-        targetId:   nutritionist.id,
-        action:     'EMAIL_SEND_FAILED',
+        targetId: nutritionist.id,
+        action: 'EMAIL_SEND_FAILED',
         entityType: 'USER',
-        entityId:   nutritionist.id,
+        entityId: nutritionist.id,
         details: {
-            to:       nutritionist.email,
+            to: nutritionist.email,
             status,
             attempts: maxRetries,
-            error:    typeof lastError === 'string' ? lastError : JSON.stringify(lastError),
+            error: typeof lastError === 'string' ? lastError : JSON.stringify(lastError),
         }
     });
 };
@@ -418,9 +418,60 @@ export const sendSupportTicketEmail = async (contactDetails) => {
     `;
 
     return sendViaBrevo({
-        to:      'snutri244@gmail.com',
+        to: 'snutri244@gmail.com',
         subject: `[Support Ticket] ${subject} - ${name} (${role})`,
         html,
-        text:    `New support ticket from ${name} (${email}) — Role: ${role}\nSubject: ${subject}\n\n${message}`,
+        text: `New support ticket from ${name} (${email}) — Role: ${role}\nSubject: ${subject}\n\n${message}`,
     });
 };
+
+
+// ─── 7. Nutritionist Verification Request Email ────────────────────────────────
+
+export const sendNutritionistVerificationRequestEmail = async (nutritionist) => {
+    const { full_name, email } = nutritionist;
+    const verificationUrl = `${APP_URL}/admin`;
+
+    const detailsTable = `
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; font-weight: bold; color: #475569; width: 150px;">Full Name:</td>
+                <td style="padding: 10px 0; color: #0f172a;">${full_name || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; font-weight: bold; color: #475569;">Email Address:</td>
+                <td style="padding: 10px 0; color: #0f172a;"><a href="mailto:${email}" style="color: #059669; text-decoration: none;">${email}</a></td>
+            </tr>
+        </table>
+    `;
+
+    const inner = `
+        <!-- Badge -->
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 28px auto; text-align: center;">
+            <tr>
+                <td style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #bfdbfe; border-radius: 50px; padding: 10px 24px;">
+                    <span style="color: #1e40af; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; display: block;">🔍 Verification Required</span>
+                </td>
+            </tr>
+        </table>
+
+        <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 16px 0;">
+            A new nutritionist has registered and is pending credentials verification. Please review the registration request in the Admin Dashboard.
+        </p>
+
+        ${detailsTable}
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="${verificationUrl}" style="background-color: #059669; color: #ffffff; padding: 16px 40px; border-radius: 16px; text-decoration: none; font-weight: 900; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em; display: inline-block; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);">Open Approval Queue →</a>
+        </div>
+    `;
+
+    return sendViaBrevo({
+        to: 'smnutri@gmail.com',
+        subject: `[Verification Required] New Nutritionist Registration - ${full_name || 'Expert'}`,
+        html: buildEmailWrapper(inner),
+        text: `A new nutritionist registration is pending verification:\n\nName: ${full_name || 'N/A'}\nEmail: ${email || 'N/A'}\n\nPlease review full credentials and license documents in the Admin Dashboard: ${verificationUrl}`,
+    });
+};
+

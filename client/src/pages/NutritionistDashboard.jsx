@@ -165,7 +165,7 @@ export default function NutritionistDashboard() {
                             Verification <span className="text-emerald-500">Pending</span>
                         </h1>
                         <p className="text-[var(--color-text-muted)] text-xs font-semibold leading-relaxed max-w-sm mx-auto">
-                            Hello, <span className="text-[var(--color-text-main)] font-black">Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance.
+                            Hello, <span className="text-[var(--color-text-main)] font-black">{user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}</span>. Your professional registration is currently being audited to ensure clinical compliance.
                         </p>
                     </div>
 
@@ -247,7 +247,7 @@ export default function NutritionistDashboard() {
                     <div className="flex-1 text-center sm:text-left">
                         <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2 mb-2 sm:mb-1.5">
                             <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)] tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
-                                Welcome, Dr. {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
+                                Welcome, {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
                             </h1>
                             <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm">
                                 Clinical Nutritionist

@@ -21,6 +21,7 @@ import { AuthProvider } from './context/AuthContext';
 
 import ParentDashboard from './pages/ParentDashboard';
 import NutritionistDashboard from './pages/NutritionistDashboard';
+import ClinicalGuides from './pages/ClinicalGuides';
 import { useAuth } from './context/AuthContext';
 
 import ClientDetails from './pages/ClientDetails';
@@ -93,6 +94,11 @@ function AppContent() {
                 <Route path="/nutritionist/client/:clientId" element={
                   <ProtectedRoute requiredRole="nutritionist">
                     <ClientDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/nutritionist/guides" element={
+                  <ProtectedRoute requiredRole="nutritionist">
+                    <ClinicalGuides />
                   </ProtectedRoute>
                 } />
                 {/* Admin Routes */}

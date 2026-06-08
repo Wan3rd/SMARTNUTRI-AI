@@ -269,6 +269,7 @@ router.get('/nutritionists', verifyAdmin, async (req, res) => {
                 status: true,
                 specialization: true,
                 license_no: true,
+                professional_id: true,
                 clinic: true,
                 phone: true,
                 created_at: true,
@@ -382,6 +383,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
                     status: true,
                     created_at: true,
                     professional_id: true,
+                    license_no: true,
                     clinic: true,
                     is_suspended: true,
                     force_password_reset: true,
@@ -517,6 +519,61 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to delete user' });
+    }
+});
+
+// PATCH /admin/users/:id/status - Approve/Reject/Reset nutritionist status
+router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { status, reason } = req.body;
+
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    try {
+        const oldUser = await prisma.users.findUnique({
+            where: { id },
+            select: { status: true, email: true, full_name: true, profile_image_url: true }
+        });
+
+        if (!oldUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const updatedUser = await prisma.users.update({
+            where: { id },
+            data: { status },
+            select: { id: true, full_name: true, status: true }
+        });
+
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: id,
+            action: status === 'approved' ? 'APPROVE_NUTRITIONIST' : status === 'rejected' ? 'REJECT_NUTRITIONIST' : 'RESET_VERIFICATION_STATUS',
+            entityType: 'USER',
+            entityId: id,
+            details: {
+                before: oldUser.status,
+                after: status
+            },
+            ipAddress: req.ip
+        });
+
+        if (['approved', 'rejected'].includes(status)) {
+            sendStatusEmailWithRetry({
+                status,
+                nutritionist: { id, email: oldUser.email, full_name: oldUser.full_name, profile_image_url: oldUser.profile_image_url || null },
+                logAuditFn: logAuditAction,
+                adminId: req.user.id,
+                rejectionReason: reason || null
+            }).catch(err => console.error('[Admin] Background email send failed:', err));
+        }
+
+        res.json({ message: `User status updated to ${status}`, user: updatedUser });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
@@ -719,7 +776,8 @@ router.post('/users', verifyAdmin, async (req, res) => {
                 password_hash: hashedPassword,
                 full_name,
                 role,
-                professional_id,
+                professional_id: professional_id || null,
+                license_no: professional_id || null,
                 clinic,
                 status: role === 'nutritionist' ? 'pending' : 'approved'
             }

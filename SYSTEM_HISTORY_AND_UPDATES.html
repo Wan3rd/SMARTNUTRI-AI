@@ -445,7 +445,8 @@
                             </li>
                             <li><span class="tech-tag">Server</span>Exposed a public, static endpoint
                                 <code>GET /system-updates</code> that delivers this Change Log documentary page directly
-                                from the repository root.</li>
+                                from the repository root.
+                            </li>
                             <li><span class="tech-tag">Client</span>Integrated a dynamically-resolving "See System
                                 Updates" button in the landing page footer to easily access public developer
                                 specifications and system history.</li>
@@ -466,14 +467,16 @@
                                 minimum (<code>min</code>) targets in addition to maximum limits, highlighting
                                 under-consumption anomalies for calories, protein, carbs, fats, sodium, and water across
                                 <code>ClientDetails.jsx</code>, <code>MealHistory.jsx</code>, <code>Calendar.jsx</code>,
-                                and <code>ParentDashboard.jsx</code>.</li>
+                                and <code>ParentDashboard.jsx</code>.
+                            </li>
                             <li><span class="tech-tag">Client</span><strong>System-wide Future Date Restraints:</strong>
                                 Placed native <code>max</code> calendar boundaries and double-layered validation blocks
                                 across all birthdate entry points (clinician and caregiver registration modals and
                                 settings), vaccination logging, growth log updates, and caregiver meal logs
                                 (<code>CreatePatientModal.jsx</code>, <code>Onboarding.jsx</code>,
                                 <code>AddChildModal.jsx</code>, <code>Profile.jsx</code>, and
-                                <code>MealLogger.jsx</code>) to hard-block impossible future inputs.</li>
+                                <code>MealLogger.jsx</code>) to hard-block impossible future inputs.
+                            </li>
                             <li><span class="tech-tag">Client</span><strong>Resilient Pediatric Growth Velocity
                                     Calculations:</strong> Refactored biometric velocity tracking inside the client
                                 dashboard to precompute height and weight growth velocities strictly between the two
@@ -494,7 +497,8 @@
                                 <code>nutrient_precision</code> settings, all clinician-side growth deltas, monthly
                                 velocities, and Clinical Intelligence warnings convert to Imperial (lbs, lbs/m, in,
                                 in/m), and caregiver-side child profile trend badges dynamically adjust to imperial
-                                metrics (<code>+1.1 lbs trend</code> and <code>+0.5 in trend</code>) when active.</li>
+                                metrics (<code>+1.1 lbs trend</code> and <code>+0.5 in trend</code>) when active.
+                            </li>
                             <li><span class="tech-tag">Server</span><strong>Clinician Log Review Validation
                                     Fix:</strong> Added <code>'verified'</code> to the allowed API
                                 <code>VALID_REVIEW_STATUSES</code> list in the nutritionist private router, resolving
@@ -548,7 +552,8 @@
                                 entries logged through the Meal Logger (via the <code>water_ml</code> field) were not
                                 contributing to the Daily Fluid Tracker card glass count. The counter now aggregates
                                 both manual glass button taps and water volume from meal logs using a unified
-                                <code>totalIntakeMl / 250</code> calculation.</li>
+                                <code>totalIntakeMl / 250</code> calculation.
+                            </li>
                             <li><span class="tech-tag">Bug Fix</span><strong>Meal History Date Card Scale
                                     Overlap:</strong> Fixed a visual layout defect in <code>MealHistory.jsx</code> where
                                 the selected date button applied a CSS <code>scale(1.02)</code> transform on desktop,
@@ -573,13 +578,15 @@
                                 <code>AddChildModal.jsx</code>, <code>CreatePatientModal.jsx</code>). Replaced direct
                                 close callbacks with a delayed <code>triggerCloseAnimation</code> and added event
                                 <code>stopPropagation</code> to prevent accidental background clicks from disrupting
-                                interactions.</li>
+                                interactions.
+                            </li>
                             <li><span class="tech-tag">Client</span><strong>System-wide Theme Token
                                     Standardization:</strong> Stripped out hardcoded utility colors across the app
                                 (<code>ClientDetails.jsx</code>, <code>Profile.jsx</code>, <code>Settings.jsx</code>)
                                 and replaced them with unified CSS design variables (e.g., <code>bg-bg-card</code>,
                                 <code>text-text-main</code>). This ensures a consistent, resilient dark/light mode
-                                experience and standardizes button sizing, notification visuals, and input heights.</li>
+                                experience and standardizes button sizing, notification visuals, and input heights.
+                            </li>
                             <li><span class="tech-tag">Client</span><strong>Responsive Layout & Mobile
                                     Ergonomics:</strong> Overhauled the <code>AddChildModal.jsx</code> into a dynamic
                                 mobile slide-up container, ensuring form scrollability while locking the action footer.
@@ -618,15 +625,47 @@
                                 screen viewports. Smaller text metrics, dynamic paddings, responsive icons, truncated
                                 text boundaries, and tighter list spacing (down to <code>space-y-2</code>) were
                                 introduced to fit small screens without content overflow.</li>
-                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Card Layout Harmonization:</strong>
-                                Standardized admin console wrappers (<code>AdminDashboard.jsx</code>, <code>AdminDataOversight.jsx</code>, and <code>AdminTelemetry.jsx</code>) to use a unified <code>max-w-6xl mx-auto px-2 sm:px-4</code> layout. This maximizes layout utility by allowing cards to take most of the horizontal space on width while keeping neat, professional padding boundaries.</li>
+                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Card Layout
+                                    Harmonization:</strong>
+                                Standardized admin console wrappers (<code>AdminDashboard.jsx</code>,
+                                <code>AdminDataOversight.jsx</code>, and <code>AdminTelemetry.jsx</code>) to use a
+                                unified <code>max-w-6xl mx-auto px-2 sm:px-4</code> layout. This maximizes layout
+                                utility by allowing cards to take most of the horizontal space on width while keeping
+                                neat, professional padding boundaries.</li>
                             <li><span class="tech-tag">Client</span><strong>Mobile Telemetry Console Overhaul:</strong>
-                                Optimized the <code>AdminTelemetry.jsx</code> dashboard for mobile screens. Configured the three observability dials to display side-by-side (using <code>grid-cols-3</code>) with compact scale-down metrics rather than stacking into large, empty, single-column blocks. Scaled down dial circle sizes, SVGs, inner metrics, text, and card paddings (to <code>p-4 sm:p-8</code>) inside <code>TelemetryChart</code>, <code>AIHealthMonitor</code>, and <code>PlatformDiagnostics</code>.</li>
-                            <li><span class="tech-tag">Client</span><strong>Portal-based Modal Migration:</strong> Ported critical clinical and caregiver modals (<code>MealDetailModal.jsx</code>, <code>ReviewLogModal.jsx</code>, <code>CreatePatientModal.jsx</code>, and <code>AddClientModal.jsx</code>) to use React Portals (<code>createPortal</code>). This mounts them directly to <code>document.body</code> and isolates them from the main layout transitions, eliminating mobile navigation overlapping issues.</li>
-                            <li><span class="tech-tag">Client</span><strong>Page-Internal Modal Portal Migration:</strong> Refactored the image cropper and delete child confirmation modals inside <code>Profile.jsx</code>, as well as the equivalents reference modal in <code>DailyPlan.jsx</code>, to render via React Portals, raising overlay stacking priorities.</li>
-                            <li><span class="tech-tag">Client</span><strong>Mobile Typography &amp; Header Downscaling:</strong> Adjusted header text boundaries (<code>h1</code> tags scaled from <code>text-4xl/text-3xl</code> to <code>text-2xl/text-xl md:text-4xl/text-3xl</code>) on <code>AdminUsersList.jsx</code>, <code>AdminAuditLogs.jsx</code>, and <code>Calendar.jsx</code> pages to prevent layout breaks on small screen viewports.</li>
-                            <li><span class="tech-tag">Client</span><strong>Audit Logs Date Filter Reflow:</strong> Optimized the date range pickers in <code>AdminAuditLogs.jsx</code> using dynamic width limits (<code>w-[45%]</code>) to sit side-by-side cleanly without breaking alignment on mobile devices.</li>
-                            <li><span class="tech-tag">Client</span><strong>Layout Spacing &amp; Padding Alignment:</strong> Added responsive horizontal padding (<code>px-4 sm:px-0</code>) to the <code>AIKitchen.jsx</code> page container. Polish and padding reductions were also applied to the main action links inside <code>NutritionistDashboard.jsx</code> and date item Snap cards inside <code>MealHistory.jsx</code> to fit nicely on 375px screens.</li>
+                                Optimized the <code>AdminTelemetry.jsx</code> dashboard for mobile screens. Configured
+                                the three observability dials to display side-by-side (using <code>grid-cols-3</code>)
+                                with compact scale-down metrics rather than stacking into large, empty, single-column
+                                blocks. Scaled down dial circle sizes, SVGs, inner metrics, text, and card paddings (to
+                                <code>p-4 sm:p-8</code>) inside <code>TelemetryChart</code>,
+                                <code>AIHealthMonitor</code>, and <code>PlatformDiagnostics</code>.</li>
+                            <li><span class="tech-tag">Client</span><strong>Portal-based Modal Migration:</strong>
+                                Ported critical clinical and caregiver modals (<code>MealDetailModal.jsx</code>,
+                                <code>ReviewLogModal.jsx</code>, <code>CreatePatientModal.jsx</code>, and
+                                <code>AddClientModal.jsx</code>) to use React Portals (<code>createPortal</code>). This
+                                mounts them directly to <code>document.body</code> and isolates them from the main
+                                layout transitions, eliminating mobile navigation overlapping issues.</li>
+                            <li><span class="tech-tag">Client</span><strong>Page-Internal Modal Portal
+                                    Migration:</strong> Refactored the image cropper and delete child confirmation
+                                modals inside <code>Profile.jsx</code>, as well as the equivalents reference modal in
+                                <code>DailyPlan.jsx</code>, to render via React Portals, raising overlay stacking
+                                priorities.</li>
+                            <li><span class="tech-tag">Client</span><strong>Mobile Typography &amp; Header
+                                    Downscaling:</strong> Adjusted header text boundaries (<code>h1</code> tags scaled
+                                from <code>text-4xl/text-3xl</code> to
+                                <code>text-2xl/text-xl md:text-4xl/text-3xl</code>) on <code>AdminUsersList.jsx</code>,
+                                <code>AdminAuditLogs.jsx</code>, and <code>Calendar.jsx</code> pages to prevent layout
+                                breaks on small screen viewports.</li>
+                            <li><span class="tech-tag">Client</span><strong>Audit Logs Date Filter Reflow:</strong>
+                                Optimized the date range pickers in <code>AdminAuditLogs.jsx</code> using dynamic width
+                                limits (<code>w-[45%]</code>) to sit side-by-side cleanly without breaking alignment on
+                                mobile devices.</li>
+                            <li><span class="tech-tag">Client</span><strong>Layout Spacing &amp; Padding
+                                    Alignment:</strong> Added responsive horizontal padding (<code>px-4 sm:px-0</code>)
+                                to the <code>AIKitchen.jsx</code> page container. Polish and padding reductions were
+                                also applied to the main action links inside <code>NutritionistDashboard.jsx</code> and
+                                date item Snap cards inside <code>MealHistory.jsx</code> to fit nicely on 375px screens.
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -634,15 +673,37 @@
                 <!-- JUNE 06 -->
                 <div class="timeline-item">
                     <div class="timeline-date">June 06, 2026</div>
-                    <div class="timeline-title">Nutritionist Approval Notifications, Admin Registration Queue &amp; Email Retry Pipeline</div>
+                    <div class="timeline-title">Nutritionist Approval Notifications, Admin Registration Queue &amp;
+                        Email Retry Pipeline</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Server</span><strong>Approval/Rejection Email Pipeline:</strong> Built a full email notification system for nutritionist account decisions. The <code>sendApprovalEmail</code> and <code>sendRejectionEmail</code> functions dispatch richly-styled Brevo transactional emails on admin approve/reject actions, including login CTAs, rejection reason blocks, and appeal-to-support links.</li>
-                            <li><span class="tech-tag">Server</span><strong>Exponential Backoff Retry Wrapper:</strong> Implemented <code>sendStatusEmailWithRetry</code> in <code>mailer.js</code> — a resilient retry wrapper that attempts email delivery up to 3 times with 0 / 2s / 5s delays. All success and failure outcomes are written to <code>audit_logs</code> as <code>EMAIL_APPROVAL_SENT</code>, <code>EMAIL_REJECTION_SENT</code>, or <code>EMAIL_SEND_FAILED</code> records.</li>
-                            <li><span class="tech-tag">Server</span><strong>Admin Verification Route Hardening:</strong> Refactored <code>PATCH /admin/nutritionists/:id/verify</code> to use the retry mailer, passing the <code>logAuditAction</code> helper as a parameter to avoid circular imports. Optional rejection reasons are now forwarded into the email body.</li>
-                            <li><span class="tech-tag">Client</span><strong>Registration Queue Component:</strong> Built <code>RegistrationQueue.jsx</code> — a dedicated admin panel listing all pending nutritionist registrations with license image previews, professional details, and inline Approve / Reject controls. Rejection triggers a reason input dialog before submitting.</li>
-                            <li><span class="tech-tag">Client</span><strong>User Details Modal — Pending State:</strong> Extended <code>UserDetailsModal.jsx</code> with a prominent pending-nutritionist banner and inline approve/reject buttons, keeping admin workflow consolidated inside the existing user management interface.</li>
-                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Integration:</strong> Wired the Registration Queue into the <code>AdminDashboard.jsx</code> overview, displaying a live count badge of pending applications and routing to the dedicated queue tab.</li>
+                            <li><span class="tech-tag">Server</span><strong>Approval/Rejection Email Pipeline:</strong>
+                                Built a full email notification system for nutritionist account decisions. The
+                                <code>sendApprovalEmail</code> and <code>sendRejectionEmail</code> functions dispatch
+                                richly-styled Brevo transactional emails on admin approve/reject actions, including
+                                login CTAs, rejection reason blocks, and appeal-to-support links.</li>
+                            <li><span class="tech-tag">Server</span><strong>Exponential Backoff Retry Wrapper:</strong>
+                                Implemented <code>sendStatusEmailWithRetry</code> in <code>mailer.js</code> — a
+                                resilient retry wrapper that attempts email delivery up to 3 times with 0 / 2s / 5s
+                                delays. All success and failure outcomes are written to <code>audit_logs</code> as
+                                <code>EMAIL_APPROVAL_SENT</code>, <code>EMAIL_REJECTION_SENT</code>, or
+                                <code>EMAIL_SEND_FAILED</code> records.</li>
+                            <li><span class="tech-tag">Server</span><strong>Admin Verification Route Hardening:</strong>
+                                Refactored <code>PATCH /admin/nutritionists/:id/verify</code> to use the retry mailer,
+                                passing the <code>logAuditAction</code> helper as a parameter to avoid circular imports.
+                                Optional rejection reasons are now forwarded into the email body.</li>
+                            <li><span class="tech-tag">Client</span><strong>Registration Queue Component:</strong> Built
+                                <code>RegistrationQueue.jsx</code> — a dedicated admin panel listing all pending
+                                nutritionist registrations with license image previews, professional details, and inline
+                                Approve / Reject controls. Rejection triggers a reason input dialog before submitting.
+                            </li>
+                            <li><span class="tech-tag">Client</span><strong>User Details Modal — Pending State:</strong>
+                                Extended <code>UserDetailsModal.jsx</code> with a prominent pending-nutritionist banner
+                                and inline approve/reject buttons, keeping admin workflow consolidated inside the
+                                existing user management interface.</li>
+                            <li><span class="tech-tag">Client</span><strong>Admin Dashboard Integration:</strong> Wired
+                                the Registration Queue into the <code>AdminDashboard.jsx</code> overview, displaying a
+                                live count badge of pending applications and routing to the dedicated queue tab.</li>
                         </ul>
                     </div>
                 </div>
@@ -653,8 +714,19 @@
                     <div class="timeline-title">Gmail Clipping Bypass &amp; Table-based Pill Badge Migration</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Server</span><strong>Table-Based Badge Migration:</strong> Replaced the <code>display: inline-block</code> wrapper divs for the approval badge (<code>sendApprovalEmail</code>) and rejection badge (<code>sendRejectionEmail</code>) in <code>mailer.js</code> with secure table-based layouts (<code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;</code>) and added <code>white-space: nowrap</code> CSS styles to completely eliminate email container clipping, text wrapping, and overflow across Gmail and other strict email clients.</li>
-                            <li><span class="tech-tag">Server</span><strong>Gmail Threading Bypass:</strong> Integrated dynamic, hidden reference IDs (using unique hashes and execution timestamps) into the templates of the shared HTML email wrapper, OTP verification email, and password recovery email. This ensures that consecutive emails do not share duplicate layout footprints, preventing Gmail from collapsing/trimming message bodies under the grey ellipsis (<code>...</code>) "See more" thread trimmer.</li>
+                            <li><span class="tech-tag">Server</span><strong>Table-Based Badge Migration:</strong>
+                                Replaced the <code>display: inline-block</code> wrapper divs for the approval badge
+                                (<code>sendApprovalEmail</code>) and rejection badge (<code>sendRejectionEmail</code>)
+                                in <code>mailer.js</code> with secure table-based layouts
+                                (<code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;</code>) and added
+                                <code>white-space: nowrap</code> CSS styles to completely eliminate email container
+                                clipping, text wrapping, and overflow across Gmail and other strict email clients.</li>
+                            <li><span class="tech-tag">Server</span><strong>Gmail Threading Bypass:</strong> Integrated
+                                dynamic, hidden reference IDs (using unique hashes and execution timestamps) into the
+                                templates of the shared HTML email wrapper, OTP verification email, and password
+                                recovery email. This ensures that consecutive emails do not share duplicate layout
+                                footprints, preventing Gmail from collapsing/trimming message bodies under the grey
+                                ellipsis (<code>...</code>) "See more" thread trimmer.</li>
                         </ul>
                     </div>
                 </div>
@@ -662,15 +734,66 @@
                 <!-- JUNE 06 — PRODUCTION READINESS AUDIT -->
                 <div class="timeline-item">
                     <div class="timeline-date">June 06, 2026 — Production Readiness Audit</div>
-                    <div class="timeline-title">Full System Production Audit: Security Headers, Configuration Review &amp; Deployment Checklist</div>
+                    <div class="timeline-title">Full System Production Audit: Security Headers, Configuration Review
+                        &amp; Deployment Checklist</div>
                     <div class="timeline-content">
                         <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
-                            <li><span class="tech-tag">Audit</span><strong>Critical Blockers Identified:</strong> Conducted a comprehensive production-readiness sweep across the entire codebase. Key blockers found: <code>IS_PRODUCTION = false</code> in <code>env_config.js</code> (master URL/keep-alive switch), <code>helmet</code> installed but never applied in <code>server/index.js</code>, <code>JWT_SECRET</code> using a weak default in local <code>.env</code>, <code>DATABASE_URL</code> pointing to localhost instead of the Supabase production URL, and OTP codes stored in an in-memory <code>Map</code> which is wiped on every Render server restart.</li>
-                            <li><span class="tech-tag">Audit</span><strong>Security Headers Gap:</strong> Confirmed that <code>helmet</code> (HTTP security headers middleware — <code>X-Frame-Options</code>, <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options</code>, etc.) is listed as a dependency but is missing from the Express middleware chain. Flagged for immediate addition before production push.</li>
-                            <li><span class="tech-tag">Audit</span><strong>In-Memory OTP Fragility:</strong> Documented that the registration OTP system stores active codes in a JavaScript <code>Map</code> in process memory. On Render free tier, server spin-down and restarts silently destroy all active OTP sessions, causing mid-registration users to receive "No active verification code found" errors. Flagged for migration to a database-backed OTP table.</li>
-                            <li><span class="tech-tag">Audit</span><strong>NODE_ENV &amp; Mailer Fallback Risk:</strong> Identified that if <code>NODE_ENV=production</code> is not explicitly set on Render, the Brevo mailer's mock-email console fallback could silently swallow real emails in production. Documented as a required environment variable.</li>
-                            <li><span class="tech-tag">Audit</span><strong>Production-Ready Systems Verified:</strong> Confirmed fully production-compliant: CORS allowlist enforcement, DB-level auth checks on every request (suspended/deleted/force-reset), all admin routes protected by <code>verifyAdmin</code>, bcryptjs password hashing (salt=10), strict password validation, rate limiting on login/auth/tickets, JWT with DB-level user status verification, MIME-filtered file uploads (5MB cap), Cloudinary old-file cleanup on re-upload, ORM-enforced immutable audit logs (Prisma extension), no-enumeration forgot-password flow, Vercel SPA rewrite rules, PWA manifest &amp; service worker, code splitting (MUI/Recharts/Quill), Socket.io room-based CORS, health check endpoint, maintenance mode, email retry with exponential backoff, and <code>.gitignore</code> covering all <code>.env</code> files.</li>
-                            <li><span class="tech-tag">Audit</span><strong>Pre-Launch Checklist Generated:</strong> Produced a structured pre-launch checklist covering: toggling the production flag, adding <code>helmet()</code>, setting strong environment secrets on Render, running <code>prisma migrate deploy</code> against the production Supabase instance, and validating email links, admin access, and the full registration-to-login flow on the live environment.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Critical Blockers Identified:</strong>
+                                Conducted a comprehensive production-readiness sweep across the entire codebase. Key
+                                blockers found: <code>IS_PRODUCTION = false</code> in <code>env_config.js</code> (master
+                                URL/keep-alive switch), <code>helmet</code> installed but never applied in
+                                <code>server/index.js</code>, <code>JWT_SECRET</code> using a weak default in local
+                                <code>.env</code>, <code>DATABASE_URL</code> pointing to localhost instead of the
+                                Supabase production URL, and OTP codes stored in an in-memory <code>Map</code> which is
+                                wiped on every Render server restart.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Security Headers Gap:</strong> Confirmed that
+                                <code>helmet</code> (HTTP security headers middleware — <code>X-Frame-Options</code>,
+                                <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options</code>, etc.) is
+                                listed as a dependency but is missing from the Express middleware chain. Flagged for
+                                immediate addition before production push.</li>
+                            <li><span class="tech-tag">Audit</span><strong>In-Memory OTP Fragility:</strong> Documented
+                                that the registration OTP system stores active codes in a JavaScript <code>Map</code> in
+                                process memory. On Render free tier, server spin-down and restarts silently destroy all
+                                active OTP sessions, causing mid-registration users to receive "No active verification
+                                code found" errors. Flagged for migration to a database-backed OTP table.</li>
+                            <li><span class="tech-tag">Audit</span><strong>NODE_ENV &amp; Mailer Fallback Risk:</strong>
+                                Identified that if <code>NODE_ENV=production</code> is not explicitly set on Render, the
+                                Brevo mailer's mock-email console fallback could silently swallow real emails in
+                                production. Documented as a required environment variable.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Production-Ready Systems Verified:</strong>
+                                Confirmed fully production-compliant: CORS allowlist enforcement, DB-level auth checks
+                                on every request (suspended/deleted/force-reset), all admin routes protected by
+                                <code>verifyAdmin</code>, bcryptjs password hashing (salt=10), strict password
+                                validation, rate limiting on login/auth/tickets, JWT with DB-level user status
+                                verification, MIME-filtered file uploads (5MB cap), Cloudinary old-file cleanup on
+                                re-upload, ORM-enforced immutable audit logs (Prisma extension), no-enumeration
+                                forgot-password flow, Vercel SPA rewrite rules, PWA manifest &amp; service worker, code
+                                splitting (MUI/Recharts/Quill), Socket.io room-based CORS, health check endpoint,
+                                maintenance mode, email retry with exponential backoff, and <code>.gitignore</code>
+                                covering all <code>.env</code> files.</li>
+                            <li><span class="tech-tag">Audit</span><strong>Pre-Launch Checklist Generated:</strong>
+                                Produced a structured pre-launch checklist covering: toggling the production flag,
+                                adding <code>helmet()</code>, setting strong environment secrets on Render, running
+                                <code>prisma migrate deploy</code> against the production Supabase instance, and
+                                validating email links, admin access, and the full registration-to-login flow on the
+                                live environment.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- JUNE 08 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 08, 2026</div>
+                    <div class="timeline-title">User Directory Responsiveness Overhaul &amp; Menu Consolidation</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Client</span><strong>Unified Administrative Actions Menu:</strong> Consolidated multiple bulky table action buttons inside a clean, space-saving popover settings menu using <code>MoreVertical</code> and Framer Motion transitions.</li>
+                            <li><span class="tech-tag">Client</span><strong>Fluid Header Actions &amp; Buttons:</strong> Made Export CSV and Provision Account buttons fully responsive by scaling their padding, height, tracking, and font sizes, introducing conditional sub-labels to fit narrower mobile viewports.</li>
+                            <li><span class="tech-tag">Client</span><strong>Filters Grid Card Reflow:</strong> Upgraded the FilterDropdown cards to align side-by-side using a two-column responsive grid on mobile, adding text-truncation boundaries to prevent drop-down text overlaps.</li>
+                            <li><span class="tech-tag">Client</span><strong>Responsive Layout Margins &amp; Spacing:</strong> Refactored the root layout container's spacing properties from a static `space-y-8` to a responsive class (`space-y-4 sm:space-y-6 md:space-y-8`), reducing excess vertical gaps around the filters card on small viewports.</li>
+                            <li><span class="tech-tag">Client</span><strong>Responsive Mobile Grid Cards:</strong> Refactored mobile grid item user cards and loading skeletons by placing checkbox, avatar (PFP), and name/email side-by-side in a single combined row with badges on the right. This significantly reduces vertical card height, visual clutter, and metadata overlaps on smaller screens.</li>
+                            <li><span class="tech-tag">Client</span><strong>Compact Pagination Footer:</strong> Downscaled the pagination navigation panel paddings, labels, and Prev/Next button sizes (`h-8` with smaller font sizes) on mobile to prevent bottom bar crowding on narrow screens.</li>
+                            <li><span class="tech-tag">Client</span><strong>Centering Floating Action Overlay:</strong> Resolved floating bulk action panel positioning bugs by shifting positioning rules from layout transforms to relative offset margins, centering it perfectly on small viewports.</li>
                         </ul>
                     </div>
                 </div>
@@ -694,7 +817,8 @@
         <!-- Footer -->
         <footer
             style="text-align: center; font-size: 11px; color: var(--color-text-muted); border-t: 1px solid var(--color-divider); padding-top: 20px;">
-            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Last Updated: June 06, 2026 &bull; Pre-Production
+            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Last Updated: June 08, 2026
+            &bull; Pre-Production
         </footer>
 
     </div>

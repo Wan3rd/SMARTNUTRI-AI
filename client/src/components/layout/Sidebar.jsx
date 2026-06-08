@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database, RefreshCw, Quote, Activity } from 'lucide-react';
+import { LayoutDashboard, Calendar, User, Settings, Utensils, ChefHat, Users, History, LogOut, ShieldCheck, ChevronDown, Check, Plus, ChevronLeft, X, BrainCircuit, Database, RefreshCw, Quote, Activity, BookOpen } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -133,6 +133,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
     const nutritionistNavItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Utensils, label: 'Meal Library', path: '/meals' },
+        { icon: BookOpen, label: 'Clinical Guides', path: '/nutritionist/guides' },
         { icon: User, label: 'My Profile', path: '/profile' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
@@ -192,7 +193,7 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h4 className="text-xs font-black uppercase text-[var(--color-text-main)] truncate tracking-tight">
-                                    {user.role === 'nutritionist' ? `Dr. ${user.full_name?.replace(/^dr\.?\s+/i, '')}` : user.full_name}
+                                    {user.full_name}
                                 </h4>
                                 <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-semibold tracking-wide truncate mt-0.5">
                                     {user.role === 'nutritionist' ? (user.specialization || 'Clinical Expert') : user.role === 'admin' ? 'System Oversight' : 'Caregiver'}

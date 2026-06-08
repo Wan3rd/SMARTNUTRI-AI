@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { verifyToken } from '../middleware/auth.js';
 import { upload, cloudinary, deleteCloudinaryAsset } from '../lib/cloudinary.js';
-import { sendResetPasswordEmail, sendOtpEmail } from '../lib/mailer.js';
+import { sendResetPasswordEmail, sendOtpEmail, sendNutritionistVerificationRequestEmail } from '../lib/mailer.js';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -216,10 +216,10 @@ router.post('/register', (req, res, next) => {
                 full_name,
                 role: (role === 'nutritionist') ? 'nutritionist' : 'parent',
                 status: (role === 'nutritionist') ? 'pending' : 'approved',
-                professional_id,
+                professional_id: professional_id || license_no || null,
                 phone,
                 specialization,
-                license_no,
+                license_no: license_no || professional_id || null,
                 clinic,
                 license_image_url,
                 date_of_birth: (role === 'nutritionist' && date_of_birth) ? new Date(date_of_birth) : null
@@ -231,6 +231,11 @@ router.post('/register', (req, res, next) => {
                 role: true,
                 status: true,
                 date_of_birth: true,
+                phone: true,
+                specialization: true,
+                license_no: true,
+                clinic: true,
+                license_image_url: true,
                 theme_preference: true,
                 privacy_mode: true,
                 measurement_system: true,
@@ -240,6 +245,13 @@ router.post('/register', (req, res, next) => {
                 research_anonymize: true
             }
         });
+
+        // Trigger verification email to administration if role is nutritionist
+        if (newUser.role === 'nutritionist') {
+            sendNutritionistVerificationRequestEmail(newUser).catch(mailErr => {
+                console.error('[Auth] Failed to send verification request email for nutritionist register:', mailErr);
+            });
+        }
 
         // Create Token
         const secret = process.env.JWT_SECRET;
@@ -334,7 +346,13 @@ router.post('/login', loginLimiter, async (req, res) => {
                 notif_reminders: user.notif_reminders ?? true,
                 research_anonymize: user.research_anonymize ?? false,
                 profile_image_url: user.profile_image_url || null,
-                date_of_birth: user.date_of_birth
+                date_of_birth: user.date_of_birth,
+                phone: user.phone || null,
+                specialization: user.specialization || null,
+                license_no: user.license_no || null,
+                professional_id: user.professional_id || null,
+                clinic: user.clinic || null,
+                license_image_url: user.license_image_url || null
             },
             token,
         });
@@ -424,6 +442,7 @@ router.put('/profile', verifyToken, async (req, res) => {
                 phone: phone !== undefined ? (phone === '' ? null : phone.trim()) : undefined,
                 specialization: specialization !== undefined ? (specialization === '' ? null : specialization.trim()) : undefined,
                 license_no: license_no !== undefined ? (license_no === '' ? null : license_no.trim()) : undefined,
+                professional_id: license_no !== undefined ? (license_no === '' ? null : license_no.trim()) : undefined,
                 clinic: clinic !== undefined ? (clinic === '' ? null : clinic.trim()) : undefined,
                 profile_image_url,
                 date_of_birth: date_of_birth !== undefined 
@@ -580,6 +599,13 @@ router.post('/license-image', verifyToken, (req, res, next) => {
                 license_image_url: result.secure_url
             }
         });
+
+        // Trigger verification email to administration if role is nutritionist
+        if (updatedUser.role === 'nutritionist') {
+            sendNutritionistVerificationRequestEmail(updatedUser).catch(mailErr => {
+                console.error('[Auth] Failed to send verification request email for nutritionist license upload:', mailErr);
+            });
+        }
 
         const { password_hash, ...safeUser } = updatedUser;
         res.json({ message: 'License document uploaded successfully', user: safeUser });

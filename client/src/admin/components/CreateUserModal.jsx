@@ -184,17 +184,19 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
                         )}
                     </fieldset>
 
-                    <Button
-                        type="submit"
-                        disabled={processingId === 'creating'}
-                        className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[var(--color-primary)]/20 flex justify-center items-center gap-2"
-                    >
-                        {processingId === 'creating' ? (
-                            <>
-                                <Loader2 size={16} className="animate-spin" /> Provisioning Account...
-                            </>
-                        ) : 'Generate Account'}
-                    </Button>
+                    <div className="pt-2">
+                        <Button
+                            type="submit"
+                            disabled={processingId === 'creating'}
+                            className="w-full h-14 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-[var(--color-primary)]/20 flex justify-center items-center gap-2 cursor-pointer"
+                        >
+                            {processingId === 'creating' ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" /> Provisioning Account...
+                                </>
+                            ) : 'Generate Account'}
+                        </Button>
+                    </div>
                 </form>
             </Card>
         </div>
