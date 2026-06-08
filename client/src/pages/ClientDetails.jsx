@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, 
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown, X, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -401,6 +401,7 @@ export default function ClientDetails() {
     const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
     const [clientData, setClientData] = useState(null);
     const [clientEmail, setClientEmail] = useState('');
+    const [isGrowthActionLoading, setIsGrowthActionLoading] = useState(false);
 
     const [editingAdimeId, setEditingAdimeId] = useState(null);
     const [editAdimeForm, setEditAdimeForm] = useState({
@@ -788,9 +789,6 @@ export default function ClientDetails() {
 
     // --- Growth State ---
     const [growthLogs, setGrowthLogs] = useState([]);
-    const [growthSortField, setGrowthSortField] = useState('date');
-    const [growthSortOrder, setGrowthSortOrder] = useState('desc');
-    const [growthFilterRange, setGrowthFilterRange] = useState('all');
     const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
     const [newGrowth, setNewGrowth] = useState({ height_cm: '', weight_kg: '' });
     const [isEditGrowthModalOpen, setIsEditGrowthModalOpen] = useState(false);
@@ -994,45 +992,6 @@ export default function ClientDetails() {
         }
         return velocityData;
     }, [growthLogs]);
-    
-    const filteredGrowthLogs = useMemo(() => {
-        if (!growthLogs) return [];
-        let logs = [...growthLogs];
-        
-        // Filter by date range preset
-        if (growthFilterRange !== 'all') {
-            const now = new Date();
-            let cutOffDate = new Date();
-            if (growthFilterRange === '3m') cutOffDate.setMonth(now.getMonth() - 3);
-            else if (growthFilterRange === '6m') cutOffDate.setMonth(now.getMonth() - 6);
-            else if (growthFilterRange === '1y') cutOffDate.setFullYear(now.getFullYear() - 1);
-            
-            logs = logs.filter(log => new Date(log.logged_at) >= cutOffDate);
-        }
-        
-        // Sort
-        logs.sort((a, b) => {
-            let valA, valB;
-            if (growthSortField === 'date') {
-                valA = new Date(a.logged_at).getTime();
-                valB = new Date(b.logged_at).getTime();
-            } else if (growthSortField === 'height') {
-                valA = a.height_cm;
-                valB = b.height_cm;
-            } else if (growthSortField === 'weight') {
-                valA = a.weight_kg;
-                valB = b.weight_kg;
-            }
-            
-            if (growthSortOrder === 'asc') {
-                return valA - valB;
-            } else {
-                return valB - valA;
-            }
-        });
-        
-        return logs;
-    }, [growthLogs, growthSortField, growthSortOrder, growthFilterRange]);
 
     const [isClinicalEditing, setIsClinicalEditing] = useState(false);
     const [isAdimeEditing, setIsAdimeEditing] = useState(false);
@@ -1283,6 +1242,23 @@ export default function ClientDetails() {
         });
     };
 
+    const handleResendInvite = async () => {
+        try {
+            startLoading('Resending invitation email...');
+            const res = await api.post(`/nutritionist/clients/${clientId}/resend-invite`);
+            if (res.data.success) {
+                showNotif("Invitation email resent successfully!");
+            } else {
+                showNotif(res.data.message || "Failed to resend invitation email.", "error");
+            }
+        } catch (err) {
+            console.error("Failed to resend parent invitation:", err);
+            showNotif(err.response?.data?.message || "Failed to resend parent invitation.", "error");
+        } finally {
+            stopLoading();
+        }
+    };
+
     const fetchGrowthLogs = async (profileId) => {
         try {
             const res = await api.get(`/profiles/${profileId}/growth`);
@@ -1298,6 +1274,7 @@ export default function ClientDetails() {
             title: 'Delete Growth Record',
             message: 'Are you sure you want to permanently delete this height/weight log entry? This will update the primary biometric profile for this child.',
             onConfirm: async () => {
+                setIsGrowthActionLoading(true);
                 try {
                     await api.delete(`/profiles/growth-record/${logId}`);
                     setGrowthLogs(prev => prev.filter(l => l.id !== logId));
@@ -1311,6 +1288,8 @@ export default function ClientDetails() {
                     console.error("Delete growth log failed", err);
                     showNotif(err.response?.data?.message || "Failed to delete record", "error");
                     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                } finally {
+                    setIsGrowthActionLoading(false);
                 }
             }
         });
@@ -1322,6 +1301,7 @@ export default function ClientDetails() {
             showNotif("Growth log date cannot be in the future.", "error");
             return;
         }
+        setIsGrowthActionLoading(true);
         try {
             await api.patch(`/profiles/growth-record/${editingGrowthLog}`, editGrowthForm);
             fetchGrowthLogs(selectedProfile.id);
@@ -1334,6 +1314,8 @@ export default function ClientDetails() {
         } catch (err) {
             console.error("Failed to update growth log", err);
             showNotif(err.response?.data?.message || "Failed to update record", "error");
+        } finally {
+            setIsGrowthActionLoading(false);
         }
     };
 
@@ -1355,6 +1337,10 @@ export default function ClientDetails() {
             showNotif("Please select a vaccine type.", "error");
             return;
         }
+        if (newVaccine.typeId === 'custom' && (!newVaccine.customName || !newVaccine.customName.trim())) {
+            showNotif("Please enter the custom vaccine name.", "error");
+            return;
+        }
         if (!newVaccine.date) {
             showNotif("Please select a vaccination date.", "error");
             return;
@@ -1364,14 +1350,20 @@ export default function ClientDetails() {
             return;
         }
         try {
-            const res = await api.post(`/profiles/${selectedProfile.id}/vaccinations`, {
-                vaccination_type_id: newVaccine.typeId,
+            const body = {
                 date_administered: newVaccine.date,
                 notes: newVaccine.notes
-            });
+            };
+            if (newVaccine.typeId === 'custom') {
+                body.custom_name = newVaccine.customName.trim();
+            } else {
+                body.vaccination_type_id = newVaccine.typeId;
+            }
+
+            const res = await api.post(`/profiles/${selectedProfile.id}/vaccinations`, body);
             setChildVaccinations([res.data, ...childVaccinations]);
             setIsAddingVaccine(false);
-            setNewVaccine({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+            setNewVaccine({ typeId: '', customName: '', date: new Date().toISOString().split('T')[0], notes: '' });
             showNotif("Vaccination record added!");
         } catch (err) {
             console.error("Error adding vaccine", err);
@@ -1402,6 +1394,7 @@ export default function ClientDetails() {
 
     const handleAddGrowthLog = async (e) => {
         e.preventDefault();
+        setIsGrowthActionLoading(true);
         try {
             await api.post(`/profiles/${selectedProfile.id}/growth`, newGrowth);
             fetchGrowthLogs(selectedProfile.id);
@@ -1412,6 +1405,8 @@ export default function ClientDetails() {
         } catch (err) {
             console.error("Failed to add growth log", err);
             showNotif(err.response?.data?.message || "Failed to save data", "error");
+        } finally {
+            setIsGrowthActionLoading(false);
         }
     };
 
@@ -2288,18 +2283,49 @@ export default function ClientDetails() {
                         </Button>
                         <div>
                             <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)]", user?.privacy_mode && "privacy-blur")}>{clientName}</h1>
-                            <p className="text-xs sm:text-base text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1.5 flex-wrap">
+                                <p className="text-xs sm:text-sm text-[var(--color-text-muted)]">Manage Family Profiles & Rules</p>
+                                {!isLoading && clientData && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[var(--color-divider)] hidden sm:inline">•</span>
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest border backdrop-blur-sm w-fit inline-block whitespace-nowrap",
+                                            clientData.deleted_at
+                                                ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20"
+                                                : clientData.force_password_reset
+                                                    ? "bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20"
+                                                    : "bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20"
+                                        )}>
+                                            {clientData.deleted_at
+                                                ? "Archived"
+                                                : clientData.force_password_reset
+                                                    ? "Invite Sent - Setup Pending"
+                                                    : "Active - Setup Complete"}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                    {!isLoading && (
-                        <button
-                            onClick={handleUnlinkClient}
-                            className="hidden sm:flex h-10 px-4 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/20 hover:border-red-500/50 rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] items-center justify-center gap-2 transition-all shadow-sm shrink-0 w-fit self-start sm:self-auto"
-                            title="Unlink Caregiver"
-                        >
-                            <Trash2 size={13} />
-                            Unlink Caregiver
-                        </button>
+                    {!isLoading && clientData && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleResendInvite}
+                                className="hidden sm:flex h-10 px-4 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 active:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/20 hover:border-[var(--color-primary)]/50 rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] items-center justify-center gap-2 transition-all shadow-sm shrink-0 w-fit self-start sm:self-auto"
+                                title="Resend Parent Invite"
+                            >
+                                <Mail size={13} />
+                                Resend Invite
+                            </button>
+                            <button
+                                onClick={handleUnlinkClient}
+                                className="hidden sm:flex h-10 px-4 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 border border-red-500/20 hover:border-red-500/50 rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] items-center justify-center gap-2 transition-all shadow-sm shrink-0 w-fit self-start sm:self-auto"
+                                title="Unlink Caregiver"
+                            >
+                                <Trash2 size={13} />
+                                Unlink Caregiver
+                            </button>
+                        </div>
                     )}
                 </header>
 
@@ -2721,6 +2747,8 @@ export default function ClientDetails() {
                                                                             <div className="text-lg sm:text-xl font-black text-[var(--color-primary)]">
                                                                                 {isLoading ? (
                                                                                     <SkeletonLoader className="h-7 w-16" />
+                                                                                ) : !selectedProfile?.weight_kg ? (
+                                                                                    <span className="text-xs sm:text-sm font-medium text-[var(--color-text-muted)] italic">Pending weigh-in</span>
                                                                                 ) : (() => {
                                                                                     const wConv = convertWeight(selectedProfile.weight_kg, user?.measurement_system);
                                                                                     return <>{wConv.value} <span className="text-[10px] sm:text-xs font-bold opacity-60">{wConv.unit}</span></>;
@@ -2787,6 +2815,8 @@ export default function ClientDetails() {
                                                                                 <div className="text-lg sm:text-xl font-black text-[var(--color-secondary)]">
                                                                                     {isLoading ? (
                                                                                         <SkeletonLoader className="h-7 w-16" />
+                                                                                    ) : !selectedProfile?.height_cm ? (
+                                                                                        <span className="text-xs sm:text-sm font-medium text-[var(--color-text-muted)] italic">Pending weigh-in</span>
                                                                                     ) : user?.measurement_system === 'imperial' ? (
                                                                                         <>{Math.floor(selectedProfile.height_cm / 30.48)}' {Math.round((selectedProfile.height_cm % 30.48) / 2.54)}" <span className="text-[10px] sm:text-xs font-bold opacity-60">ft/in</span></>
                                                                                     ) : (
@@ -2796,6 +2826,8 @@ export default function ClientDetails() {
                                                                                 <div className="text-[7px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter mt-0.5 whitespace-nowrap">
                                                                                     {isLoading ? (
                                                                                         <SkeletonLoader className="h-3 w-12" />
+                                                                                    ) : !selectedProfile?.height_cm ? (
+                                                                                        <span className="italic">No records</span>
                                                                                     ) : user?.measurement_system === 'imperial' ? (
                                                                                         <>{selectedProfile.height_cm} cm Metric</>
                                                                                     ) : (
@@ -3368,14 +3400,24 @@ export default function ClientDetails() {
                                                                                 <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Vaccine Type</label>
                                                                                 <select
                                                                                     value={newVaccine.typeId}
-                                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
+                                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value, customName: e.target.value === 'custom' ? '' : newVaccine.customName })}
                                                                                     className="w-full p-3 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all"
                                                                                 >
                                                                                     <option value="" className="bg-[var(--color-bg-card)]">Select vaccine...</option>
                                                                                     {vaccinationTypes.map(t => (
                                                                                         <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
                                                                                     ))}
+                                                                                    <option value="custom" className="bg-[var(--color-bg-card)] font-black text-emerald-600 dark:text-emerald-400">+ -- Custom Vaccine --</option>
                                                                                 </select>
+                                                                                {newVaccine.typeId === 'custom' && (
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={newVaccine.customName || ''}
+                                                                                        onChange={(e) => setNewVaccine({ ...newVaccine, customName: e.target.value })}
+                                                                                        placeholder="Enter custom vaccine name..."
+                                                                                        className="w-full p-3 mt-2 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/30 bg-white dark:bg-[var(--color-bg-card)] text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-emerald-500 transition-all animate-in slide-in-from-top-1 duration-200"
+                                                                                    />
+                                                                                )}
                                                                             </div>
                                                                             <div className="space-y-1.5">
                                                                                 <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest ml-1">Date Administered</label>
@@ -3423,9 +3465,11 @@ export default function ClientDetails() {
                                                                                     <Check size={16} strokeWidth={3} />
                                                                                 </div>
                                                                                 <div className="flex-1 min-w-0">
-                                                                                    <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
-                                                                                        {v.vaccination_types?.name}
-                                                                                    </h4>
+                                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-[var(--color-text-main)] truncate">
+                                                                                            {v.vaccination_types?.name}
+                                                                                        </h4>
+                                                                                    </div>
                                                                                     <div className="flex items-center gap-1.5 text-[9px] text-[var(--color-text-muted)] font-black uppercase mt-0.5">
                                                                                         <Calendar size={10} />
                                                                                         {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -3546,70 +3590,8 @@ export default function ClientDetails() {
                                                                     <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
                                                                         <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
                                                                     </h4>
-                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">
-                                                                        {filteredGrowthLogs.length === growthLogs.length
-                                                                            ? `${growthLogs.length} Entries`
-                                                                            : `Showing ${filteredGrowthLogs.length} of ${growthLogs.length} Entries`
-                                                                        }
-                                                                    </span>
+                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
                                                                 </div>
-
-                                                                {/* FILTER & SORT CONTROLS */}
-                                                                <div className="px-6 py-3 bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-xs">
-                                                                    {/* Presets */}
-                                                                    <div className="flex flex-wrap items-center gap-1">
-                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)] mr-2">Timeframe:</span>
-                                                                        {[
-                                                                            { id: 'all', label: 'All Time' },
-                                                                            { id: '3m', label: 'Last 3M' },
-                                                                            { id: '6m', label: 'Last 6M' },
-                                                                            { id: '1y', label: 'Last 1Y' }
-                                                                        ].map(p => {
-                                                                            const isActive = growthFilterRange === p.id;
-                                                                            return (
-                                                                                <button
-                                                                                    key={p.id}
-                                                                                    type="button"
-                                                                                    onClick={() => setGrowthFilterRange(p.id)}
-                                                                                    className={cn(
-                                                                                        "px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border",
-                                                                                        isActive
-                                                                                            ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-sm"
-                                                                                            : "border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                                                                                    )}
-                                                                                >
-                                                                                    {p.label}
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-
-                                                                    {/* Sort Controls */}
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="flex items-center gap-1">
-                                                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)] mr-1">Sort By:</span>
-                                                                            <select
-                                                                                value={growthSortField}
-                                                                                onChange={(e) => setGrowthSortField(e.target.value)}
-                                                                                className="bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-lg text-[10px] font-black uppercase tracking-wider text-[var(--color-text-main)] p-1.5 focus:border-[var(--color-primary)] outline-none cursor-pointer"
-                                                                            >
-                                                                                <option value="date">Date</option>
-                                                                                <option value="height">Height</option>
-                                                                                <option value="weight">Weight</option>
-                                                                            </select>
-                                                                        </div>
-
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setGrowthSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                                                            className="p-1.5 border border-[var(--color-divider)] bg-[var(--color-bg-card)] rounded-lg hover:border-[var(--color-primary)] text-[var(--color-text-main)] transition-colors flex items-center justify-center cursor-pointer"
-                                                                            title={growthSortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
-                                                                        >
-                                                                            <ListFilter size={12} className={cn("transition-transform duration-200", growthSortOrder === 'desc' && "rotate-180")} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-
                                                                 <div className="overflow-x-auto">
                                                                     <table className="w-full text-left">
                                                                         <thead>
@@ -3622,7 +3604,7 @@ export default function ClientDetails() {
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-[var(--color-divider)]">
-                                                                            {filteredGrowthLogs.map(log => (
+                                                                            {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
                                                                                 <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
                                                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                                                         <span className="text-xs font-bold text-[var(--color-text-main)]">
@@ -3657,6 +3639,7 @@ export default function ClientDetails() {
                                                                                         <Button
                                                                                             variant="ghost"
                                                                                             size="sm"
+                                                                                            disabled={isGrowthActionLoading}
                                                                                             onClick={() => {
                                                                                                 setEditingGrowthLog(log.id);
                                                                                                 setEditGrowthForm({
@@ -3666,35 +3649,28 @@ export default function ClientDetails() {
                                                                                                 });
                                                                                                 setIsEditGrowthModalOpen(true);
                                                                                             }}
-                                                                                            className="h-8 w-8 p-0 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all"
+                                                                                            className="h-8 w-8 p-0 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded-full transition-all disabled:opacity-50"
                                                                                         >
                                                                                             <Edit2 size={14} />
                                                                                         </Button>
                                                                                         <Button
                                                                                             variant="ghost"
                                                                                             size="sm"
+                                                                                            disabled={isGrowthActionLoading}
                                                                                             onClick={() => handleDeleteGrowthLog(log.id)}
-                                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                                                                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all disabled:opacity-50"
                                                                                         >
                                                                                             <Trash2 size={14} />
                                                                                         </Button>
                                                                                     </td>
                                                                                 </tr>
                                                                             ))}
-                                                                            {growthLogs.length === 0 ? (
+                                                                            {growthLogs.length === 0 && (
                                                                                 <tr>
                                                                                     <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
                                                                                         No growth history logs recorded yet.
                                                                                     </td>
                                                                                 </tr>
-                                                                            ) : (
-                                                                                filteredGrowthLogs.length === 0 && (
-                                                                                    <tr>
-                                                                                        <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
-                                                                                            No growth logs found matching the selected timeframe.
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                )
                                                                             )}
                                                                         </tbody>
                                                                     </table>
@@ -4992,7 +4968,7 @@ export default function ClientDetails() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* THE WEEKLY PLANNER - MOBILE ONLY */}
+                                                            {/* THE WEEKLY PLAN - MOBILE ONLY */}
                                                             <div className="block md:hidden space-y-4">
                                                                 {/* Day Selection Tab Strip */}
                                                                 <div className="flex gap-2 overflow-x-auto pb-2.5 -mx-4 px-4 scrollbar-none snap-x whitespace-nowrap">
@@ -5449,9 +5425,10 @@ export default function ClientDetails() {
                                     type="number"
                                     step="0.1"
                                     required
+                                    disabled={isGrowthActionLoading}
                                     value={newGrowth.height_cm}
                                     onChange={(e) => setNewGrowth({ ...newGrowth, height_cm: e.target.value })}
-                                    className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-gray-50 dark:bg-white/5"
+                                    className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-gray-50 dark:bg-white/5 disabled:opacity-50"
                                     placeholder="e.g. 110.5"
                                 />
                             </div>
@@ -5461,16 +5438,19 @@ export default function ClientDetails() {
                                     type="number"
                                     step="0.1"
                                     required
+                                    disabled={isGrowthActionLoading}
                                     value={newGrowth.weight_kg}
                                     onChange={(e) => setNewGrowth({ ...newGrowth, weight_kg: e.target.value })}
-                                    className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-gray-50 dark:bg-white/5"
+                                    className="w-full p-2.5 rounded-xl border border-[var(--color-divider)] bg-gray-50 dark:bg-white/5 disabled:opacity-50"
                                     placeholder="e.g. 18.2"
                                 />
                             </div>
                         </div>
                         <div className="flex gap-3 pt-4">
-                            <Button type="button" variant="outline" className="flex-1" onClick={() => setIsGrowthModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" className="flex-1">Update Growth</Button>
+                            <Button type="button" variant="outline" className="flex-1" onClick={() => setIsGrowthModalOpen(false)} disabled={isGrowthActionLoading}>Cancel</Button>
+                            <Button type="submit" className="flex-1" disabled={isGrowthActionLoading}>
+                                {isGrowthActionLoading ? 'Updating...' : 'Update Growth'}
+                            </Button>
                         </div>
                     </form>
                 </Modal>
@@ -5498,9 +5478,10 @@ export default function ClientDetails() {
                                         type="date"
                                         max={new Date().toISOString().split('T')[0]}
                                         required
+                                        disabled={isGrowthActionLoading}
                                         value={editGrowthForm.logged_at}
                                         onChange={(e) => setEditGrowthForm({ ...editGrowthForm, logged_at: e.target.value })}
-                                        className="w-full pl-12 pr-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                        className="w-full pl-12 pr-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold disabled:opacity-50"
                                     />
                                 </div>
                             </div>
@@ -5512,10 +5493,11 @@ export default function ClientDetails() {
                                         type="number"
                                         step="0.1"
                                         required
+                                        disabled={isGrowthActionLoading}
                                         placeholder="e.g. 110.5"
                                         value={editGrowthForm.height_cm}
                                         onChange={(e) => setEditGrowthForm({ ...editGrowthForm, height_cm: e.target.value })}
-                                        className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                        className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold disabled:opacity-50"
                                     />
                                 </div>
                                 <div>
@@ -5524,18 +5506,21 @@ export default function ClientDetails() {
                                         type="number"
                                         step="0.1"
                                         required
+                                        disabled={isGrowthActionLoading}
                                         placeholder="e.g. 18.2"
                                         value={editGrowthForm.weight_kg}
                                         onChange={(e) => setEditGrowthForm({ ...editGrowthForm, weight_kg: e.target.value })}
-                                        className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold"
+                                        className="w-full px-4 h-12 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl focus:border-[var(--color-primary)] outline-none transition-all text-sm font-bold disabled:opacity-50"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditGrowthModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" className="flex-1 bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20">Save Changes</Button>
+                            <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditGrowthModalOpen(false)} disabled={isGrowthActionLoading}>Cancel</Button>
+                            <Button type="submit" disabled={isGrowthActionLoading} className="flex-1 bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20">
+                                {isGrowthActionLoading ? 'Saving...' : 'Save Changes'}
+                            </Button>
                         </div>
                     </form>
                 </Modal>
@@ -5644,43 +5629,50 @@ export default function ClientDetails() {
                     maxWidth="max-w-6xl"
                 >
                     <div className="space-y-6">
-                        <div className="h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)] flex flex-col" style={{ minWidth: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                <LineChart data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
-                                    <XAxis
-                                        dataKey="logged_at"
-                                        tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        fontSize={10}
-                                        tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }}
-                                    />
-                                    <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }} />
-                                    <Tooltip
-                                        labelFormatter={(val) => new Date(val).toLocaleDateString(undefined, { dateStyle: 'long' })}
-                                        contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', fontSize: '10px', fontWeight: 900 }}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
+                        <div className={cn("h-[400px] w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-[var(--color-divider)] flex flex-col", growthLogs.length === 0 && "items-center justify-center")} style={{ minWidth: 0 }}>
+                            {growthLogs.length === 0 ? (
+                                <div className="text-center space-y-2">
+                                    <TrendingUp size={48} className="mx-auto text-[var(--color-text-muted)] opacity-40 animate-pulse" />
+                                    <p className="text-sm font-bold text-[var(--color-text-muted)]">No growth history recorded yet.</p>
+                                </div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                    <LineChart data={[...growthLogs].sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at))}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-divider)" />
+                                        <XAxis
+                                            dataKey="logged_at"
+                                            tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            fontSize={10}
+                                            tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }}
+                                        />
+                                        <YAxis fontSize={10} tick={{ fill: 'var(--color-text-muted)', fontWeight: 700 }} />
+                                        <Tooltip
+                                            labelFormatter={(val) => new Date(val).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                            contentStyle={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-divider)', borderRadius: '12px', fontSize: '10px', fontWeight: 900 }}
+                                        />
+                                        <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
 
-                                    <Line
-                                        type="monotone"
-                                        dataKey="weight_kg"
-                                        stroke="var(--color-primary)"
-                                        strokeWidth={4}
-                                        name="Weight (kg)"
-                                        dot={{ r: 6, fill: 'var(--color-primary)', strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 8 }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="height_cm"
-                                        stroke="#6366f1"
-                                        strokeWidth={4}
-                                        name="Height (cm)"
-                                        dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 8 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
+                                        <Line
+                                            type="monotone"
+                                            dataKey="weight_kg"
+                                            stroke="var(--color-primary)"
+                                            strokeWidth={4}
+                                            name="Weight (kg)"
+                                            dot={{ r: 6, fill: 'var(--color-primary)', strokeWidth: 2, stroke: '#fff' }}
+                                            activeDot={{ r: 8 }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="height_cm"
+                                            stroke="#6366f1"
+                                            strokeWidth={4}
+                                            name="Height (cm)"
+                                            dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
+                                            activeDot={{ r: 8 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            )}
                         </div>
 
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
