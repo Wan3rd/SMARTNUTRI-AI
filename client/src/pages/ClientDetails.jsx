@@ -794,6 +794,9 @@ export default function ClientDetails() {
     const [isEditGrowthModalOpen, setIsEditGrowthModalOpen] = useState(false);
     const [editingGrowthLog, setEditingGrowthLog] = useState(null);
     const [editGrowthForm, setEditGrowthForm] = useState({ height_cm: '', weight_kg: '', logged_at: '' });
+    const [growthTimeframe, setGrowthTimeframe] = useState('all');
+    const [growthSortKey, setGrowthSortKey] = useState('date');
+    const [growthSortOrder, setGrowthSortOrder] = useState('desc');
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [selectedLogForReview, setSelectedLogForReview] = useState(null);
     const [allClientPendingLogs, setAllClientPendingLogs] = useState([]);
@@ -801,6 +804,45 @@ export default function ClientDetails() {
     const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
     const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+
+    const processedGrowthLogs = useMemo(() => {
+        if (!growthLogs) return [];
+        
+        // 1. Timeframe filtering
+        let logsCopy = [...growthLogs];
+        if (growthTimeframe !== 'all') {
+            const cutoffDate = new Date();
+            if (growthTimeframe === '3m') {
+                cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+            } else if (growthTimeframe === '6m') {
+                cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+            } else if (growthTimeframe === '1y') {
+                cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+            }
+            logsCopy = logsCopy.filter(log => new Date(log.logged_at) >= cutoffDate);
+        }
+        
+        // 2. Sorting
+        logsCopy.sort((a, b) => {
+            let valA, valB;
+            if (growthSortKey === 'height') {
+                valA = a.height_cm;
+                valB = b.height_cm;
+            } else if (growthSortKey === 'weight') {
+                valA = a.weight_kg;
+                valB = b.weight_kg;
+            } else {
+                valA = new Date(a.logged_at).getTime();
+                valB = new Date(b.logged_at).getTime();
+            }
+            
+            if (valA < valB) return growthSortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return growthSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        return logsCopy;
+    }, [growthLogs, growthTimeframe, growthSortKey, growthSortOrder]);
 
     const bmiData = useMemo(() => {
         if (!selectedProfile?.weight_kg || !selectedProfile?.height_cm) return null;
@@ -3586,12 +3628,65 @@ export default function ClientDetails() {
 
                                                             {/* GROWTH HISTORY LIST (DELETABLE) */}
                                                             <div className="bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden mb-6">
-                                                                <div className="px-6 py-4 border-b border-[var(--color-divider)] bg-[var(--color-bg-page)] flex justify-between items-center">
+                                                                <div className="px-6 py-4 border-b border-[var(--color-divider)] bg-[var(--color-bg-page)] flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                                                                     <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
                                                                         <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
                                                                     </h4>
-                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
+                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">
+                                                                        {growthTimeframe !== 'all' ? `${processedGrowthLogs.length} of ${growthLogs.length}` : growthLogs.length} Entries
+                                                                    </span>
                                                                 </div>
+                                                                
+                                                                {/* Controls Panel */}
+                                                                <div className="px-6 py-3 border-b border-[var(--color-divider)] bg-gray-50/20 dark:bg-white/5 flex flex-col sm:flex-row gap-3 justify-between sm:items-center">
+                                                                    <div className="flex flex-wrap gap-1.5 items-center">
+                                                                        <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)] tracking-wider mr-1">Timeframe:</span>
+                                                                        {[
+                                                                            { id: 'all', label: 'All' },
+                                                                            { id: '3m', label: '3 Months' },
+                                                                            { id: '6m', label: '6 Months' },
+                                                                            { id: '1y', label: '1 Year' }
+                                                                        ].map(preset => {
+                                                                            const isSelected = growthTimeframe === preset.id;
+                                                                            return (
+                                                                                <button
+                                                                                    key={preset.id}
+                                                                                    type="button"
+                                                                                    onClick={() => setGrowthTimeframe(preset.id)}
+                                                                                    className={cn(
+                                                                                        "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all cursor-pointer",
+                                                                                        isSelected 
+                                                                                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm shadow-[var(--color-primary)]/20" 
+                                                                                            : "bg-[var(--color-bg-card)] border-[var(--color-divider)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]"
+                                                                                    )}
+                                                                                >
+                                                                                    {preset.label}
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)] tracking-wider">Sort by:</span>
+                                                                        <select
+                                                                            value={growthSortKey}
+                                                                            onChange={(e) => setGrowthSortKey(e.target.value)}
+                                                                            className="p-1.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[10px] font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-all cursor-pointer"
+                                                                        >
+                                                                            <option value="date">Date</option>
+                                                                            <option value="height">Height</option>
+                                                                            <option value="weight">Weight</option>
+                                                                        </select>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setGrowthSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                                                                            className="p-1.5 rounded-lg border border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all cursor-pointer flex items-center justify-center animate-in zoom-in-95 duration-100"
+                                                                            title={growthSortOrder === 'desc' ? "Sort Descending" : "Sort Ascending"}
+                                                                        >
+                                                                            {growthSortOrder === 'desc' ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                
                                                                 <div className="overflow-x-auto">
                                                                     <table className="w-full text-left">
                                                                         <thead>
@@ -3604,7 +3699,7 @@ export default function ClientDetails() {
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-[var(--color-divider)]">
-                                                                            {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
+                                                                            {processedGrowthLogs.map(log => (
                                                                                 <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
                                                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                                                         <span className="text-xs font-bold text-[var(--color-text-main)]">
@@ -3665,10 +3760,12 @@ export default function ClientDetails() {
                                                                                     </td>
                                                                                 </tr>
                                                                             ))}
-                                                                            {growthLogs.length === 0 && (
+                                                                            {processedGrowthLogs.length === 0 && (
                                                                                 <tr>
                                                                                     <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
-                                                                                        No growth history logs recorded yet.
+                                                                                        {growthLogs.length === 0 
+                                                                                            ? "No growth history logs recorded yet." 
+                                                                                            : "No logs matching timeframe criteria."}
                                                                                     </td>
                                                                                 </tr>
                                                                             )}
