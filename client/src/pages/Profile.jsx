@@ -349,7 +349,7 @@ export default function Profile() {
     const [growthLogs, setGrowthLogs] = useState([]);
     const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
-    const [newVaccine, setNewVaccine] = useState({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+    const [newVaccine, setNewVaccine] = useState({ typeId: '', customName: '', date: new Date().toISOString().split('T')[0], notes: '' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, isDestructive: true });
 
     // Multi-Child Support
@@ -701,7 +701,7 @@ export default function Profile() {
                     height: profile.height_cm || '',
                     heightFeet: hConv.feet || '',
                     heightInches: hConv.inches || '',
-                    weight: user?.measurement_system === 'imperial' ? (profile.weight_kg * 2.20462).toFixed(1) : (profile.weight_kg || ''),
+                    weight: profile.weight_kg ? (user?.measurement_system === 'imperial' ? (profile.weight_kg * 2.20462).toFixed(1) : profile.weight_kg) : '',
                     activityLevel: profile.activity_level || 'moderate',
                     allergies: profile.allergies || [],
                     // Handle if preferences comes as string or null
@@ -767,6 +767,10 @@ export default function Profile() {
             showNotification('Please select a vaccine type', 'error');
             return;
         }
+        if (newVaccine.typeId === 'custom' && (!newVaccine.customName || !newVaccine.customName.trim())) {
+            showNotification('Please enter the custom vaccine name', 'error');
+            return;
+        }
         if (!newVaccine.date) {
             showNotification('Please select a vaccination date', 'error');
             return;
@@ -776,14 +780,20 @@ export default function Profile() {
             return;
         }
         try {
-            const res = await api.post(`/profiles/${profileData.id}/vaccinations`, {
-                vaccination_type_id: newVaccine.typeId,
+            const body = {
                 date_administered: newVaccine.date,
                 notes: newVaccine.notes
-            });
+            };
+            if (newVaccine.typeId === 'custom') {
+                body.custom_name = newVaccine.customName.trim();
+            } else {
+                body.vaccination_type_id = newVaccine.typeId;
+            }
+
+            const res = await api.post(`/profiles/${profileData.id}/vaccinations`, body);
             setChildVaccinations([res.data, ...childVaccinations]);
             setIsAddingVaccine(false);
-            setNewVaccine({ typeId: '', date: new Date().toISOString().split('T')[0], notes: '' });
+            setNewVaccine({ typeId: '', customName: '', date: new Date().toISOString().split('T')[0], notes: '' });
             showNotification('Vaccination record added', 'success');
         } catch (err) {
             console.error("Error adding vaccine", err);
@@ -992,13 +1002,18 @@ export default function Profile() {
 
         setSaving(true);
         try {
-            let finalHeight = parseFloat(profileData.height);
-            let finalWeight = parseFloat(profileData.weight);
+            let finalHeight = profileData.height ? parseFloat(profileData.height) : null;
+            let finalWeight = profileData.weight ? parseFloat(profileData.weight) : null;
 
             if (user?.measurement_system === 'imperial') {
-                finalHeight = toMetricHeight(profileData.heightFeet || 0, profileData.heightInches || 0);
-                finalWeight = toMetricWeight(profileData.weight || 0);
+                finalHeight = (profileData.heightFeet || profileData.heightInches)
+                    ? toMetricHeight(profileData.heightFeet || 0, profileData.heightInches || 0)
+                    : null;
+                finalWeight = profileData.weight ? toMetricWeight(profileData.weight) : null;
             }
+
+            if (finalHeight !== null && isNaN(finalHeight)) finalHeight = null;
+            if (finalWeight !== null && isNaN(finalWeight)) finalWeight = null;
 
             await api.put(`/profiles/${profileData.id}`, {
                 child_name: profileData.childName,
@@ -1776,8 +1791,10 @@ export default function Profile() {
                                                     />
                                                 )
                                             ) : (
-                                                <div className="text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
-                                                    {user?.measurement_system === 'imperial' ? (
+                                                <div className={cn("text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]", !profileData.height && "text-[var(--color-text-muted)] italic font-medium lowercase normal-case")}>
+                                                    {!profileData.height ? (
+                                                        "Pending weigh-in"
+                                                    ) : user?.measurement_system === 'imperial' ? (
                                                         (() => {
                                                             const h = convertHeight(profileData.height, 'imperial');
                                                             return `${h.feet}'${h.inches}"`;
@@ -1808,8 +1825,10 @@ export default function Profile() {
                                                     className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-page)] text-[var(--color-text-main)] font-bold text-xs sm:text-sm focus:border-[var(--color-primary)] outline-none transition-all"
                                                 />
                                             ) : (
-                                                <div className="text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]">
-                                                    {user?.measurement_system === 'imperial' ? (
+                                                <div className={cn("text-sm sm:text-base font-black uppercase tracking-tight text-[var(--color-text-main)]", !profileData.weight && "text-[var(--color-text-muted)] italic font-medium lowercase normal-case")}>
+                                                    {!profileData.weight ? (
+                                                        "Pending weigh-in"
+                                                    ) : user?.measurement_system === 'imperial' ? (
                                                         `${convertWeight(profileData.weight, 'imperial').value} lbs`
                                                     ) : (
                                                         `${profileData.weight} kg`
@@ -2007,14 +2026,24 @@ export default function Profile() {
                                                             <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
                                                             <select
                                                                 value={newVaccine.typeId}
-                                                                onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value })}
+                                                                onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value, customName: e.target.value === 'custom' ? '' : newVaccine.customName })}
                                                                 className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
                                                             >
                                                                 <option value="">Select Vaccine...</option>
                                                                 {vaccinationTypes.map(t => (
                                                                     <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
                                                                 ))}
+                                                                <option value="custom" className="bg-[var(--color-bg-card)] font-black text-emerald-650 dark:text-emerald-400">+ -- Custom Vaccine --</option>
                                                             </select>
+                                                            {newVaccine.typeId === 'custom' && (
+                                                                <input
+                                                                    type="text"
+                                                                    value={newVaccine.customName || ''}
+                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, customName: e.target.value })}
+                                                                    placeholder="Enter custom vaccine name..."
+                                                                    className="w-full p-3 mt-2 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-all animate-in slide-in-from-top-1 duration-200"
+                                                                />
+                                                            )}
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
@@ -2050,33 +2079,45 @@ export default function Profile() {
                                                         <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                                                        {childVaccinations.map(v => (
-                                                            <div key={v.id} className="group relative flex items-start gap-3 sm:gap-4 p-2.5 sm:p-4 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
-                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                    <Check size={16} className="sm:w-5 sm:h-5" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight mb-1">
-                                                                        {v.vaccination_types?.name}
-                                                                    </h4>
-                                                                    <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
-                                                                        <Calendar size={10} className="flex-shrink-0" />
-                                                                        {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                                                                    </div>
-                                                                    {v.notes && <p className="text-[9px] text-[var(--color-text-muted)] mt-2 whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2">{v.notes}</p>}
-                                                                </div>
-                                                                {isEditing && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteVaccine(v.id)}
-                                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                     <div className="flex flex-col gap-3">
+                                                         {childVaccinations.map(v => (
+                                                             <div key={v.id} className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
+                                                                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                                                                     <div className="h-9 w-9 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+                                                                         <Check size={16} className="sm:w-5 sm:h-5" />
+                                                                     </div>
+                                                                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+                                                                         <div>
+                                                                             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                                                                 <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight">
+                                                                                     {v.vaccination_types?.name}
+                                                                                 </h4>
+                                                                             </div>
+                                                                             <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
+                                                                                 <Calendar size={10} className="flex-shrink-0" />
+                                                                                 {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                             </div>
+                                                                         </div>
+                                                                         {v.notes ? (
+                                                                             <div className="flex items-center">
+                                                                                 <p className="text-[9px] sm:text-xs text-[var(--color-text-muted)] whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2 sm:pl-3 leading-tight">{v.notes}</p>
+                                                                             </div>
+                                                                         ) : (
+                                                                             <div className="hidden md:block" />
+                                                                         )}
+                                                                     </div>
+                                                                 </div>
+                                                                 {isEditing && (
+                                                                     <button
+                                                                         onClick={() => handleDeleteVaccine(v.id)}
+                                                                         className="self-end sm:self-auto p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
+                                                                     >
+                                                                         <Trash2 size={14} />
+                                                                     </button>
+                                                                 )}
+                                                             </div>
+                                                         ))}
+                                                     </div>
                                                 )}
                                             </div>
                                         </div>

@@ -205,9 +205,6 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             if (!formData.child_name || !formData.date_of_birth) return false;
             if (!parentId && !formData.parent_email.includes('@')) return false;
         }
-        if (step === 2) {
-            if (!formData.height_cm || !formData.weight_kg) return false;
-        }
         return true;
     };
 
@@ -227,12 +224,6 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
             }
             if (!parentId && !formData.parent_email.includes('@')) {
                 setNotif({ show: true, message: 'Please enter a valid email address.', type: 'error' });
-                return false;
-            }
-        }
-        if (step === 2) {
-            if (!formData.height_cm || !formData.weight_kg) {
-                setNotif({ show: true, message: 'Initial height and weight are required for clinical profiling.', type: 'error' });
                 return false;
             }
         }

@@ -255,7 +255,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                         </div>
 
                         <form className="flex-1 flex flex-col min-h-0" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
-                            <fieldset disabled={loading} className="flex-1 flex flex-col min-h-0 border-none p-0 m-0">
+                            <fieldset disabled={loading} className="border-none p-0 m-0" style={{ display: 'contents' }}>
                                 <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 scrollbar-thin">
                                 {message.text && (
                                     <div className={`p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' : 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'}`}>

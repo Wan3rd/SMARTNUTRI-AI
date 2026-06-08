@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from './common/Card';
 import { Button } from './common/Button';
-import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info } from 'lucide-react';
+import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info, Flame, Dumbbell, Wheat, Droplet } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import Webcam from 'react-webcam';
 import imageCompression from 'browser-image-compression';
@@ -1133,10 +1133,22 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
                                         <div className={`flex flex-wrap items-center justify-between gap-2 text-[10px] xs:text-xs mt-1.5 font-black px-1 transition-all duration-500 ${item.isStale ? 'opacity-40 italic' : 'opacity-100'}`}>
                                             <div className="flex flex-wrap items-center gap-x-2 xs:gap-x-4 sm:gap-x-5 gap-y-1">
-                                                <span className="whitespace-nowrap text-orange-600 dark:text-orange-400">{item.calories || 0} kcal</span>
-                                                <span className="whitespace-nowrap text-blue-600 dark:text-blue-400">{item.protein_g || 0}g protein</span>
-                                                <span className="whitespace-nowrap text-green-600 dark:text-green-400">{item.carbs_g || 0}g carbs</span>
-                                                <span className="whitespace-nowrap text-indigo-600 dark:text-indigo-400">{item.fat_g || 0}g fat</span>
+                                                <span className="whitespace-nowrap text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                                                    <Flame size={12} className="shrink-0" />
+                                                    {item.calories || 0} kcal
+                                                </span>
+                                                <span className="whitespace-nowrap text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                                    <Dumbbell size={12} className="shrink-0" />
+                                                    {item.protein_g || 0}g protein
+                                                </span>
+                                                <span className="whitespace-nowrap text-green-600 dark:text-green-400 flex items-center gap-1">
+                                                    <Wheat size={12} className="shrink-0" />
+                                                    {item.carbs_g || 0}g carbs
+                                                </span>
+                                                <span className="whitespace-nowrap text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                                    <Droplet size={12} className="shrink-0" />
+                                                    {item.fat_g || 0}g fat
+                                                </span>
                                             </div>
 
                                             {item.isStale && !item.isUpdating && (

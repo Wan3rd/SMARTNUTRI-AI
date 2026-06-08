@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { DEFAULT_MEAL_TEMPLATES } from '../data/default_meal_templates.js';
 import { logAuditAction } from '../lib/auditLogger.js';
+import { sendParentInvitationEmail } from '../lib/mailer.js';
 
 const router = express.Router();
 
@@ -113,6 +114,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
         }
 
         const result = await prisma.$transaction(async (tx) => {
+            let isNewParent = false;
             let user;
             if (parentId) {
                 user = await tx.users.findUnique({
@@ -123,6 +125,11 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                     error.statusCode = 404;
                     throw error;
                 }
+                if (user.role === 'nutritionist') {
+                    const error = new Error('You cannot link a nutritionist account');
+                    error.statusCode = 400;
+                    throw error;
+                }
             } else {
                 // Check if parent email already exists
                 const existingUser = await tx.users.findUnique({
@@ -130,8 +137,19 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 });
 
                 if (existingUser) {
+                    if (existingUser.role === 'nutritionist') {
+                        const error = new Error('You cannot link a nutritionist account');
+                        error.statusCode = 400;
+                        throw error;
+                    }
+                    if (existingUser.role === 'admin') {
+                        const error = new Error('You cannot link an admin account');
+                        error.statusCode = 400;
+                        throw error;
+                    }
                     user = existingUser;
                 } else {
+                    isNewParent = true;
                     // Create Parent User with a default password
                     const salt = await bcrypt.genSalt(10);
                     const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
@@ -186,16 +204,35 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
 
             // Add Vaccinations if provided
             if (vaccinations && Array.isArray(vaccinations) && vaccinations.length > 0) {
-                const vaccinationData = vaccinations.map(v => ({
-                    profile_id: profile.id,
-                    vaccination_type_id: v.vaccination_type_id,
-                    date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
-                    notes: v.notes || 'Recorded during initial profiling'
-                }));
-
-                await tx.profile_vaccinations.createMany({
-                    data: vaccinationData
-                });
+                const vaccinationData = [];
+                for (const v of vaccinations) {
+                    let typeId = v.vaccination_type_id;
+                    if (!typeId && v.custom_name && typeof v.custom_name === 'string' && v.custom_name.trim().length > 0) {
+                        const nameTrimmed = v.custom_name.trim();
+                        let existingType = await tx.vaccination_types.findFirst({
+                            where: { name: { equals: nameTrimmed, mode: 'insensitive' } }
+                        });
+                        if (!existingType) {
+                            existingType = await tx.vaccination_types.create({
+                                data: { name: nameTrimmed, description: 'Custom entered vaccine' }
+                            });
+                        }
+                        typeId = existingType.id;
+                    }
+                    if (typeId) {
+                        vaccinationData.push({
+                            profile_id: profile.id,
+                            vaccination_type_id: typeId,
+                            date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
+                            notes: v.notes || 'Recorded during initial profiling'
+                        });
+                    }
+                }
+                if (vaccinationData.length > 0) {
+                    await tx.profile_vaccinations.createMany({
+                        data: vaccinationData
+                    });
+                }
             }
 
             // Link to Nutritionist if not already linked
@@ -218,10 +255,76 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 });
             }
 
-            return { user, profile };
+            return { user, profile, isNewParent };
         });
 
-        res.status(201).json({ message: 'Patient profile created and linked successfully', data: result });
+        // Send parent invitation email asynchronously (non-blocking)
+        sendParentInvitationEmail({
+            parentEmail: result.user.email,
+            parentName: result.user.full_name,
+            nutritionistName: req.user.full_name,
+            childName: result.profile.child_name,
+            isNewParent: result.isNewParent
+        })
+        .then(async (mailResult) => {
+            if (mailResult && mailResult.success) {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: result.user.id,
+                    action: 'EMAIL_INVITATION_SENT',
+                    entityType: 'USER',
+                    entityId: result.user.id,
+                    details: {
+                        to: result.user.email,
+                        child_name: result.profile.child_name,
+                        provider: mailResult.provider || 'brevo'
+                    },
+                    ipAddress: req.ip
+                });
+            } else {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: result.user.id,
+                    action: 'EMAIL_INVITATION_FAILED',
+                    entityType: 'USER',
+                    entityId: result.user.id,
+                    details: {
+                        to: result.user.email,
+                        child_name: result.profile.child_name,
+                        error: mailResult?.error || 'Unknown mailing error'
+                    },
+                    ipAddress: req.ip
+                });
+            }
+        })
+        .catch(async (err) => {
+            console.error('[InvitationEmail] Failed to send parent invitation email:', err);
+            try {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: result.user.id,
+                    action: 'EMAIL_INVITATION_FAILED',
+                    entityType: 'USER',
+                    entityId: result.user.id,
+                    details: {
+                        to: result.user.email,
+                        child_name: result.profile.child_name,
+                        error: err.message || String(err)
+                    },
+                    ipAddress: req.ip
+                });
+            } catch (auditErr) {
+                console.error('Failed to log audit action for failed invitation email:', auditErr);
+            }
+        });
+
+        res.status(201).json({
+            message: 'Patient profile created and linked successfully',
+            data: {
+                user: result.user,
+                profile: result.profile
+            }
+        });
 
     } catch (err) {
         console.error(err);
@@ -300,7 +403,8 @@ router.get('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
                 full_name: true,
                 deleted_at: true,
                 deactivation_reason: true,
-                status: true
+                status: true,
+                force_password_reset: true
             }
         });
         if (!client) {
@@ -390,6 +494,109 @@ router.delete('/clients/:id', verifyToken, isNutritionist, async (req, res) => {
     } catch (err) {
         console.error("Failed to unlink client:", err);
         res.status(500).json({ message: 'Failed to unlink client' });
+    }
+});
+
+// POST /clients/:id/resend-invite - Resend parent invitation email
+router.post('/clients/:id/resend-invite', verifyToken, isNutritionist, async (req, res) => {
+    try {
+        const parentId = req.params.id;
+
+        // SECURITY: Verify the client is linked to the requesting nutritionist
+        const link = await prisma.nutritionist_clients.findUnique({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: req.user.id,
+                    parent_id: parentId
+                }
+            }
+        });
+
+        if (!link && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Client connection not found' });
+        }
+
+        // Fetch parent user
+        const parent = await prisma.users.findUnique({
+            where: { id: parentId }
+        });
+
+        if (!parent) {
+            return res.status(404).json({ message: 'Parent user not found' });
+        }
+
+        // Fetch child profile names linked to this parent to list in the invitation
+        const children = await prisma.profiles.findMany({
+            where: { user_id: parent.id },
+            select: { child_name: true }
+        });
+
+        const childNames = children.map(c => c.child_name).join(', ') || 'your child';
+
+        // Dispatch invitation email asynchronously/non-blocking
+        sendParentInvitationEmail({
+            parentEmail: parent.email,
+            parentName: parent.full_name,
+            nutritionistName: req.user.full_name,
+            childName: childNames,
+            isNewParent: parent.force_password_reset
+        })
+        .then(async (mailResult) => {
+            if (mailResult && mailResult.success) {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: parent.id,
+                    action: 'EMAIL_INVITATION_RESENT',
+                    entityType: 'USER',
+                    entityId: parent.id,
+                    details: {
+                        to: parent.email,
+                        children: childNames,
+                        provider: mailResult.provider || 'brevo'
+                    },
+                    ipAddress: req.ip
+                });
+            } else {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: parent.id,
+                    action: 'EMAIL_INVITATION_FAILED',
+                    entityType: 'USER',
+                    entityId: parent.id,
+                    details: {
+                        to: parent.email,
+                        children: childNames,
+                        error: mailResult?.error || 'Unknown mailing error'
+                    },
+                    ipAddress: req.ip
+                });
+            }
+        })
+        .catch(async (err) => {
+            console.error('[InvitationEmail] Failed to resend parent invitation email:', err);
+            try {
+                await logAuditAction({
+                    adminId: req.user.id,
+                    targetId: parent.id,
+                    action: 'EMAIL_INVITATION_FAILED',
+                    entityType: 'USER',
+                    entityId: parent.id,
+                    details: {
+                        to: parent.email,
+                        children: childNames,
+                        error: err.message || String(err)
+                    },
+                    ipAddress: req.ip
+                });
+            } catch (auditErr) {
+                console.error('Failed to log audit action for failed invitation email resend:', auditErr);
+            }
+        });
+
+        res.json({ success: true, message: 'Invitation email resent successfully' });
+    } catch (err) {
+        console.error("Failed to resend parent invitation:", err);
+        res.status(500).json({ message: 'Failed to resend parent invitation' });
     }
 });
 

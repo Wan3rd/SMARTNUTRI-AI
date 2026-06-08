@@ -57,7 +57,7 @@ const sendViaBrevo = async ({ to, subject, html, text }) => {
 
 // ─── Shared Email Wrapper ──────────────────────────────────────────────────────
 
-const buildEmailWrapper = (innerHtml) => `
+const buildEmailWrapper = (innerHtml, subtitle = 'Nutritionist Verification System') => `
     <div style="font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
         <!-- Header -->
         <div style="border-bottom: 2px solid #059669; padding-bottom: 16px; margin-bottom: 28px;">
@@ -68,7 +68,7 @@ const buildEmailWrapper = (innerHtml) => `
                     </td>
                     <td style="padding: 0 0 0 12px; vertical-align: middle;">
                         <h1 style="color: #059669; font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.025em; margin: 0;">SmartNutri-AI</h1>
-                        <p style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.15em; margin: 2px 0 0 0;">Nutritionist Verification System</p>
+                        <p style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.15em; margin: 2px 0 0 0;">${subtitle}</p>
                     </td>
                 </tr>
             </table>
@@ -472,6 +472,74 @@ export const sendNutritionistVerificationRequestEmail = async (nutritionist) => 
         subject: `[Verification Required] New Nutritionist Registration - ${full_name || 'Expert'}`,
         html: buildEmailWrapper(inner),
         text: `A new nutritionist registration is pending verification:\n\nName: ${full_name || 'N/A'}\nEmail: ${email || 'N/A'}\n\nPlease review full credentials and license documents in the Admin Dashboard: ${verificationUrl}`,
+    });
+};
+
+
+// ─── 8. Parent Invitation Email on Patient Creation ────────────────────────────
+
+export const sendParentInvitationEmail = async ({
+    parentEmail,
+    parentName,
+    nutritionistName,
+    childName,
+    isNewParent
+}) => {
+    const loginUrl = `${APP_URL}/login`;
+
+    const innerHtml = `
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 28px auto; text-align: center;">
+            <tr>
+                <td style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #bfdbfe; border-radius: 50px; padding: 10px 24px;">
+                    <span style="color: #1e40af; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; display: block;">📩 Nutritionist Invitation</span>
+                </td>
+            </tr>
+        </table>
+
+        <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 12px 0;">Hello <strong style="color: #0f172a;">${parentName || 'Parent'}</strong>,</p>
+
+        <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 16px 0;">
+            Clinical nutritionist <strong style="color: #0f172a;">${nutritionistName}</strong> has invited you to join the <strong>SmartNutri-AI</strong> platform to help keep track of your child, <strong style="color: #059669;">${childName}</strong>'s, meals and nutrition progress.
+        </p>
+
+        ${isNewParent ? `
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin: 24px 0;">
+                <p style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Access Details:</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr>
+                        <td style="padding: 4px 0; font-weight: bold; color: #475569; width: 150px;">Login Email:</td>
+                        <td style="padding: 4px 0; color: #0f172a;">${parentEmail}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 0; font-weight: bold; color: #475569;">Temporary Password:</td>
+                        <td style="padding: 4px 0; color: #059669; font-family: monospace; font-weight: bold; font-size: 16px;">smartnutri123</td>
+                    </tr>
+                </table>
+                <p style="font-size: 12px; color: #ef4444; font-weight: bold; margin: 12px 0 0 0;">⚠️ Note: For security reasons, you will be prompted to set a new password upon your first login.</p>
+            </div>
+        ` : `
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin: 24px 0;">
+                <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0;">
+                    Since you already have a SmartNutri-AI account, you can log in directly using your existing credentials to view your child's profile and collaborate with <strong style="color: #0f172a;">${nutritionistName}</strong>.
+                </p>
+            </div>
+        `}
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="${loginUrl}" style="background-color: #059669; color: #ffffff; padding: 16px 40px; border-radius: 16px; text-decoration: none; font-weight: 900; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em; display: inline-block; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);">Access Dashboard →</a>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; text-align: center; margin: 0;">
+            Need help? Contact support at <a href="mailto:snutri244@gmail.com" style="color: #059669; text-decoration: none;">snutri244@gmail.com</a>
+        </p>
+    `;
+
+    return sendViaBrevo({
+        to: parentEmail,
+        subject: `Invite from Nutritionist: Help track ${childName}'s nutrition on SmartNutri-AI`,
+        html: buildEmailWrapper(innerHtml, 'Client Invitation System'),
+        text: `Hello ${parentName},\n\nYou have been invited by nutritionist ${nutritionistName} to track ${childName}'s nutrition on SmartNutri-AI.\n\n${isNewParent ? `Your login email: ${parentEmail}\nTemporary Password: smartnutri123\nNote: You will be asked to change this password on first login.` : 'Please log in to your existing account to view the updates.'}\n\nAccess Dashboard: ${loginUrl}`
     });
 };
 

@@ -103,16 +103,35 @@ router.post('/', verifyToken, async (req, res) => {
 
             // Handle structured vaccinations
             if (vaccinations && Array.isArray(vaccinations) && vaccinations.length > 0) {
-                const vaccinationData = vaccinations.map(v => ({
-                    profile_id: profile.id,
-                    vaccination_type_id: v.vaccination_type_id,
-                    date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
-                    notes: v.notes || 'Recorded during onboarding'
-                }));
-                
-                await tx.profile_vaccinations.createMany({
-                    data: vaccinationData
-                });
+                const vaccinationData = [];
+                for (const v of vaccinations) {
+                    let typeId = v.vaccination_type_id;
+                    if (!typeId && v.custom_name && typeof v.custom_name === 'string' && v.custom_name.trim().length > 0) {
+                        const nameTrimmed = v.custom_name.trim();
+                        let existingType = await tx.vaccination_types.findFirst({
+                            where: { name: { equals: nameTrimmed, mode: 'insensitive' } }
+                        });
+                        if (!existingType) {
+                            existingType = await tx.vaccination_types.create({
+                                data: { name: nameTrimmed, description: 'Custom entered vaccine' }
+                            });
+                        }
+                        typeId = existingType.id;
+                    }
+                    if (typeId) {
+                        vaccinationData.push({
+                            profile_id: profile.id,
+                            vaccination_type_id: typeId,
+                            date_administered: v.date_administered ? new Date(v.date_administered) : new Date(),
+                            notes: v.notes || 'Recorded during onboarding'
+                        });
+                    }
+                }
+                if (vaccinationData.length > 0) {
+                    await tx.profile_vaccinations.createMany({
+                        data: vaccinationData
+                    });
+                }
             }
 
             return profile;
@@ -574,7 +593,7 @@ router.get('/:id/vaccinations', verifyToken, async (req, res) => {
 // POST /:id/vaccinations - Add vaccination to profile
 router.post('/:id/vaccinations', verifyToken, async (req, res) => {
     const { id } = req.params;
-    const { vaccination_type_id, date_administered, notes } = req.body;
+    const { vaccination_type_id, custom_name, date_administered, notes } = req.body;
     try {
         // Ownership Check
         const profile = await prisma.profiles.findUnique({ where: { id } });
@@ -587,10 +606,28 @@ router.post('/:id/vaccinations', verifyToken, async (req, res) => {
 
         if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized' });
 
+        let typeId = vaccination_type_id;
+        if (!typeId && custom_name && typeof custom_name === 'string' && custom_name.trim().length > 0) {
+            const nameTrimmed = custom_name.trim();
+            let existingType = await prisma.vaccination_types.findFirst({
+                where: { name: { equals: nameTrimmed, mode: 'insensitive' } }
+            });
+            if (!existingType) {
+                existingType = await prisma.vaccination_types.create({
+                    data: { name: nameTrimmed, description: 'Custom entered vaccine' }
+                });
+            }
+            typeId = existingType.id;
+        }
+
+        if (!typeId) {
+            return res.status(400).json({ message: 'Vaccination type ID or custom name is required' });
+        }
+
         const newRecord = await prisma.profile_vaccinations.create({
             data: {
                 profile_id: id,
-                vaccination_type_id,
+                vaccination_type_id: typeId,
                 date_administered: date_administered ? new Date(date_administered) : null,
                 notes
             },

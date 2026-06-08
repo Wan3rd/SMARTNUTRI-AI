@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle, ChefHat, Eye } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Clock, Calendar, User, Trash2, Loader2, Activity, BadgeCheck, ShieldAlert, AlertTriangle, ChefHat, Eye, Flame, Dumbbell, Wheat, Droplet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './common/Card';
 import { Button } from './common/Button';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -739,16 +739,26 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                                                         </span>
                                                                     )}
                                                             </div>
-                                                            <span className="text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums uppercase">
+                                                            <span className="text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums uppercase flex items-center gap-1">
+                                                                <Flame size={12} className="shrink-0" />
                                                                 {formatValue(item.calories, user?.nutrient_precision)} KCAL
                                                             </span>
                                                             <p className="text-[10px] font-bold text-[var(--color-text-muted)] mt-1 uppercase">
                                                                 {item.measure_qty || 1} {item.serving_unit || 'Serving'}
                                                             </p>
                                                             <div className="flex flex-wrap gap-x-2 xs:gap-x-4 sm:gap-x-5 gap-y-1 text-[9px] xs:text-[10px] sm:text-xs mt-2.5 font-black border-t border-[var(--color-divider)] pt-2">
-                                                                <span className="whitespace-nowrap text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Protein: {formatValue(item.protein_g, user?.nutrient_precision)}g</span>
-                                                                <span className="whitespace-nowrap text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Carbs: {formatValue(item.carbs_g, user?.nutrient_precision)}g</span>
-                                                                <span className="whitespace-nowrap text-orange-600 dark:text-orange-400 uppercase tracking-tighter">Fat: {formatValue(item.fat_g, user?.nutrient_precision)}g</span>
+                                                                <span className="whitespace-nowrap text-blue-600 dark:text-blue-400 uppercase tracking-tighter flex items-center gap-1">
+                                                                    <Dumbbell size={12} className="shrink-0" />
+                                                                    Protein: {formatValue(item.protein_g, user?.nutrient_precision)}g
+                                                                </span>
+                                                                <span className="whitespace-nowrap text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter flex items-center gap-1">
+                                                                    <Wheat size={12} className="shrink-0" />
+                                                                    Carbs: {formatValue(item.carbs_g, user?.nutrient_precision)}g
+                                                                </span>
+                                                                <span className="whitespace-nowrap text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter flex items-center gap-1">
+                                                                    <Droplet size={12} className="shrink-0" />
+                                                                    Fat: {formatValue(item.fat_g, user?.nutrient_precision)}g
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -761,18 +771,24 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                             <h4 className="font-black text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mb-3">Nutritional Summation</h4>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                 {[
-                                                    { val: nutrition.calories || displayAnalysis.total_calories_est, label: "Kcal", col: "var(--color-primary)" },
-                                                    { val: nutrition.protein || nutrition.protein_g, label: "Protein", col: "#2563eb" },
-                                                    { val: nutrition.carbs || nutrition.carbs_g, label: "Carbs", col: "#059669" },
-                                                    { val: nutrition.fat || nutrition.fat_g, label: "Fat", col: "#ea580c" }
-                                                ].map((stat, si) => (
-                                                    <div key={si} className="bg-[var(--color-bg-page)] p-3.5 sm:p-4 rounded-2xl text-center border border-[var(--color-divider)] shadow-sm">
-                                                        <p className="text-xl sm:text-2xl font-black tabular-nums leading-none mb-1 uppercase" style={{ color: stat.col }}>
-                                                            {formatValue(stat.val, user?.nutrient_precision)}{si > 0 ? 'g' : ''}
-                                                        </p>
-                                                        <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">{stat.label}</p>
-                                                    </div>
-                                                ))}
+                                                    { val: nutrition.calories || displayAnalysis.total_calories_est, label: "Kcal", col: "var(--color-primary)", icon: Flame },
+                                                    { val: nutrition.protein || nutrition.protein_g, label: "Protein", col: "#2563eb", icon: Dumbbell },
+                                                    { val: nutrition.carbs || nutrition.carbs_g, label: "Carbs", col: "#059669", icon: Wheat },
+                                                    { val: nutrition.fat || nutrition.fat_g, label: "Fat", col: "#ea580c", icon: Droplet }
+                                                ].map((stat, si) => {
+                                                    const Icon = stat.icon;
+                                                    return (
+                                                        <div key={si} className="bg-[var(--color-bg-page)] p-3.5 sm:p-4 rounded-2xl text-center border border-[var(--color-divider)] shadow-sm flex flex-col items-center justify-center">
+                                                            <div className="flex items-center gap-1.5 mb-1">
+                                                                <Icon size={16} style={{ color: stat.col }} className="shrink-0" />
+                                                                <p className="text-xl sm:text-2xl font-black tabular-nums leading-none uppercase" style={{ color: stat.col }}>
+                                                                    {formatValue(stat.val, user?.nutrient_precision)}{si > 0 ? 'g' : ''}
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">{stat.label}</p>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                         {/* AI Comments */}
@@ -906,7 +922,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
                         <Button
                             variant="none"
-                            className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 bg-rose-50/10 dark:bg-rose-950/15 hover:bg-rose-100/70 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300 shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                            className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-[var(--color-danger)]/20 dark:border-[var(--color-danger)]/40 text-[var(--color-danger)] bg-[var(--color-danger)]/10 dark:bg-[var(--color-danger)]/15 hover:bg-[var(--color-danger)]/20 dark:hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
                             onClick={() => setShowConfirm(true)}
                             disabled={isDeleting || isResubmitting}
                         >
@@ -918,7 +934,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         {user?.role === 'parent' && (log.status === 'rejected' || log.status === 'pending') && !isEditing && (
                             <Button
                                 variant="none"
-                                className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 bg-amber-50/10 dark:bg-amber-900/15 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300 shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                                className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-[var(--color-warning)]/20 dark:border-[var(--color-warning)]/40 text-[var(--color-warning)] bg-[var(--color-warning)]/10 dark:bg-[var(--color-warning)]/15 hover:bg-[var(--color-warning)]/20 dark:hover:bg-[var(--color-warning)]/30 hover:text-[var(--color-warning)] shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
                                 onClick={() => setIsEditing(true)}
                             >
                                 {log.status === 'rejected' ? (

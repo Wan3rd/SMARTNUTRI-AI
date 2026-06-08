@@ -378,6 +378,7 @@ export default function ParentDashboard() {
                             key={selectedProfile.id}
                             profileId={selectedProfile.id}
                             onLogged={() => {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
                                 fetchLogs();
                                 fetchDailyLog();
                             }}

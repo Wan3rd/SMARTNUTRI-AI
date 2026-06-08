@@ -788,6 +788,9 @@ export default function ClientDetails() {
 
     // --- Growth State ---
     const [growthLogs, setGrowthLogs] = useState([]);
+    const [growthSortField, setGrowthSortField] = useState('date');
+    const [growthSortOrder, setGrowthSortOrder] = useState('desc');
+    const [growthFilterRange, setGrowthFilterRange] = useState('all');
     const [isGrowthModalOpen, setIsGrowthModalOpen] = useState(false);
     const [newGrowth, setNewGrowth] = useState({ height_cm: '', weight_kg: '' });
     const [isEditGrowthModalOpen, setIsEditGrowthModalOpen] = useState(false);
@@ -991,6 +994,45 @@ export default function ClientDetails() {
         }
         return velocityData;
     }, [growthLogs]);
+    
+    const filteredGrowthLogs = useMemo(() => {
+        if (!growthLogs) return [];
+        let logs = [...growthLogs];
+        
+        // Filter by date range preset
+        if (growthFilterRange !== 'all') {
+            const now = new Date();
+            let cutOffDate = new Date();
+            if (growthFilterRange === '3m') cutOffDate.setMonth(now.getMonth() - 3);
+            else if (growthFilterRange === '6m') cutOffDate.setMonth(now.getMonth() - 6);
+            else if (growthFilterRange === '1y') cutOffDate.setFullYear(now.getFullYear() - 1);
+            
+            logs = logs.filter(log => new Date(log.logged_at) >= cutOffDate);
+        }
+        
+        // Sort
+        logs.sort((a, b) => {
+            let valA, valB;
+            if (growthSortField === 'date') {
+                valA = new Date(a.logged_at).getTime();
+                valB = new Date(b.logged_at).getTime();
+            } else if (growthSortField === 'height') {
+                valA = a.height_cm;
+                valB = b.height_cm;
+            } else if (growthSortField === 'weight') {
+                valA = a.weight_kg;
+                valB = b.weight_kg;
+            }
+            
+            if (growthSortOrder === 'asc') {
+                return valA - valB;
+            } else {
+                return valB - valA;
+            }
+        });
+        
+        return logs;
+    }, [growthLogs, growthSortField, growthSortOrder, growthFilterRange]);
 
     const [isClinicalEditing, setIsClinicalEditing] = useState(false);
     const [isAdimeEditing, setIsAdimeEditing] = useState(false);
@@ -3504,8 +3546,70 @@ export default function ClientDetails() {
                                                                     <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-2">
                                                                         <Calendar size={14} className="text-[var(--color-primary)]" /> Growth Record Timeline
                                                                     </h4>
-                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{growthLogs.length} Entries</span>
+                                                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">
+                                                                        {filteredGrowthLogs.length === growthLogs.length
+                                                                            ? `${growthLogs.length} Entries`
+                                                                            : `Showing ${filteredGrowthLogs.length} of ${growthLogs.length} Entries`
+                                                                        }
+                                                                    </span>
                                                                 </div>
+
+                                                                {/* FILTER & SORT CONTROLS */}
+                                                                <div className="px-6 py-3 bg-gray-50/50 dark:bg-white/5 border-b border-[var(--color-divider)] flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-xs">
+                                                                    {/* Presets */}
+                                                                    <div className="flex flex-wrap items-center gap-1">
+                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)] mr-2">Timeframe:</span>
+                                                                        {[
+                                                                            { id: 'all', label: 'All Time' },
+                                                                            { id: '3m', label: 'Last 3M' },
+                                                                            { id: '6m', label: 'Last 6M' },
+                                                                            { id: '1y', label: 'Last 1Y' }
+                                                                        ].map(p => {
+                                                                            const isActive = growthFilterRange === p.id;
+                                                                            return (
+                                                                                <button
+                                                                                    key={p.id}
+                                                                                    type="button"
+                                                                                    onClick={() => setGrowthFilterRange(p.id)}
+                                                                                    className={cn(
+                                                                                        "px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border",
+                                                                                        isActive
+                                                                                            ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-sm"
+                                                                                            : "border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                                                                                    )}
+                                                                                >
+                                                                                    {p.label}
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {/* Sort Controls */}
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)] mr-1">Sort By:</span>
+                                                                            <select
+                                                                                value={growthSortField}
+                                                                                onChange={(e) => setGrowthSortField(e.target.value)}
+                                                                                className="bg-[var(--color-bg-card)] border border-[var(--color-divider)] rounded-lg text-[10px] font-black uppercase tracking-wider text-[var(--color-text-main)] p-1.5 focus:border-[var(--color-primary)] outline-none cursor-pointer"
+                                                                            >
+                                                                                <option value="date">Date</option>
+                                                                                <option value="height">Height</option>
+                                                                                <option value="weight">Weight</option>
+                                                                            </select>
+                                                                        </div>
+
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setGrowthSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                                                            className="p-1.5 border border-[var(--color-divider)] bg-[var(--color-bg-card)] rounded-lg hover:border-[var(--color-primary)] text-[var(--color-text-main)] transition-colors flex items-center justify-center cursor-pointer"
+                                                                            title={growthSortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
+                                                                        >
+                                                                            <ListFilter size={12} className={cn("transition-transform duration-200", growthSortOrder === 'desc' && "rotate-180")} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
                                                                 <div className="overflow-x-auto">
                                                                     <table className="w-full text-left">
                                                                         <thead>
@@ -3518,7 +3622,7 @@ export default function ClientDetails() {
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-[var(--color-divider)]">
-                                                                            {[...growthLogs].sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at)).map(log => (
+                                                                            {filteredGrowthLogs.map(log => (
                                                                                 <tr key={log.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
                                                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                                                         <span className="text-xs font-bold text-[var(--color-text-main)]">
@@ -3577,12 +3681,20 @@ export default function ClientDetails() {
                                                                                     </td>
                                                                                 </tr>
                                                                             ))}
-                                                                            {growthLogs.length === 0 && (
+                                                                            {growthLogs.length === 0 ? (
                                                                                 <tr>
                                                                                     <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
                                                                                         No growth history logs recorded yet.
                                                                                     </td>
                                                                                 </tr>
+                                                                            ) : (
+                                                                                filteredGrowthLogs.length === 0 && (
+                                                                                    <tr>
+                                                                                        <td colSpan="5" className="px-6 py-12 text-center text-xs text-[var(--color-text-muted)] italic">
+                                                                                            No growth logs found matching the selected timeframe.
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                )
                                                                             )}
                                                                         </tbody>
                                                                     </table>
