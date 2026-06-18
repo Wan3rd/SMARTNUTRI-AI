@@ -8,6 +8,7 @@ import Notification from './common/Notification';
 import { useAuth } from '../context/AuthContext';
 import { cn, formatValue } from '../lib/utils';
 import api from '../lib/api';
+import ConsumptionSliderModal from './ConsumptionSliderModal';
 
 export default function MealDetailModal({ log, onClose, onDelete, rules = [], allergies = [] }) {
     const { user } = useAuth();
@@ -601,17 +602,11 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                             <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
                                 <p className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 opacity-70">Caregiver Reported</p>
                                 {isEditing ? (
-                                    <select
+                                    <ConsumptionSliderModal
                                         value={editedConsumption}
-                                        onChange={(e) => setEditedConsumption(parseInt(e.target.value))}
-                                        className="w-full bg-[var(--color-bg-card)] text-xs font-black text-[var(--color-text-main)] uppercase border border-[var(--color-divider)] rounded-xl px-2 py-1.5 focus:border-[var(--color-primary)] outline-none"
-                                    >
-                                        <option value={100}>Finished (100%)</option>
-                                        <option value={75}>Mostly (75%)</option>
-                                        <option value={50}>Half (50%)</option>
-                                        <option value={25}>A Little (25%)</option>
-                                        <option value={0}>None (0%)</option>
-                                    </select>
+                                        onChange={setEditedConsumption}
+                                        compact
+                                    />
                                 ) : (
                                     <p className="text-xs font-black text-[var(--color-text-main)] truncate uppercase">
                                         {log.consumption_percent === 100 ? 'Finished (100%)' :

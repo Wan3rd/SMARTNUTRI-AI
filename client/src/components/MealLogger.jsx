@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from './common/Card';
+import ConsumptionSliderModal from './ConsumptionSliderModal';
 import { Button } from './common/Button';
 import { Camera, Upload, CheckCircle, Loader2, AlertCircle, ChefHat, Eye, EyeOff, Trash2, Clock, RefreshCw, Crop, X, Info, Flame, Dumbbell, Wheat, Droplet } from 'lucide-react';
 import Cropper from 'react-easy-crop';
@@ -964,17 +965,10 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Consumption</label>
-                                        <select
+                                        <ConsumptionSliderModal
                                             value={suppData.plateWaste}
-                                            onChange={(e) => setSuppData({ ...suppData, plateWaste: parseInt(e.target.value) })}
-                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-primary)]/30 bg-[var(--color-bg-card)] text-sm font-bold focus:ring-4 focus:ring-[var(--color-primary)]/20 outline-none transition-all"
-                                        >
-                                            <option value={100}>Finished (100%)</option>
-                                            <option value={75}>Mostly (75%)</option>
-                                            <option value={50}>Half (50%)</option>
-                                            <option value={25}>A Little (25%)</option>
-                                            <option value={0}>None (0%)</option>
-                                        </select>
+                                            onChange={(val) => setSuppData({ ...suppData, plateWaste: val })}
+                                        />
                                     </div>
                                 </div>
                             </div>
