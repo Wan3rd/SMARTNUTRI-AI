@@ -430,14 +430,14 @@ ${border}`;
                     className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12 sm:pb-20 lg:pt-32 lg:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center w-full"
                 >
                     <div className="lg:col-span-7 space-y-6 text-left">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-black uppercase tracking-widest">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] xs:text-xs font-black uppercase tracking-widest">
                             <Sparkles size={12} /> Clinical AI Nutrition Station
                         </div>
-                        <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] sm:leading-[1.05] !font-outfit">
+                        <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] sm:leading-[1.05] !font-outfit">
                             <span className="text-[var(--color-text-muted)]">Pediatric Care</span> <br />
                             <span className="text-[var(--color-primary)]">Enhanced by Clinical AI</span>
                         </h1>
-                        <p className="text-xs sm:text-sm md:text-base text-[var(--color-text-muted)] font-medium leading-relaxed max-w-xl">
+                        <p className="text-[11px] xs:text-xs sm:text-sm md:text-base text-[var(--color-text-muted)] font-medium leading-relaxed max-w-xl">
                             SMARTNUTRI-AI bridges the gap between Registered Nutritionist-Dietitians (RNDs) and Caregivers. It integrates advanced semantic allergen derivative mapping, clinical portion tracking, and strict HIPAA and DPA data privacy compliance auditing.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
@@ -576,13 +576,13 @@ ${border}`;
 
                 {/* Left side: Explanation */}
                 <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-left relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] font-black uppercase tracking-widest">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-[10px] xs:text-xs font-black uppercase tracking-widest">
                         <Activity size={12} /> System Ecosystem Flow
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none">
+                    <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-[var(--color-text-main)] uppercase tracking-tight leading-none">
                         How SmartNutri-AI Works
                     </h2>
-                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed max-w-2xl">
+                    <p className="text-[11px] xs:text-xs sm:text-sm md:text-base text-[var(--color-text-muted)] font-medium leading-relaxed max-w-2xl">
                         SmartNutri-AI simplifies the clinical feedback loop between Registered Nutritionist-Dietitians (RNDs) and Caregivers. Our system automates portion exchange calculation, performs semantic allergen checking, and tracks progress securely.
                     </p>
 
@@ -593,8 +593,8 @@ ${border}`;
                                 1
                             </div>
                             <div className="space-y-0.5 sm:space-y-1">
-                                <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">Dietitian Formulates Portion Targets</h4>
-                                <p className="text-[11px] sm:text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <h4 className="text-[11px] xs:text-xs sm:text-sm md:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">Dietitian Formulates Portion Targets</h4>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     The Registered Nutritionist-Dietitian (RND) inputs the child's age, allergies, growth milestones, and configures a daily food exchange prescription.
                                 </p>
                             </div>
@@ -606,8 +606,8 @@ ${border}`;
                                 2
                             </div>
                             <div className="space-y-0.5 sm:space-y-1">
-                                <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">Caregiver Logs Meals & Water Intake</h4>
-                                <p className="text-[11px] sm:text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <h4 className="text-[11px] xs:text-xs sm:text-sm md:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">Caregiver Logs Meals & Water Intake</h4>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     The parent logs their child's meals by uploading a photo. The AI instantly estimates calories, protein, carbs, fats, and maps ingredients to food exchange values.
                                 </p>
                             </div>
@@ -619,8 +619,8 @@ ${border}`;
                                 3
                             </div>
                             <div className="space-y-0.5 sm:space-y-1">
-                                <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">Semantic Allergen Scan & Warning</h4>
-                                <p className="text-[11px] sm:text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <h4 className="text-[11px] xs:text-xs sm:text-sm md:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">Semantic Allergen Scan & Warning</h4>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     Our clinical mapping database analyzes ingredients for hidden derivatives. It detects warning triggers (like milk proteins in margarine) and issues instant caregiver alerts.
                                 </p>
                             </div>
@@ -632,8 +632,8 @@ ${border}`;
                                 4
                             </div>
                             <div className="space-y-0.5 sm:space-y-1">
-                                <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-main)] uppercase tracking-tight">Plate Waste Evaluation & Monitoring</h4>
-                                <p className="text-[11px] sm:text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <h4 className="text-[11px] xs:text-xs sm:text-sm md:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">Plate Waste Evaluation & Monitoring</h4>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     The parent records the consumption percentage (e.g. 80% eaten). The RND reviews these adherence logs, tracks visual meal history, and makes clinical adjustments.
                                 </p>
                             </div>
@@ -646,7 +646,7 @@ ${border}`;
                     <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/10 to-blue-500/10 rounded-[3rem] blur-3xl opacity-40 -z-10 animate-pulse" />
                     
                     {/* CSS Phone Frame */}
-                    <div className="relative mx-auto border-[10px] sm:border-[12px] border-slate-900 dark:border-slate-800 rounded-[2.5rem] sm:rounded-[3rem] h-[380px] sm:h-[600px] w-[260px] sm:w-[290px] shadow-2xl overflow-hidden bg-slate-900 flex flex-col scale-[0.9] sm:scale-100 origin-center transition-transform">
+                    <div className="relative mx-auto border-[10px] sm:border-[12px] border-slate-900 dark:border-slate-800 rounded-[2.5rem] sm:rounded-[3rem] w-[230px] xs:w-[250px] sm:w-[290px] aspect-[9/19.5] shadow-2xl overflow-hidden bg-slate-900 flex flex-col transition-transform">
                         {/* Status Bar / Notch */}
                         <div className="absolute top-0 inset-x-0 h-6 bg-black z-30 flex items-center justify-between px-5 text-[8px] sm:text-[9px] font-bold text-white">
                             <span>9:41</span>
@@ -664,7 +664,7 @@ ${border}`;
                             <img 
                                 src="/Dashboard-Screenshot.jpg" 
                                 alt="SmartNutri Caregiver Mobile Dashboard" 
-                                className="absolute top-6 left-0 w-full h-auto select-none pointer-events-none" 
+                                className="w-full h-auto select-none pointer-events-none" 
                             />
                         </div>
 
@@ -703,8 +703,8 @@ ${border}`;
                         <div className="h-10 w-10 bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center rounded-2xl mx-auto">
                             <Activity size={20} />
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--color-text-main)] uppercase leading-none">Clinical Capabilities</h2>
-                        <p className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                        <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-[var(--color-text-main)] uppercase leading-none">Clinical Capabilities</h2>
+                        <p className="text-[10px] xs:text-xs sm:text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                             Designed to meet dietitian requirements and secure pediatric clinical data.
                         </p>
                     </div>
@@ -717,8 +717,8 @@ ${border}`;
                                 <div className="h-12 w-12 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center animate-fade-in">
                                     <Brain size={22} />
                                 </div>
-                                <h3 className="text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Semantic Allergen Check</h3>
-                                <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed font-medium">
+                                <h3 className="text-sm xs:text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Semantic Allergen Check</h3>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed font-medium">
                                     Beyond simple word matches, SMARTNUTRI-AI utilizes semantic maps to detect hidden biological derivatives (e.g. *margarine* triggering *milk/dairy* alerts) while employing clinical bypasses for plant-based milks and eggplants.
                                 </p>
                             </div>
@@ -731,8 +731,8 @@ ${border}`;
                                 <div className="h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
                                     <ShieldCheck size={22} />
                                 </div>
-                                <h3 className="text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">HIPAA & DPA Security</h3>
-                                <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed font-medium">
+                                <h3 className="text-sm xs:text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">HIPAA & DPA Security</h3>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed font-medium">
                                     Extended database compiler rules enforce absolute ORM-level immutability on audit trails. Every PHI read or update action is strictly monitored and locked down to ensure absolute legal compliance.
                                 </p>
                             </div>
@@ -745,8 +745,8 @@ ${border}`;
                                 <div className="h-12 w-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
                                     <FileCheck size={22} />
                                 </div>
-                                <h3 className="text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Portion & Exchange Match</h3>
-                                <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed font-medium">
+                                <h3 className="text-sm xs:text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Portion & Exchange Match</h3>
+                                <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed font-medium">
                                     Connects dietary guidelines dynamically to parent-logged meals. Automatically maps nutrient composition estimates into structured Food Exchanges to track daily adherence logs instantly.
                                 </p>
                             </div>
@@ -778,8 +778,8 @@ ${border}`;
                 </AnimatePresence>
 
                 <div className="text-center max-w-xl mx-auto space-y-2 relative z-10">
-                    <h2 className="text-xl sm:text-2xl font-black uppercase text-[var(--color-text-main)] tracking-tight leading-none">Tailored Portal Workflows</h2>
-                    <p className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">A dedicated experience for each clinical stakeholder.</p>
+                    <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-black uppercase text-[var(--color-text-main)] tracking-tight leading-none">Tailored Portal Workflows</h2>
+                    <p className="text-[10px] xs:text-xs sm:text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">A dedicated experience for each clinical stakeholder.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 relative z-10">
@@ -789,8 +789,8 @@ ${border}`;
                             <Users size={28} />
                         </div>
                         <div className="space-y-3">
-                            <h3 className="text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Clinical Dietitian Station</h3>
-                            <p className="text-[11px] text-[var(--color-text-muted)] font-medium leading-relaxed">
+                            <h3 className="text-sm xs:text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Clinical Dietitian Station</h3>
+                            <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                 Curate meal plans, configure customized pediatric nutrient targets, build portion matrices, and write ADIME diagnostic charts. Track real-time patient meal photos and verified Plate Waste logs.
                             </p>
                         </div>
@@ -802,8 +802,8 @@ ${border}`;
                             <Heart size={28} />
                         </div>
                         <div className="space-y-3">
-                            <h3 className="text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Caregiver Portal</h3>
-                            <p className="text-[11px] text-[var(--color-text-muted)] font-medium leading-relaxed">
+                            <h3 className="text-sm xs:text-base sm:text-lg font-black text-[var(--color-text-main)] uppercase tracking-tight">Caregiver Portal</h3>
+                            <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                 Upload meal photos for instant AI-based macronutrient estimation. Check meal compliance targets, receive clinical allergen warning banners, and record daily water and step logs.
                             </p>
                         </div>
@@ -834,8 +834,8 @@ ${border}`;
                 </AnimatePresence>
 
                 <div className="text-center max-w-xl mx-auto space-y-2 mb-10 sm:mb-16 relative z-10">
-                    <h2 className="text-2xl sm:text-3xl font-black uppercase text-[var(--color-text-main)] tracking-tight leading-none">Frequently Asked Questions</h2>
-                    <p className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Everything you need to know about SmartNutri-AI security, AI logging, and workflows.</p>
+                    <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black uppercase text-[var(--color-text-main)] tracking-tight leading-none">Frequently Asked Questions</h2>
+                    <p className="text-[10px] xs:text-xs sm:text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Everything you need to know about SmartNutri-AI security, AI logging, and workflows.</p>
                 </div>
 
                 <div className="max-w-3xl mx-auto space-y-4 relative z-10">
@@ -849,7 +849,7 @@ ${border}`;
                                 <button
                                     type="button"
                                     onClick={() => setActiveFaq(isOpen ? null : index)}
-                                    className="w-full py-4 px-6 flex items-center justify-between text-left font-bold text-sm sm:text-base text-[var(--color-text-main)] transition-colors hover:text-[var(--color-primary)]"
+                                    className="w-full py-4 px-6 flex items-center justify-between text-left font-bold text-[10px] xs:text-xs sm:text-sm md:text-base text-[var(--color-text-main)] transition-colors hover:text-[var(--color-primary)]"
                                 >
                                     <span className="font-black uppercase tracking-tight">{faq.question}</span>
                                     <span className={`text-[var(--color-primary)] font-black text-xl transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>
@@ -866,7 +866,7 @@ ${border}`;
                                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                                             className="overflow-hidden border-t border-[var(--color-divider)]"
                                         >
-                                            <div className="p-6 text-xs sm:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                            <div className="p-6 text-[10px] xs:text-[11px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                                 {faq.answer}
                                             </div>
                                         </motion.div>
@@ -909,10 +909,10 @@ ${border}`;
                                 <div className="h-10 w-10 bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center rounded-2xl">
                                     <MessageSquare size={20} />
                                 </div>
-                                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[var(--color-text-main)] uppercase">
+                                <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-[var(--color-text-main)] uppercase">
                                     Get in <span className="text-[var(--color-primary)]">Touch</span>
                                 </h2>
-                                <p className="text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <p className="text-[11px] xs:text-xs sm:text-sm md:text-base text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     Have a question about pediatric clinical deployments, platform integrations, or need caregiver support? Our team is here to assist you.
                                 </p>
                             </div>
@@ -925,8 +925,8 @@ ${border}`;
                                             <Mail size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest mb-0.5">Official Support</p>
-                                            <p className="text-sm font-bold text-[var(--color-text-main)]">snutri244@gmail.com</p>
+                                            <p className="text-[9px] xs:text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest mb-0.5">Official Support</p>
+                                            <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-bold text-[var(--color-text-main)]">snutri244@gmail.com</p>
                                         </div>
                                     </div>
                                     <button 
@@ -942,15 +942,15 @@ ${border}`;
                                     <div className="p-5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] space-y-3">
                                         <Clock size={18} className="text-amber-500" />
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Response Time</p>
-                                            <p className="text-xs font-bold text-[var(--color-text-main)] mt-1">Within 24 Hours</p>
+                                            <p className="text-[9px] xs:text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Response Time</p>
+                                            <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-bold text-[var(--color-text-main)] mt-1">Within 24 Hours</p>
                                         </div>
                                     </div>
                                     <div className="p-5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-divider)] space-y-3">
                                         <GlobeLock size={18} className="text-blue-500" />
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Data Privacy</p>
-                                            <p className="text-xs font-bold text-[var(--color-text-main)] mt-1">Fully Secured</p>
+                                            <p className="text-[9px] xs:text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest">Data Privacy</p>
+                                            <p className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-bold text-[var(--color-text-main)] mt-1">Fully Secured</p>
                                         </div>
                                     </div>
                                 </div>
@@ -963,25 +963,25 @@ ${border}`;
                                 <form onSubmit={handleContactSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Full Name</label>
+                                            <label className="text-[9px] xs:text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Full Name</label>
                                             <input 
                                                 required
                                                 type="text" 
                                                 placeholder="Dr. Jane Doe"
                                                 value={contactForm.name}
                                                 onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-[10px] xs:text-xs sm:text-sm font-medium"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Email Address</label>
+                                            <label className="text-[9px] xs:text-[10px] font-black uppercase text-[var(--color-text-muted)] tracking-widest ml-1">Email Address</label>
                                             <input 
                                                 required
                                                 type="email" 
                                                 placeholder="jane@hospital.org"
                                                 value={contactForm.email}
                                                 onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-sm font-medium"
+                                                className="w-full h-12 px-4 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all text-[10px] xs:text-xs sm:text-sm font-medium"
                                             />
                                         </div>
                                     </div>
@@ -1089,8 +1089,8 @@ ${border}`;
                             </div>
                             
                             <div className="text-center space-y-2 mb-8">
-                                <h3 className="text-xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Ticket Submitted</h3>
-                                <p className="text-xs text-[var(--color-text-muted)] font-medium leading-relaxed">
+                                <h3 className="text-lg xs:text-xl sm:text-2xl font-black text-[var(--color-text-main)] uppercase tracking-tight">Ticket Submitted</h3>
+                                <p className="text-xs xs:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">
                                     Thank you! Your support ticket has been automatically sent to our official support channel. We will get back to you shortly.
                                 </p>
                             </div>

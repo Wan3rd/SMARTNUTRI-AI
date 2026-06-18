@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme {
+  --breakpoint-xs: 375px;
+
   /* Main Palette - Premium Clinical */
   --color-primary: #059669;
   /* Emerald 600 - Darkened for better presence */
