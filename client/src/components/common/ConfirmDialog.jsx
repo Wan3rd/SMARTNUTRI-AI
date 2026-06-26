@@ -50,7 +50,7 @@ export default function ConfirmDialog({
     return (
         <div 
             className={cn(
-                "fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500 ease-out",
+                "fixed inset-0 z-[250] flex items-center justify-center p-4 transition-all duration-500 ease-out",
                 isMounted && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0 backdrop-blur-none"
             )}
         >

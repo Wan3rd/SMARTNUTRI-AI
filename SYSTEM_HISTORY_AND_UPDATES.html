@@ -798,6 +798,28 @@
                     </div>
                 </div>
 
+                <!-- JUNE 26 -->
+                <div class="timeline-item">
+                    <div class="timeline-date">June 26, 2026</div>
+                    <div class="timeline-title">Consent-Based Clinician Connections, Registration Email OTP Verification, Password Security Safeguards &amp; Admin Restores</div>
+                    <div class="timeline-content">
+                        <ul style="margin: 0; padding-left: 20px; color: var(--color-text-muted); font-size: 13px;">
+                            <li><span class="tech-tag">Server</span><strong>Caregiver Connection Consent Flow:</strong> Created an invitation consent flow. Nutritionists cannot connect to a parent account without permission. When a nutritionist invites a parent, the status is set to pending and a request email is sent. The parent can approve or decline the link from their dashboard. Nutritionists cannot view patient details until approval is granted.</li>
+                            <li><span class="tech-tag">Server</span><strong>Enforced OTP Registration Verification:</strong> Strengthened registration security. When parents verify their email with a one-time passcode (OTP), the server records this verified status with a strict 15-minute validity window. The server checks this state during account creation and clears it immediately after registration to prevent reuse.</li>
+                            <li><span class="tech-tag">Server</span><strong>Password Reuse Prevention:</strong> Added rules to block users from reusing their current password when changing their password or using the reset-password link. This encourages fresh passwords and improves account safety.</li>
+                            <li><span class="tech-tag">Server</span><strong>Admin Restoration &amp; Re-link Support:</strong> Added a tool for admins to restore deactivated parent accounts. Restoring an account automatically clears all deactivation dates and reasons. It also lets the admin automatically re-establish the connection to the client's nutritionist.</li>
+                            <li><span class="tech-tag">Server</span><strong>Clinician Input Boundaries:</strong> Added strict safety limits to clinician inputs. Biometric updates now validate that height is between 10 and 250 cm, weight is between 1 and 300 kg, and Bristol Stool Scale values are between 1 and 7, blocking unrealistic entries.</li>
+                            <li><span class="tech-tag">Server</span><strong>Clinician Assessment Length Checks:</strong> Placed a limit of 5,000 characters on clinician assessment notes (ADIME fields) to prevent server slowdowns or database bloat.</li>
+                            <li><span class="tech-tag">Server</span><strong>Plan &amp; Template Structuring:</strong> Added backend validation to portion templates and plans. The server now checks that portion matrices are structured correctly and include required meal types before saving.</li>
+                            <li><span class="tech-tag">Server</span><strong>Invalid Date Check on Plan Application:</strong> Added validation to the template application start date. If a clinician schedules a plan with a blank or invalid date, the request is rejected with a clean message instead of causing a database crash.</li>
+                            <li><span class="tech-tag">Server</span><strong>Review Water Volume Bounds:</strong> Built a check for log reviews to ensure water intake logged is between 0 and 10,000 ml, blocking invalid numbers.</li>
+                            <li><span class="tech-tag">Server</span><strong>Secure Access to Vaccination Types:</strong> Protected the vaccination type endpoint with authorization checks, ensuring only logged-in users can fetch the list.</li>
+                            <li><span class="tech-tag">Server</span><strong>Empty Bulk Status Check:</strong> Prevented the system from performing empty actions. The admin bulk status update route now validates that the list of user IDs is not empty, blocking invalid requests.</li>
+                            <li><span class="tech-tag">Client</span><strong>Cascade Account Deletion Dialog:</strong> Added warning alerts to the admin panel and ensured database logic cleanly and safely deletes all associated records, profiles, and logs when an account deletion is confirmed.</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -817,7 +839,7 @@
         <!-- Footer -->
         <footer
             style="text-align: center; font-size: 11px; color: var(--color-text-muted); border-t: 1px solid var(--color-divider); padding-top: 20px;">
-            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Last Updated: June 08, 2026
+            SmartNutri-AI Change Log Documentary &bull; Authored by John Carl Samson &bull; Last Updated: June 26, 2026
             &bull; Pre-Production
         </footer>
 

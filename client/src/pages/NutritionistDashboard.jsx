@@ -93,6 +93,12 @@ export default function NutritionistDashboard() {
             hasTriggeredLongPress.current = false;
             return;
         }
+        if (client.status === 'pending') {
+            e.preventDefault();
+            e.stopPropagation();
+            showNotif("Caregiver has not approved the connection request yet.", "info");
+            return;
+        }
         navigate(`/nutritionist/client/${client.id}`, { state: { clientName: client.full_name } });
     };
 
@@ -321,6 +327,15 @@ export default function NutritionistDashboard() {
                                 Active
                             </button>
                             <button 
+                                onClick={() => setViewStatus('pending')}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                    viewStatus === 'pending' ? "bg-amber-500 text-white shadow-md" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                )}
+                            >
+                                Pending
+                            </button>
+                            <button 
                                 onClick={() => setViewStatus('archived')}
                                 className={cn(
                                     "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
@@ -370,6 +385,7 @@ export default function NutritionistDashboard() {
                             .map((client, index) => {
                             const clientPendingCount = pendingLogs.filter(log => (log.profile?.user_id || log.profiles?.user_id) === client.id).length;
                             const isArchived = client.status === 'archived';
+                            const isPending = client.status === 'pending';
                             return (
                                 <motion.div
                                     key={client.id}
@@ -389,13 +405,17 @@ export default function NutritionistDashboard() {
                                         onClick={(e) => handleCardClick(client, e)}
                                         className={cn(
                                             "h-full hover:shadow-lg transition-all cursor-pointer border-2 relative group rounded-[2rem] overflow-hidden select-none",
-                                            isArchived ? "border-dashed border-[var(--color-divider)] opacity-80 grayscale-[0.5]" : "border-[var(--color-divider)]"
+                                            isArchived ? "border-dashed border-[var(--color-divider)] opacity-80 grayscale-[0.5]" :
+                                            isPending ? "border-dashed border-amber-500/40 hover:border-amber-500" :
+                                            "border-[var(--color-divider)]"
                                         )}
                                     >
                                         <CardContent className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
                                             <div className={cn(
                                                 "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center relative shrink-0",
-                                                isArchived ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                                                isArchived ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" :
+                                                isPending ? "bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" :
+                                                "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                                             )}>
                                                 {client.profile_image_url ? (
                                                     <img src={client.profile_image_url} alt={client.full_name} className="h-full w-full object-cover rounded-2xl" />
@@ -416,13 +436,17 @@ export default function NutritionistDashboard() {
                                                     {client.full_name}
                                                 </h3>
                                                 <p className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-medium truncate">
-                                                    {isArchived ? `Deactivated: ${client.deactivation_reason || 'No reason'}` : client.email}
+                                                    {isArchived ? `Deactivated: ${client.deactivation_reason || 'No reason'}` : 
+                                                     isPending ? 'Pending caregiver approval' :
+                                                     client.email}
                                                 </p>
                                             </div>
                                             <div className="flex flex-col items-end gap-1 shrink-0">
                                                 <div className={cn(
                                                     "px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider",
-                                                    isArchived ? "bg-zinc-200 text-zinc-600" : "bg-green-100 text-green-700"
+                                                    isArchived ? "bg-zinc-200 text-zinc-600" :
+                                                    isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400" :
+                                                    "bg-green-100 text-green-700"
                                                 )}>
                                                     {client.status}
                                                 </div>
@@ -473,14 +497,16 @@ export default function NutritionistDashboard() {
 
                             <div className="space-y-1.5">
                                 <h3 className="text-base font-black text-[var(--color-text-main)] uppercase tracking-tight">
-                                    {viewStatus === 'active' ? 'No Patients Found' : 'No Archived Patients'}
+                                    {viewStatus === 'active' ? 'No Patients Found' : viewStatus === 'pending' ? 'No Pending Connections' : 'No Archived Patients'}
                                 </h3>
                                 <p className="text-xs text-[var(--color-text-muted)] font-medium max-w-xs mx-auto leading-relaxed">
                                     {searchQuery
                                         ? `No results for "${searchQuery}". Try a different name or email.`
                                         : viewStatus === 'active'
                                             ? 'Link a parent account or create a new patient profile to get started.'
-                                            : 'Archived clients will appear here once deactivated.'}
+                                            : viewStatus === 'pending'
+                                                ? 'Active invitations awaiting caregiver confirmation will appear here.'
+                                                : 'Archived clients will appear here once deactivated.'}
                                 </p>
                             </div>
 

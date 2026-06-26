@@ -101,8 +101,11 @@ router.post('/verify-otp', async (req, res) => {
         return res.status(400).json({ message: 'Invalid verification code. Please check and try again.' });
     }
 
-    // Verified! Clear code
-    activeOtps.delete(email.toLowerCase());
+    // Verified! Set verified status in map for registration window (15 minutes)
+    activeOtps.set(email.toLowerCase(), {
+        verified: true,
+        expiresAt: Date.now() + 15 * 60 * 1000
+    });
     res.json({ success: true, message: 'Email verified successfully.' });
 });
 
@@ -132,6 +135,15 @@ router.post('/register', (req, res, next) => {
     }
     if (!role || !VALID_ROLES.includes(role)) {
         return res.status(400).json({ message: 'Role must be either "parent" or "nutritionist"' });
+    }
+
+    // Enforce OTP verification before registration (MISSING-02)
+    const otpRecord = activeOtps.get(email);
+    if (!otpRecord || !otpRecord.verified || otpRecord.expiresAt < Date.now()) {
+        if (otpRecord && otpRecord.expiresAt < Date.now()) {
+            activeOtps.delete(email); // Clean up if expired
+        }
+        return res.status(400).json({ message: 'Email verification required. Please verify your email via OTP first.' });
     }
 
     if (role === 'nutritionist') {
@@ -264,6 +276,9 @@ router.post('/register', (req, res, next) => {
             expiresIn: '1d',
         });
 
+        // Clean up verified OTP record after successful registration
+        activeOtps.delete(email);
+
         res.status(201).json({
             message: 'User registered successfully',
             user: newUser,
@@ -297,6 +312,13 @@ const loginLimiter = rateLimit({
 router.post('/login', loginLimiter, async (req, res) => {
     const { password, rememberMe } = req.body;
     const email = req.body.email?.toLowerCase();
+
+    if (!email || !validateEmail(email)) {
+        return res.status(400).json({ message: 'A valid email address is required' });
+    }
+    if (!password || typeof password !== 'string') {
+        return res.status(400).json({ message: 'Password is required' });
+    }
 
     try {
         // Find user
@@ -462,7 +484,7 @@ router.put('/profile', verifyToken, async (req, res) => {
 router.get('/my-nutritionist', verifyToken, async (req, res) => {
     try {
         const assignment = await prisma.nutritionist_clients.findFirst({
-            where: { parent_id: req.user.id },
+            where: { parent_id: req.user.id, status: 'active' },
             include: {
                 nutritionist: {
                     select: {
@@ -484,6 +506,89 @@ router.get('/my-nutritionist', verifyToken, async (req, res) => {
         }
 
         res.json(assignment.nutritionist);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET PENDING NUTRITIONIST REQUESTS (For Caregivers)
+router.get('/pending-nutritionists', verifyToken, async (req, res) => {
+    try {
+        const pending = await prisma.nutritionist_clients.findMany({
+            where: { 
+                parent_id: req.user.id,
+                status: 'pending'
+            },
+            include: {
+                nutritionist: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        phone: true,
+                        specialization: true,
+                        clinic: true,
+                        profile_image_url: true,
+                        license_no: true
+                    }
+                }
+            }
+        });
+        res.json(pending);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /auth/approve-nutritionist/:linkId (For Caregivers)
+router.post('/approve-nutritionist/:linkId', verifyToken, async (req, res) => {
+    const { linkId } = req.params;
+    try {
+        const link = await prisma.nutritionist_clients.findFirst({
+            where: {
+                id: linkId,
+                parent_id: req.user.id
+            }
+        });
+
+        if (!link) {
+            return res.status(404).json({ message: 'Connection request not found' });
+        }
+
+        await prisma.nutritionist_clients.update({
+            where: { id: linkId },
+            data: { status: 'active' }
+        });
+
+        res.json({ success: true, message: 'Connection request approved' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// POST /auth/reject-nutritionist/:linkId (For Caregivers)
+router.post('/reject-nutritionist/:linkId', verifyToken, async (req, res) => {
+    const { linkId } = req.params;
+    try {
+        const link = await prisma.nutritionist_clients.findFirst({
+            where: {
+                id: linkId,
+                parent_id: req.user.id
+            }
+        });
+
+        if (!link) {
+            return res.status(404).json({ message: 'Connection request not found' });
+        }
+
+        await prisma.nutritionist_clients.delete({
+            where: { id: linkId }
+        });
+
+        res.json({ success: true, message: 'Connection request rejected' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
@@ -673,6 +778,11 @@ router.post('/reset-password', async (req, res) => {
             return res.status(400).json({ message: 'Invalid or expired reset token' });
         }
 
+        const isSame = await bcrypt.compare(password, user.password_hash);
+        if (isSame) {
+            return res.status(400).json({ message: 'New password cannot be the same as your current password.' });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -775,6 +885,11 @@ router.put('/change-password', verifyToken, authLimiter, async (req, res) => {
             return res.status(400).json({ message: 'Incorrect current password' });
         }
 
+        const isSame = await bcrypt.compare(newPassword, user.password_hash);
+        if (isSame) {
+            return res.status(400).json({ message: 'New password cannot be the same as your current password.' });
+        }
+
         // Hash new password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
@@ -824,6 +939,19 @@ router.post('/change-password-force', verifyToken, async (req, res) => {
     }
 
     try {
+        const user = await prisma.users.findUnique({
+            where: { id: req.user.id },
+            select: { password_hash: true }
+        });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isSame = await bcrypt.compare(newPassword, user.password_hash);
+        if (isSame) {
+            return res.status(400).json({ message: 'New password cannot be the same as your current password.' });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 

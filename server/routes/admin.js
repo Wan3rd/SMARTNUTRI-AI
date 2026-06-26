@@ -415,8 +415,8 @@ router.get('/users', verifyAdmin, async (req, res) => {
 // PATCH /admin/users/bulk-status
 router.patch('/users/bulk-status', verifyAdmin, async (req, res) => {
     const { userIds, status, reason } = req.body;
-    if (!['approved', 'rejected', 'pending'].includes(status) || !Array.isArray(userIds)) {
-        return res.status(400).json({ message: 'Invalid data' });
+    if (!['approved', 'rejected', 'pending'].includes(status) || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ message: 'Please select at least one user to update' });
     }
     try {
         await prisma.users.updateMany({
@@ -498,6 +498,10 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
 
     try {
         const oldUser = await prisma.users.findUnique({ where: { id }, select: { email: true, full_name: true, role: true } });
+        if (!oldUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
 
         await prisma.users.delete({
             where: { id }
@@ -525,7 +529,7 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
 // PATCH /admin/users/:id/status - Approve/Reject/Reset nutritionist status
 router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
     const { id } = req.params;
-    const { status, reason } = req.body;
+    const { status, reason, nutritionistId } = req.body;
 
     if (!['approved', 'rejected', 'pending'].includes(status)) {
         return res.status(400).json({ message: 'Invalid status' });
@@ -534,7 +538,7 @@ router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
     try {
         const oldUser = await prisma.users.findUnique({
             where: { id },
-            select: { status: true, email: true, full_name: true, profile_image_url: true }
+            select: { status: true, email: true, full_name: true, profile_image_url: true, role: true }
         });
 
         if (!oldUser) {
@@ -543,9 +547,30 @@ router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
 
         const updatedUser = await prisma.users.update({
             where: { id },
-            data: { status },
-            select: { id: true, full_name: true, status: true }
+            data: { 
+                status,
+                ...(status === 'approved' ? { deleted_at: null, deactivation_reason: null } : {})
+            },
+            select: { id: true, full_name: true, status: true, role: true }
         });
+
+        // Re-establish connection link if nutritionistId is provided and user is a parent (MISSING-05)
+        if (status === 'approved' && nutritionistId && updatedUser.role === 'parent') {
+            await prisma.nutritionist_clients.upsert({
+                where: {
+                    nutritionist_id_parent_id: {
+                        nutritionist_id: nutritionistId,
+                        parent_id: id
+                    }
+                },
+                update: { status: 'active' },
+                create: {
+                    nutritionist_id: nutritionistId,
+                    parent_id: id,
+                    status: 'active'
+                }
+            });
+        }
 
         await logAuditAction({
             adminId: req.user.id,
@@ -560,7 +585,7 @@ router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
             ipAddress: req.ip
         });
 
-        if (['approved', 'rejected'].includes(status)) {
+        if (oldUser.role === 'nutritionist' && ['approved', 'rejected'].includes(status)) {
             sendStatusEmailWithRetry({
                 status,
                 nutritionist: { id, email: oldUser.email, full_name: oldUser.full_name, profile_image_url: oldUser.profile_image_url || null },
@@ -725,16 +750,93 @@ router.get('/users/:id/details', verifyAdmin, async (req, res) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
+        let connectedClients = [];
+        if (user.role === 'parent') {
+            connectedClients = await prisma.nutritionist_clients.findMany({
+                where: { parent_id: id },
+                include: {
+                    nutritionist: {
+                        select: {
+                            id: true,
+                            email: true,
+                            full_name: true,
+                            profile_image_url: true
+                        }
+                    }
+                }
+            });
+        } else if (user.role === 'nutritionist') {
+            connectedClients = await prisma.nutritionist_clients.findMany({
+                where: { nutritionist_id: id },
+                include: {
+                    parent: {
+                        select: {
+                            id: true,
+                            email: true,
+                            full_name: true,
+                            profile_image_url: true
+                        }
+                    }
+                }
+            });
+        }
+
         // Calculate some stats
         const stats = {
             totalChildren: user.profiles?.length || 0,
             hasProfessionalData: !!user.professional_id
         };
 
-        res.json({ ...user, stats });
+        res.json({ ...user, stats, connections: connectedClients });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// DELETE /admin/connections/:nutritionistId/:parentId - Unbind/unlink a nutritionist from a parent/caregiver
+router.delete('/connections/:nutritionistId/:parentId', verifyAdmin, async (req, res) => {
+    const { nutritionistId, parentId } = req.params;
+    try {
+        const link = await prisma.nutritionist_clients.findUnique({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: nutritionistId,
+                    parent_id: parentId
+                }
+            }
+        });
+
+        if (!link) {
+            return res.status(404).json({ message: 'Binding not found' });
+        }
+
+        await prisma.nutritionist_clients.delete({
+            where: {
+                nutritionist_id_parent_id: {
+                    nutritionist_id: nutritionistId,
+                    parent_id: parentId
+                }
+            }
+        });
+
+        await logAuditAction({
+            adminId: req.user.id,
+            targetId: parentId,
+            action: 'ADMIN_UNBIND_CLIENT',
+            entityType: 'USER',
+            entityId: parentId,
+            details: {
+                nutritionist_id: nutritionistId,
+                parent_id: parentId
+            },
+            ipAddress: req.ip
+        });
+
+        res.json({ success: true, message: 'Nutritionist and caregiver successfully unlinked' });
+    } catch (err) {
+        console.error("Failed to unbind connection:", err);
+        res.status(500).json({ message: 'Failed to unbind connection' });
     }
 });
 

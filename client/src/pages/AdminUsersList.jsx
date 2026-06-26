@@ -112,6 +112,7 @@ export default function AdminUsersList() {
     const [confirmReset, setConfirmReset] = useState({ isOpen: false, userId: null, currentState: false });
     const [confirmBulkSuspend, setConfirmBulkSuspend] = useState({ isOpen: false, isSuspend: false });
     const [confirmBulkStatus, setConfirmBulkStatus] = useState({ isOpen: false, status: '' });
+    const [confirmUnbind, setConfirmUnbind] = useState({ isOpen: false, nutritionistId: null, parentId: null, targetName: '' });
     const [message, setMessage] = useState({ type: 'success', text: '' });
     const [rejectionReason, setRejectionReason] = useState('');
     const [rejectionPreset, setRejectionPreset] = useState('');
@@ -271,7 +272,7 @@ export default function AdminUsersList() {
         if (!userId) return;
         setProcessingId(userId);
         try {
-            await api.patch(`/admin/users/${userId}/status`, { 
+            await api.patch(`/admin/users/${userId}/status`, {
                 status,
                 reason: status === 'rejected' ? rejectionReason : null
             });
@@ -334,6 +335,51 @@ export default function AdminUsersList() {
         }
     };
 
+    const handleUnbindConnection = (nutritionistId, parentId) => {
+        let targetName = 'this user';
+        if (selectedUserDetails) {
+            if (selectedUserDetails.role === 'nutritionist') {
+                const conn = selectedUserDetails.connections?.find(c => c.parent?.id === parentId);
+                if (conn?.parent) {
+                    targetName = conn.parent.full_name;
+                }
+            } else if (selectedUserDetails.role === 'parent') {
+                const conn = selectedUserDetails.connections?.find(c => c.nutritionist?.id === nutritionistId);
+                if (conn?.nutritionist) {
+                    targetName = conn.nutritionist.full_name;
+                }
+            }
+        }
+
+        setConfirmUnbind({
+            isOpen: true,
+            nutritionistId,
+            parentId,
+            targetName
+        });
+    };
+
+    const handleUnbindConnectionConfirm = async () => {
+        const { nutritionistId, parentId } = confirmUnbind;
+        if (!nutritionistId || !parentId) return;
+        setProcessingId('unbind');
+        try {
+            await api.delete(`/admin/connections/${nutritionistId}/${parentId}`);
+            setMessage({ type: 'success', text: 'Practitioner and caregiver unlinked successfully' });
+
+            // Re-fetch details to update UI in modal immediately
+            if (selectedUserDetails) {
+                fetchDeepDetails(selectedUserDetails.id);
+            }
+        } catch (err) {
+            console.error(err);
+            setMessage({ type: 'error', text: 'Failed to unlink connection' });
+        } finally {
+            setProcessingId(null);
+            setConfirmUnbind({ isOpen: false, nutritionistId: null, parentId: null, targetName: '' });
+        }
+    };
+
     const filteredUsers = users; // filtered on backend
 
     const Tooltip = ({ text, children, align = 'center' }) => (
@@ -360,14 +406,14 @@ export default function AdminUsersList() {
                     <p className="text-[10px] sm:text-xs md:text-sm text-[var(--color-text-muted)] font-medium leading-relaxed">Complete administrative oversight of all platform accounts.</p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                    <button 
-                        onClick={exportCSV} 
+                    <button
+                        onClick={exportCSV}
                         className="flex-1 sm:flex-none justify-center h-9 sm:h-12 px-3 sm:px-5 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all rounded-xl sm:rounded-2xl text-[8px] xs:text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1 sm:gap-2 shadow-sm cursor-pointer min-w-0"
                     >
                         <Download className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> <span className="truncate">Export CSV</span>
                     </button>
-                    <Button 
-                        onClick={() => setIsCreateModalOpen(true)} 
+                    <Button
+                        onClick={() => setIsCreateModalOpen(true)}
                         className="flex-1 sm:flex-none justify-center h-9 sm:h-12 px-3 sm:px-6 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-wider xs:tracking-[0.15em] text-[8px] xs:text-[9px] sm:text-[10px] gap-1 sm:gap-2 shadow-lg shadow-[var(--color-primary)]/20 min-w-0"
                     >
                         <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> <span className="truncate">Provision<span className="hidden xs:inline"> Account</span></span>
@@ -380,9 +426,9 @@ export default function AdminUsersList() {
                     <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-text-muted)]" />
                     <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Filters</span>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-2 px-2 lg:px-0 flex-1">
-                    <FilterDropdown 
+                    <FilterDropdown
                         value={roleFilter}
                         onChange={(val) => {
                             setRoleFilter(val);
@@ -392,7 +438,7 @@ export default function AdminUsersList() {
                         label="Authority Role"
                     />
 
-                    <FilterDropdown 
+                    <FilterDropdown
                         value={statusFilter}
                         onChange={(val) => {
                             setStatusFilter(val);
@@ -413,7 +459,7 @@ export default function AdminUsersList() {
                         className="w-full h-9 sm:h-11 pl-9 sm:pl-10 pr-8 sm:pr-9 bg-[var(--color-bg-page)] lg:bg-transparent rounded-xl lg:rounded-none border lg:border-0 border-[var(--color-divider)] lg:border-l outline-none font-bold text-xs sm:text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]/50"
                     />
                     {searchQuery && (
-                        <button 
+                        <button
                             onClick={() => setSearchQuery('')}
                             className="absolute right-5 sm:right-6 lg:right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                         >
@@ -440,26 +486,26 @@ export default function AdminUsersList() {
                             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)]">Bulk Selection Active</span>
                         </div>
                         <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto">
-                            <button 
-                                onClick={() => setConfirmBulkStatus({ isOpen: true, status: 'approved' })} 
+                            <button
+                                onClick={() => setConfirmBulkStatus({ isOpen: true, status: 'approved' })}
                                 className="flex-1 md:flex-none h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-emerald-500/10 cursor-pointer animate-scale-up"
                             >
                                 Approve
                             </button>
-                            <button 
-                                onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: true })} 
+                            <button
+                                onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: true })}
                                 className="flex-1 md:flex-none h-9 px-4 bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-amber-500/10 cursor-pointer animate-scale-up"
                             >
                                 Suspend
                             </button>
-                            <button 
-                                onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: false })} 
+                            <button
+                                onClick={() => setConfirmBulkSuspend({ isOpen: true, isSuspend: false })}
                                 className="flex-1 md:flex-none h-9 px-4 bg-blue-500 hover:bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-blue-500/10 cursor-pointer animate-scale-up"
                             >
                                 Reactivate
                             </button>
-                            <button 
-                                onClick={() => setSelectedUsers([])} 
+                            <button
+                                onClick={() => setSelectedUsers([])}
                                 className="w-full md:w-auto h-9 px-4 bg-transparent border border-[var(--color-divider)] text-[var(--color-text-main)] hover:bg-[var(--color-bg-page)] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer"
                             >
                                 Clear
@@ -512,12 +558,12 @@ export default function AdminUsersList() {
                                         onClick={() => fetchDeepDetails(user.id)}
                                     >
                                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={selectedUsers.includes(user.id)} 
-                                                onChange={() => toggleSelectUser(user.id)} 
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.includes(user.id)}
+                                                onChange={() => toggleSelectUser(user.id)}
                                                 disabled={user.id === currentUser?.id}
-                                                className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer" 
+                                                className="w-4 h-4 rounded border-[var(--color-divider)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                             />
                                         </td>
                                         <td className="px-6 py-4">
@@ -570,8 +616,8 @@ export default function AdminUsersList() {
                                         <td className="px-6 py-4">
                                             {user.role === 'nutritionist' ? (
                                                 <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                                        user.status === 'pending' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                                            'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                                    user.status === 'pending' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                                        'bg-rose-500/10 text-rose-600 border-rose-500/20'
                                                     }`}>
                                                     {user.status || 'pending'}
                                                 </span>
@@ -627,7 +673,7 @@ export default function AdminUsersList() {
                                                                 <>
                                                                     <div className="h-px bg-[var(--color-divider)] my-1" />
                                                                     <div className="px-3 py-1 text-[7.5px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Verification</div>
-                                                                    
+
                                                                     <button
                                                                         onClick={() => {
                                                                             setConfirmStatus({
@@ -700,7 +746,7 @@ export default function AdminUsersList() {
                                                                 <>
                                                                     <div className="h-px bg-[var(--color-divider)] my-1" />
                                                                     <div className="px-3 py-1 text-[7.5px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Security & Access</div>
-                                                                    
+
                                                                     <button
                                                                         onClick={() => {
                                                                             setConfirmReset({
@@ -799,8 +845,8 @@ export default function AdminUsersList() {
                                 </div>
                             ))
                         ) : filteredUsers.map(user => (
-                            <div 
-                                key={user.id} 
+                            <div
+                                key={user.id}
                                 onClick={() => setMobileActionsUser(user)}
                                 className="relative p-3 xs:p-3.5 sm:p-5 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl sm:rounded-[1.5rem] shadow-sm hover:shadow-md transition-all active:scale-[0.98] duration-200 cursor-pointer flex flex-col justify-between gap-2.5 sm:gap-4 overflow-hidden group border-l-4 sm:border-l-[5px]"
                                 style={{
@@ -841,11 +887,10 @@ export default function AdminUsersList() {
                                             {user.role}
                                         </span>
                                         {user.role === 'nutritionist' ? (
-                                            <span className={`px-1.5 py-0.5 sm:px-2 rounded text-[6.5px] xs:text-[7px] sm:text-[8px] font-black uppercase tracking-widest border ${
-                                                user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                                user.status === 'pending' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                                'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                                            }`}>
+                                            <span className={`px-1.5 py-0.5 sm:px-2 rounded text-[6.5px] xs:text-[7px] sm:text-[8px] font-black uppercase tracking-widest border ${user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                                    user.status === 'pending' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                                        'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                                }`}>
                                                 {user.status || 'pending'}
                                             </span>
                                         ) : (
@@ -899,7 +944,7 @@ export default function AdminUsersList() {
                         >
                             {/* Drag handle */}
                             <div className="w-12 h-1.5 bg-[var(--color-divider)] rounded-full mx-auto cursor-pointer" onClick={() => setMobileActionsUser(null)} />
-                            
+
                             {/* Header */}
                             <div className="flex items-center gap-4 border-b border-[var(--color-divider)] pb-4">
                                 <div className="h-12 w-12 rounded-xl bg-[var(--color-bg-page)] border border-[var(--color-divider)] flex items-center justify-center text-[var(--color-text-muted)] shrink-0 overflow-hidden">
@@ -963,7 +1008,7 @@ export default function AdminUsersList() {
                                                 </div>
                                             </div>
                                         </button>
-                                        
+
                                         {mobileActionsUser.status !== 'rejected' && (
                                             <button
                                                 onClick={() => {
@@ -1009,11 +1054,10 @@ export default function AdminUsersList() {
                                                             handleRoleChange(mobileActionsUser.id, r.id);
                                                             setMobileActionsUser(null);
                                                         }}
-                                                        className={`flex-1 py-2.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                                                            mobileActionsUser.role === r.id 
-                                                                ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)] text-[var(--color-primary)] shadow-sm animate-scale-up' 
+                                                        className={`flex-1 py-2.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${mobileActionsUser.role === r.id
+                                                                ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)] text-[var(--color-primary)] shadow-sm animate-scale-up'
                                                                 : 'border-[var(--color-divider)] text-[var(--color-text-muted)] bg-[var(--color-bg-card)]'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {r.label}
                                                     </button>
@@ -1122,21 +1166,21 @@ export default function AdminUsersList() {
                 onClose={() => setConfirmStatus({ isOpen: false, userId: null, status: '' })}
                 onConfirm={handleStatusChange}
                 title={
-                    confirmStatus.status === 'approved' ? 'Confirm Practitioner Approval' : 
-                    confirmStatus.status === 'rejected' ? 'Reject Practitioner Credentials' : 
-                    'Revoke Practitioner Access'
+                    confirmStatus.status === 'approved' ? 'Confirm Practitioner Approval' :
+                        confirmStatus.status === 'rejected' ? 'Reject Practitioner Credentials' :
+                            'Revoke Practitioner Access'
                 }
                 message={
                     confirmStatus.status === 'approved'
                         ? "Are you sure you want to approve this practitioner? This will grant them full clinical access to manage patient profiles and meal plans."
                         : confirmStatus.status === 'rejected'
-                        ? "Are you sure you want to reject this practitioner? Their credential status will be marked as rejected and they will be barred from platform actions."
-                        : "Are you sure you want to revoke this practitioner's approval? They will lose clinical access and move back to the verification queue."
+                            ? "Are you sure you want to reject this practitioner? Their credential status will be marked as rejected and they will be barred from platform actions."
+                            : "Are you sure you want to revoke this practitioner's approval? They will lose clinical access and move back to the verification queue."
                 }
                 confirmText={
-                    confirmStatus.status === 'approved' ? "Approve Account" : 
-                    confirmStatus.status === 'rejected' ? "Reject Account" : 
-                    "Revoke Access"
+                    confirmStatus.status === 'approved' ? "Approve Account" :
+                        confirmStatus.status === 'rejected' ? "Reject Account" :
+                            "Revoke Access"
                 }
                 isDestructive={confirmStatus.status !== 'approved'}
                 loading={processingId !== null}
@@ -1183,7 +1227,7 @@ export default function AdminUsersList() {
                 onClose={() => setConfirmSuspend({ isOpen: false, userId: null, currentStatus: false })}
                 onConfirm={handleSuspendToggle}
                 title={confirmSuspend.currentStatus ? "Reactivate User Account" : "Suspend User Account"}
-                message={confirmSuspend.currentStatus 
+                message={confirmSuspend.currentStatus
                     ? "Are you sure you want to reactivate this account? The user will immediately regain platform access."
                     : "Are you sure you want to suspend this account? The user will be immediately locked out and their session will be terminated."}
                 confirmText={confirmSuspend.currentStatus ? "Reactivate Account" : "Suspend Account"}
@@ -1228,21 +1272,33 @@ export default function AdminUsersList() {
                 loading={processingId !== null}
             />
 
-            {/* Extracted Modals */}
-            <UserDetailsModal 
-                selectedUserDetails={selectedUserDetails} 
-                currentUser={currentUser} 
-                onClose={() => setSelectedUserDetails(null)} 
-                loading={detailsLoading}
+            <ConfirmDialog
+                isOpen={confirmUnbind.isOpen}
+                onClose={() => setConfirmUnbind({ isOpen: false, nutritionistId: null, parentId: null, targetName: '' })}
+                onConfirm={handleUnbindConnectionConfirm}
+                title="Unlink Connection"
+                message={`Are you sure you want to unlink the connection with ${confirmUnbind.targetName || 'this user'}? This will revoke clinical access immediately.`}
+                confirmText="Unlink Connection"
+                isDestructive={true}
+                loading={processingId === 'unbind'}
             />
 
-            <CreateUserModal 
-                isOpen={isCreateModalOpen} 
-                onClose={() => setIsCreateModalOpen(false)} 
+            {/* Extracted Modals */}
+            <UserDetailsModal
+                selectedUserDetails={selectedUserDetails}
+                currentUser={currentUser}
+                onClose={() => setSelectedUserDetails(null)}
+                loading={detailsLoading}
+                onUnbindConnection={handleUnbindConnection}
+            />
+
+            <CreateUserModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
                 onSuccess={(msg) => {
                     setMessage({ type: 'success', text: msg });
                     fetchUsers();
-                }} 
+                }}
             />
 
             <Notification

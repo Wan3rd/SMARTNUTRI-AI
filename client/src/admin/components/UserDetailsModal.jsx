@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { User, XCircle, Shield, Users, Eye, X, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
+import { User, XCircle, Shield, Users, Eye, X, ZoomIn, ZoomOut, RotateCw, Maximize2, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function UserDetailsModal({ selectedUserDetails, currentUser, onClose, loading }) {
+export default function UserDetailsModal({ selectedUserDetails, currentUser, onClose, loading, onUnbindConnection }) {
     const [isClosing, setIsClosing] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
-    
+
     // Zoom/Pan/Rotate states
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -40,12 +40,12 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
             e.preventDefault();
             const zoomStep = 0.2;
             const direction = e.deltaY < 0 ? 1 : -1;
-            
+
             const prevScale = scaleRef.current;
             const newScale = Math.max(1, Math.min(4, prevScale + direction * zoomStep));
-            
+
             if (newScale === prevScale) return;
-            
+
             if (newScale === 1) {
                 setScale(1);
                 setPosition({ x: 0, y: 0 });
@@ -55,10 +55,10 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                     const rect = container.getBoundingClientRect();
                     const cursorX = e.clientX - (rect.left + rect.width / 2);
                     const cursorY = e.clientY - (rect.top + rect.height / 2);
-                    
+
                     const prevPos = positionRef.current;
                     const factor = newScale / prevScale;
-                    
+
                     setScale(newScale);
                     setPosition({
                         x: cursorX - (cursorX - prevPos.x) * factor,
@@ -118,7 +118,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
         const dx = e.clientX - dragStartRef.current.x;
         const dy = e.clientY - dragStartRef.current.y;
         dragTotalDistRef.current = Math.sqrt(dx * dx + dy * dy);
-        
+
         setPosition({
             x: dragStartPosRef.current.x + dx,
             y: dragStartPosRef.current.y + dy
@@ -133,7 +133,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
             console.error(err);
         }
         setIsDragging(false);
-        
+
         // Treat as click/tap if mouse didn't move significantly
         if (dragTotalDistRef.current < 5) {
             handleImageZoomToggle(e);
@@ -150,7 +150,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                 const rect = container.getBoundingClientRect();
                 const cursorX = e.clientX - (rect.left + rect.width / 2);
                 const cursorY = e.clientY - (rect.top + rect.height / 2);
-                
+
                 const targetScale = 2.5;
                 setScale(targetScale);
                 setPosition({
@@ -267,7 +267,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                                                     <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Auth ID</span>
                                                     <span className="font-mono text-[9px] text-[var(--color-text-muted)] truncate max-w-[120px]">{selectedUserDetails.id}</span>
                                                 </div>
-                                                
+
                                                 {/* Nutritionist credentials fields */}
                                                 {selectedUserDetails.role === 'nutritionist' && (
                                                     <>
@@ -278,7 +278,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                                                         <div className="border-t border-[var(--color-divider)] pt-3 flex justify-between items-center text-xs gap-2">
                                                             <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date of Birth</span>
                                                             <span className="font-bold text-[var(--color-text-main)] truncate">
-                                                                {selectedUserDetails.date_of_birth 
+                                                                {selectedUserDetails.date_of_birth
                                                                     ? new Date(selectedUserDetails.date_of_birth).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                                                                     : 'Not Provided'}
                                                             </span>
@@ -289,7 +289,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                                                         </div>
                                                     </>
                                                 )}
-                                                
+
                                                 <div className="border-t border-[var(--color-divider)] pt-3 flex justify-between items-center text-xs gap-2">
                                                     <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Security Status</span>
                                                     <div className="flex items-center gap-1.5">
@@ -315,7 +315,7 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                                                 <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
                                                     <div className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-2.5">Credentials Document</div>
                                                     <div className="flex items-center gap-3.5">
-                                                        <div 
+                                                        <div
                                                             className="relative w-32 aspect-[16/10] rounded-xl overflow-hidden border border-[var(--color-divider)] bg-zinc-900 shadow-sm shrink-0 cursor-zoom-in group"
                                                             onClick={() => setPreviewLicenseImage(selectedUserDetails.license_image_url)}
                                                         >
@@ -337,32 +337,117 @@ export default function UserDetailsModal({ selectedUserDetails, currentUser, onC
                                                 </div>
                                             )}
 
-                                            {/* Connected Children Profiles */}
-                                            {selectedUserDetails.role === 'parent' && (
+                                            {/* Connected Caregivers */}
+                                            {selectedUserDetails.role === 'nutritionist' && (
                                                 <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
-                                                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3">Connected Patients</div>
-                                                    {selectedUserDetails.profiles?.length > 0 ? (
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {selectedUserDetails.profiles.map(child => (
-                                                                <div key={child.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
-                                                                    <div className="h-5 w-5 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 overflow-hidden">
-                                                                        {child.profile_image_url ? (
-                                                                            <img src={child.profile_image_url} alt="" className="w-full h-full object-cover" />
-                                                                        ) : (
-                                                                            <User size={10} />
+                                                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3">Linked Caregivers</div>
+                                                    {selectedUserDetails.connections?.length > 0 ? (
+                                                        <div className="flex flex-col gap-2">
+                                                            {selectedUserDetails.connections.map(conn => {
+                                                                const parent = conn.parent;
+                                                                if (!parent) return null;
+                                                                return (
+                                                                    <div key={conn.id} className="flex items-center justify-between p-2 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 overflow-hidden font-black text-xs">
+                                                                                {parent.profile_image_url ? (
+                                                                                    <img src={parent.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                                                                ) : (
+                                                                                    parent.full_name?.charAt(0) || 'C'
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-left min-w-0">
+                                                                                <div className="text-[10px] font-black text-[var(--color-text-main)] truncate">{parent.full_name}</div>
+                                                                                <div className="text-[8px] text-[var(--color-text-muted)] truncate">{parent.email}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                        {onUnbindConnection && (
+                                                                            <button
+                                                                                onClick={() => onUnbindConnection(selectedUserDetails.id, parent.id)}
+                                                                                className="p-1 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 rounded-lg transition-colors cursor-pointer shrink-0"
+                                                                                title="Unlink Connection"
+                                                                            >
+                                                                                <Trash2 size={12} />
+                                                                            </button>
                                                                         )}
                                                                     </div>
-                                                                    <span className="text-[10px] font-bold text-[var(--color-text-main)] truncate max-w-[80px]">{child.child_name}</span>
-                                                                </div>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-[10px] font-medium text-[var(--color-text-muted)] italic">No patient profiles linked.</div>
+                                                        <div className="text-[10px] font-medium text-[var(--color-text-muted)] italic">No caregivers linked.</div>
                                                     )}
                                                 </div>
                                             )}
+
+                                            {/* Connected Children Profiles */}
+                                            {selectedUserDetails.role === 'parent' && (
+                                                <>
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3">Connected Patients</div>
+                                                        {selectedUserDetails.profiles?.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {selectedUserDetails.profiles.map(child => (
+                                                                    <div key={child.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                        <div className="h-5 w-5 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 overflow-hidden">
+                                                                            {child.profile_image_url ? (
+                                                                                <img src={child.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                <User size={10} />
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-[10px] font-bold text-[var(--color-text-main)] truncate max-w-[80px]">{child.child_name}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[10px] font-medium text-[var(--color-text-muted)] italic">No patient profiles linked.</div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="p-4 bg-[var(--color-bg-page)] rounded-2xl border border-[var(--color-divider)]">
+                                                        <div className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3">Linked Nutritionists</div>
+                                                        {selectedUserDetails.connections?.length > 0 ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                {selectedUserDetails.connections.map(conn => {
+                                                                    const nutri = conn.nutritionist;
+                                                                    if (!nutri) return null;
+                                                                    return (
+                                                                        <div key={conn.id} className="flex items-center justify-between p-2 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-divider)] shadow-sm">
+                                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                                <div className="h-7 w-7 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 overflow-hidden font-black text-xs">
+                                                                                    {nutri.profile_image_url ? (
+                                                                                        <img src={nutri.profile_image_url} alt="" className="w-full h-full object-cover" />
+                                                                                    ) : (
+                                                                                        nutri.full_name?.charAt(0) || 'N'
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="text-left min-w-0">
+                                                                                    <div className="text-[10px] font-black text-[var(--color-text-main)] truncate">{nutri.full_name}</div>
+                                                                                    <div className="text-[8px] text-[var(--color-text-muted)] truncate">{nutri.email}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            {onUnbindConnection && (
+                                                                                <button
+                                                                                    onClick={() => onUnbindConnection(nutri.id, selectedUserDetails.id)}
+                                                                                    className="p-1 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 rounded-lg transition-colors cursor-pointer shrink-0"
+                                                                                    title="Unlink Connection"
+                                                                                >
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[10px] font-medium text-[var(--color-text-muted)] italic">No nutritionist linked.</div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                        
+
                                         {/* Compact Footer */}
                                         <div className="p-4 bg-gray-50/50 dark:bg-white/5 border-t border-[var(--color-divider)] flex justify-center pb-4">
                                             <button

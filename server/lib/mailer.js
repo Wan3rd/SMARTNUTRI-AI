@@ -483,7 +483,8 @@ export const sendParentInvitationEmail = async ({
     parentName,
     nutritionistName,
     childName,
-    isNewParent
+    isNewParent,
+    tempPassword
 }) => {
     const loginUrl = `${APP_URL}/login`;
 
@@ -512,7 +513,7 @@ export const sendParentInvitationEmail = async ({
                     </tr>
                     <tr>
                         <td style="padding: 4px 0; font-weight: bold; color: #475569;">Temporary Password:</td>
-                        <td style="padding: 4px 0; color: #059669; font-family: monospace; font-weight: bold; font-size: 16px;">smartnutri123</td>
+                        <td style="padding: 4px 0; color: #059669; font-family: monospace; font-weight: bold; font-size: 16px;">${tempPassword || 'smartnutri123'}</td>
                     </tr>
                 </table>
                 <p style="font-size: 12px; color: #ef4444; font-weight: bold; margin: 12px 0 0 0;">⚠️ Note: For security reasons, you will be prompted to set a new password upon your first login.</p>
@@ -539,7 +540,57 @@ export const sendParentInvitationEmail = async ({
         to: parentEmail,
         subject: `Invite from Nutritionist: Help track ${childName}'s nutrition on SmartNutri-AI`,
         html: buildEmailWrapper(innerHtml, 'Client Invitation System'),
-        text: `Hello ${parentName},\n\nYou have been invited by nutritionist ${nutritionistName} to track ${childName}'s nutrition on SmartNutri-AI.\n\n${isNewParent ? `Your login email: ${parentEmail}\nTemporary Password: smartnutri123\nNote: You will be asked to change this password on first login.` : 'Please log in to your existing account to view the updates.'}\n\nAccess Dashboard: ${loginUrl}`
+        text: `Hello ${parentName},\n\nYou have been invited by nutritionist ${nutritionistName} to track ${childName}'s nutrition on SmartNutri-AI.\n\n${isNewParent ? `Your login email: ${parentEmail}\nTemporary Password: ${tempPassword || 'smartnutri123'}\nNote: You will be asked to change this password on first login.` : 'Please log in to your existing account to view the updates.'}\n\nAccess Dashboard: ${loginUrl}`
     });
 };
+
+// ─── 9. Nutritionist Connection Link Request Email ────────────────────────────
+
+export const sendNutritionistLinkRequestEmail = async ({
+    parentEmail,
+    parentName,
+    nutritionistName
+}) => {
+    const loginUrl = `${APP_URL}/login`;
+
+    const innerHtml = `
+        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 28px auto; text-align: center;">
+            <tr>
+                <td style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #bfdbfe; border-radius: 50px; padding: 10px 24px;">
+                    <span style="color: #1e40af; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; display: block;">🔗 Connection Request</span>
+                </td>
+            </tr>
+        </table>
+
+        <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 12px 0;">Hello <strong style="color: #0f172a;">${parentName || 'Parent'}</strong>,</p>
+
+        <p style="font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 16px 0;">
+            Clinical nutritionist <strong style="color: #0f172a;">${nutritionistName}</strong> has requested to link with your caregiver account on <strong>SmartNutri-AI</strong>.
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin: 24px 0;">
+            <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0;">
+                Linking your account allows this nutritionist to monitor your children's profiles, review meal logs, and prescribe personalized dietary plans.
+            </p>
+            <p style="font-size: 12px; color: #b45309; font-weight: bold; margin: 12px 0 0 0;">⚠️ Note: This request requires your explicit approval from your caregiver dashboard before the nutritionist can access any data.</p>
+        </div>
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="${loginUrl}" style="background-color: #059669; color: #ffffff; padding: 16px 40px; border-radius: 16px; text-decoration: none; font-weight: 900; text-transform: uppercase; font-size: 14px; letter-spacing: 0.05em; display: inline-block; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);">View Connection Request →</a>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; text-align: center; margin: 0;">
+            Need help? Contact support at <a href="mailto:snutri244@gmail.com" style="color: #059669; text-decoration: none;">snutri244@gmail.com</a>
+        </p>
+    `;
+
+    return sendViaBrevo({
+        to: parentEmail,
+        subject: `Connection Request from Nutritionist ${nutritionistName}`,
+        html: buildEmailWrapper(innerHtml, 'Account Connection System'),
+        text: `Hello ${parentName},\n\nClinical nutritionist ${nutritionistName} has requested to link with your account on SmartNutri-AI to monitor your child's profiles and meals.\n\nPlease log in to your account and approve the request from your dashboard.\n\nAccess Dashboard: ${loginUrl}`
+    });
+};
+
 

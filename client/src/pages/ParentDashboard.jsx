@@ -27,6 +27,7 @@ export default function ParentDashboard() {
     const [filterTab, setFilterTab] = useState('all');
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
+    const [pendingRequests, setPendingRequests] = useState([]);
     const [dailyLog, setDailyLog] = useState({ water_intake_glasses: 0, steps_count: 0 });
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -104,9 +105,42 @@ export default function ParentDashboard() {
             setAssignedNutritionist(res.data);
         } catch (err) {
             // Ignore 404 as it just means no nutritionist is assigned yet
-            if (err.response?.status !== 404) {
+            if (err.response?.status === 404) {
+                setAssignedNutritionist(null);
+            } else {
                 console.error("Error fetching nutritionist", err);
             }
+        }
+
+        try {
+            const res = await api.get('/auth/pending-nutritionists');
+            setPendingRequests(res.data);
+        } catch (err) {
+            console.error("Error fetching pending requests", err);
+        }
+    };
+
+    const handleApproveRequest = async (linkId) => {
+        startLoading('Approving connection request...');
+        try {
+            await api.post(`/auth/approve-nutritionist/${linkId}`);
+            await fetchAssignedNutritionist();
+        } catch (err) {
+            console.error("Failed to approve request", err);
+        } finally {
+            stopLoading();
+        }
+    };
+
+    const handleRejectRequest = async (linkId) => {
+        startLoading('Rejecting connection request...');
+        try {
+            await api.post(`/auth/reject-nutritionist/${linkId}`);
+            await fetchAssignedNutritionist();
+        } catch (err) {
+            console.error("Failed to reject request", err);
+        } finally {
+            stopLoading();
         }
     };
 
@@ -419,6 +453,60 @@ export default function ParentDashboard() {
 
                 {/* Right: Insights & Expert Feedback */}
                 <div className="lg:col-span-5 space-y-4">
+                    {/* Pending Nutritionist Requests */}
+                    {pendingRequests.length > 0 && (
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-1.5 animate-pulse">
+                                <Sparkles size={12} /> Pending Connection Request{pendingRequests.length > 1 ? 's' : ''}
+                            </h3>
+                            {pendingRequests.map(req => (
+                                <Card key={req.id} className="border-2 border-amber-500/30 rounded-[2rem] overflow-hidden shadow-md bg-amber-500/[0.02] dark:bg-amber-500/[0.01]">
+                                    <CardContent className="p-4 sm:p-5 flex flex-col gap-4">
+                                        <div className="flex flex-row items-center gap-4">
+                                            <div className="h-12 w-12 rounded-2xl border border-amber-500/20 overflow-hidden bg-[var(--color-bg-page)] flex items-center justify-center text-[var(--color-primary)] font-black shrink-0">
+                                                {req.nutritionist?.profile_image_url ? (
+                                                    <img src={req.nutritionist.profile_image_url} alt="Nutri" className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <User size={20} className="text-amber-500" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[8px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">
+                                                    Clinician Connection Invitation
+                                                </p>
+                                                <h4 className="text-sm sm:text-base font-black text-[var(--color-text-main)] truncate uppercase leading-tight">
+                                                    {req.nutritionist?.full_name}
+                                                </h4>
+                                                <p className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight opacity-80 truncate">
+                                                    {req.nutritionist?.specialization || 'Clinical Nutritionist'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-[10px] text-[var(--color-text-muted)] font-medium leading-relaxed bg-[var(--color-bg-page)] p-3 rounded-xl border border-[var(--color-divider)]">
+                                            This clinician is requesting access to monitor your children's profiles, review meal logs, and prescribe clinical guidelines.
+                                        </p>
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRejectRequest(req.id)}
+                                                className="flex-1 h-9 rounded-xl border border-red-500/30 hover:border-red-500 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                                            >
+                                                Decline
+                                            </button>
+                                            <button
+                                                onClick={() => handleApproveRequest(req.id)}
+                                                className="flex-1 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-emerald-600/10"
+                                            >
+                                                Approve
+                                            </button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Assigned Nutritionist Card */}
                     <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-sm group hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/5">
                         <CardContent className="p-0">

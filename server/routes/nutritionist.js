@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { DEFAULT_MEAL_TEMPLATES } from '../data/default_meal_templates.js';
 import { logAuditAction } from '../lib/auditLogger.js';
-import { sendParentInvitationEmail } from '../lib/mailer.js';
+import { sendParentInvitationEmail, sendNutritionistLinkRequestEmail } from '../lib/mailer.js';
 
 const router = express.Router();
 
@@ -72,19 +72,29 @@ router.post('/invite', verifyToken, isNutritionist, async (req, res) => {
         });
 
         if (existingLink) {
+            if (existingLink.status === 'pending') {
+                return res.status(400).json({ message: 'A connection request is already pending approval from this caregiver.' });
+            }
             return res.status(400).json({ message: 'Client is already linked to you' });
         }
 
-        // 3. Create Link
+        // 3. Create Link (Pending Approval)
         await prisma.nutritionist_clients.create({
             data: {
                 nutritionist_id: req.user.id,
                 parent_id: user.id,
-                status: 'active'
+                status: 'pending'
             }
         });
 
-        res.json({ message: 'Client linked successfully', client: user });
+        // Send connection request email (non-blocking)
+        sendNutritionistLinkRequestEmail({
+            parentEmail: user.email,
+            parentName: user.full_name,
+            nutritionistName: req.user.full_name
+        }).catch(err => console.error("Failed to send connection request email:", err));
+
+        res.json({ message: 'Connection request sent successfully. Pending caregiver approval.', client: user });
 
     } catch (err) {
         console.error(err);
@@ -116,6 +126,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
         const result = await prisma.$transaction(async (tx) => {
             let isNewParent = false;
             let user;
+            let tempPassword = null;
             if (parentId) {
                 user = await tx.users.findUnique({
                     where: { id: parentId }
@@ -128,6 +139,16 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 if (user.role === 'nutritionist') {
                     const error = new Error('You cannot link a nutritionist account');
                     error.statusCode = 400;
+                    throw error;
+                }
+
+                // Verify active connection
+                const activeConnection = await tx.nutritionist_clients.findFirst({
+                    where: { nutritionist_id: req.user.id, parent_id: user.id, status: 'active' }
+                });
+                if (!activeConnection) {
+                    const error = new Error('Caregiver is not actively connected to your clinical station. Please request a connection first.');
+                    error.statusCode = 403;
                     throw error;
                 }
             } else {
@@ -147,12 +168,23 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                         error.statusCode = 400;
                         throw error;
                     }
+
+                    // Verify active connection
+                    const activeConnection = await tx.nutritionist_clients.findFirst({
+                        where: { nutritionist_id: req.user.id, parent_id: existingUser.id, status: 'active' }
+                    });
+                    if (!activeConnection) {
+                        const error = new Error("Caregiver with this email already has an account. Please use the 'Link Parent' feature to request a connection first.");
+                        error.statusCode = 400;
+                        throw error;
+                    }
                     user = existingUser;
                 } else {
                     isNewParent = true;
-                    // Create Parent User with a default password
+                    // Create Parent User with a generated temporary password
+                    tempPassword = 'Temp' + crypto.randomBytes(6).toString('hex') + '1!';
                     const salt = await bcrypt.genSalt(10);
-                    const defaultPasswordHash = await bcrypt.hash('smartnutri123', salt);
+                    const defaultPasswordHash = await bcrypt.hash(tempPassword, salt);
 
                     user = await tx.users.create({
                         data: {
@@ -255,7 +287,7 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
                 });
             }
 
-            return { user, profile, isNewParent };
+            return { user, profile, isNewParent, tempPassword };
         });
 
         // Send parent invitation email asynchronously (non-blocking)
@@ -264,7 +296,8 @@ router.post('/create-client', verifyToken, isNutritionist, async (req, res) => {
             parentName: result.user.full_name,
             nutritionistName: req.user.full_name,
             childName: result.profile.child_name,
-            isNewParent: result.isNewParent
+            isNewParent: result.isNewParent,
+            tempPassword: result.tempPassword
         })
         .then(async (mailResult) => {
             if (mailResult && mailResult.success) {
@@ -533,13 +566,25 @@ router.post('/clients/:id/resend-invite', verifyToken, isNutritionist, async (re
 
         const childNames = children.map(c => c.child_name).join(', ') || 'your child';
 
+        let tempPassword = null;
+        if (parent.force_password_reset) {
+            tempPassword = 'Temp' + crypto.randomBytes(6).toString('hex') + '1!';
+            const salt = await bcrypt.genSalt(10);
+            const defaultPasswordHash = await bcrypt.hash(tempPassword, salt);
+            await prisma.users.update({
+                where: { id: parent.id },
+                data: { password_hash: defaultPasswordHash }
+            });
+        }
+
         // Dispatch invitation email asynchronously/non-blocking
         sendParentInvitationEmail({
             parentEmail: parent.email,
             parentName: parent.full_name,
             nutritionistName: req.user.full_name,
             childName: childNames,
-            isNewParent: parent.force_password_reset
+            isNewParent: parent.force_password_reset,
+            tempPassword
         })
         .then(async (mailResult) => {
             if (mailResult && mailResult.success) {
@@ -855,6 +900,13 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
     const VALID_REVIEW_STATUSES = ['reviewed', 'approved', 'rejected', 'verified'];
     if (status && !VALID_REVIEW_STATUSES.includes(status)) {
         return res.status(400).json({ message: `Invalid status. Must be one of: ${VALID_REVIEW_STATUSES.join(', ')}` });
+    }
+
+    if (water_ml !== undefined && water_ml !== null) {
+        const w = parseInt(water_ml);
+        if (isNaN(w) || w < 0 || w > 10000) {
+            return res.status(400).json({ message: 'water_ml must be between 0 and 10000 ml' });
+        }
     }
 
     try {
@@ -1501,6 +1553,18 @@ router.post('/adime-notes', verifyToken, isNutritionist, async (req, res) => {
     try {
         if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
         
+        // Validate content length for clinical notes fields (BUG-07)
+        const maxLen = 5000;
+        if (
+            (assessment && assessment.length > maxLen) ||
+            (diagnosis && diagnosis.length > maxLen) ||
+            (intervention && intervention.length > maxLen) ||
+            (monitoring && monitoring.length > maxLen) ||
+            (evaluation && evaluation.length > maxLen)
+        ) {
+            return res.status(400).json({ message: `Clinical note fields cannot exceed ${maxLen} characters.` });
+        }
+
         // Fetch parent user ID for targetId in audit logs
         const profile = await prisma.profiles.findUnique({
             where: { id: profile_id },
@@ -1548,6 +1612,18 @@ router.patch('/adime-notes/:id', verifyToken, isNutritionist, async (req, res) =
         const note = await prisma.adime_notes.findUnique({ where: { id: req.params.id } });
         if (!note || note.nutritionist_id !== req.user.id) return res.status(403).json({ message: 'Access Denied' });
         
+        // Validate content length for clinical notes fields (BUG-07)
+        const maxLen = 5000;
+        if (
+            (assessment && assessment.length > maxLen) ||
+            (diagnosis && diagnosis.length > maxLen) ||
+            (intervention && intervention.length > maxLen) ||
+            (monitoring && monitoring.length > maxLen) ||
+            (evaluation && evaluation.length > maxLen)
+        ) {
+            return res.status(400).json({ message: `Clinical note fields cannot exceed ${maxLen} characters.` });
+        }
+
         // Fetch parent user ID for targetId in audit logs
         const profile = await prisma.profiles.findUnique({
             where: { id: note.profile_id },
@@ -1644,6 +1720,25 @@ router.patch('/clients/profile/:id', verifyToken, isNutritionist, async (req, re
     } = req.body;
 
     try {
+        // Biometric Range Validation
+        if (date_of_birth && date_of_birth !== '') {
+            const dob = new Date(date_of_birth);
+            if (isNaN(dob.getTime())) return res.status(400).json({ message: 'Invalid date_of_birth format' });
+            if (dob > new Date()) return res.status(400).json({ message: 'date_of_birth cannot be in the future' });
+        }
+        if (height_cm !== undefined && height_cm !== null && height_cm !== '') {
+            const h = parseFloat(height_cm);
+            if (isNaN(h) || h < 10 || h > 250) return res.status(400).json({ message: 'height_cm must be between 10 and 250 cm' });
+        }
+        if (weight_kg !== undefined && weight_kg !== null && weight_kg !== '') {
+            const w = parseFloat(weight_kg);
+            if (isNaN(w) || w < 1 || w > 300) return res.status(400).json({ message: 'weight_kg must be between 1 and 300 kg' });
+        }
+        if (bristol_stool_scale !== undefined && bristol_stool_scale !== null && bristol_stool_scale !== '') {
+            const bss = parseInt(bristol_stool_scale);
+            if (isNaN(bss) || bss < 1 || bss > 7) return res.status(400).json({ message: 'bristol_stool_scale must be between 1 and 7' });
+        }
+
         // 1. Verify this profile belongs to a client linked to this nutritionist
         const profile = await prisma.profiles.findUnique({
             where: { id: id },
@@ -1736,6 +1831,11 @@ router.post('/plan/apply-template', verifyToken, isNutritionist, async (req, res
     try {
         const { templateId, profileId, startDate } = req.body;
         if (!(await checkProfileAccess(req, profileId))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+
+        if (!startDate || isNaN(new Date(startDate).getTime())) {
+            return res.status(400).json({ message: 'Invalid or missing startDate' });
+        }
+
         const template = await prisma.meal_plan_templates.findFirst({
             where: {
                 id: templateId,
@@ -1898,6 +1998,14 @@ router.get('/portion-templates', verifyToken, isNutritionist, async (req, res) =
 router.post('/portion-templates', verifyToken, isNutritionist, async (req, res) => {
     const { template_name, matrix } = req.body;
     try {
+        if (!matrix || !Array.isArray(matrix)) {
+            return res.status(400).json({ message: 'Invalid data: matrix must be an array of portion template rows' });
+        }
+        for (const row of matrix) {
+            if (!row || typeof row !== 'object' || !row.meal_type) {
+                return res.status(400).json({ message: 'Invalid data: each portion template row must contain a meal_type' });
+            }
+        }
         const newTemplate = await prisma.portion_templates.create({
             data: {
                 nutritionist_id: req.user.id,
@@ -1971,6 +2079,16 @@ router.post('/portion-plan', verifyToken, isNutritionist, async (req, res) => {
     const { profile_id, matrix } = req.body;
     try {
         if (!(await checkProfileAccess(req, profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+
+        if (!matrix || !Array.isArray(matrix)) {
+            return res.status(400).json({ message: 'Invalid data: matrix must be an array of portion plan rows' });
+        }
+        for (const row of matrix) {
+            if (!row || typeof row !== 'object' || !row.meal_type) {
+                return res.status(400).json({ message: 'Invalid data: each portion plan row must contain a meal_type' });
+            }
+        }
+
         // We use a transaction to ensure all or nothing
         const operations = matrix.map(row =>
             prisma.portion_plans.upsert({
