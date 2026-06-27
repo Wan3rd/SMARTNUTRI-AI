@@ -290,13 +290,13 @@ export default function Settings() {
                     onClick: () => setShowPasswordModal(true)
                 },
                 ...(user?.role !== 'admin' ? [
-                    {
-                        label: "Data Export",
-                        desc: "Download your nutrition data",
-                        type: "link",
-                        onClick: handleDataExport
-                    },
                     ...(user?.role === 'parent' ? [
+                        {
+                            label: "Data Export",
+                            desc: "Download your nutrition data",
+                            type: "link",
+                            onClick: handleDataExport
+                        },
                         {
                             label: "Printable Medical Summary",
                             desc: "Download clinical report PDF for your pediatrician",

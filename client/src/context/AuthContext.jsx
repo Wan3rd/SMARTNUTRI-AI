@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }) => {
                     
                     if (err.response?.status === 401 || (err.response?.status === 403 && !isForceReset)) {
                         logout();
+                        window.location.href = '/login';
                     } else {
                         // For generic network errors, try falling back to local data to keep UI stable
                         const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -128,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('selectedProfileId');
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         setUser(null);

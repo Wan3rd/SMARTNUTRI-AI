@@ -37,9 +37,9 @@ export const ProfileProvider = ({ children }) => {
             
             if (found) {
                 setSelectedProfile(found);
-            } else if (res.data.length > 0) {
-                setSelectedProfile(res.data[0]);
-                localStorage.setItem('selectedProfileId', res.data[0].id);
+            } else if (sortedProfiles.length > 0) {
+                setSelectedProfile(sortedProfiles[0]);
+                localStorage.setItem('selectedProfileId', sortedProfiles[0].id);
             } else {
                 setSelectedProfile(null);
             }

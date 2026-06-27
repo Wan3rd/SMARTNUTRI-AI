@@ -147,7 +147,11 @@ export function Sidebar({ isOpen, onClose, isMobile }) {
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 
-    const navItems = user?.role === 'admin' ? adminNavItems : user?.role === 'nutritionist' ? nutritionistNavItems : parentNavItems;
+    const filteredNutritionistNavItems = user?.role === 'nutritionist' && user?.status !== 'approved'
+        ? nutritionistNavItems.filter(item => item.path !== '/nutritionist/guides')
+        : nutritionistNavItems;
+
+    const navItems = user?.role === 'admin' ? adminNavItems : user?.role === 'nutritionist' ? filteredNutritionistNavItems : parentNavItems;
 
     return (
         <>

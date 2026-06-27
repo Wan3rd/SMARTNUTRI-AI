@@ -544,6 +544,9 @@ router.get('/pending-nutritionists', verifyToken, async (req, res) => {
 
 // POST /auth/approve-nutritionist/:linkId (For Caregivers)
 router.post('/approve-nutritionist/:linkId', verifyToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ message: 'Access Denied: Parent role required' });
+    }
     const { linkId } = req.params;
     try {
         const link = await prisma.nutritionist_clients.findFirst({
@@ -571,6 +574,9 @@ router.post('/approve-nutritionist/:linkId', verifyToken, async (req, res) => {
 
 // POST /auth/reject-nutritionist/:linkId (For Caregivers)
 router.post('/reject-nutritionist/:linkId', verifyToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ message: 'Access Denied: Parent role required' });
+    }
     const { linkId } = req.params;
     try {
         const link = await prisma.nutritionist_clients.findFirst({

@@ -365,11 +365,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
             where.role = role;
         }
         if (status !== 'all') {
-            if (status === 'approved') {
-                where.OR = [{ status: 'approved' }, { role: { not: 'nutritionist' } }];
-            } else {
-                where.status = status;
-            }
+            where.status = status;
         }
 
         const [users, total] = await Promise.all([
@@ -572,10 +568,17 @@ router.patch('/users/:id/status', verifyAdmin, async (req, res) => {
             });
         }
 
+        const roleLabel = oldUser.role ? oldUser.role.toUpperCase() : 'USER';
+        const auditAction = status === 'approved' 
+            ? `APPROVE_${roleLabel}` 
+            : status === 'rejected' 
+                ? `REJECT_${roleLabel}` 
+                : `RESET_${roleLabel}_STATUS`;
+
         await logAuditAction({
             adminId: req.user.id,
             targetId: id,
-            action: status === 'approved' ? 'APPROVE_NUTRITIONIST' : status === 'rejected' ? 'REJECT_NUTRITIONIST' : 'RESET_VERIFICATION_STATUS',
+            action: auditAction,
             entityType: 'USER',
             entityId: id,
             details: {
@@ -995,6 +998,28 @@ router.get('/users/:id/audit', verifyAdmin, async (req, res) => {
 router.post('/broadcast', verifyAdmin, async (req, res) => {
     const { title, content, target_role, priority, expires_at } = req.body;
 
+    // Input Validation
+    if (!title || typeof title !== 'string' || title.trim().length === 0 || title.trim().length > 255) {
+        return res.status(400).json({ message: 'Title is required and must be under 255 characters.' });
+    }
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        return res.status(400).json({ message: 'Content is required.' });
+    }
+    const ALLOWED_ROLES = ['all', 'parent', 'nutritionist', 'admin'];
+    if (target_role && !ALLOWED_ROLES.includes(target_role)) {
+        return res.status(400).json({ message: 'Invalid target role. Allowed: ' + ALLOWED_ROLES.join(', ') });
+    }
+    const ALLOWED_PRIORITIES = ['low', 'normal', 'high', 'critical'];
+    if (priority && !ALLOWED_PRIORITIES.includes(priority)) {
+        return res.status(400).json({ message: 'Invalid priority. Allowed: ' + ALLOWED_PRIORITIES.join(', ') });
+    }
+    if (expires_at) {
+        const expDate = new Date(expires_at);
+        if (isNaN(expDate.getTime())) {
+            return res.status(400).json({ message: 'Invalid expiration date format.' });
+        }
+    }
+
     try {
         // ENFORCE MAX 1: Deactivate all existing active announcements
         await prisma.announcements.updateMany({
@@ -1004,8 +1029,8 @@ router.post('/broadcast', verifyAdmin, async (req, res) => {
 
         const announcement = await prisma.announcements.create({
             data: {
-                title,
-                content,
+                title: title.trim(),
+                content: content.trim(),
                 target_role: target_role || 'all',
                 priority: priority || 'normal',
                 admin_id: req.user.id,
