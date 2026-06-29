@@ -337,17 +337,25 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [onClose, previewImage, handleDismiss]);
 
     // Prevent background scrolling when modal is open
+    const loadedLogIdRef = useRef(null);
+
     useEffect(() => {
         if (isOpen) {
-            setIsMounted(true);
             setIsClosing(false);
             
             // Lock body scroll securely
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none';
+
+            // Allow the closed state to paint first, then trigger slide up animation
+            const timer = setTimeout(() => {
+                setIsMounted(true);
+            }, 10);
+            return () => clearTimeout(timer);
         } else {
             setIsMounted(false);
             setIsClosing(false);
+            loadedLogIdRef.current = null;
             
             // Release body scroll
             document.body.style.overflow = '';
@@ -367,12 +375,16 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     useEffect(() => {
         if (log && isOpen) {
-            setReview(log.nutritionist_review?.comment || '');
-            setEditedAnalysis(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
-            setEditedWater(log.water_ml || 0);
-            setNotif({ show: false, message: '', type: 'success' });
+            // Only re-initialize state if a different log is loaded or if it's the first load
+            if (loadedLogIdRef.current !== log.id) {
+                setReview(log.nutritionist_review?.comment || '');
+                setEditedAnalysis(log.nutritionist_review?.verified_analysis || log.ai_analysis || { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } });
+                setEditedWater(log.water_ml || 0);
+                setNotif({ show: false, message: '', type: 'success' });
+                loadedLogIdRef.current = log.id;
+            }
         }
-    }, [log, isOpen]);
+    }, [log?.id, isOpen]);
 
     const macros = editedAnalysis?.macros_est || {};
 
