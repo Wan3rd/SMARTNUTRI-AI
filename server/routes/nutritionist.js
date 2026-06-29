@@ -990,7 +990,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
                 compliance_score: complianceResult.compliance_score,
                 violation_details: complianceResult.details,
                 // Sync dedicated columns
-                consumption_percent: verified.plate_waste || 100,
+                consumption_percent: verified.plate_waste ?? 100,
                 total_calories: verified.total_calories_est || 0,
                 total_protein_g: macros.protein_g || 0,
                 total_carbs_g: macros.carbs_g || 0,

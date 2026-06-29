@@ -341,7 +341,7 @@ router.post('/', verifyToken, async (req, res) => {
                     serving_spoon_used: serving_spoon_used || false,
                     is_parent_verified: is_parent_verified || false,
                     hidden_ingredients: hidden_ingredients || '',
-                    consumption_percent: finalizedAnalysis.plate_waste || 100,
+                    consumption_percent: finalizedAnalysis.plate_waste ?? 100,
                     total_calories: finalizedAnalysis.total_calories_est || 0,
                     total_protein_g: finalizedAnalysis.macros_est?.protein_g || 0,
                     total_carbs_g: finalizedAnalysis.macros_est?.carbs_g || 0,

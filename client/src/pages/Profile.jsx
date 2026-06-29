@@ -710,8 +710,13 @@ export default function Profile() {
                 let age = '';
                 if (profile.date_of_birth) {
                     const dob = new Date(profile.date_of_birth);
-                    const diff = Date.now() - dob.getTime();
-                    age = Math.abs(new Date(diff).getUTCFullYear() - 1970).toString();
+                    const today = new Date();
+                    let calculatedAge = today.getFullYear() - dob.getFullYear();
+                    const monthDiff = today.getMonth() - dob.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                        calculatedAge--;
+                    }
+                    age = calculatedAge.toString();
                 }
 
                 const initialDob = profile.date_of_birth ? new Date(profile.date_of_birth).toISOString().split('T')[0] : '';

@@ -111,6 +111,10 @@ export default function DailyPlan() {
                 if (!profileLoading) setIsInitialSync(false);
                 return;
             }
+            // Clear current states immediately to prevent stale layouts/flashes from previous profile
+            setPlan([]);
+            setScheduledMeals([]);
+            setSugarLimit('');
             setIsInitialSync(true);
             try {
                 const currentDate = format(new Date(), 'yyyy-MM-dd');
@@ -389,9 +393,9 @@ export default function DailyPlan() {
 
                             {isExpanded && (
                                 <CardContent className="p-0">
-                                    {scheduledMeals.find(sm => isSnackMatch(sm.meal_type, meal.meal)) && (
+                                    {scheduledMeals.find(sm => sm.profile_id === selectedProfile.id && isSnackMatch(sm.meal_type, meal.meal)) && (
                                         (() => {
-                                            const sm = scheduledMeals.find(sm => isSnackMatch(sm.meal_type, meal.meal));
+                                            const sm = scheduledMeals.find(sm => sm.profile_id === selectedProfile.id && isSnackMatch(sm.meal_type, meal.meal));
                                             const isRealRecipe = sm.recipe_id && !sm.recipe_id.startsWith('ai-gen-') && !sm.recipe_id.startsWith('manual-');
                                             return (
                                                 <div className="p-4 sm:p-6 bg-gradient-to-br from-[var(--color-primary)]/5 to-[var(--color-secondary)]/5 border-b-2 border-[var(--color-divider)]">
