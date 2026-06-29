@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isSameDay, parseISO, subWeeks, addWeeks, 
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown, X, Mail } from 'lucide-react';
+import { ArrowLeft, User, Users, Plus, Trash2, Save, MessageSquare, StickyNote, Utensils, Monitor, Activity, ClipboardCheck, TrendingUp, TrendingDown, Info, Edit2, Stethoscope, Link2, PieChart, ChefHat, AlertTriangle, Bold, Italic, List, ListOrdered, Calendar, Check, BadgeCheck, ShieldAlert, Eye, AlertCircle, Clock, Filter, Table, Leaf, Apple, Milk, Zap, Beef, Droplets, PanelLeftOpen, PanelLeftClose, BookmarkPlus, ListFilter, ChevronDown, ChevronRight, X, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatValue, convertHeight, convertWeight } from '../lib/utils';
 import api from '../lib/api';
@@ -304,37 +304,71 @@ export default function ClientDetails() {
     const CLINICAL_ADIME_TEMPLATES = [
         {
             name: "Clinical ADIME (Full)",
-            content: `<h3><strong>[A] ASSESSMENT</strong></h3><p><strong>Anthropometrics:</strong> [Ht/Length, Wt, BMI, HC]. Z-scores: [WFA, HFA, WFL/BFA]. Growth Trends: [Velocity, Pattern]</p><p><strong>Biochemical:</strong> [Labs: Albumin, Iron, Vitamin D, etc.]</p><p><strong>Clinical:</strong> [Physical Findings: Muscle/Fat Wasting, Hair/Skin/Nails]</p><p><strong>Dietary:</strong> [Current Intake: Breast/Formula/Solids. Feeding Skills. Allergies/Intolerances]</p><br/><h3><strong>[D] DIAGNOSIS (PES Statement)</strong></h3><p><strong>Problem:</strong> [Nutrition Diagnosis Term]</p><p><strong>Etiology:</strong> [Related to...]</p><p><strong>Signs & Symptoms:</strong> [As evidenced by... quantifiable Assessment data]</p><br/><h3><strong>[I] INTERVENTION</strong></h3><p><strong>Nutrition Prescription:</strong> [Kcal/kg, Protein/kg, Fluid needs]. [Texture/Modifications]</p><p><strong>Plan:</strong> [SMART Goals, Education/Counseling, Referrals]</p><br/><h3><strong>[M] MONITORING &amp; [E] EVALUATION</strong></h3><p><strong>Indicators:</strong> [Weight change, Intake volume, Lab improvements]</p><p><strong>Timeline:</strong> [Next follow-up date]</p>`
+            fields: {
+                assessment: `<p><strong>Anthropometrics:</strong> [Ht/Length, Wt, BMI, HC]. Z-scores: [WFA, HFA, WFL/BFA]. Growth Trends: [Velocity, Pattern]</p><p><strong>Biochemical:</strong> [Labs: Albumin, Iron, Vitamin D, etc.]</p><p><strong>Clinical:</strong> [Physical Findings: Muscle/Fat Wasting, Hair/Skin/Nails]</p><p><strong>Dietary:</strong> [Current Intake: Breast/Formula/Solids. Feeding Skills. Allergies/Intolerances]</p>`,
+                diagnosis: `<p><strong>Problem:</strong> [Nutrition Diagnosis Term]</p><p><strong>Etiology:</strong> [Related to...]</p><p><strong>Signs & Symptoms:</strong> [As evidenced by... quantifiable Assessment data]</p>`,
+                intervention: `<p><strong>Nutrition Prescription:</strong> [Kcal/kg, Protein/kg, Fluid needs]. [Texture/Modifications]</p><p><strong>Plan:</strong> [SMART Goals, Education/Counseling, Referrals]</p>`,
+                monitoring: `<p><strong>Indicators:</strong> [Weight change, Intake volume, Lab improvements]</p>`,
+                evaluation: `<p><strong>Timeline:</strong> [Next follow-up date]</p>`
+            }
         },
         {
             name: "PES Statement Only",
-            content: `<p><strong>Nutrition Diagnosis (PES):</strong> [Nutrition Problem] related to [Etiology] as evidenced by [Signs &amp; Symptoms / Quantifiable Assessment Data].</p>`
+            fields: {
+                diagnosis: `<p><strong>Nutrition Diagnosis (PES):</strong> [Nutrition Problem] related to [Etiology] as evidenced by [Signs &amp; Symptoms / Quantifiable Assessment Data].</p>`
+            }
         },
         {
             name: "Nutrition Prescription",
-            content: `<h3><strong>NUTRITION PRESCRIPTION</strong></h3><p><strong>Energy Goals:</strong> [Kcal/day or Kcal/kg]</p><p><strong>Protein Goals:</strong> [g/day or g/kg]</p><p><strong>Fluid Needs:</strong> [ml/day]</p><p><strong>Instructions:</strong> [Caregiver education, feeding schedule, or specific formula recipes]</p>`
+            fields: {
+                intervention: `<p><strong>Energy Goals:</strong> [Kcal/day or Kcal/kg]</p><p><strong>Protein Goals:</strong> [g/day or g/kg]</p><p><strong>Fluid Needs:</strong> [ml/day]</p><p><strong>Instructions:</strong> [Caregiver education, feeding schedule, or specific formula recipes]</p>`
+            }
         },
         {
             name: "Clinical Follow-up",
-            content: `<h3><strong>PROGRESS REVIEW</strong></h3><p><strong>Monitoring:</strong> [Changes in Weight/Length Z-scores since last visit]</p><p><strong>Evaluation:</strong> [Evaluation of intake vs. prescription]</p><p><strong>Intervention Updates:</strong> [Modified goals/actions]</p><p><strong>Next Steps:</strong> [Plan for next follow-up visit]</p>`
+            fields: {
+                monitoring: `<p><strong>Monitoring:</strong> [Changes in Weight/Length Z-scores since last visit]</p>`,
+                evaluation: `<p><strong>Evaluation:</strong> [Evaluation of intake vs. prescription]</p><p><strong>Intervention Updates:</strong> [Modified goals/actions]</p><p><strong>Next Steps:</strong> [Plan for next follow-up visit]</p>`
+            }
         }
     ];
 
-    const handleApplyAdimeTemplate = (templateContent) => {
-        setNewAdime(prev => {
-            const current = prev.assessment || '';
-            // Robust check to see if the HTML is effectively empty (stripping tags, NBSP, and whitespace)
-            const cleanText = current.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
-            const isEmpty = cleanText.length === 0;
+    const ADIME_STEPS = [
+        { key: 'assessment', label: 'Assessment', code: 'A', placeholder: 'Enter physical, biochemical, and dietary data...' },
+        { key: 'diagnosis', label: 'Diagnosis', code: 'D', placeholder: 'Enter nutrition diagnoses / PES statements...' },
+        { key: 'intervention', label: 'Intervention', code: 'I', placeholder: 'Enter nutrition prescription and counseling plans...' },
+        { key: 'monitoring', label: 'Monitoring', code: 'M', placeholder: 'Enter weight, intake volume, or indicators to monitor...' },
+        { key: 'evaluation', label: 'Evaluation', code: 'E', placeholder: 'Enter follow-up timeline and developmental evaluations...' }
+    ];
 
-            return {
-                ...prev,
-                assessment: isEmpty
-                    ? templateContent
-                    : current.trim() + '<br/>' + templateContent
-            };
-        });
-        showNotif("Clinical template applied");
+    const handleApplyAdimeTemplate = (templateFields) => {
+        if (editingAdimeId) {
+            setEditAdimeForm(prev => {
+                const updated = { ...prev };
+                Object.entries(templateFields).forEach(([field, content]) => {
+                    const current = prev[field] || '';
+                    const cleanText = current.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+                    updated[field] = cleanText.length === 0
+                        ? content
+                        : current.trim() + '<br/>' + content;
+                });
+                return updated;
+            });
+            showNotif("Clinical template applied to active edit draft");
+        } else {
+            setNewAdime(prev => {
+                const updated = { ...prev };
+                Object.entries(templateFields).forEach(([field, content]) => {
+                    const current = prev[field] || '';
+                    const cleanText = current.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+                    updated[field] = cleanText.length === 0
+                        ? content
+                        : current.trim() + '<br/>' + content;
+                });
+                return updated;
+            });
+            showNotif("Clinical template applied");
+        }
     };
 
     const handleCopyLastAdime = () => {
@@ -388,6 +422,7 @@ export default function ClientDetails() {
         monitoring: '',
         evaluation: ''
     });
+    const [createAdimeStep, setCreateAdimeStep] = useState('assessment');
 
     const [editingRuleId, setEditingRuleId] = useState(null);
     const [editRuleForm, setEditRuleForm] = useState({
@@ -411,6 +446,7 @@ export default function ClientDetails() {
         monitoring: '',
         evaluation: ''
     });
+    const [editAdimeStep, setEditAdimeStep] = useState('assessment');
 
     const [editingNoteId, setEditingNoteId] = useState(null);
     const [editNoteForm, setEditNoteForm] = useState('');
@@ -4291,7 +4327,10 @@ export default function ClientDetails() {
                                                                                 if (val === 'copy_forward') {
                                                                                     handleCopyLastAdime();
                                                                                 } else if (val) {
-                                                                                    handleApplyAdimeTemplate(val);
+                                                                                    const template = CLINICAL_ADIME_TEMPLATES.find(t => t.name === val);
+                                                                                    if (template) {
+                                                                                        handleApplyAdimeTemplate(template.fields);
+                                                                                    }
                                                                                 }
                                                                                 e.target.value = ''; // Reset selection
                                                                             }}
@@ -4300,7 +4339,7 @@ export default function ClientDetails() {
                                                                         >
                                                                             <option value="" disabled className="bg-bg-card text-text-main">Choose ADIME Template...</option>
                                                                             {CLINICAL_ADIME_TEMPLATES.map(t => (
-                                                                                <option key={t.name} value={t.content} className="bg-bg-card text-text-main">
+                                                                                <option key={t.name} value={t.name} className="bg-bg-card text-text-main">
                                                                                     + {t.name}
                                                                                 </option>
                                                                             ))}
@@ -4317,37 +4356,105 @@ export default function ClientDetails() {
                                                                 </div>
 
                                                                 <form onSubmit={handleAddAdimeNote} className="space-y-6">
+                                                                    {/* Minimalist Horizontal Step Selector */}
+                                                                    <div className="flex flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 mb-6 pb-4 border-b border-divider overflow-x-auto scrollbar-none">
+                                                                        {ADIME_STEPS.map((step) => {
+                                                                            const hasContent = newAdime[step.key] && newAdime[step.key].replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim().length > 0;
+                                                                            const isActive = createAdimeStep === step.key;
+                                                                            return (
+                                                                                <button
+                                                                                    key={step.key}
+                                                                                    type="button"
+                                                                                    onClick={() => setCreateAdimeStep(step.key)}
+                                                                                    className={cn(
+                                                                                        "flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0",
+                                                                                        isActive
+                                                                                            ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]"
+                                                                                            : "bg-white/50 dark:bg-white/5 text-text-muted hover:text-text-main border border-divider"
+                                                                                    )}
+                                                                                >
+                                                                                    <span className={cn(
+                                                                                        "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                                                        isActive ? "bg-white text-primary" : "bg-divider text-text-muted"
+                                                                                    )}>
+                                                                                        {step.code}
+                                                                                    </span>
+                                                                                    <span className="hidden sm:inline">{step.label}</span>
+                                                                                    {hasContent && (
+                                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                                    )}
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {/* Active Editor Pane */}
                                                                     <div className="space-y-1">
-                                                                        <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase mb-2 block">Clinical ADIME Note</label>
-                                                                        <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === 'assessment' ? 'border-[var(--color-primary)] shadow-md scale-[1.01]' : 'border-[var(--color-divider)]'}`}>
+                                                                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                                                                            {ADIME_STEPS.find(s => s.key === createAdimeStep)?.label} Section Editor
+                                                                        </label>
+                                                                        <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === createAdimeStep ? 'border-primary shadow-md scale-[1.01]' : 'border-divider'}`}>
                                                                             <ReactQuill
-                                                                                ref={el => editorRefs.current['assessment'] = el}
+                                                                                ref={el => editorRefs.current[createAdimeStep] = el}
                                                                                 theme="snow"
-                                                                                value={newAdime.assessment}
-                                                                                onChange={(val) => setNewAdime({ ...newAdime, assessment: val })}
-                                                                                onFocus={() => setFocusedField('assessment')}
+                                                                                value={newAdime[createAdimeStep]}
+                                                                                onChange={(val) => setNewAdime({ ...newAdime, [createAdimeStep]: val })}
+                                                                                onFocus={() => setFocusedField(createAdimeStep)}
                                                                                 modules={{ toolbar: true }}
-                                                                                placeholder="Enter full clinical ADIME documentation here..."
+                                                                                placeholder={ADIME_STEPS.find(s => s.key === createAdimeStep)?.placeholder}
                                                                             />
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex justify-end">
-                                                                        <Button
-                                                                            type="submit"
-                                                                            disabled={savingAdime || !Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0)}
-                                                                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 font-black uppercase text-xs tracking-widest px-8 py-4 h-auto shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:grayscale"
-                                                                        >
-                                                                            {savingAdime ? (
-                                                                                <>
-                                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                                                    Saving Record...
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <Save size={18} /> Save ADIME Note
-                                                                                </>
+
+                                                                    {/* Step Footer Controls */}
+                                                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-divider">
+                                                                        <div className="text-[10px] font-black text-text-muted uppercase tracking-widest self-start sm:self-auto">
+                                                                            Step {ADIME_STEPS.findIndex(s => s.key === createAdimeStep) + 1} of 5
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
+                                                                            {createAdimeStep !== 'assessment' && (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    onClick={() => {
+                                                                                        const idx = ADIME_STEPS.findIndex(s => s.key === createAdimeStep);
+                                                                                        setCreateAdimeStep(ADIME_STEPS[idx - 1].key);
+                                                                                    }}
+                                                                                    className="text-[10px] sm:text-xs font-black uppercase text-text-muted hover:text-text-main h-9 sm:h-11 px-3 sm:px-5"
+                                                                                >
+                                                                                    Prev
+                                                                                </Button>
                                                                             )}
-                                                                        </Button>
+                                                                            {createAdimeStep !== 'evaluation' && (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="secondary"
+                                                                                    onClick={() => {
+                                                                                        const idx = ADIME_STEPS.findIndex(s => s.key === createAdimeStep);
+                                                                                        setCreateAdimeStep(ADIME_STEPS[idx + 1].key);
+                                                                                    }}
+                                                                                    className="text-[10px] sm:text-xs font-black uppercase h-9 sm:h-11 px-3 sm:px-6 flex items-center gap-1 sm:gap-1.5"
+                                                                                >
+                                                                                    Next <span className="hidden sm:inline">Step</span> <ChevronRight size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                                                </Button>
+                                                                            )}
+                                                                            <Button
+                                                                                type="submit"
+                                                                                disabled={savingAdime || !Object.values(newAdime).some(v => v && v.replace(/<[^>]*>/g, '').trim().length > 0)}
+                                                                                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 sm:gap-2 font-black uppercase text-[10px] sm:text-xs tracking-widest px-4 sm:px-8 py-2.5 sm:py-4 h-9 sm:h-auto shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:grayscale"
+                                                                            >
+                                                                                {savingAdime ? (
+                                                                                    <>
+                                                                                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                                        Saving...
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Save size={14} className="sm:w-[18px] sm:h-[18px]" /> Save <span className="hidden sm:inline">ADIME Note</span>
+                                                                                    </>
+                                                                                )}
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
                                                                 </form>
                                                             </div>
@@ -4396,47 +4503,140 @@ export default function ClientDetails() {
                                                                             </div>
 
                                                                             {editingAdimeId === note.id ? (
-                                                                                <form onSubmit={handleUpdateAdime} className="space-y-4">
+                                                                                <form onSubmit={handleUpdateAdime} className="space-y-6">
+                                                                                    {/* Minimalist Horizontal Step Selector for Edit Form */}
+                                                                                    <div className="flex flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 mb-6 pb-4 border-b border-divider overflow-x-auto scrollbar-none">
+                                                                                        {ADIME_STEPS.map((step) => {
+                                                                                            const hasContent = editAdimeForm[step.key] && editAdimeForm[step.key].replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim().length > 0;
+                                                                                            const isActive = editAdimeStep === step.key;
+                                                                                            return (
+                                                                                                <button
+                                                                                                    key={step.key}
+                                                                                                    type="button"
+                                                                                                    onClick={() => setEditAdimeStep(step.key)}
+                                                                                                    className={cn(
+                                                                                                        "flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0",
+                                                                                                        isActive
+                                                                                                            ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]"
+                                                                                                            : "bg-white/50 dark:bg-white/5 text-text-muted hover:text-text-main border border-divider"
+                                                                                                    )}
+                                                                                                >
+                                                                                                    <span className={cn(
+                                                                                                        "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                                                                        isActive ? "bg-white text-primary" : "bg-divider text-text-muted"
+                                                                                                    )}>
+                                                                                                        {step.code}
+                                                                                                    </span>
+                                                                                                    <span className="hidden sm:inline">{step.label}</span>
+                                                                                                    {hasContent && (
+                                                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                                                    )}
+                                                                                                </button>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+
+                                                                                    {/* Active Editor Pane for Edit Form */}
                                                                                     <div className="space-y-1">
-                                                                                        <label className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Note</label>
+                                                                                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                                                                                            {ADIME_STEPS.find(s => s.key === editAdimeStep)?.label} Section Editor
+                                                                                        </label>
                                                                                         <div className="bg-bg-card rounded-xl overflow-hidden border border-divider">
                                                                                             <ReactQuill
                                                                                                 theme="snow"
-                                                                                                value={editAdimeForm.assessment}
-                                                                                                onChange={(val) => setEditAdimeForm({ ...editAdimeForm, assessment: val })}
+                                                                                                value={editAdimeForm[editAdimeStep] || ''}
+                                                                                                onChange={(val) => setEditAdimeForm({ ...editAdimeForm, [editAdimeStep]: val })}
                                                                                                 modules={{ toolbar: true }}
                                                                                             />
                                                                                         </div>
                                                                                     </div>
-                                                                                    <div className="flex justify-end gap-2 pt-2">
-                                                                                        <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-xs font-black uppercase">Cancel</Button>
-                                                                                        <Button type="submit" className="bg-info hover:bg-primary-hover text-white text-xs font-black uppercase px-6">Update Record</Button>
+
+                                                                                    {/* Step Footer Controls for Edit Form */}
+                                                                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-divider">
+                                                                                        <div className="text-[10px] font-black text-text-muted uppercase tracking-widest self-start sm:self-auto">
+                                                                                            Step {ADIME_STEPS.findIndex(s => s.key === editAdimeStep) + 1} of 5
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
+                                                                                            <Button variant="ghost" type="button" onClick={() => setEditingAdimeId(null)} className="text-[10px] sm:text-xs font-black uppercase text-text-muted hover:text-text-main h-9 sm:h-11 px-3 sm:px-5">
+                                                                                                Cancel
+                                                                                            </Button>
+                                                                                            {editAdimeStep !== 'assessment' && (
+                                                                                                <Button
+                                                                                                    type="button"
+                                                                                                    variant="ghost"
+                                                                                                    onClick={() => {
+                                                                                                        const idx = ADIME_STEPS.findIndex(s => s.key === editAdimeStep);
+                                                                                                        setEditAdimeStep(ADIME_STEPS[idx - 1].key);
+                                                                                                    }}
+                                                                                                    className="text-[10px] sm:text-xs font-black uppercase text-text-muted hover:text-text-main h-9 sm:h-11 px-3 sm:px-5"
+                                                                                                >
+                                                                                                    Prev
+                                                                                                </Button>
+                                                                                            )}
+                                                                                            {editAdimeStep !== 'evaluation' && (
+                                                                                                <Button
+                                                                                                    type="button"
+                                                                                                    variant="secondary"
+                                                                                                    onClick={() => {
+                                                                                                        const idx = ADIME_STEPS.findIndex(s => s.key === editAdimeStep);
+                                                                                                        setEditAdimeStep(ADIME_STEPS[idx + 1].key);
+                                                                                                    }}
+                                                                                                    className="text-[10px] sm:text-xs font-black uppercase h-9 sm:h-11 px-3 sm:px-6 flex items-center gap-1 sm:gap-1.5"
+                                                                                                >
+                                                                                                    Next <span className="hidden sm:inline">Step</span> <ChevronRight size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                                                                </Button>
+                                                                                            )}
+                                                                                            <Button type="submit" className="bg-info hover:bg-primary-hover text-white text-[10px] sm:text-xs font-black uppercase px-4 sm:px-6 h-9 sm:h-11">
+                                                                                                Update <span className="hidden sm:inline">Record</span>
+                                                                                            </Button>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </form>
                                                                             ) : (
                                                                                 <div className="space-y-4">
-                                                                                    <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-inner">
-                                                                                        <p className="text-[10px] font-black text-[var(--color-primary)] uppercase mb-3 tracking-widest border-b border-[var(--color-divider)] pb-2">Unified ADIME Documentation</p>
-                                                                                        <div className="ql-snow">
-                                                                                            <div
-                                                                                                className="ql-editor !p-0 !min-h-0 text-sm clinical-content"
-                                                                                                dangerouslySetInnerHTML={{ __html: note.assessment || '<em class="text-[var(--color-text-muted)] opacity-60">No clinical data recorded.</em>' }}
-                                                                                            />
-                                                                                        </div>
-                                                                                        {(note.diagnosis || note.intervention || note.monitoring || note.evaluation) && (
-                                                                                            <div className="mt-4 pt-4 border-t border-dashed border-[var(--color-divider)] opacity-60">
-                                                                                                <p className="text-[9px] font-bold uppercase text-[var(--color-text-muted)] mb-2">Legacy Multi-field Data Detected</p>
-                                                                                                <div className="grid grid-cols-2 gap-2">
-                                                                                                    {['diagnosis', 'intervention', 'monitoring', 'evaluation'].map(f => note[f] && (
-                                                                                                        <div key={f} className="text-[10px] p-2 bg-white/50 dark:bg-black/20 rounded-lg">
-                                                                                                            <span className="font-black uppercase text-[var(--color-primary)] mr-1 block mb-1">{f}:</span>
-                                                                                                            <div className="ql-snow">
-                                                                                                                <div className="ql-editor !p-0 !min-h-0" dangerouslySetInnerHTML={{ __html: note[f] }} />
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    ))}
+                                                                                    <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-[var(--color-divider)] shadow-inner space-y-4">
+                                                                                        {note.assessment && (
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest border-b border-[var(--color-divider)] pb-1 mb-2">Assessment [A]</p>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0 text-sm clinical-content" dangerouslySetInnerHTML={{ __html: note.assessment }} />
                                                                                                 </div>
                                                                                             </div>
+                                                                                        )}
+                                                                                        {note.diagnosis && (
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest border-b border-[var(--color-divider)] pb-1 mb-2">Diagnosis [D]</p>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0 text-sm clinical-content" dangerouslySetInnerHTML={{ __html: note.diagnosis }} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {note.intervention && (
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest border-b border-[var(--color-divider)] pb-1 mb-2">Intervention [I]</p>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0 text-sm clinical-content" dangerouslySetInnerHTML={{ __html: note.intervention }} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {note.monitoring && (
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest border-b border-[var(--color-divider)] pb-1 mb-2">Monitoring [M]</p>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0 text-sm clinical-content" dangerouslySetInnerHTML={{ __html: note.monitoring }} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {note.evaluation && (
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest border-b border-[var(--color-divider)] pb-1 mb-2">Evaluation [E]</p>
+                                                                                                <div className="ql-snow">
+                                                                                                    <div className="ql-editor !p-0 !min-h-0 text-sm clinical-content" dangerouslySetInnerHTML={{ __html: note.evaluation }} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {!note.assessment && !note.diagnosis && !note.intervention && !note.monitoring && !note.evaluation && (
+                                                                                            <em className="text-[var(--color-text-muted)] opacity-60 text-xs">No clinical data recorded.</em>
                                                                                         )}
                                                                                     </div>
                                                                                 </div>
