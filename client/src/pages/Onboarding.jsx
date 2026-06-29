@@ -32,7 +32,25 @@ const ALLERGY_OPTIONS = [
     "Soy",
     "Fish",
     "Shellfish",
-    "Sesame"
+    "Sesame",
+    "Mustard",
+    "Sulfites",
+    "Corn",
+    "Celery",
+    "Lupin",
+    "Molluscs",
+    "Garlic",
+    "Onions",
+    "Chocolate/Cocoa",
+    "Strawberries",
+    "Citrus Fruits",
+    "Kiwi",
+    "Pineapple",
+    "Honey",
+    "Beef",
+    "Chicken",
+    "Pork",
+    "Food Dyes/Additives"
 ];
 
 const BRISTOL_TYPES = [

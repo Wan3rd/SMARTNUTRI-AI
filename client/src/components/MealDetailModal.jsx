@@ -10,6 +10,98 @@ import { cn, formatValue } from '../lib/utils';
 import api from '../lib/api';
 import ConsumptionSliderModal from './ConsumptionSliderModal';
 
+const normalizeAllergenTerm = (term) => {
+    let t = String(term || '')
+        .toLowerCase()
+        .replace(/\ballergy\b/g, '')
+        .replace(/\ballergies\b/g, '')
+        .replace(/\ballergic\b/g, '')
+        .replace(/\bto\b/g, '')
+        .trim();
+    
+    // Stemming for English plurals
+    if (t.endsWith('ies')) {
+        t = t.slice(0, -3) + 'y'; // cherries -> cherry
+    } else if (t.endsWith('s') && !t.endsWith('ss') && !t.endsWith('us') && !t.endsWith('is') && !t.endsWith('as')) {
+        t = t.slice(0, -1); // eggs -> egg, peanuts -> peanut
+    }
+    return t;
+};
+
+const ALLERGEN_DERIVATIVES = {
+    dairy: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    milk: ['milk', 'butter', 'cheese', 'yogurt', 'whey', 'casein', 'lactose', 'cream', 'margarine', 'ghee', 'gelato', 'dairy', 'milk powder', 'condensed milk', 'buttermilk'],
+    gluten: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    wheat: ['wheat', 'barley', 'rye', 'semolina', 'spelt', 'flour', 'bread', 'pasta', 'noodle', 'crust', 'dough', 'gluten', 'wheat flour'],
+    peanut: ['peanut', 'groundnut', 'arachis', 'peanut butter', 'peanut oil'],
+    egg: ['egg', 'mayonnaise', 'meringue', 'ovalbumin', 'custard', 'egg yolk', 'egg white'],
+    soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
+    fish: ['fish', 'salmon', 'tuna', 'cod', 'sardine', 'anchovy', 'mackerel', 'tilapia', 'trout', 'haddock', 'patis'],
+    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong'],
+    'tree nut': ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia', 'brazil nut', 'chestnut', 'ginkgo nut', 'pine nut', 'coconut', 'shea nut'],
+    sesame: ['sesame', 'tahini', 'sesame oil', 'sesame seed', 'til', 'gingelly'],
+    mustard: ['mustard', 'mustard seed', 'mustard oil', 'mustard powder', 'dijon'],
+    sulfite: ['sulfite', 'sulphite', 'sulfur dioxide', 'sodium bisulfite', 'wine', 'vinegar', 'dried fruit'],
+    corn: ['corn', 'cornstarch', 'corn starch', 'corn syrup', 'maize', 'cornmeal', 'popcorn', 'polenta', 'hominy', 'corn oil'],
+    celery: ['celery', 'celery seed', 'celery salt', 'celeriac'],
+    lupin: ['lupin', 'lupine', 'lupin flour', 'lupin seed', 'lupin bean'],
+    mollusc: ['squid', 'octopus', 'cuttlefish', 'abalone', 'snail', 'clam', 'mussel', 'oyster', 'scallop'],
+    garlic: ['garlic', 'garlic powder', 'garlic oil', 'garlic salt', 'aioli'],
+    onion: ['onion', 'onion powder', 'shallot', 'scallion', 'leek', 'chive'],
+    chocolate: ['chocolate', 'cocoa', 'cacao', 'cocoa powder', 'cocoa butter', 'milo', 'chocolate syrup', 'fudge'],
+    cocoa: ['chocolate', 'cocoa', 'cacao', 'cocoa powder', 'cocoa butter', 'milo', 'chocolate syrup', 'fudge'],
+    strawberry: ['strawberry', 'strawberries', 'strawberry jam', 'strawberry syrup', 'strawberry extract'],
+    'citrus fruit': ['citrus', 'lemon', 'lime', 'orange', 'grapefruit', 'tangerine', 'calamansi', 'pomelo', 'yuzu', 'mandarin', 'citric acid', 'lemon juice', 'lime juice', 'orange juice'],
+    citrus: ['citrus', 'lemon', 'lime', 'orange', 'grapefruit', 'tangerine', 'calamansi', 'pomelo', 'yuzu', 'mandarin', 'citric acid', 'lemon juice', 'lime juice', 'orange juice'],
+    kiwi: ['kiwi', 'kiwifruit', 'kiwi extract', 'kiwi jam'],
+    pineapple: ['pineapple', 'pineapple juice', 'pineapple syrup', 'ananas'],
+    honey: ['honey', 'honeycomb', 'honey syrup'],
+    beef: ['beef', 'beef broth', 'beef stock', 'beef tallow', 'steak', 'veal'],
+    chicken: ['chicken', 'chicken broth', 'chicken stock', 'poultry'],
+    pork: ['pork', 'lard', 'bacon', 'ham', 'pork rind', 'chorizo', 'pork sausage', 'pepperoni'],
+    'food dye': ['red 40', 'yellow 5', 'yellow 6', 'blue 1', 'blue 2', 'green 3', 'allura red', 'tartrazine', 'sunset yellow', 'carmine', 'cochineal', 'artificial color', 'food dye', 'food color'],
+    additive: ['msg', 'monosodium glutamate', 'preservative', 'artificial flavor', 'carrageenan', 'sulfite', 'aspartame', 'sodium benzoate']
+};
+
+const isAllergyBypassed = (allergenOrDeriv, itemName) => {
+    const lowerItem = String(itemName || '').toLowerCase();
+    const lowerAllergen = String(allergenOrDeriv || '').toLowerCase();
+    
+    // 1. Eggplant Egg Bypass
+    if (lowerAllergen === 'egg' && lowerItem.includes('eggplant')) {
+        return true;
+    }
+    // 2. Butter Bypasses (Peanut butter, cocoa butter, butternut, shea butter are dairy-free despite "butter")
+    if (lowerAllergen === 'butter' && (
+        lowerItem.includes('peanut butter') ||
+        lowerItem.includes('cocoa butter') ||
+        lowerItem.includes('shea butter') ||
+        lowerItem.includes('butternut')
+    )) {
+        return true;
+    }
+    // 3. Non-dairy Milk Bypasses (Coconut milk, Soy milk, Almond milk, etc. are dairy-free)
+    if (lowerAllergen === 'milk' && (
+        lowerItem.includes('coconut milk') || 
+        lowerItem.includes('soy milk') || 
+        lowerItem.includes('almond milk') || 
+        lowerItem.includes('oat milk') || 
+        lowerItem.includes('rice milk')
+    )) {
+        return true;
+    }
+    // 4. Cocoa butter Dairy/Milk Bypass (Cocoa butter is dairy-free)
+    if ((lowerAllergen === 'milk' || lowerAllergen === 'dairy') && lowerItem.includes('cocoa butter')) {
+        return true;
+    }
+    // 5. Buckwheat Wheat/Gluten Bypass (Buckwheat is gluten-free)
+    if ((lowerAllergen === 'wheat' || lowerAllergen === 'gluten') && lowerItem.includes('buckwheat')) {
+        return true;
+    }
+    return false;
+};
+
 export default function MealDetailModal({ log, onClose, onDelete, rules = [], allergies = [] }) {
     const { user } = useAuth();
     const [isDeleting, setIsDeleting] = useState(false);
@@ -114,30 +206,52 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
         const items = analysis?.items || [];
         const found = [];
 
+        // Normalize and split the child's allergies
+        const sanitizedAllergies = [];
+        allergyList.forEach(a => {
+            if (typeof a === 'string') {
+                a.split(/[,/;]+/).forEach(sub => {
+                    const cleaned = normalizeAllergenTerm(sub);
+                    if (cleaned) sanitizedAllergies.push({ original: a, normalized: cleaned });
+                });
+            } else if (a) {
+                const cleaned = normalizeAllergenTerm(a);
+                if (cleaned) sanitizedAllergies.push({ original: a, normalized: cleaned });
+            }
+        });
+
         items.forEach(item => {
-            const itemName = (item.name || "").toLowerCase().trim();
-            if (!itemName) return;
+            const itemName = String(item.name || '').toLowerCase();
+            const itemWords = itemName.split(/\s+/).map(w => normalizeAllergenTerm(w));
 
-            allergyList.forEach(allergy => {
-                const allergen = (allergy || "").toLowerCase().trim();
-                if (!allergen || allergen === 'none') return;
+            sanitizedAllergies.forEach(({ original, normalized: allergen }) => {
+                // A. Direct match
+                const isSubstr = itemName.includes(allergen);
+                const isWordMatch = itemWords.includes(allergen);
+                const isBypassed = isAllergyBypassed(allergen, itemName);
 
-                // Create a singular version for better matching (e.g., "Peanuts" -> "Peanut")
-                const allergenSingular = (allergen.length > 3 && allergen.endsWith('s'))
-                    ? allergen.slice(0, -1)
-                    : allergen;
+                let isAllergic = (isSubstr || isWordMatch) && !isBypassed;
+                let matchedDerivative = null;
 
-                // Robust matching:
-                // 1. Exact or substring match (item: "Peanut butter", allergy: "Peanut")
-                // 2. Singular match (item: "Peanut butter", allergy: "Peanuts" -> checks "Peanut")
-                // 3. Reversed match (item: "Peanut", allergy: "Peanuts")
-                const isMatch = itemName.includes(allergen) ||
-                    itemName.includes(allergenSingular) ||
-                    allergen.includes(itemName) ||
-                    allergenSingular.includes(itemName);
+                // B. Semantic derivative match
+                if (!isAllergic && ALLERGEN_DERIVATIVES[allergen]) {
+                    for (const deriv of ALLERGEN_DERIVATIVES[allergen]) {
+                        const isDerivSubstr = itemName.includes(deriv);
+                        const isDerivWordMatch = itemWords.includes(deriv);
+                        const isDerivBypassed = isAllergyBypassed(deriv, itemName);
 
-                if (isMatch) {
-                    found.push({ item: item.name, allergen: allergy });
+                        if ((isDerivSubstr || isDerivWordMatch) && !isDerivBypassed) {
+                            isAllergic = true;
+                            matchedDerivative = deriv;
+                            break;
+                        }
+                    }
+                }
+
+                if (isAllergic) {
+                    if (!found.some(f => f.item === item.name && f.allergen === original)) {
+                        found.push({ item: item.name, allergen: original, derivative: matchedDerivative });
+                    }
                 }
             });
         });

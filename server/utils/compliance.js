@@ -32,7 +32,30 @@ export const ALLERGEN_DERIVATIVES = {
     soy: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
     soya: ['soy', 'tofu', 'tempeh', 'edamame', 'shoyu', 'miso', 'soya', 'soy sauce'],
     fish: ['fish', 'salmon', 'tuna', 'cod', 'sardine', 'anchovy', 'mackerel', 'tilapia', 'trout', 'haddock', 'patis'],
-    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong']
+    shellfish: ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop', 'shrimp paste', 'bagoong'],
+    'tree nut': ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia', 'brazil nut', 'chestnut', 'ginkgo nut', 'pine nut', 'coconut', 'shea nut'],
+    sesame: ['sesame', 'tahini', 'sesame oil', 'sesame seed', 'til', 'gingelly'],
+    mustard: ['mustard', 'mustard seed', 'mustard oil', 'mustard powder', 'dijon'],
+    sulfite: ['sulfite', 'sulphite', 'sulfur dioxide', 'sodium bisulfite', 'wine', 'vinegar', 'dried fruit'],
+    corn: ['corn', 'cornstarch', 'corn starch', 'corn syrup', 'maize', 'cornmeal', 'popcorn', 'polenta', 'hominy', 'corn oil'],
+    celery: ['celery', 'celery seed', 'celery salt', 'celeriac'],
+    lupin: ['lupin', 'lupine', 'lupin flour', 'lupin seed', 'lupin bean'],
+    mollusc: ['squid', 'octopus', 'cuttlefish', 'abalone', 'snail', 'clam', 'mussel', 'oyster', 'scallop'],
+    garlic: ['garlic', 'garlic powder', 'garlic oil', 'garlic salt', 'aioli'],
+    onion: ['onion', 'onion powder', 'shallot', 'scallion', 'leek', 'chive'],
+    chocolate: ['chocolate', 'cocoa', 'cacao', 'cocoa powder', 'cocoa butter', 'milo', 'chocolate syrup', 'fudge'],
+    cocoa: ['chocolate', 'cocoa', 'cacao', 'cocoa powder', 'cocoa butter', 'milo', 'chocolate syrup', 'fudge'],
+    strawberry: ['strawberry', 'strawberries', 'strawberry jam', 'strawberry syrup', 'strawberry extract'],
+    'citrus fruit': ['citrus', 'lemon', 'lime', 'orange', 'grapefruit', 'tangerine', 'calamansi', 'pomelo', 'yuzu', 'mandarin', 'citric acid', 'lemon juice', 'lime juice', 'orange juice'],
+    citrus: ['citrus', 'lemon', 'lime', 'orange', 'grapefruit', 'tangerine', 'calamansi', 'pomelo', 'yuzu', 'mandarin', 'citric acid', 'lemon juice', 'lime juice', 'orange juice'],
+    kiwi: ['kiwi', 'kiwifruit', 'kiwi extract', 'kiwi jam'],
+    pineapple: ['pineapple', 'pineapple juice', 'pineapple syrup', 'ananas'],
+    honey: ['honey', 'honeycomb', 'honey syrup'],
+    beef: ['beef', 'beef broth', 'beef stock', 'beef tallow', 'steak', 'veal'],
+    chicken: ['chicken', 'chicken broth', 'chicken stock', 'poultry'],
+    pork: ['pork', 'lard', 'bacon', 'ham', 'pork rind', 'chorizo', 'pork sausage', 'pepperoni'],
+    'food dye': ['red 40', 'yellow 5', 'yellow 6', 'blue 1', 'blue 2', 'green 3', 'allura red', 'tartrazine', 'sunset yellow', 'carmine', 'cochineal', 'artificial color', 'food dye', 'food color'],
+    additive: ['msg', 'monosodium glutamate', 'preservative', 'artificial flavor', 'carrageenan', 'sulfite', 'aspartame', 'sodium benzoate']
 };
 
 /**
@@ -47,8 +70,13 @@ const isAllergyBypassed = (allergenOrDeriv, itemName) => {
     if (lowerAllergen === 'egg' && lowerItem.includes('eggplant')) {
         return true;
     }
-    // 2. Peanut Butter Dairy Bypass (Peanut butter is dairy-free despite the word "butter")
-    if (lowerAllergen === 'butter' && lowerItem.includes('peanut butter')) {
+    // 2. Butter Bypasses (Peanut butter, cocoa butter, butternut, shea butter are dairy-free despite "butter")
+    if (lowerAllergen === 'butter' && (
+        lowerItem.includes('peanut butter') ||
+        lowerItem.includes('cocoa butter') ||
+        lowerItem.includes('shea butter') ||
+        lowerItem.includes('butternut')
+    )) {
         return true;
     }
     // 3. Non-dairy Milk Bypasses (Coconut milk, Soy milk, Almond milk, etc. are dairy-free)
@@ -59,6 +87,14 @@ const isAllergyBypassed = (allergenOrDeriv, itemName) => {
         lowerItem.includes('oat milk') || 
         lowerItem.includes('rice milk')
     )) {
+        return true;
+    }
+    // 4. Cocoa butter Dairy/Milk Bypass (Cocoa butter is dairy-free)
+    if ((lowerAllergen === 'milk' || lowerAllergen === 'dairy') && lowerItem.includes('cocoa butter')) {
+        return true;
+    }
+    // 5. Buckwheat Wheat/Gluten Bypass (Buckwheat is gluten-free)
+    if ((lowerAllergen === 'wheat' || lowerAllergen === 'gluten') && lowerItem.includes('buckwheat')) {
         return true;
     }
     return false;
