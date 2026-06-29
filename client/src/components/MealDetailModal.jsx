@@ -806,24 +806,24 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 {(log.hidden_ingredients || log.consumption_percent !== 100) && (
-                                    <div className="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
-                                        <h4 className="text-[10px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-2">Hidden Add-ons / Edits</h4>
-                                        <p className="text-xs text-amber-900/80 dark:text-amber-200/80 font-medium leading-relaxed">
-                                            {log.hidden_ingredients || "No extra ingredients reported."}
-                                            {log.consumption_percent !== 100 && ` (Consumption adjusted to ${log.consumption_percent}%)`}
-                                        </p>
-                                    </div>
+                                     <div className="bg-[var(--color-warning)]/10 dark:bg-[var(--color-warning)]/20 p-4 rounded-2xl border-2 border-[var(--color-warning)]/30 dark:border-[var(--color-warning)]/20">
+                                         <h4 className="text-[10px] font-black text-[var(--color-accent-hover)] dark:text-[var(--color-accent)] uppercase tracking-widest mb-2">Hidden Add-ons / Edits</h4>
+                                         <p className="text-xs text-[var(--color-text-main)] font-semibold leading-relaxed">
+                                             {log.hidden_ingredients || "No extra ingredients reported."}
+                                              {log.consumption_percent !== 100 && ` (Consumption adjusted to ${log.consumption_percent}%)`}
+                                         </p>
+                                     </div>
                                 )}
                                 {log.supplements && (
-                                    <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-                                        <h4 className="text-[10px] font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest mb-2">Supplements</h4>
-                                        <p className="text-xs text-blue-900/80 dark:text-blue-200/80 font-medium leading-relaxed">{log.supplements}</p>
+                                     <div className="bg-[var(--color-info)]/10 dark:bg-[var(--color-info)]/20 p-4 rounded-2xl border-2 border-[var(--color-info)]/30 dark:border-[var(--color-info)]/20">
+                                        <h4 className="text-[10px] font-black text-[var(--color-info)] uppercase tracking-widest mb-2">Supplements</h4>
+                                        <p className="text-xs text-[var(--color-text-main)] font-semibold leading-relaxed">{log.supplements}</p>
                                     </div>
                                 )}
                                 {log.physical_activity && (
-                                    <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-                                        <h4 className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest mb-2">Physical Activity</h4>
-                                        <p className="text-xs text-emerald-900/80 dark:text-emerald-200/80 font-medium leading-relaxed">{log.physical_activity}</p>
+                                    <div className="bg-[var(--color-success)]/10 dark:bg-[var(--color-success)]/20 p-4 rounded-2xl border-2 border-[var(--color-success)]/30 dark:border-[var(--color-success)]/20">
+                                        <h4 className="text-[10px] font-black text-[var(--color-success)] uppercase tracking-widest mb-2">Physical Activity</h4>
+                                        <p className="text-xs text-[var(--color-text-main)] font-semibold leading-relaxed">{log.physical_activity}</p>
                                     </div>
                                 )}
                             </div>
