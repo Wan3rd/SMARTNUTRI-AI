@@ -956,9 +956,12 @@ export default function MealLogger({ profileId, onLogged, recentLogs = [], aller
 
                     {status === 'verify' && analysisResult && (
                         <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800/30 flex items-start gap-2">
-                                <AlertCircle size={14} className="text-yellow-600 mt-0.5" />
-                                <p className="text-[10px] text-yellow-800 dark:text-yellow-500 font-bold leading-tight">CARE-GIVER VERIFICATION: AI detects items and cooking methods. Please confirm or correct them below.</p>
+                            <div className="bg-[var(--color-warning)]/10 border-[var(--color-warning)]/25 p-3 rounded-lg border flex items-start gap-2 shadow-sm">
+                                <AlertCircle size={14} className="text-[var(--color-warning)] mt-0.5 shrink-0" />
+                                <div className="text-[10px] text-[var(--color-text-main)] dark:text-[var(--color-secondary)] font-bold leading-tight">
+                                    <span className="text-[var(--color-warning)] uppercase tracking-wider block mb-0.5">Caregiver Verification</span>
+                                    AI detects items and cooking methods. Please confirm or correct them below.
+                                </div>
                             </div>
 
                             <div className="bg-[var(--color-primary)]/5 p-4 rounded-xl border border-[var(--color-primary)]/20 shadow-sm flex flex-col gap-3">

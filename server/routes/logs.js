@@ -316,7 +316,7 @@ router.post('/', verifyToken, async (req, res) => {
         // Dynamically import compliance utils
         const { checkCompliance } = await import('../utils/compliance.js');
         const complianceResult = checkCompliance(
-            { ai_analysis: finalizedAnalysis },
+            { ai_analysis: finalizedAnalysis, hidden_ingredients },
             rules,
             dailyTotals,
             profile.allergies || []
@@ -686,8 +686,9 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
             const { checkCompliance } = await import('../utils/compliance.js');
             const finalAnalysisForCompliance = dataToUpdate.ai_analysis || log.ai_analysis;
+            const finalHiddenIngredients = dataToUpdate.hidden_ingredients !== undefined ? dataToUpdate.hidden_ingredients : log.hidden_ingredients;
             const complianceResult = checkCompliance(
-                { ai_analysis: finalAnalysisForCompliance },
+                { ai_analysis: finalAnalysisForCompliance, hidden_ingredients: finalHiddenIngredients },
                 rules,
                 dailyTotals,
                 log.profiles.allergies || []

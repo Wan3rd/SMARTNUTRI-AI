@@ -17,6 +17,27 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import AddChildModal from '../components/AddChildModal';
 import AddClientModal from '../components/AddClientModal';
 
+// Safety fallback: if medical_history ever comes in as a JSON object
+// (legacy records before the Json→String migration), convert it to a readable string.
+// After the schema migration this should never be triggered, but kept as a guard.
+const renderMedicalHistoryObject = (history) => {
+    if (!history) return '';
+    if (typeof history === 'string') return history;
+    const parts = [];
+    if (history.diagnoses)        parts.push(`Diagnoses: ${history.diagnoses}`);
+    if (history.past_conditions)  parts.push(`Past Conditions: ${history.past_conditions}`);
+    if (history.hospitalizations) parts.push(`Hospitalizations: ${history.hospitalizations}`);
+    if (parts.length === 0) {
+        Object.entries(history).forEach(([key, val]) => {
+            if (val) {
+                const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                parts.push(`${label}: ${val}`);
+            }
+        });
+    }
+    return parts.join(' | ');
+};
+
 const DIETARY_OPTIONS = [
     "Omnivore (No restrictions)",
     "Vegetarian",
@@ -349,6 +370,7 @@ export default function Profile() {
     const [growthLogs, setGrowthLogs] = useState([]);
     const [vaccinationTypes, setVaccinationTypes] = useState([]);
     const [isAddingVaccine, setIsAddingVaccine] = useState(false);
+    const [isVaccinesExpanded, setIsVaccinesExpanded] = useState(false);
     const [newVaccine, setNewVaccine] = useState({ typeId: '', customName: '', date: new Date().toISOString().split('T')[0], notes: '' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, isDestructive: true });
 
@@ -629,11 +651,13 @@ export default function Profile() {
         }
 
         const initialDob = initial.date_of_birth ? new Date(initial.date_of_birth).toISOString().split('T')[0] : '';
+        const initialMedicalHistory = initial.medical_history || '';
+
         const isDirty = profileData.childName !== (initial.child_name || '') ||
             profileData.dateOfBirth !== initialDob ||
             profileData.height.toString() !== (initial.height_cm?.toString() || '') ||
             profileData.weight.toString() !== (initial.weight_kg?.toString() || '') ||
-            profileData.medicalHistory !== (initial.medical_history || '');
+            profileData.medicalHistory !== initialMedicalHistory;
 
         if (isDirty) {
             setConfirmDialog({
@@ -1929,7 +1953,7 @@ export default function Profile() {
                                                         <motion.div
                                                             initial={{ opacity: 0, y: -10 }}
                                                             animate={{ opacity: 1, y: 0 }}
-                                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-white dark:bg-slate-900 border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
+                                                            className="absolute top-full left-0 w-full mt-2 p-2 bg-[var(--color-bg-card)] border-2 border-[var(--color-divider)] rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-thin"
                                                         >
                                                             {ALLERGY_OPTIONS.map(option => {
                                                                 const isSelected = profileData.allergies.includes(option);
@@ -1949,14 +1973,14 @@ export default function Profile() {
                                                                             }
                                                                             setIsDropdownOpen(false);
                                                                         }}
-                                                                        className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400"
+                                                                        className="w-full text-left p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)] transition-colors border-l-4 border-transparent hover:border-red-400 hover:text-red-600"
                                                                     >
                                                                         {option}
                                                                     </button>
                                                                 );
                                                             })}
                                                             {ALLERGY_OPTIONS.every(o => profileData.allergies.includes(o)) && (
-                                                                <div className="p-4 text-center text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                                                                <div className="p-4 text-center text-[9px] font-bold text-[var(--color-text-muted)] uppercase italic">
                                                                     All allergies selected
                                                                 </div>
                                                             )}
@@ -2006,120 +2030,154 @@ export default function Profile() {
                                 </CardHeader>
                                 <CardContent className="p-3 sm:p-8 space-y-4 sm:space-y-8">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Structured Vaccination History</label>
-                                                {isEditing && !isAddingVaccine && (
-                                                    <Button
-                                                        onClick={() => setIsAddingVaccine(true)}
-                                                        className="h-8 px-2.5 rounded-xl bg-[var(--color-primary)] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
+                                        <div className="space-y-1.5 bg-white dark:bg-white/5 border-2 border-[var(--color-divider)] rounded-3xl p-4 sm:p-5 transition-all shadow-sm">
+                                            <div 
+                                                onClick={() => setIsVaccinesExpanded(!isVaccinesExpanded)}
+                                                className="flex items-center justify-between cursor-pointer select-none group"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] sm:text-xs font-black text-[var(--color-secondary)] group-hover:text-[var(--color-primary)] uppercase tracking-wider transition-colors">
+                                                        Vaccination History
+                                                    </span>
+                                                    <span className="text-[9px] font-black bg-[var(--color-bg-page)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                                        {childVaccinations.length} Logged
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {isEditing && !isAddingVaccine && isVaccinesExpanded && (
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setIsAddingVaccine(true);
+                                                            }}
+                                                            className="h-8 px-2.5 rounded-xl bg-[var(--color-primary)] text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-md shadow-[var(--color-primary)]/20"
+                                                        >
+                                                            <Plus size={12} /> Add
+                                                        </Button>
+                                                    )}
+                                                    <motion.div
+                                                        animate={{ rotate: isVaccinesExpanded ? 180 : 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors"
                                                     >
-                                                        <Plus size={14} /> Add Vaccine
-                                                    </Button>
-                                                )}
+                                                        <ChevronDown size={16} />
+                                                    </motion.div>
+                                                </div>
                                             </div>
 
-                                            {isAddingVaccine && (
-                                                <div className="mb-4 p-3 sm:p-5 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
-                                                            <select
-                                                                value={newVaccine.typeId}
-                                                                onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value, customName: e.target.value === 'custom' ? '' : newVaccine.customName })}
-                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
-                                                            >
-                                                                <option value="">Select Vaccine...</option>
-                                                                {vaccinationTypes.map(t => (
-                                                                    <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
-                                                                ))}
-                                                                <option value="custom" className="bg-[var(--color-bg-card)] font-black text-emerald-650 dark:text-emerald-400">+ -- Custom Vaccine --</option>
-                                                            </select>
-                                                            {newVaccine.typeId === 'custom' && (
-                                                                <input
-                                                                    type="text"
-                                                                    value={newVaccine.customName || ''}
-                                                                    onChange={(e) => setNewVaccine({ ...newVaccine, customName: e.target.value })}
-                                                                    placeholder="Enter custom vaccine name..."
-                                                                    className="w-full p-3 mt-2 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-all animate-in slide-in-from-top-1 duration-200"
-                                                                />
+                                            <AnimatePresence initial={false}>
+                                                {isVaccinesExpanded && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                                                        animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                                                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                                                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                                                        className="overflow-hidden space-y-4"
+                                                    >
+                                                        {isAddingVaccine && (
+                                                            <div className="mb-4 p-3 sm:p-5 bg-[var(--color-bg-page)] rounded-xl sm:rounded-2xl border-2 border-[var(--color-primary)]/30 animate-in zoom-in-95 duration-200 shadow-inner">
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Vaccine Type</label>
+                                                                        <select
+                                                                            value={newVaccine.typeId}
+                                                                            onChange={(e) => setNewVaccine({ ...newVaccine, typeId: e.target.value, customName: e.target.value === 'custom' ? '' : newVaccine.customName })}
+                                                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                        >
+                                                                            <option value="">Select Vaccine...</option>
+                                                                            {vaccinationTypes.map(t => (
+                                                                                <option key={t.id} value={t.id} className="bg-[var(--color-bg-card)]">{t.name}</option>
+                                                                            ))}
+                                                                            <option value="custom" className="bg-[var(--color-bg-card)] font-black text-emerald-650 dark:text-emerald-400">+ -- Custom Vaccine --</option>
+                                                                        </select>
+                                                                        {newVaccine.typeId === 'custom' && (
+                                                                            <input
+                                                                                type="text"
+                                                                                value={newVaccine.customName || ''}
+                                                                                onChange={(e) => setNewVaccine({ ...newVaccine, customName: e.target.value })}
+                                                                                placeholder="Enter custom vaccine name..."
+                                                                                className="w-full p-3 mt-2 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-xs font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-all animate-in slide-in-from-top-1 duration-200"
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
+                                                                        <input
+                                                                            type="date"
+                                                                            max={new Date().toISOString().split('T')[0]}
+                                                                            value={newVaccine.date}
+                                                                            onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
+                                                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-1.5 mb-4">
+                                                                    <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Notes (Batch #, Provider)</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={newVaccine.notes}
+                                                                        onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
+                                                                        placeholder="e.g. Batch #12345, Dr. Smith Clinic"
+                                                                        className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all placeholder:opacity-40"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex gap-2 justify-end">
+                                                                    <Button variant="outline" onClick={() => setIsAddingVaccine(false)} className="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancel</Button>
+                                                                    <Button onClick={handleAddVaccine} className="h-9 px-4 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-md shadow-[var(--color-primary)]/20">Save Record</Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                                                            {childVaccinations.length === 0 ? (
+                                                                <div className="p-4 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-xl sm:rounded-2xl bg-[var(--color-bg-page)]/50">
+                                                                    <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col gap-3">
+                                                                    {childVaccinations.map(v => (
+                                                                        <div key={v.id} className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-[var(--color-bg-page)] dark:bg-white/5 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
+                                                                            <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                                                                                <div className="h-9 w-9 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+                                                                                    <Check size={16} className="sm:w-5 sm:h-5" />
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+                                                                                    <div>
+                                                                                        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                                                                            <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight">
+                                                                                                {v.vaccination_types?.name}
+                                                                                            </h4>
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
+                                                                                            <Calendar size={10} className="flex-shrink-0" />
+                                                                                            {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    {v.notes ? (
+                                                                                        <div className="flex items-center">
+                                                                                            <p className="text-[9px] sm:text-xs text-[var(--color-text-muted)] whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2 sm:pl-3 leading-tight">{v.notes}</p>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="hidden md:block" />
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            {isEditing && (
+                                                                                <button
+                                                                                    onClick={() => handleDeleteVaccine(v.id)}
+                                                                                    className="self-end sm:self-auto p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
+                                                                                >
+                                                                                    <Trash2 size={14} />
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             )}
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Date Administered</label>
-                                                            <input
-                                                                type="date"
-                                                                max={new Date().toISOString().split('T')[0]}
-                                                                value={newVaccine.date}
-                                                                onChange={(e) => setNewVaccine({ ...newVaccine, date: e.target.value })}
-                                                                className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-1.5 mb-4">
-                                                        <label className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Clinical Notes (Batch #, Provider)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newVaccine.notes}
-                                                            onChange={(e) => setNewVaccine({ ...newVaccine, notes: e.target.value })}
-                                                            placeholder="e.g. Batch #12345, Dr. Smith Clinic"
-                                                            className="w-full p-3 rounded-xl border-2 border-[var(--color-divider)] bg-[var(--color-bg-card)] text-[var(--color-text-main)] font-bold text-xs outline-none focus:border-[var(--color-primary)] transition-all placeholder:opacity-40"
-                                                        />
-                                                    </div>
-                                                    <div className="flex gap-2 justify-end">
-                                                        <Button variant="outline" onClick={() => setIsAddingVaccine(false)} className="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest">Cancel</Button>
-                                                        <Button onClick={handleAddVaccine} className="h-9 px-4 rounded-xl bg-[var(--color-primary)] text-white text-[9px] font-black uppercase tracking-widest shadow-md shadow-[var(--color-primary)]/20">Save Record</Button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-3">
-                                                {childVaccinations.length === 0 ? (
-                                                    <div className="p-4 sm:p-8 text-center border-2 border-dashed border-[var(--color-divider)] rounded-xl sm:rounded-2xl">
-                                                        <p className="text-[10px] sm:text-xs font-medium text-[var(--color-text-muted)] italic">No vaccination records found for this profile.</p>
-                                                    </div>
-                                                ) : (
-                                                     <div className="flex flex-col gap-3">
-                                                         {childVaccinations.map(v => (
-                                                             <div key={v.id} className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] transition-all">
-                                                                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                                                                     <div className="h-9 w-9 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
-                                                                         <Check size={16} className="sm:w-5 sm:h-5" />
-                                                                     </div>
-                                                                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
-                                                                         <div>
-                                                                             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                                                                 <h4 className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[var(--color-text-main)] whitespace-normal break-words leading-tight">
-                                                                                     {v.vaccination_types?.name}
-                                                                                 </h4>
-                                                                             </div>
-                                                                             <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-[var(--color-text-muted)] font-bold">
-                                                                                 <Calendar size={10} className="flex-shrink-0" />
-                                                                                 {new Date(v.date_administered).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                                                                             </div>
-                                                                         </div>
-                                                                         {v.notes ? (
-                                                                             <div className="flex items-center">
-                                                                                 <p className="text-[9px] sm:text-xs text-[var(--color-text-muted)] whitespace-normal break-words italic font-medium border-l-2 border-[var(--color-divider)] pl-2 sm:pl-3 leading-tight">{v.notes}</p>
-                                                                             </div>
-                                                                         ) : (
-                                                                             <div className="hidden md:block" />
-                                                                         )}
-                                                                     </div>
-                                                                 </div>
-                                                                 {isEditing && (
-                                                                     <button
-                                                                         onClick={() => handleDeleteVaccine(v.id)}
-                                                                         className="self-end sm:self-auto p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors flex-shrink-0"
-                                                                     >
-                                                                         <Trash2 size={14} />
-                                                                     </button>
-                                                                 )}
-                                                             </div>
-                                                         ))}
-                                                     </div>
+                                                    </motion.div>
                                                 )}
-                                            </div>
+                                            </AnimatePresence>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] sm:text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest ml-1">Current Medications</label>

@@ -100,6 +100,25 @@ const _itemHasAllergen = (itemName, allergies) => {
 };
 // ─── End Allergen Detection Helpers ──────────────────────────────────────────
 
+const renderMedicalHistoryObject = (history) => {
+    if (!history) return 'None recorded';
+    const parts = [];
+    if (history.diagnoses) parts.push(`Diagnoses: ${history.diagnoses}`);
+    if (history.past_conditions) parts.push(`Past Conditions: ${history.past_conditions}`);
+    if (history.hospitalizations) parts.push(`Hospitalizations: ${history.hospitalizations}`);
+    
+    if (parts.length === 0) {
+        Object.entries(history).forEach(([key, val]) => {
+            if (val) {
+                const formattedKey = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                parts.push(`${formattedKey}: ${val}`);
+            }
+        });
+    }
+    return parts.join(' | ') || 'None recorded';
+};
+
+
 export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -270,20 +289,6 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
         const isAnalysisDirty = initialAnalysis !== currentAnalysis;
         const isWaterDirty = editedWater !== (log.water_ml || 0);
 
-        console.log('isDirty Debug:', {
-            isReviewDirty,
-            review,
-            initialReview,
-            isAnalysisDirty,
-            currentAnalysisLength: currentAnalysis?.length,
-            initialAnalysisLength: initialAnalysis?.length,
-            currentAnalysis: currentAnalysis,
-            initialAnalysis: initialAnalysis,
-            isWaterDirty,
-            editedWater,
-            logWater: log.water_ml
-        });
-
         return isReviewDirty || isAnalysisDirty || isWaterDirty;
     }, [log, editedAnalysis, review, editedWater]);
 
@@ -370,15 +375,15 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [log, isOpen]);
 
     const macros = editedAnalysis?.macros_est || {};
-    const allergies = log?.profile?.allergies || [];
 
     const detectedAllergens = React.useMemo(() => {
-        if (!log || !allergies || allergies.length === 0 || !editedAnalysis?.items) return [];
+        const profileAllergies = log?.profile?.allergies || [];
+        if (!log || profileAllergies.length === 0 || !editedAnalysis?.items) return [];
         const found = [];
         editedAnalysis.items.forEach(item => {
             const itemName = String(item.name || '').toLowerCase();
             const itemWords = itemName.split(/\s+/).map(w => _normalizeAllergenTerm(w));
-            allergies.forEach(a => {
+            profileAllergies.forEach(a => {
                 if (!a || typeof a !== 'string') return;
                 a.split(/[,/;]+/).forEach(sub => {
                     const allergen = _normalizeAllergenTerm(sub);
@@ -404,8 +409,43 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 });
             });
         });
+
+        // Check hidden ingredients
+        const hiddenText = String(log.hidden_ingredients || '').toLowerCase().trim();
+        if (hiddenText) {
+            const hiddenTokens = hiddenText.split(/[,/;\s\b(and)\b\b(or)\b\b(with)\b]+/i).map(w => _normalizeAllergenTerm(w));
+            profileAllergies.forEach(a => {
+                if (!a || typeof a !== 'string') return;
+                a.split(/[,/;]+/).forEach(sub => {
+                    const allergen = _normalizeAllergenTerm(sub);
+                    if (!allergen || allergen === 'none') return;
+                    const isSubstr = hiddenText.includes(allergen);
+                    const isWordMatch = hiddenTokens.includes(allergen);
+                    const isBypassed = _isAllergyBypassed(allergen, hiddenText);
+
+                    let isAllergic = (isSubstr || isWordMatch) && !isBypassed;
+                    let matchedDerivative = null;
+
+                    if (!isAllergic) {
+                        const derivs = _ALLERGEN_DERIVATIVES[allergen] || [];
+                        for (const d of derivs) {
+                            if ((hiddenText.includes(d) || hiddenTokens.includes(d)) && !_isAllergyBypassed(d, hiddenText)) {
+                                isAllergic = true;
+                                matchedDerivative = d;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isAllergic && !found.some(f => f.item === 'Hidden Ingredients' && f.allergen === a)) {
+                        found.push({ item: 'Hidden Ingredients', allergen: a, derivative: matchedDerivative });
+                    }
+                });
+            });
+        }
+
         return found;
-    }, [editedAnalysis?.items, allergies, log]);
+    }, [editedAnalysis?.items, log]);
 
     if (!isOpen || !log) return null;
 
@@ -604,7 +644,12 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             {log.profile?.medical_history && (
                                 <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
                                     <p className="text-[10px] text-blue-400 font-black uppercase flex items-center gap-1 mb-1"><Info size={12} /> Medical History</p>
-                                    <p className="text-xs text-blue-100/80 italic leading-relaxed">{log.profile.medical_history}</p>
+                                    <p className="text-xs text-blue-100/80 italic leading-relaxed">
+                                        {typeof log.profile.medical_history === 'string'
+                                            ? log.profile.medical_history
+                                            : renderMedicalHistoryObject(log.profile.medical_history)
+                                        }
+                                    </p>
                                 </div>
                             )}
                             <div className="flex flex-wrap gap-2">
@@ -896,7 +941,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             >
                                                 <div className="flex flex-col">
                                                     <span className="text-sm sm:text-base font-black text-[var(--color-text-main)] uppercase tracking-tight group-hover:text-[var(--color-primary)] transition-colors">{item.name}</span>
-                                                    {_itemHasAllergen(item.name, allergies) && (
+                                                    {_itemHasAllergen(item.name, log?.profile?.allergies || []) && (
                                                             <span className="text-[8px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">
                                                                 <ShieldAlert size={10} /> Potential Allergen
                                                             </span>

@@ -56,6 +56,42 @@ const isSnackMatch = (mealPlanType, checklistMealName) => {
     return pt === ct;
 };
 
+const getHouseholdEquivalent = (category, amountStr) => {
+    const val = parseFloat(amountStr);
+    if (isNaN(val) || val <= 0) return null;
+
+    const formatValue = (num) => {
+        if (num === 0.5) return "1/2";
+        if (num === 1.5) return "1 1/2";
+        if (num === 2.5) return "2 1/2";
+        if (num === 0.75) return "3/4";
+        if (num === 0.25) return "1/4";
+        if (num > 0 && num % 1 === 0.5) {
+            return `${Math.floor(num)} 1/2`;
+        }
+        return num.toString();
+    };
+
+    switch (category) {
+        case 'Rice':
+            return `${formatValue(val * 0.5)} cup cooked rice OR ${formatValue(val)} slice(s) bread`;
+        case 'Meat':
+            return `${formatValue(val)} matchbox-size piece(s) (approx. ${val * 30}g) OR ${formatValue(val)} egg(s)`;
+        case 'Vegetables':
+            return `${formatValue(val * 0.5)} cup cooked OR ${formatValue(val)} cup(s) raw`;
+        case 'Fruit':
+            return `${formatValue(val)} medium piece(s) OR ${formatValue(val)} slice(s)`;
+        case 'Milk':
+            return `${formatValue(val)} cup(s) or glass(es) (${val * 250}mL)`;
+        case 'Fat':
+            return `${formatValue(val)} teaspoon(s) (tsp)`;
+        case 'Sugar':
+            return `${formatValue(val)} teaspoon(s) (tsp)`;
+        default:
+            return null;
+    }
+};
+
 export default function DailyPlan() {
     const { selectedProfile, loading: profileLoading } = useProfile();
     const { startLoading, stopLoading } = useLoading();
@@ -69,9 +105,13 @@ export default function DailyPlan() {
     useEffect(() => {
         const fetchPlan = async () => {
             if (!selectedProfile) {
+                setPlan([]);
+                setScheduledMeals([]);
+                setSugarLimit('');
                 if (!profileLoading) setIsInitialSync(false);
                 return;
             }
+            setIsInitialSync(true);
             try {
                 const currentDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -162,29 +202,44 @@ export default function DailyPlan() {
     }, [selectedProfile?.id, profileLoading]);
 
     const toggleItem = async (mealIndex, itemIndex) => {
-        const newPlan = [...plan];
-        const item = newPlan[mealIndex].items[itemIndex];
+        const item = plan[mealIndex].items[itemIndex];
         const newCompletedStatus = !item.completed;
 
-        // Optimistic UI update
-        item.completed = newCompletedStatus;
-        setPlan(newPlan);
+        // Optimistic UI update (Immutable copy)
+        const updatedPlan = plan.map((meal, mIdx) => {
+            if (mIdx !== mealIndex) return meal;
+            return {
+                ...meal,
+                items: meal.items.map((it, iIdx) => {
+                    if (iIdx !== itemIndex) return it;
+                    return { ...it, completed: newCompletedStatus };
+                })
+            };
+        });
+        setPlan(updatedPlan);
 
         // Sync to server
         try {
             const currentDate = format(new Date(), 'yyyy-MM-dd');
             await api.post(`/nutritionist/adherence/${selectedProfile.id}`, {
                 date: currentDate,
-                meal_type: newPlan[mealIndex].meal,
+                meal_type: plan[mealIndex].meal,
                 category: item.category.toLowerCase(),
                 completed: newCompletedStatus
             });
         } catch (err) {
             console.error("Failed to sync adherence", err);
             // Revert on failure
-            const revertedPlan = [...plan];
-            revertedPlan[mealIndex].items[itemIndex].completed = !newCompletedStatus;
-            setPlan(revertedPlan);
+            setPlan(prevPlan => prevPlan.map((meal, mIdx) => {
+                if (mIdx !== mealIndex) return meal;
+                return {
+                    ...meal,
+                    items: meal.items.map((it, iIdx) => {
+                        if (iIdx !== itemIndex) return it;
+                        return { ...it, completed: !newCompletedStatus };
+                    })
+                };
+            }));
         }
     };
 
@@ -392,7 +447,11 @@ export default function DailyPlan() {
                                     )}
                                     <div className="divide-y-2 divide-[var(--color-divider)]">
                                         {meal.items.map((item, itemIdx) => {
-                                            const dict = FEL_DICTIONARY[item.category];
+                                            const dict = FEL_DICTIONARY[item.category] || {
+                                                icon: <Info className="text-gray-400" size={16} />,
+                                                definition: "",
+                                                examples: []
+                                            };
                                             return (
                                                 <div key={itemIdx} className={cn("flex flex-col sm:flex-row sm:items-center p-4 sm:p-6 gap-4 transition-colors", item.completed && "bg-emerald-50/30")}>
                                                     {/* Checkbox & Details */}
@@ -412,8 +471,13 @@ export default function DailyPlan() {
                                                                 <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.category}</span>
                                                             </div>
                                                             <p className={cn("text-sm font-bold uppercase tracking-tight", item.completed ? "text-emerald-700 line-through opacity-70" : "text-[var(--color-text-main)]")}>
-                                                                {item.amount}
+                                                                {item.amount} {parseFloat(item.amount) === 1 ? 'Exchange' : 'Exchanges'}
                                                             </p>
+                                                            {getHouseholdEquivalent(item.category, item.amount) && (
+                                                                <p className={cn("text-[11px] font-medium text-[var(--color-text-muted)] mt-0.5 italic leading-relaxed", item.completed && "line-through opacity-50")}>
+                                                                    Equivalent: {getHouseholdEquivalent(item.category, item.amount)}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
 

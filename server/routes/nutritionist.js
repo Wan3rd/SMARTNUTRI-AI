@@ -917,6 +917,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
                 logged_at: true,
                 meal_category: true,
                 ai_analysis: true,
+                hidden_ingredients: true,
                 profiles: {
                     select: {
                         allergies: true,
@@ -974,7 +975,7 @@ router.patch('/logs/:id/review', verifyToken, isNutritionist, async (req, res) =
 
         // 4. Check Compliance (Dynamic Import)
         const { checkCompliance } = await import('../utils/compliance.js');
-        const complianceResult = checkCompliance({ nutritionist_review, ai_analysis: log.ai_analysis }, rules, dailyTotals, log.profiles?.allergies || []);
+        const complianceResult = checkCompliance({ nutritionist_review, ai_analysis: log.ai_analysis, hidden_ingredients: log.hidden_ingredients }, rules, dailyTotals, log.profiles?.allergies || []);
 
         // 5. Update Log with first-class nutritional columns
         const verified = nutritionist_review?.verified_analysis || {};

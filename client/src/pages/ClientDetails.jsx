@@ -35,6 +35,24 @@ const getAgeSafe = (dob) => {
     return isNaN(age) ? 'N/A' : `${age} Yrs`;
 };
 
+const renderMedicalHistoryObject = (history) => {
+    if (!history) return 'None recorded';
+    const parts = [];
+    if (history.diagnoses) parts.push(`Diagnoses: ${history.diagnoses}`);
+    if (history.past_conditions) parts.push(`Past Conditions: ${history.past_conditions}`);
+    if (history.hospitalizations) parts.push(`Hospitalizations: ${history.hospitalizations}`);
+    
+    if (parts.length === 0) {
+        Object.entries(history).forEach(([key, val]) => {
+            if (val) {
+                const formattedKey = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                parts.push(`${formattedKey}: ${val}`);
+            }
+        });
+    }
+    return parts.join(' | ') || 'None recorded';
+};
+
 // Stable default for the portion exchange matrix — used in fetchPortionPlan to
 // avoid the stale-closure bug that blanks out the grid when switching clients.
 const DEFAULT_PORTION_MATRIX = [
@@ -1092,7 +1110,7 @@ export default function ClientDetails() {
                 weight_kg: selectedProfile.weight_kg,
                 allergies: selectedProfile.allergies || [],
                 dietary_preferences: selectedProfile.dietary_preferences || '',
-                medical_history: typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : '',
+                medical_history: selectedProfile.medical_history || '',
                 medications: selectedProfile.medications || '',
                 weigh_in_conditions: selectedProfile.weigh_in_conditions || '',
                 bristol_stool_scale: selectedProfile.bristol_stool_scale || 4,
@@ -3086,7 +3104,7 @@ export default function ClientDetails() {
                                                                                             weight_kg: selectedProfile.weight_kg || '',
                                                                                             allergies: selectedProfile.allergies || [],
                                                                                             dietary_preferences: selectedProfile.dietary_preferences || '',
-                                                                                            medical_history: typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : '',
+                                                                                            medical_history: selectedProfile.medical_history || '',
                                                                                             medications: selectedProfile.medications || '',
                                                                                             weigh_in_conditions: selectedProfile.weigh_in_conditions || '',
                                                                                             bristol_stool_scale: selectedProfile.bristol_stool_scale || 4,
@@ -3176,7 +3194,7 @@ export default function ClientDetails() {
                                                                                 />
                                                                             ) : (
                                                                                 <div className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed whitespace-pre-wrap">
-                                                                                    {typeof selectedProfile.medical_history === 'string' ? selectedProfile.medical_history : "No medical history recorded."}
+                                                                                    {selectedProfile.medical_history || "No medical history recorded."}
                                                                                 </div>
                                                                             )}
                                                                         </div>

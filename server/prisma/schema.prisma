@@ -136,7 +136,7 @@ model profiles {
   medications         String?
   weigh_in_conditions String?
   bristol_stool_scale Int?
-  medical_history     Json?
+  medical_history     String?
   family_history      String?
   food_intolerances   String?
   symptoms            String?

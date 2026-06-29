@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
-import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils, Info, X } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils, Info, X, AlertCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Snackbar, Alert } from '@mui/material';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
@@ -37,6 +37,94 @@ export default function Calendar() {
         message: '',
         severity: 'success'
     });
+
+    const getSelectedDayBreaches = () => {
+        if (!selectedProfile || rules.length === 0) return [];
+        
+        const dayLogs = logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate));
+        if (dayLogs.length === 0) return [];
+
+        const totals = dayLogs.reduce((acc, l) => {
+            acc.calories += (l.total_calories || 0);
+            acc.protein += (l.total_protein_g || 0);
+            acc.carbs += (l.total_carbs_g || 0);
+            acc.fat += (l.total_fat_g || 0);
+            acc.sodium += (l.total_sodium_mg || 0);
+            acc.water += (l.water_ml || 0);
+            return acc;
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 0, water: 0 });
+
+        const breaches = [];
+
+        rules.forEach(rule => {
+            const limit = parseFloat(rule.rule_value);
+            if (!limit) return;
+
+            let current = 0;
+            let label = rule.category;
+            if (rule.category === 'Calories') {
+                current = totals.calories;
+                label = 'Calories';
+            } else if (rule.category === 'Protein') {
+                current = totals.protein;
+                label = 'Protein';
+            } else if (rule.category === 'Carbohydrates' || rule.category === 'Carb') {
+                current = totals.carbs;
+                label = 'Carbohydrates';
+            } else if (rule.category === 'Fats' || rule.category === 'Fat') {
+                current = totals.fat;
+                label = 'Fats';
+            } else if (rule.category === 'Sodium') {
+                current = totals.sodium;
+                label = 'Sodium';
+            } else if (rule.category === 'Fluid/Water' || rule.category === 'Water') {
+                current = totals.water;
+                label = 'Water';
+            }
+
+            if (rule.rule_type === 'max' && current > limit) {
+                breaches.push({
+                    category: label,
+                    type: 'danger',
+                    message: `${label} limit exceeded: ${Math.round(current)}${rule.rule_unit} (Max allowed: ${limit}${rule.rule_unit})`
+                });
+            } else if (rule.rule_type === 'max' && current > limit * 0.9) {
+                breaches.push({
+                    category: label,
+                    type: 'warning',
+                    message: `${label} approaching limit: ${Math.round(current)}${rule.rule_unit} (Max allowed: ${limit}${rule.rule_unit})`
+                });
+            } else if (rule.rule_type === 'min' && current < limit) {
+                breaches.push({
+                    category: label,
+                    type: 'danger',
+                    message: `${label} below daily target: ${Math.round(current)}${rule.rule_unit} (Required: ${limit}${rule.rule_unit})`
+                });
+            } else if (rule.rule_type === 'min' && current < limit * 1.1) {
+                breaches.push({
+                    category: label,
+                    type: 'warning',
+                    message: `${label} near lower threshold: ${Math.round(current)}${rule.rule_unit} (Required: ${limit}${rule.rule_unit})`
+                });
+            }
+        });
+
+        // Also check if any meal logs on this day were flagged for allergens
+        dayLogs.forEach(log => {
+            if (log.compliance_status === 'flagged') {
+                const details = typeof log.violation_details === 'string' 
+                    ? JSON.parse(log.violation_details) 
+                    : log.violation_details;
+                breaches.push({
+                    category: 'Allergen',
+                    type: 'danger',
+                    message: `Allergen detected in ${log.meal_category}: ${details?.allergen_found || 'Potential Allergen Ingredient'}`
+                });
+            }
+        });
+
+        return breaches;
+    };
 
     // Fetch data on mount or when profile/month changes
     React.useEffect(() => {
@@ -327,32 +415,37 @@ export default function Calendar() {
                             </p>
                         </div>
 
-                        <div className="flex-1 w-full md:w-auto grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 sm:p-5 bg-[var(--color-bg-page)] dark:bg-slate-800/40 border border-[var(--color-divider)] rounded-2xl">
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_var(--color-primary)]" />
+                        <div className="flex-1 w-full md:w-auto grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50/50 dark:bg-black/10 border border-[var(--color-divider)] rounded-2xl">
+                            {/* Compliant */}
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] shadow-sm">
+                                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                                 </div>
-                                <div>
-                                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block">🟢 Compliant</span>
-                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">All targets met</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-                                    <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" />
-                                </div>
-                                <div>
-                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block">🟡 Warning</span>
-                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">Near threshold</span>
+                                <div className="space-y-0.5">
+                                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Compliant</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block leading-none">All targets met</span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-xl bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
-                                    <div className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-bounce" />
+
+                            {/* Warning */}
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] shadow-sm">
+                                <div className="h-8 w-8 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)] animate-pulse" />
                                 </div>
-                                <div>
-                                    <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest block">🔴 Danger / Out</span>
-                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block">Limits breached</span>
+                                <div className="space-y-0.5">
+                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Warning</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block leading-none">Near threshold</span>
+                                </div>
+                            </div>
+
+                            {/* Danger */}
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/5 border border-[var(--color-divider)] shadow-sm">
+                                <div className="h-8 w-8 rounded-lg bg-red-500/10 dark:bg-red-500/20 border border-red-500/20 flex items-center justify-center shrink-0">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)] animate-bounce" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider block">Attention Required</span>
+                                    <span className="text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-tight block leading-none">Out of target range</span>
                                 </div>
                             </div>
                         </div>
@@ -366,7 +459,7 @@ export default function Calendar() {
 
             {/* Selected Day Details */}
             <Card className="border-2 border-[var(--color-divider)] rounded-[2rem] overflow-hidden shadow-lg bg-white dark:bg-white/5">
-                <CardHeader className="flex flex-row items-center justify-between p-6 sm:p-8 border-b-2 border-[var(--color-divider)] bg-gray-50/50 dark:bg-black/20">
+                <CardHeader className="flex flex-row items-center justify-between p-6 sm:p-8 border-b-2 border-[var(--color-divider)] bg-gray-50 dark:bg-black/20">
                     <div className="space-y-1">
                         <CardTitle className="text-lg sm:text-xl font-black text-[var(--color-secondary)] uppercase tracking-tight">
                             {format(selectedDate, 'MMMM d, yyyy')}
@@ -385,6 +478,40 @@ export default function Calendar() {
                 </CardHeader>
                 <CardContent className="p-6 sm:p-8">
                     <div className="space-y-8">
+                        {/* Day Compliance Breaches */}
+                        {(() => {
+                            const breaches = getSelectedDayBreaches();
+                            if (breaches.length === 0) return null;
+                            return (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 border-b-2 border-[var(--color-divider)] pb-2">
+                                        <AlertTriangle size={18} className="text-amber-500" />
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--color-secondary)]">Daily Evaluation Warnings</h3>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {breaches.map((breach, idx) => (
+                                            <div key={idx} className={cn(
+                                                "p-3.5 rounded-xl border flex items-start gap-3 shadow-sm",
+                                                breach.type === 'danger' 
+                                                    ? "bg-[var(--color-danger)]/10 border-[var(--color-danger)]/25 text-[var(--color-danger)]"
+                                                    : "bg-[var(--color-warning)]/10 border-[var(--color-warning)]/25 text-[var(--color-warning)]"
+                                            )}>
+                                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                                <div className="space-y-0.5 text-[var(--color-text-main)] dark:text-[var(--color-secondary)]">
+                                                    <span className={cn(
+                                                        "text-[10px] font-black uppercase tracking-widest block",
+                                                        breach.type === 'danger' ? "text-[var(--color-danger)]" : "text-[var(--color-warning)]"
+                                                    )}>
+                                                        {breach.category} Alert
+                                                    </span>
+                                                    <p className="text-xs font-bold leading-relaxed">{breach.message}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                         {/* 1. Prescribed clinical plan section */}
                         {(() => {
                             const dayPlans = scheduledMeals.filter(p => isSameDay(new Date(p.date), selectedDate));

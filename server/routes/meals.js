@@ -452,4 +452,39 @@ router.post('/generate/day', verifyToken, async (req, res) => {
     }
 });
 
+// PATCH /plans/:id/toggle - Toggle is_consumed status of a scheduled meal plan
+router.patch('/plans/:id/toggle', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        // Fetch the plan, verify it belongs to the requesting user
+        const plan = await prisma.meal_plans.findUnique({
+            where: { id },
+            include: { profiles: { select: { user_id: true } } }
+        });
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Meal plan not found.' });
+        }
+
+        // Authorization: only the profile owner or the assigned nutritionist can toggle
+        const isOwner = plan.profiles?.user_id === userId;
+        const isNutritionist = plan.nutritionist_id === userId;
+        if (!isOwner && !isNutritionist) {
+            return res.status(403).json({ message: 'Not authorized to update this meal plan.' });
+        }
+
+        const updated = await prisma.meal_plans.update({
+            where: { id },
+            data: { is_consumed: !plan.is_consumed }
+        });
+
+        res.json({ id: updated.id, is_consumed: updated.is_consumed });
+    } catch (err) {
+        console.error('Toggle meal plan consumed error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 export default router;

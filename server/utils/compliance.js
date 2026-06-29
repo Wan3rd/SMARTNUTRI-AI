@@ -100,6 +100,52 @@ const isAllergyBypassed = (allergenOrDeriv, itemName) => {
     return false;
 };
 
+const isAllergenPresent = (allergenOrDeriv, text) => {
+    const lower = text.toLowerCase();
+    const term = allergenOrDeriv.toLowerCase();
+    
+    // Check if the term is present at all
+    if (!lower.includes(term)) return false;
+
+    // Special bypass logic for "butter" (dairy)
+    if (term === 'butter' || term === 'lactose' || term === 'milk' || term === 'dairy' || term === 'egg' || term === 'wheat' || term === 'gluten') {
+        // Count total occurrences of the term in the text
+        const totalOccurrences = lower.split(term).length - 1;
+        let bypassedOccurrences = 0;
+
+        if (term === 'egg') {
+            bypassedOccurrences += (lower.split('eggplant').length - 1);
+        }
+
+        if (term === 'butter') {
+            bypassedOccurrences += (lower.split('peanut butter').length - 1);
+            bypassedOccurrences += (lower.split('cocoa butter').length - 1);
+            bypassedOccurrences += (lower.split('shea butter').length - 1);
+            bypassedOccurrences += (lower.split('butternut').length - 1);
+        }
+
+        if (term === 'milk' || term === 'dairy') {
+            bypassedOccurrences += (lower.split('coconut milk').length - 1);
+            bypassedOccurrences += (lower.split('soy milk').length - 1);
+            bypassedOccurrences += (lower.split('almond milk').length - 1);
+            bypassedOccurrences += (lower.split('oat milk').length - 1);
+            bypassedOccurrences += (lower.split('rice milk').length - 1);
+            bypassedOccurrences += (lower.split('cocoa butter').length - 1);
+        }
+
+        if (term === 'wheat' || term === 'gluten') {
+            bypassedOccurrences += (lower.split('buckwheat').length - 1);
+        }
+
+        // If all occurrences of the keyword in the text are bypassed, then it's NOT an allergen violation
+        if (bypassedOccurrences >= totalOccurrences) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
 /**
  * Evaluates a meal log against a set of nutrition rules.
  * @param {Object} mealLog - The incoming meal log object with ai_analysis
@@ -134,25 +180,14 @@ export const checkCompliance = (mealLog, rules = [], dailyTotals = {}, allergies
     if (analysis.items) {
         analysis.items.forEach(item => {
             const itemName = String(item.name || '').toLowerCase();
-            const itemWords = itemName.split(/\s+/).map(w => normalizeAllergenTerm(w));
 
             sanitizedAllergies.forEach(allergen => {
-                // 1. Direct match: does the item contain the allergen term directly?
-                const isSubstr = itemName.includes(allergen);
-                const isWordMatch = itemWords.includes(allergen);
-                const isBypassed = isAllergyBypassed(allergen, itemName);
-
-                let isAllergic = (isSubstr || isWordMatch) && !isBypassed;
-
-                // 2. Semantic derivative match: does the item contain any derivatives of the allergen?
+                let isAllergic = isAllergenPresent(allergen, itemName);
                 let matchedDerivative = null;
+
                 if (!isAllergic && ALLERGEN_DERIVATIVES[allergen]) {
                     for (const deriv of ALLERGEN_DERIVATIVES[allergen]) {
-                        const isDerivSubstr = itemName.includes(deriv);
-                        const isDerivWordMatch = itemWords.includes(deriv);
-                        const isDerivBypassed = isAllergyBypassed(deriv, itemName);
-
-                        if ((isDerivSubstr || isDerivWordMatch) && !isDerivBypassed) {
+                        if (isAllergenPresent(deriv, itemName)) {
                             isAllergic = true;
                             matchedDerivative = deriv;
                             break;
@@ -179,6 +214,46 @@ export const checkCompliance = (mealLog, rules = [], dailyTotals = {}, allergies
                     xaiMessages.push(alertMsg);
                 }
             });
+        });
+    }
+
+    // 2. Hidden Ingredients Allergen Check
+    const hidden = String(mealLog.hidden_ingredients || '').trim();
+    if (hidden) {
+        const lowerHidden = hidden.toLowerCase();
+
+        sanitizedAllergies.forEach(allergen => {
+            let isAllergic = isAllergenPresent(allergen, lowerHidden);
+            let matchedDerivative = null;
+
+            if (!isAllergic && ALLERGEN_DERIVATIVES[allergen]) {
+                for (const deriv of ALLERGEN_DERIVATIVES[allergen]) {
+                    if (isAllergenPresent(deriv, lowerHidden)) {
+                        isAllergic = true;
+                        matchedDerivative = deriv;
+                        break;
+                    }
+                }
+            }
+
+            if (isAllergic) {
+                const warningLabel = matchedDerivative
+                    ? `Allergy Warning (Hidden): ${allergen.toUpperCase()} (${matchedDerivative.toUpperCase()})`
+                    : `Allergy Warning (Hidden): ${allergen.toUpperCase()}`;
+
+                violations.push({
+                    rule: warningLabel,
+                    category: 'Allergy',
+                    actual: `Hidden Ingredient: "${hidden}"`,
+                    limit: `Avoid ${allergen}`
+                });
+
+                const alertMsg = matchedDerivative
+                    ? `CRITICAL ALLERGY ALERT: Hidden ingredients mention "${hidden}" (detected derivative: ${matchedDerivative.toUpperCase()}), which matches the child's recorded allergy to ${allergen.toUpperCase()}. Please do not serve this item.`
+                    : `CRITICAL ALLERGY ALERT: Hidden ingredients mention "${hidden}", which matches the child's recorded allergy to ${allergen.toUpperCase()}. Please do not serve this item.`;
+
+                xaiMessages.push(alertMsg);
+            }
         });
     }
 

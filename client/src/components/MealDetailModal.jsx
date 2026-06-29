@@ -255,6 +255,41 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                 }
             });
         });
+
+        // C. Check hidden ingredients
+        const hiddenText = String(log.hidden_ingredients || '').toLowerCase().trim();
+        if (hiddenText) {
+            const hiddenTokens = hiddenText.split(/[,/;\s\b(and)\b\b(or)\b\b(with)\b]+/i).map(w => normalizeAllergenTerm(w));
+            sanitizedAllergies.forEach(({ original, normalized: allergen }) => {
+                const isSubstr = hiddenText.includes(allergen);
+                const isWordMatch = hiddenTokens.includes(allergen);
+                const isBypassed = isAllergyBypassed(allergen, hiddenText);
+
+                let isAllergic = (isSubstr || isWordMatch) && !isBypassed;
+                let matchedDerivative = null;
+
+                if (!isAllergic && ALLERGEN_DERIVATIVES[allergen]) {
+                    for (const deriv of ALLERGEN_DERIVATIVES[allergen]) {
+                        const isDerivSubstr = hiddenText.includes(deriv);
+                        const isDerivWordMatch = hiddenTokens.includes(deriv);
+                        const isDerivBypassed = isAllergyBypassed(deriv, hiddenText);
+
+                        if ((isDerivSubstr || isDerivWordMatch) && !isDerivBypassed) {
+                            isAllergic = true;
+                            matchedDerivative = deriv;
+                            break;
+                        }
+                    }
+                }
+
+                if (isAllergic) {
+                    if (!found.some(f => f.item === 'Hidden Ingredients' && f.allergen === original)) {
+                        found.push({ item: 'Hidden Ingredients', allergen: original, derivative: matchedDerivative });
+                    }
+                }
+            });
+        }
+
         return found;
     }, [log, allergyList]);
 
@@ -967,47 +1002,59 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         )}
 
                         {/* Compliance Violations */}
-                        {log.compliance_status === 'flagged' && log.violation_details && log.violation_details.length > 0 && (
-                            <Card className="border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
-                                <CardHeader>
-                                    <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
-                                        <AlertCircle size={18} /> Rule Violations
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 space-y-3">
-                                    {/* XAI Clinical Reasoning */}
-                                    {log.violation_details.xai_feedback && (
-                                        <div className="bg-white dark:bg-white/5 p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
-                                            <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                <Activity size={14} className="animate-pulse" /> Clinical AI Reasoning
-                                            </p>
-                                            <p className="text-sm text-[var(--color-text-main)] italic font-bold leading-relaxed">
-                                                "{log.violation_details.xai_feedback}"
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Specific Rule Breaches */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {(log.violation_details.violations || []).map((violation, idx) => (
-                                            <div key={idx} className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-red-200 dark:border-red-900/50 flex flex-col justify-between">
-                                                <div>
-                                                    <p className="font-black text-red-700 dark:text-red-300 text-[10px] uppercase tracking-tight mb-1">{violation.rule || violation.rule_name}</p>
-                                                    <p className="text-xs font-black text-[var(--color-text-main)]">
-                                                        {violation.actual} <span className="text-[10px] opacity-50">vs</span> {violation.limit}
-                                                    </p>
-                                                </div>
-                                                {violation.meal_addition && (
-                                                    <p className="text-[9px] font-bold text-red-500/70 mt-2 uppercase">
-                                                        +{violation.meal_addition} from this meal
-                                                    </p>
-                                                )}
+                        {(() => {
+                            if (log.compliance_status !== 'flagged' || !log.violation_details) return null;
+                            // Parse violation_details if it came back as a raw JSON string from the DB
+                            let vd = log.violation_details;
+                            if (typeof vd === 'string') {
+                                try { vd = JSON.parse(vd); } catch (e) { return null; }
+                            }
+                            const hasXai = !!vd?.xai_feedback;
+                            const hasViolations = Array.isArray(vd?.violations) && vd.violations.length > 0;
+                            if (!hasXai && !hasViolations) return null;
+                            return (
+                                <Card className="border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
+                                    <CardHeader>
+                                        <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
+                                            <AlertCircle size={18} /> Rule Violations
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 space-y-3">
+                                        {/* XAI Clinical Reasoning */}
+                                        {hasXai && (
+                                            <div className="bg-white dark:bg-white/5 p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
+                                                <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <Activity size={14} className="animate-pulse" /> Clinical AI Reasoning
+                                                </p>
+                                                <p className="text-sm text-[var(--color-text-main)] italic font-bold leading-relaxed">
+                                                    "{vd.xai_feedback}"
+                                                </p>
                                             </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                        )}
+                                        {/* Specific Rule Breaches */}
+                                        {hasViolations && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {vd.violations.map((violation, idx) => (
+                                                    <div key={idx} className="bg-[var(--color-bg-page)] p-3 rounded-xl border border-red-200 dark:border-red-900/50 flex flex-col justify-between">
+                                                        <div>
+                                                            <p className="font-black text-red-700 dark:text-red-300 text-[10px] uppercase tracking-tight mb-1">{violation.rule || violation.rule_name}</p>
+                                                            <p className="text-xs font-black text-[var(--color-text-main)]">
+                                                                {violation.actual} <span className="text-[10px] opacity-50">vs</span> {violation.limit}
+                                                            </p>
+                                                        </div>
+                                                        {violation.meal_addition && (
+                                                            <p className="text-[9px] font-bold text-red-500/70 mt-2 uppercase">
+                                                                +{violation.meal_addition} from this meal
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })()}
 
                         {/* Pending Review Notice */}
                         {log.status === 'pending' && (
@@ -1063,7 +1110,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         {isEditing && (
                             <Button
                                 variant="none"
-                                className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300 bg-gray-50/10 dark:bg-zinc-900/20 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-white shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
+                                className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-[var(--color-divider)] text-[var(--color-text-muted)] bg-[var(--color-bg-page)] hover:bg-[var(--color-divider)] hover:text-[var(--color-text-main)] shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"
                                 onClick={() => {
                                     setIsEditing(false);
                                     // Reset edit states to originals
