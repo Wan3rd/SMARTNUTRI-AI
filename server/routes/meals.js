@@ -84,7 +84,21 @@ router.get('/search', verifyToken, async (req, res) => {
             random: false // Disable randomization for search to prioritize relevance
         };
 
-        const recipes = await fetchEdamamRecipes(query || 'healthy', options, req.user.id);
+        const DEFAULT_KEYWORDS = [
+            'healthy',
+            'easy meals',
+            'dinner',
+            'breakfast',
+            'snack',
+            'soup',
+            'family friendly',
+            'lunch',
+            'salad',
+            'filipino',
+            'asian'
+        ];
+        const fallbackQuery = DEFAULT_KEYWORDS[Math.floor(Math.random() * DEFAULT_KEYWORDS.length)];
+        const recipes = await fetchEdamamRecipes(query || fallbackQuery, options, req.user.id);
 
         // Map to consistent format for Frontend
         const formatted = recipes.map(r => ({
