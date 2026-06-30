@@ -48,6 +48,16 @@ router.get('/check-email', async (req, res) => {
 // Active OTP storage in memory
 const activeOtps = new Map();
 
+// Periodic background job to clean up expired OTP tokens and prevent memory leaks
+setInterval(() => {
+    const now = Date.now();
+    for (const [email, record] of activeOtps.entries()) {
+        if (record.expiresAt < now) {
+            activeOtps.delete(email);
+        }
+    }
+}, 10 * 60 * 1000); // Check and sweep every 10 minutes
+
 // SEND OTP EMAIL (via Brevo)
 router.post('/send-otp', async (req, res) => {
     const { email, fullName } = req.body;
@@ -56,6 +66,13 @@ router.post('/send-otp', async (req, res) => {
     }
 
     try {
+        const existingUser = await prisma.users.findUnique({
+            where: { email: email.toLowerCase() }
+        });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already registered. Please use a different email or log in.' });
+        }
+
         // Generate 6-digit OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         
@@ -102,10 +119,10 @@ router.post('/verify-otp', async (req, res) => {
         return res.status(400).json({ message: 'Invalid verification code. Please check and try again.' });
     }
 
-    // Verified! Set verified status in map for registration window (15 minutes)
+    // Verified! Set verified status in map for registration window (60 minutes)
     activeOtps.set(email.toLowerCase(), {
         verified: true,
-        expiresAt: Date.now() + 15 * 60 * 1000
+        expiresAt: Date.now() + 60 * 60 * 1000
     });
     res.json({ success: true, message: 'Email verified successfully.' });
 });

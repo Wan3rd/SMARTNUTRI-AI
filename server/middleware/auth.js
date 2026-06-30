@@ -44,6 +44,26 @@ export const verifyToken = async (req, res, next) => {
             return res.status(403).json({ message: 'FORCE_RESET_REQUIRED', detail: 'Security policy requires a password update.' });
         }
 
+        // Lockdown pending/unapproved nutritionists from accessing clinical/patient routes
+        if (user.role === 'nutritionist' && user.status !== 'approved') {
+            const allowedUrls = [
+                '/api/auth/me', 
+                '/api/auth/profile', 
+                '/api/auth/license-image', 
+                '/api/auth/preferences', 
+                '/api/auth/theme', 
+                '/api/auth/change-password', 
+                '/api/auth/change-password-force', 
+                '/api/auth/announcements'
+            ];
+            const requestPath = req.baseUrl + req.path;
+            const isAllowed = allowedUrls.some(allowed => requestPath === allowed);
+            
+            if (!isAllowed) {
+                return res.status(403).json({ message: 'Clinical Verification Required: Your account is currently under review.' });
+            }
+        }
+
         req.user = {
             id: user.id,
             email: user.email,
