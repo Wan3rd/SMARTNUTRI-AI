@@ -54,10 +54,16 @@ export const verifyToken = async (req, res, next) => {
                 '/api/auth/theme', 
                 '/api/auth/change-password', 
                 '/api/auth/change-password-force', 
-                '/api/auth/announcements'
+                '/api/auth/announcements',
+                '/api/meals/search'
             ];
             const requestPath = req.baseUrl + req.path;
-            const isAllowed = allowedUrls.some(allowed => requestPath === allowed);
+            let isAllowed = allowedUrls.some(allowed => requestPath === allowed);
+            
+            // Allow general recipe detail fetching (e.g. /api/meals/recipe_123) but block clinical plans
+            if (!isAllowed && requestPath.startsWith('/api/meals/') && !requestPath.startsWith('/api/meals/plans')) {
+                isAllowed = true;
+            }
             
             if (!isAllowed) {
                 return res.status(403).json({ message: 'Clinical Verification Required: Your account is currently under review.' });
