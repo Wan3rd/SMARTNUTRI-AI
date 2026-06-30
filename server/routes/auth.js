@@ -62,6 +62,7 @@ router.post('/send-otp', async (req, res) => {
         // Store on server with 2 minutes expiration
         const expiresAt = Date.now() + 2 * 60 * 1000;
         activeOtps.set(email.toLowerCase(), { otpCode, expiresAt });
+        console.log(`[Dev] OTP Code for ${email} is: ${otpCode}`);
 
         // Dispatch via Brevo
         const mailResult = await sendOtpEmail(email.toLowerCase(), otpCode, fullName);

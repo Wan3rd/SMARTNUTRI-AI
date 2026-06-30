@@ -704,6 +704,7 @@ export default function Onboarding() {
                             )}
                             {step < 4 ? (
                                 <Button
+                                    key="continue-btn"
                                     type="button"
                                     onClick={nextStep}
                                     className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
@@ -712,6 +713,7 @@ export default function Onboarding() {
                                 </Button>
                             ) : (
                                 <Button
+                                    key="submit-btn"
                                     type="submit"
                                     className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
                                 >
