@@ -1729,8 +1729,8 @@ export default function ClientDetails() {
         printWindow.document.close();
     };
 
-    const fetchLogs = async (profileId) => {
-        setLogsLoading(true);
+    const fetchLogs = async (profileId, silent = false) => {
+        if (!silent) setLogsLoading(true);
         try {
             // Fetch logs & progress for the selected profile
             const [logsRes, progressRes] = await Promise.all([
@@ -1748,7 +1748,7 @@ export default function ClientDetails() {
         } catch (err) {
             console.error("Error fetching logs", err);
         } finally {
-            setLogsLoading(false);
+            if (!silent) setLogsLoading(false);
         }
     };
 
@@ -6016,7 +6016,7 @@ export default function ClientDetails() {
                     onClose={() => setIsReviewOpen(false)}
                     log={selectedLogForReview}
                     onReviewComplete={() => {
-                        fetchLogs(selectedProfile.id);
+                        fetchLogs(selectedProfile.id, true);
                         fetchAdimeNotes(selectedProfile.id);
                         fetchAllClientPending();
                         setIsReviewOpen(false);
