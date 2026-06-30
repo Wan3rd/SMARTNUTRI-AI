@@ -633,11 +633,11 @@ export default function CreatePatientModal({ isOpen, onClose, onClientAdded, par
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Lifestyle & Habits</label>
                             <textarea name="lifestyle_factors" value={formData.lifestyle_factors} onChange={handleChange} className="w-full px-4 py-3 bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] rounded-2xl text-sm text-[var(--color-text-main)] h-32 outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. High sugar intake, Poor sleep quality, Picky eater..." />
                         </div>
-                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
-                            <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                        <div className="p-4 bg-[var(--color-success)]/10 rounded-2xl border border-[var(--color-success)]/20">
+                            <p className="text-[10px] font-bold text-[var(--color-success)] flex items-center gap-2">
                                 <Heart size={12} className="animate-pulse" /> Clinical Profiling Ready
                             </p>
-                            <p className="text-[9px] text-emerald-600/70 dark:text-emerald-400/60 mt-1 uppercase tracking-wider">The system will generate a growth dashboard based on these baseline values.</p>
+                            <p className="text-[9px] text-[var(--color-success)]/70 mt-1 uppercase tracking-wider">The system will generate a growth dashboard based on these baseline values.</p>
                         </div>
                     </motion.div>
                 );
