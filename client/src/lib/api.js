@@ -23,9 +23,11 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 || (error.response?.status === 400 && error.response?.data?.message === 'Invalid Token')) {
-            localStorage.clear();
-            sessionStorage.clear();
-            if (window.location.pathname !== '/login') {
+            const currentPath = window.location.pathname;
+            const isBypassPath = ['/login', '/register', '/onboarding'].some(path => currentPath === path || currentPath.startsWith(path + '/'));
+            if (!isBypassPath) {
+                localStorage.clear();
+                sessionStorage.clear();
                 window.location.href = '/login';
             }
         }
