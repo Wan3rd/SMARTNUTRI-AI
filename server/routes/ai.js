@@ -37,8 +37,11 @@ router.post('/analyze-item', verifyToken, async (req, res) => {
         Only output valid JSON. No markdown.`;
 
         const raw = await generateText(prompt);
-        const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-        const result = JSON.parse(cleaned);
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("AI returned invalid data format");
+        }
+        const result = JSON.parse(jsonMatch[0]);
 
         res.json(result);
     } catch (err) {

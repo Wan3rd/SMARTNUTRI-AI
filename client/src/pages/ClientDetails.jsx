@@ -421,6 +421,7 @@ export default function ClientDetails() {
 
     // --- History State ---
     const [logs, setLogs] = useState([]);
+    const [dailyLogs, setDailyLogs] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
     const [isMobileDateDropdownOpen, setIsMobileDateDropdownOpen] = useState(false);
 
@@ -1127,15 +1128,20 @@ export default function ClientDetails() {
     const dayStatuses = useMemo(() => {
         if (!logs || !selectedProfile || !rules) return {};
         const statuses = {};
-        const grouped = logs.reduce((acc, log) => {
-            const date = new Date(log.logged_at).toLocaleDateString();
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(log);
-            return acc;
-        }, {});
 
-        Object.keys(grouped).forEach(date => {
-            const dayLogs = grouped[date];
+        // Group all dates from BOTH mealLogs and dailyLogs to compute accurate compliance status
+        const datesSet = new Set();
+        logs.forEach(log => {
+            if (log.logged_at) datesSet.add(new Date(log.logged_at).toLocaleDateString());
+        });
+        dailyLogs.forEach(d => {
+            if (d.date) datesSet.add(new Date(d.date).toLocaleDateString());
+        });
+
+        datesSet.forEach(dateStr => {
+            const dayLogs = logs.filter(log => log.logged_at && new Date(log.logged_at).toLocaleDateString() === dateStr);
+            const dayProgress = dailyLogs.find(d => d.date && new Date(d.date).toLocaleDateString() === dateStr);
+
             const totals = dayLogs.reduce((acc, l) => {
                 acc.calories += (l.total_calories || 0);
                 acc.protein += (l.total_protein_g || 0);
@@ -1147,16 +1153,26 @@ export default function ClientDetails() {
                 return acc;
             }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
+            if (dayProgress) {
+                totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+            }
+
             let status = 'success';
 
-            // Check Profile Targets
-            if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
-            else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+            // Check Profile Targets (only if there are food logs logged)
+            if (dayLogs.length > 0) {
+                if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
+                else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+            }
 
             // Check Rules Engine
             rules.forEach(rule => {
                 const limit = parseFloat(rule.rule_value);
                 if (!limit) return;
+
+                // Skip non-water checks if no food logs are logged
+                const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+                if (dayLogs.length === 0 && !isWaterRule) return;
 
                 let current = 0;
                 if (rule.category === 'Calories') current = totals.calories;
@@ -1171,14 +1187,16 @@ export default function ClientDetails() {
                 else if (rule.rule_type === 'min' && current < limit) status = 'danger';
             });
 
-            statuses[date] = status;
+            statuses[dateStr] = status;
         });
         return statuses;
-    }, [logs, selectedProfile, rules]);
+    }, [logs, dailyLogs, selectedProfile, rules]);
 
     const dailyViolations = useMemo(() => {
         if (!selectedHistoryDate || !logs || !rules) return [];
         const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate);
+        const dayProgress = dailyLogs.find(d => new Date(d.date).toLocaleDateString() === selectedHistoryDate);
+
         const totals = dayLogs.reduce((acc, l) => {
             acc.calories += (l.total_calories || 0);
             acc.protein += (l.total_protein_g || 0);
@@ -1190,10 +1208,18 @@ export default function ClientDetails() {
             return acc;
         }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
+        if (dayProgress) {
+            totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+        }
+
         const violations = [];
         rules.forEach(rule => {
             const limit = parseFloat(rule.rule_value);
             if (!limit) return;
+
+            // Skip non-water checks if no food logs are logged
+            const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+            if (dayLogs.length === 0 && !isWaterRule) return;
 
             let current = 0;
             if (rule.category === 'Calories') current = totals.calories;
@@ -1706,10 +1732,14 @@ export default function ClientDetails() {
     const fetchLogs = async (profileId) => {
         setLogsLoading(true);
         try {
-            // Fetch logs for the selected profile
-            const res = await api.get(`/logs/profile/${profileId}`);
-            const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+            // Fetch logs & progress for the selected profile
+            const [logsRes, progressRes] = await Promise.all([
+                api.get(`/logs/profile/${profileId}`),
+                api.get(`/progress/history/${profileId}`)
+            ]);
+            const sortedLogs = logsRes.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
             setLogs(sortedLogs);
+            setDailyLogs(progressRes.data || []);
 
             if (sortedLogs.length > 0) {
                 const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
@@ -2216,6 +2246,10 @@ export default function ClientDetails() {
             showNotif("Please enter a valid positive number for the rule value.", "error");
             return;
         }
+        if ((newRule.category === 'Fluid/Water' || newRule.category === 'Water') && (parseFloat(newRule.rule_value) % 250 !== 0)) {
+            showNotif("Hydration rules must be set in increments of 250ml (e.g. 250, 500, 750, 1000).", "error");
+            return;
+        }
         if (!['min', 'max', 'range'].includes(newRule.rule_type)) {
             showNotif("Invalid rule type selected.", "error");
             return;
@@ -2275,6 +2309,10 @@ export default function ClientDetails() {
         }
         if (!editRuleForm.rule_value || isNaN(parseFloat(editRuleForm.rule_value)) || parseFloat(editRuleForm.rule_value) <= 0) {
             showNotif("Please enter a valid positive number for the rule value.", "error");
+            return;
+        }
+        if ((editRuleForm.category === 'Fluid/Water' || editRuleForm.category === 'Water') && (parseFloat(editRuleForm.rule_value) % 250 !== 0)) {
+            showNotif("Hydration rules must be set in increments of 250ml (e.g. 250, 500, 750, 1000).", "error");
             return;
         }
         if (!['min', 'max', 'range'].includes(editRuleForm.rule_type)) {

@@ -141,4 +141,30 @@ router.post('/water', verifyToken, async (req, res) => {
     }
 });
 
+// Get History of Daily Logs (Progress logs)
+router.get('/history/:profileId', verifyToken, async (req, res) => {
+    const { profileId } = req.params;
+    try {
+        // Ownership Check
+        const profile = await prisma.profiles.findUnique({ where: { id: profileId } });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const isAuthorized = profile.user_id === req.user.id || req.user.role === 'admin' ||
+            (req.user.role === 'nutritionist' && await prisma.nutritionist_clients.findFirst({
+                where: { nutritionist_id: req.user.id, parent_id: profile.user_id, status: 'active' }
+            }));
+
+        if (!isAuthorized) return res.status(403).json({ message: 'Unauthorized access to progress history' });
+
+        const dailyLogs = await prisma.daily_logs.findMany({
+            where: { profile_id: profileId },
+            orderBy: { date: 'asc' }
+        });
+        res.json(dailyLogs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 export default router;

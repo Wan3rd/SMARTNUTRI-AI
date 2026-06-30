@@ -22,6 +22,7 @@ export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [logs, setLogs] = useState([]);
     const [rules, setRules] = useState([]);
+    const [dailyLogs, setDailyLogs] = useState([]);
     const [scheduledMeals, setScheduledMeals] = useState([]);
     const [dayStatuses, setDayStatuses] = useState({});
     const [isInitialSync, setIsInitialSync] = useState(true);
@@ -42,7 +43,9 @@ export default function Calendar() {
         if (!selectedProfile || rules.length === 0) return [];
         
         const dayLogs = logs.filter(l => isSameDay(new Date(l.logged_at), selectedDate));
-        if (dayLogs.length === 0) return [];
+        const dayProgress = dailyLogs.find(d => isSameDay(new Date(d.date), selectedDate));
+
+        if (dayLogs.length === 0 && !dayProgress) return [];
 
         const totals = dayLogs.reduce((acc, l) => {
             acc.calories += (l.total_calories || 0);
@@ -54,11 +57,18 @@ export default function Calendar() {
             return acc;
         }, { calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 0, water: 0 });
 
+        if (dayProgress) {
+            totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+        }
+
         const breaches = [];
 
         rules.forEach(rule => {
             const limit = parseFloat(rule.rule_value);
             if (!limit) return;
+
+            const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+            if (dayLogs.length === 0 && !isWaterRule) return;
 
             let current = 0;
             let label = rule.category;
@@ -100,12 +110,6 @@ export default function Calendar() {
                     type: 'danger',
                     message: `${label} below daily target: ${Math.round(current)}${rule.rule_unit} (Required: ${limit}${rule.rule_unit})`
                 });
-            } else if (rule.rule_type === 'min' && current < limit * 1.1) {
-                breaches.push({
-                    category: label,
-                    type: 'warning',
-                    message: `${label} near lower threshold: ${Math.round(current)}${rule.rule_unit} (Required: ${limit}${rule.rule_unit})`
-                });
             }
         });
 
@@ -133,6 +137,7 @@ export default function Calendar() {
         } else if (!profileLoading) {
             setLogs([]);
             setRules([]);
+            setDailyLogs([]);
             setScheduledMeals([]);
             setIsInitialSync(false);
         }
@@ -141,15 +146,17 @@ export default function Calendar() {
     const fetchData = async () => {
         if (!selectedProfile) return;
         try {
-            const [logsRes, rulesRes, plansRes] = await Promise.all([
+            const [logsRes, rulesRes, plansRes, progressRes] = await Promise.all([
                 api.get(`/logs/profile/${selectedProfile.id}`),
                 api.get(`/rules/profile/${selectedProfile.id}`),
-                api.get('/meals/plans', { params: { profileId: selectedProfile.id } })
+                api.get('/meals/plans', { params: { profileId: selectedProfile.id } }),
+                api.get(`/progress/history/${selectedProfile.id}`)
             ]);
             setLogs(logsRes.data);
             setRules(rulesRes.data);
             setScheduledMeals(plansRes.data || []);
-            calculateHeatmap(logsRes.data, rulesRes.data);
+            setDailyLogs(progressRes.data || []);
+            calculateHeatmap(logsRes.data, rulesRes.data, progressRes.data || []);
             setIsInitialSync(false);
         } catch (err) {
             console.error(err);
@@ -158,17 +165,22 @@ export default function Calendar() {
     };
 
 
-    const calculateHeatmap = (mealLogs, profileRules) => {
+    const calculateHeatmap = (mealLogs, profileRules, dailyLogs = []) => {
         const statuses = {};
-        const grouped = mealLogs.reduce((acc, log) => {
-            const date = new Date(log.logged_at).toLocaleDateString();
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(log);
-            return acc;
-        }, {});
+        
+        // Group all dates from BOTH mealLogs and dailyLogs to compute accurate compliance status
+        const datesSet = new Set();
+        mealLogs.forEach(log => {
+            if (log.logged_at) datesSet.add(new Date(log.logged_at).toLocaleDateString());
+        });
+        dailyLogs.forEach(d => {
+            if (d.date) datesSet.add(new Date(d.date).toLocaleDateString());
+        });
 
-        Object.keys(grouped).forEach(date => {
-            const dayLogs = grouped[date];
+        datesSet.forEach(dateStr => {
+            const dayLogs = mealLogs.filter(log => log.logged_at && new Date(log.logged_at).toLocaleDateString() === dateStr);
+            const dayProgress = dailyLogs.find(d => d.date && new Date(d.date).toLocaleDateString() === dateStr);
+
             const totals = dayLogs.reduce((acc, l) => {
                 acc.calories += (l.total_calories || 0);
                 acc.protein += (l.total_protein_g || 0);
@@ -179,12 +191,20 @@ export default function Calendar() {
                 return acc;
             }, { calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 0, water: 0 });
 
+            if (dayProgress) {
+                totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+            }
+
             let status = 'success'; // Default Green
 
             profileRules.forEach(rule => {
                 const limit = parseFloat(rule.rule_value);
                 if (!limit) return;
                 
+                // If there are no food logs, skip checking other nutrient rules to avoid false 0-value alerts
+                const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+                if (dayLogs.length === 0 && !isWaterRule) return;
+
                 let current = 0;
                 if (rule.category === 'Calories') current = totals.calories;
                 else if (rule.category === 'Protein') current = totals.protein;
@@ -196,10 +216,9 @@ export default function Calendar() {
                 if (rule.rule_type === 'max' && current > limit) status = 'danger';
                 else if (rule.rule_type === 'max' && current > limit * 0.9 && status !== 'danger') status = 'warning';
                 else if (rule.rule_type === 'min' && current < limit) status = 'danger';
-                else if (rule.rule_type === 'min' && current < limit * 1.1 && status !== 'danger') status = 'warning';
             });
 
-            statuses[date] = status;
+            statuses[dateStr] = status;
         });
         setDayStatuses(statuses);
     };

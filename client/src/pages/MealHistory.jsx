@@ -19,6 +19,7 @@ export default function MealHistory() {
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [selectedLog, setSelectedLog] = useState(null);
     const [rules, setRules] = useState([]);
+    const [dailyLogs, setDailyLogs] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [isInitialSync, setIsInitialSync] = useState(true);
@@ -85,15 +86,20 @@ export default function MealHistory() {
     const dayStatuses = useMemo(() => {
         if (!logs || !selectedProfile || !rules) return {};
         const statuses = {};
-        const grouped = logs.reduce((acc, log) => {
-            const date = new Date(log.logged_at).toLocaleDateString();
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(log);
-            return acc;
-        }, {});
 
-        Object.keys(grouped).forEach(date => {
-            const dayLogs = grouped[date];
+        // Group all dates from BOTH mealLogs and dailyLogs to compute accurate compliance status
+        const datesSet = new Set();
+        logs.forEach(log => {
+            if (log.logged_at) datesSet.add(new Date(log.logged_at).toLocaleDateString());
+        });
+        dailyLogs.forEach(d => {
+            if (d.date) datesSet.add(new Date(d.date).toLocaleDateString());
+        });
+
+        datesSet.forEach(dateStr => {
+            const dayLogs = logs.filter(log => log.logged_at && new Date(log.logged_at).toLocaleDateString() === dateStr);
+            const dayProgress = dailyLogs.find(d => d.date && new Date(d.date).toLocaleDateString() === dateStr);
+
             const totals = dayLogs.reduce((acc, l) => {
                 acc.calories += (l.total_calories || 0);
                 acc.protein += (l.total_protein_g || 0);
@@ -105,17 +111,27 @@ export default function MealHistory() {
                 return acc;
             }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
+            if (dayProgress) {
+                totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+            }
+
             let status = 'success';
             
-            // Check Profile Targets (if any)
-            if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
-            else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+            // Check Profile Targets (if any, only if there are food logs logged)
+            if (dayLogs.length > 0) {
+                if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 1.05) status = 'danger';
+                else if (selectedProfile.calories_target && totals.calories > selectedProfile.calories_target * 0.9) status = 'warning';
+            }
 
             // Check Rules Engine
             rules.forEach(rule => {
                 const limit = parseFloat(rule.rule_value);
                 if (!limit) return;
                 
+                // Skip non-water checks if no food logs are logged
+                const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+                if (dayLogs.length === 0 && !isWaterRule) return;
+
                 let current = 0;
                 if (rule.category === 'Calories') current = totals.calories;
                 else if (rule.category === 'Protein') current = totals.protein;
@@ -129,14 +145,16 @@ export default function MealHistory() {
                 else if (rule.rule_type === 'min' && current < limit) status = 'danger';
             });
 
-            statuses[date] = status;
+            statuses[dateStr] = status;
         });
         return statuses;
-    }, [logs, selectedProfile, rules]);
+    }, [logs, dailyLogs, selectedProfile, rules]);
 
     const dailyViolations = useMemo(() => {
         if (!selectedHistoryDate || !logs || !rules) return [];
         const dayLogs = logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate);
+        const dayProgress = dailyLogs.find(d => new Date(d.date).toLocaleDateString() === selectedHistoryDate);
+
         const totals = dayLogs.reduce((acc, l) => {
             acc.calories += (l.total_calories || 0);
             acc.protein += (l.total_protein_g || 0);
@@ -148,11 +166,19 @@ export default function MealHistory() {
             return acc;
         }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, sodium: 0, water: 0 });
 
+        if (dayProgress) {
+            totals.water += (dayProgress.water_intake_glasses || 0) * 250;
+        }
+
         const violations = [];
         rules.forEach(rule => {
             const limit = parseFloat(rule.rule_value);
             if (!limit) return;
             
+            // Skip non-water checks if no food logs are logged
+            const isWaterRule = rule.category === 'Fluid/Water' || rule.category === 'Water';
+            if (dayLogs.length === 0 && !isWaterRule) return;
+
             let current = 0;
             if (rule.category === 'Calories') current = totals.calories;
             else if (rule.category === 'Protein') current = totals.protein;
@@ -175,13 +201,17 @@ export default function MealHistory() {
             }
         });
         return violations;
-    }, [selectedHistoryDate, logs, rules]);
+    }, [selectedHistoryDate, logs, dailyLogs, rules]);
 
     const fetchLogs = async () => {
         try {
-            const res = await api.get(`/logs/profile/${selectedProfile.id}`);
-            const sortedLogs = res.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
+            const [logsRes, progressRes] = await Promise.all([
+                api.get(`/logs/profile/${selectedProfile.id}`),
+                api.get(`/progress/history/${selectedProfile.id}`)
+            ]);
+            const sortedLogs = logsRes.data.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
             setLogs(sortedLogs);
+            setDailyLogs(progressRes.data || []);
             
             if (sortedLogs.length > 0) {
                 const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
@@ -189,7 +219,7 @@ export default function MealHistory() {
             }
 
             // Mark all fetched reviews as seen
-            const reviewedIds = res.data.filter(l => l.status === 'reviewed' || l.status === 'verified').map(l => l.id);
+            const reviewedIds = logsRes.data.filter(l => l.status === 'reviewed' || l.status === 'verified').map(l => l.id);
             if (reviewedIds.length > 0) {
                 const existingSeen = JSON.parse(localStorage.getItem('seen_meal_reviews') || '[]');
                 const newSeen = Array.from(new Set([...existingSeen, ...reviewedIds]));

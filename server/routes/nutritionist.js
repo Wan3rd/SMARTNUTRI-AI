@@ -684,6 +684,14 @@ router.post('/rules', verifyToken, isNutritionist, async (req, res) => {
     if (!category || typeof category !== 'string' || category.trim().length === 0) {
         return res.status(400).json({ message: 'category is required' });
     }
+    if (category && (category === 'Fluid/Water' || category === 'Water')) {
+        if (rule_value !== undefined && rule_value !== null) {
+            const val = parseFloat(rule_value);
+            if (isNaN(val) || val % 250 !== 0 || val <= 0) {
+                return res.status(400).json({ message: 'Hydration rules must be set in increments of 250ml (e.g. 250, 500, 750, 1000).' });
+            }
+        }
+    }
     if (rule_type && !['min', 'max', 'range'].includes(rule_type)) {
         return res.status(400).json({ message: 'rule_type must be one of: min, max, range' });
     }
@@ -771,6 +779,18 @@ router.patch('/rules/:id', verifyToken, isNutritionist, async (req, res) => {
         const rule = await prisma.nutrition_rules.findUnique({ where: { id: req.params.id } });
         if (!rule) return res.status(404).json({ message: 'Not found' });
         if (!(await checkProfileAccess(req, rule.profile_id))) return res.status(403).json({ message: 'Access Denied: Unlinked profile' });
+
+        const targetCategory = category || rule.category;
+        const targetValue = rule_value !== undefined ? rule_value : rule.rule_value;
+
+        if (targetCategory && (targetCategory === 'Fluid/Water' || targetCategory === 'Water')) {
+            if (targetValue !== undefined && targetValue !== null) {
+                const val = parseFloat(targetValue);
+                if (isNaN(val) || val % 250 !== 0 || val <= 0) {
+                    return res.status(400).json({ message: 'Hydration rules must be set in increments of 250ml (e.g. 250, 500, 750, 1000).' });
+                }
+            }
+        }
         const updatedRule = await prisma.nutrition_rules.update({
             where: { id: id },
             data: {
@@ -835,9 +855,12 @@ router.get('/standards/:profileId', verifyToken, isNutritionist, async (req, res
         }
 
         // Add clinical templates (Water)
-        const ageGroup = age >= 1 && age <= 3 ? '1-3' : (age >= 4 && age <= 8 ? '4-8' : '9-13');
+        let ageGroup = null;
+        if (age >= 1 && age <= 3) ageGroup = '1-3';
+        else if (age >= 4 && age <= 8) ageGroup = '4-8';
+        else if (age >= 9 && age <= 13) ageGroup = '9-13';
 
-        if (GLOBAL_LIMITS.WATER_MIN_ML[ageGroup]) {
+        if (ageGroup && GLOBAL_LIMITS.WATER_MIN_ML[ageGroup]) {
             templates.push({
                 name: `Hydration (${GLOBAL_LIMITS.WATER_MIN_ML[ageGroup]}ml)`,
                 category: 'Fluid/Water',
