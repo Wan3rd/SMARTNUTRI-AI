@@ -92,6 +92,7 @@ export default function Onboarding() {
     const [isAllergiesDropdownOpen, setIsAllergiesDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isReadyToSubmit, setIsReadyToSubmit] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState(() => {
         const saved = sessionStorage.getItem('onboardingProgress');
@@ -189,28 +190,35 @@ export default function Onboarding() {
     const prevStep = () => setStep(prev => prev - 1);
 
     const handleSkipOnboarding = async () => {
+        setIsSubmitting(true);
         startLoading('Creating your Caregiver account...');
         setError(null);
         try {
             // 1. If caregiver account isn't created, register now
+            let currentUser = user;
             if (registrationData && !user) {
                 const regRes = await register(registrationData);
                 if (!regRes.success) {
                     setError(regRes.message || "Failed to create account. Please try again.");
+                    setIsSubmitting(false);
                     stopLoading();
                     return;
                 }
+                currentUser = JSON.parse(localStorage.getItem('user') || 'null');
             }
 
             // Clear temporary onboarding states
             sessionStorage.removeItem('pendingRegistration');
             sessionStorage.removeItem('onboardingProgress');
 
+            await refreshProfiles(currentUser);
+
             // Route to dashboard
             navigate('/');
         } catch (err) {
             console.error("Skip onboarding failed:", err);
             setError("Unable to complete account registration. Please check your connection and try again.");
+            setIsSubmitting(false);
         } finally {
             stopLoading();
         }
@@ -218,19 +226,23 @@ export default function Onboarding() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         startLoading('Initializing Clinical Profile...');
         setError(null);
 
         try {
             // 1. If we have registrationData, create the account first
+            let currentUser = user;
             if (registrationData && !user) {
                 const regRes = await register(registrationData);
                 if (!regRes.success) {
                     setError(regRes.message || "Failed to create account. Please try again.");
+                    setIsSubmitting(false);
                     stopLoading();
                     return;
                 }
                 // Auth state updates, user is now logged in
+                currentUser = JSON.parse(localStorage.getItem('user') || 'null');
             }
 
             const dietaryString = formData.dietaryPreferences.join(', ');
@@ -251,7 +263,7 @@ export default function Onboarding() {
                 medical_history: formData.medicalHistory
             });
 
-            await refreshProfiles();
+            await refreshProfiles(currentUser);
             
             // Clear persistence storage on success
             sessionStorage.removeItem('pendingRegistration');
@@ -261,6 +273,7 @@ export default function Onboarding() {
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.message || "Failed to save clinical profile. Please try again.");
+            setIsSubmitting(false);
         } finally {
             stopLoading();
         }
@@ -733,10 +746,17 @@ export default function Onboarding() {
                                 <Button
                                     key="submit-btn"
                                     type="submit"
-                                    disabled={!isReadyToSubmit}
+                                    disabled={!isReadyToSubmit || isSubmitting}
                                     className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm disabled:opacity-50 disabled:pointer-events-none"
                                 >
-                                    Complete Setup
+                                    {isSubmitting ? (
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                                            <span>Completing Setup...</span>
+                                        </div>
+                                    ) : (
+                                        "Complete Setup"
+                                    )}
                                 </Button>
                             )}
                         </div>

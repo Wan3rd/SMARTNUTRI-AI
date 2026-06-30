@@ -10,8 +10,9 @@ export const ProfileProvider = ({ children }) => {
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const refreshProfiles = async () => {
-        if (!user || user.role !== 'parent' || user.force_password_reset) {
+    const refreshProfiles = async (overrideUser = null) => {
+        const currentUser = overrideUser || user;
+        if (!currentUser || currentUser.role !== 'parent' || currentUser.force_password_reset) {
             setProfiles([]);
             setSelectedProfile(null);
             setLoading(false);
