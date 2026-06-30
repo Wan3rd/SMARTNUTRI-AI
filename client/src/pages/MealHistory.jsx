@@ -46,6 +46,7 @@ export default function MealHistory() {
     useEffect(() => {
         const loadHistoryData = async () => {
             if (selectedProfile) {
+                setSelectedHistoryDate(null);
                 await Promise.all([fetchLogs(), fetchRules()]);
                 setIsInitialSync(false);
             } else if (!profileLoading) {
@@ -214,8 +215,14 @@ export default function MealHistory() {
             setDailyLogs(progressRes.data || []);
             
             if (sortedLogs.length > 0) {
-                const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
-                setSelectedHistoryDate(latestDate);
+                const hasLogsOnCurrentSelection = selectedHistoryDate && (
+                    sortedLogs.some(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate) ||
+                    (progressRes.data || []).some(d => new Date(d.date).toLocaleDateString() === selectedHistoryDate)
+                );
+                if (!hasLogsOnCurrentSelection) {
+                    const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
+                    setSelectedHistoryDate(latestDate);
+                }
             }
 
             // Mark all fetched reviews as seen

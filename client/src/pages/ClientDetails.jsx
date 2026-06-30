@@ -1285,6 +1285,7 @@ export default function ClientDetails() {
     // Fetch global child data on profile mount/change (required by global biometric cards and Clinical Intelligence)
     useEffect(() => {
         if (selectedProfile) {
+            setSelectedHistoryDate(null);
             fetchLogs(selectedProfile.id);
             fetchGrowthLogs(selectedProfile.id);
             fetchVaccinationData(selectedProfile.id);
@@ -1742,8 +1743,14 @@ export default function ClientDetails() {
             setDailyLogs(progressRes.data || []);
 
             if (sortedLogs.length > 0) {
-                const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
-                setSelectedHistoryDate(latestDate);
+                const hasLogsOnCurrentSelection = selectedHistoryDate && (
+                    sortedLogs.some(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate) ||
+                    (progressRes.data || []).some(d => new Date(d.date).toLocaleDateString() === selectedHistoryDate)
+                );
+                if (!hasLogsOnCurrentSelection) {
+                    const latestDate = new Date(sortedLogs[0].logged_at).toLocaleDateString();
+                    setSelectedHistoryDate(latestDate);
+                }
             }
         } catch (err) {
             console.error("Error fetching logs", err);
