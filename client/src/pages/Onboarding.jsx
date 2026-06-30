@@ -91,6 +91,7 @@ export default function Onboarding() {
     const [step, setStep] = useState(1);
     const [isAllergiesDropdownOpen, setIsAllergiesDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isReadyToSubmit, setIsReadyToSubmit] = useState(false);
 
     const [formData, setFormData] = useState(() => {
         const saved = sessionStorage.getItem('onboardingProgress');
@@ -318,7 +319,15 @@ export default function Onboarding() {
                     </p>
                 </CardHeader>
                 <CardContent className="p-6 sm:p-10">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form 
+                        onSubmit={handleSubmit} 
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                                e.preventDefault();
+                            }
+                        }}
+                        className="space-y-6"
+                    >
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={step}
@@ -683,8 +692,17 @@ export default function Onboarding() {
                                             />
                                         </div>
 
-                                        <div className="p-4 bg-[var(--color-primary)]/5 rounded-2xl border border-[var(--color-primary)]/20">
-                                            <p className="text-[11px] font-black text-[var(--color-primary)] uppercase tracking-widest text-center">Ready to initialize clinical tracking?</p>
+                                        <div className="p-4 bg-[var(--color-primary)]/5 rounded-2xl border border-[var(--color-primary)]/20 flex items-center gap-3 select-none">
+                                            <input
+                                                type="checkbox"
+                                                id="readyToSubmit"
+                                                checked={isReadyToSubmit}
+                                                onChange={(e) => setIsReadyToSubmit(e.target.checked)}
+                                                className="w-4 h-4 text-[var(--color-primary)] rounded border-[var(--color-divider)] focus:ring-[var(--color-primary)] cursor-pointer"
+                                            />
+                                            <label htmlFor="readyToSubmit" className="text-[11px] font-black text-[var(--color-primary)] uppercase tracking-widest cursor-pointer select-none">
+                                                Ready to initialize clinical tracking?
+                                            </label>
                                         </div>
                                     </div>
                                 )}
@@ -715,7 +733,8 @@ export default function Onboarding() {
                                 <Button
                                     key="submit-btn"
                                     type="submit"
-                                    className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm"
+                                    disabled={!isReadyToSubmit}
+                                    className="flex-1 h-14 rounded-2xl bg-[var(--color-primary)] text-white shadow-xl shadow-[var(--color-primary)]/20 font-black uppercase tracking-widest active:scale-[0.98] transition-all text-sm disabled:opacity-50 disabled:pointer-events-none"
                                 >
                                     Complete Setup
                                 </Button>
