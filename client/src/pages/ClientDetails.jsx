@@ -431,6 +431,7 @@ export default function ClientDetails() {
     const [newNote, setNewNote] = useState('');
     const [adimeNotes, setAdimeNotes] = useState([]);
     const [savingAdime, setSavingAdime] = useState(false);
+    const [savingNote, setSavingNote] = useState(false);
     const [logsLoading, setLogsLoading] = useState(false);
     const [hoveredProfileId, setHoveredProfileId] = useState(null);
     const [newAdime, setNewAdime] = useState({
@@ -2038,7 +2039,18 @@ export default function ClientDetails() {
     };
 
     const handleOpenTemplateEditor = (template) => {
-        setEditingTemplate(JSON.parse(JSON.stringify(template))); // deep clone
+        const cloned = JSON.parse(JSON.stringify(template));
+        if (!cloned.days) cloned.days = {};
+        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].forEach(day => {
+            if (!cloned.days[day]) cloned.days[day] = [];
+            ['Breakfast', 'Lunch', 'Dinner', 'Snack'].forEach(type => {
+                let meal = cloned.days[day].find(m => m.meal_type === type);
+                if (!meal) {
+                    cloned.days[day].push({ meal_type: type, recipe_name: '', calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 });
+                }
+            });
+        });
+        setEditingTemplate(cloned);
         setIsTemplateEditorOpen(true);
     };
 
@@ -6303,13 +6315,7 @@ export default function ClientDetails() {
                                                     {type}
                                                 </td>
                                                 {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => {
-                                                    if (!editingTemplate.days) editingTemplate.days = {};
-                                                    if (!editingTemplate.days[day]) editingTemplate.days[day] = [];
-                                                    let meal = editingTemplate.days[day].find(m => m.meal_type === type);
-                                                    if (!meal) {
-                                                        meal = { meal_type: type, recipe_name: '', calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 };
-                                                        editingTemplate.days[day].push(meal);
-                                                    }
+                                                    const meal = editingTemplate.days[day].find(m => m.meal_type === type);
                                                     return (
                                                          <td key={day} className="p-2 border-r border-divider last:border-r-0 align-top">
                                                              <div className="space-y-1.5">
@@ -6321,9 +6327,9 @@ export default function ClientDetails() {
                                                                      onChange={(e) => {
                                                                          const val = e.target.value;
                                                                          setEditingTemplate(prev => {
-                                                                             const updated = { ...prev };
+                                                                             const updated = JSON.parse(JSON.stringify(prev));
                                                                              const target = updated.days[day].find(m => m.meal_type === type);
-                                                                             target.recipe_name = val;
+                                                                             if (target) target.recipe_name = val;
                                                                              return updated;
                                                                          });
                                                                      }}
@@ -6338,9 +6344,9 @@ export default function ClientDetails() {
                                                                              onChange={(e) => {
                                                                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                                  setEditingTemplate(prev => {
-                                                                                     const updated = { ...prev };
+                                                                                     const updated = JSON.parse(JSON.stringify(prev));
                                                                                      const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                     target.calories = val;
+                                                                                     if (target) target.calories = val;
                                                                                      return updated;
                                                                                  });
                                                                              }}
@@ -6356,9 +6362,9 @@ export default function ClientDetails() {
                                                                              onChange={(e) => {
                                                                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                                  setEditingTemplate(prev => {
-                                                                                     const updated = { ...prev };
+                                                                                     const updated = JSON.parse(JSON.stringify(prev));
                                                                                      const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                     target.protein_g = val;
+                                                                                     if (target) target.protein_g = val;
                                                                                      return updated;
                                                                                  });
                                                                              }}
@@ -6374,9 +6380,9 @@ export default function ClientDetails() {
                                                                              onChange={(e) => {
                                                                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                                  setEditingTemplate(prev => {
-                                                                                     const updated = { ...prev };
+                                                                                     const updated = JSON.parse(JSON.stringify(prev));
                                                                                      const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                     target.carbs_g = val;
+                                                                                     if (target) target.carbs_g = val;
                                                                                      return updated;
                                                                                  });
                                                                              }}
@@ -6392,9 +6398,9 @@ export default function ClientDetails() {
                                                                              onChange={(e) => {
                                                                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                                  setEditingTemplate(prev => {
-                                                                                     const updated = { ...prev };
+                                                                                     const updated = JSON.parse(JSON.stringify(prev));
                                                                                      const target = updated.days[day].find(m => m.meal_type === type);
-                                                                                     target.fats_g = val;
+                                                                                     if (target) target.fats_g = val;
                                                                                      return updated;
                                                                                  });
                                                                              }}

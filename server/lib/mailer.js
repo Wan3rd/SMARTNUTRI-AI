@@ -468,7 +468,7 @@ export const sendNutritionistVerificationRequestEmail = async (nutritionist) => 
     `;
 
     return sendViaBrevo({
-        to: 'smnutri@gmail.com',
+        to: 'snutri244@gmail.com',
         subject: `[Verification Required] New Nutritionist Registration - ${full_name || 'Expert'}`,
         html: buildEmailWrapper(inner),
         text: `A new nutritionist registration is pending verification:\n\nName: ${full_name || 'N/A'}\nEmail: ${email || 'N/A'}\n\nPlease review full credentials and license documents in the Admin Dashboard: ${verificationUrl}`,
