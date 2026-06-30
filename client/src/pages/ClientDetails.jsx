@@ -4406,23 +4406,32 @@ export default function ClientDetails() {
                                                                         })}
                                                                     </div>
 
-                                                                    {/* Active Editor Pane */}
-                                                                    <div className="space-y-1">
-                                                                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                                                            {ADIME_STEPS.find(s => s.key === createAdimeStep)?.label} Section Editor
-                                                                        </label>
-                                                                        <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === createAdimeStep ? 'border-primary shadow-md scale-[1.01]' : 'border-divider'}`}>
-                                                                            <ReactQuill
-                                                                                ref={el => editorRefs.current[createAdimeStep] = el}
-                                                                                theme="snow"
-                                                                                value={newAdime[createAdimeStep]}
-                                                                                onChange={(val) => setNewAdime({ ...newAdime, [createAdimeStep]: val })}
-                                                                                onFocus={() => setFocusedField(createAdimeStep)}
-                                                                                modules={{ toolbar: true }}
-                                                                                placeholder={ADIME_STEPS.find(s => s.key === createAdimeStep)?.placeholder}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
+                                                                    {/* Active Editor Panes */}
+                                                                    {ADIME_STEPS.map((step) => {
+                                                                        const isActive = createAdimeStep === step.key;
+                                                                        return (
+                                                                            <div
+                                                                                key={step.key}
+                                                                                style={{ display: isActive ? 'block' : 'none' }}
+                                                                                className="space-y-1"
+                                                                            >
+                                                                                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                                                                                    {step.label} Section Editor
+                                                                                </label>
+                                                                                <div className={`bg-white dark:bg-white/5 rounded-xl overflow-hidden border-2 transition-all ${focusedField === step.key ? 'border-primary shadow-md scale-[1.01]' : 'border-divider'}`}>
+                                                                                    <ReactQuill
+                                                                                        ref={el => editorRefs.current[step.key] = el}
+                                                                                        theme="snow"
+                                                                                        value={newAdime[step.key] || ''}
+                                                                                        onChange={(val) => setNewAdime(prev => ({ ...prev, [step.key]: val }))}
+                                                                                        onFocus={() => setFocusedField(step.key)}
+                                                                                        modules={{ toolbar: true }}
+                                                                                        placeholder={step.placeholder}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
 
                                                                     {/* Step Footer Controls */}
                                                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-divider">
@@ -4430,6 +4439,26 @@ export default function ClientDetails() {
                                                                             Step {ADIME_STEPS.findIndex(s => s.key === createAdimeStep) + 1} of 5
                                                                         </div>
                                                                         <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                onClick={() => {
+                                                                                    if (window.confirm("Are you sure you want to clear all entered ADIME fields? This will discard your current draft.")) {
+                                                                                        setNewAdime({
+                                                                                            assessment: '',
+                                                                                            diagnosis: '',
+                                                                                            intervention: '',
+                                                                                            monitoring: '',
+                                                                                            evaluation: ''
+                                                                                        });
+                                                                                        clearDraft('adime');
+                                                                                        showNotif("Cleared all ADIME fields");
+                                                                                    }
+                                                                                }}
+                                                                                className="text-[10px] sm:text-xs font-black uppercase text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 h-9 sm:h-11 px-3 sm:px-5 rounded-xl transition-all"
+                                                                            >
+                                                                                Clear All
+                                                                            </Button>
                                                                             {createAdimeStep !== 'assessment' && (
                                                                                 <Button
                                                                                     type="button"
@@ -4554,20 +4583,29 @@ export default function ClientDetails() {
                                                                                         })}
                                                                                     </div>
 
-                                                                                    {/* Active Editor Pane for Edit Form */}
-                                                                                    <div className="space-y-1">
-                                                                                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                                                                            {ADIME_STEPS.find(s => s.key === editAdimeStep)?.label} Section Editor
-                                                                                        </label>
-                                                                                        <div className="bg-bg-card rounded-xl overflow-hidden border border-divider">
-                                                                                            <ReactQuill
-                                                                                                theme="snow"
-                                                                                                value={editAdimeForm[editAdimeStep] || ''}
-                                                                                                onChange={(val) => setEditAdimeForm({ ...editAdimeForm, [editAdimeStep]: val })}
-                                                                                                modules={{ toolbar: true }}
-                                                                                            />
-                                                                                        </div>
-                                                                                    </div>
+                                                                                    {/* Active Editor Panes for Edit Form */}
+                                                                                    {ADIME_STEPS.map((step) => {
+                                                                                        const isActive = editAdimeStep === step.key;
+                                                                                        return (
+                                                                                            <div
+                                                                                                key={step.key}
+                                                                                                style={{ display: isActive ? 'block' : 'none' }}
+                                                                                                className="space-y-1"
+                                                                                            >
+                                                                                                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                                                                                                    {step.label} Section Editor
+                                                                                                </label>
+                                                                                                <div className="bg-bg-card rounded-xl overflow-hidden border border-divider">
+                                                                                                    <ReactQuill
+                                                                                                        theme="snow"
+                                                                                                        value={editAdimeForm[step.key] || ''}
+                                                                                                        onChange={(val) => setEditAdimeForm(prev => ({ ...prev, [step.key]: val }))}
+                                                                                                        modules={{ toolbar: true }}
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
 
                                                                                     {/* Step Footer Controls for Edit Form */}
                                                                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-divider">
