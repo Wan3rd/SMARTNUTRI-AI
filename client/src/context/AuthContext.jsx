@@ -44,6 +44,24 @@ export const AuthProvider = ({ children }) => {
         checkUserLoggedIn();
     }, []);
 
+    useEffect(() => {
+        const handleStorageChange = (e) => {
+            if (e.key === 'token') {
+                if (!e.newValue) {
+                    // Token was removed (logout from another tab)
+                    logout();
+                    window.location.href = '/login';
+                } else if (e.newValue !== e.oldValue) {
+                    // Token changed (login to a different account from another tab)
+                    window.location.reload();
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
     const login = async (email, password, rememberMe = false) => {
         try {
             const res = await api.post('/auth/login', {
