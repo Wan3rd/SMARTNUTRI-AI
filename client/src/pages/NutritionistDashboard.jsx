@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock, LogOut, Trash2 } from 'lucide-react';
+import { Users, ClipboardList, Settings, UserPlus, Search, BadgeCheck, User, Stethoscope, Star, Activity, Clock, ShieldAlert, Lock, LogOut, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoading } from '../context/LoadingContext';
 import { cn } from '../lib/utils';
@@ -20,8 +20,29 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 
 
 export default function NutritionistDashboard() {
-    const { user, logout } = useAuth();
+    const { user, logout, updatePreferences } = useAuth();
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
+    const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
+
+    const togglePrivacyMode = async () => {
+        if (isUpdatingPrivacy) return;
+        setIsUpdatingPrivacy(true);
+        const nextVal = !user?.privacy_mode;
+        try {
+            const res = await updatePreferences({ privacy_mode: nextVal });
+            if (res.success) {
+                showNotification(
+                    `Privacy mode ${nextVal ? 'enabled (patient names blurred)' : 'disabled'}`, 
+                    'success'
+                );
+            } else {
+                showNotification('Failed to update privacy mode', 'error');
+            }
+        } finally {
+            setIsUpdatingPrivacy(false);
+        }
+    };
 
     const [clients, setClients] = useState([]);
     const [pendingLogs, setPendingLogs] = useState([]);
@@ -34,7 +55,6 @@ export default function NutritionistDashboard() {
     const [selectedLog, setSelectedLog] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewStatus, setViewStatus] = useState('active');
-    const { showNotification } = useNotification();
 
     // --- Long Press / Unlink Caregiver State & Refs ---
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, isDestructive: true });
@@ -251,11 +271,31 @@ export default function NutritionistDashboard() {
                     </div>
 
                     <div className="flex-1 text-center sm:text-left">
-                        <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2 mb-2 sm:mb-1.5">
-                            <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)] tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
-                                Welcome, {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
-                            </h1>
-                            <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm">
+                        <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-2.5 mb-2 sm:mb-1.5">
+                            <div className="flex items-center gap-2">
+                                <h1 className={cn("text-xl sm:text-2xl md:text-3xl font-black text-[var(--color-text-main)] tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
+                                    Welcome, {user?.full_name?.replace(/^dr\.?\s+/i, '').split(' ')[0]}!
+                                </h1>
+                                <button
+                                    onClick={togglePrivacyMode}
+                                    disabled={isUpdatingPrivacy}
+                                    title={user?.privacy_mode ? "Disable Privacy Mode (Show Sensitive Data)" : "Enable Privacy Mode (Hide Sensitive Data)"}
+                                    className={cn(
+                                        "p-1.5 rounded-lg border transition-all duration-300 transform active:scale-95 focus:outline-none flex items-center justify-center shrink-0",
+                                        user?.privacy_mode 
+                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20 shadow-sm"
+                                            : "bg-gray-50 border-gray-200 dark:bg-white/5 dark:border-white/10 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                    )}
+                                    aria-label="Toggle Privacy Mode"
+                                >
+                                    {user?.privacy_mode ? (
+                                        <EyeOff size={14} className="animate-pulse" />
+                                    ) : (
+                                        <Eye size={14} />
+                                    )}
+                                </button>
+                            </div>
+                            <span className="px-2.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--color-primary)]/20 backdrop-blur-sm shrink-0">
                                 Clinical Nutritionist
                             </span>
                         </div>

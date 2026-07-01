@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
 import MealDetailModal from '../components/MealDetailModal';
 import { Card, CardContent } from '../components/common/Card';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets, Baby, Heart, ShieldCheck, Sparkles } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets, Baby, Heart, ShieldCheck, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
@@ -13,11 +13,34 @@ import api from '../lib/api';
 import AnnouncementBanner from '../components/AnnouncementBanner';
 import { DashboardSkeleton } from '../components/SkeletonShell';
 import AddChildModal from '../components/AddChildModal';
+import { useNotification } from '../context/NotificationContext';
 
 import Notification from '../components/common/Notification';
 
 export default function ParentDashboard() {
-    const { user } = useAuth();
+    const { user, updatePreferences } = useAuth();
+    const { showNotification } = useNotification();
+    const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
+
+    const togglePrivacyMode = async () => {
+        if (isUpdatingPrivacy) return;
+        setIsUpdatingPrivacy(true);
+        const nextVal = !user?.privacy_mode;
+        try {
+            const res = await updatePreferences({ privacy_mode: nextVal });
+            if (res.success) {
+                showNotification(
+                    `Privacy mode ${nextVal ? 'enabled (patient names blurred)' : 'disabled'}`, 
+                    'success'
+                );
+            } else {
+                showNotification('Failed to update privacy mode', 'error');
+            }
+        } finally {
+            setIsUpdatingPrivacy(false);
+        }
+    };
+
     const { selectedProfile, profiles, refreshProfiles, loading: profileLoading } = useProfile();
     const { startLoading, stopLoading } = useLoading();
     const [allLogs, setAllLogs] = useState([]);
@@ -395,9 +418,29 @@ export default function ParentDashboard() {
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <AnnouncementBanner />
             <header className="text-center sm:text-left px-2">
-                <h1 className={cn("text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
-                    {selectedProfile?.child_name || 'Child Dashboard'}
-                </h1>
+                <div className="flex flex-row items-center justify-center sm:justify-start gap-2.5">
+                    <h1 className={cn("text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--color-secondary)] uppercase tracking-tight leading-tight", user?.privacy_mode && "privacy-blur")}>
+                        {selectedProfile?.child_name || 'Child Dashboard'}
+                    </h1>
+                    <button
+                        onClick={togglePrivacyMode}
+                        disabled={isUpdatingPrivacy}
+                        title={user?.privacy_mode ? "Disable Privacy Mode (Show Sensitive Data)" : "Enable Privacy Mode (Hide Sensitive Data)"}
+                        className={cn(
+                            "p-1.5 rounded-lg border transition-all duration-300 transform active:scale-95 focus:outline-none flex items-center justify-center shrink-0",
+                            user?.privacy_mode 
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20 shadow-sm"
+                                : "bg-gray-50 border-gray-200 dark:bg-white/5 dark:border-white/10 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                        )}
+                        aria-label="Toggle Privacy Mode"
+                    >
+                        {user?.privacy_mode ? (
+                            <EyeOff size={16} className="animate-pulse" />
+                        ) : (
+                            <Eye size={16} />
+                        )}
+                    </button>
+                </div>
                 <p className="text-[10px] sm:text-sm text-[var(--color-text-muted)] font-bold uppercase tracking-widest mt-1.5 opacity-80">
                     Clinical development tracking & expert logs
                 </p>

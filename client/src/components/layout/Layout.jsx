@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw, Home, Calendar, ChefHat, User, Plus, Camera, Clock, Utensils, Settings, History, Users } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, Activity, AlertTriangle, RefreshCw, Home, Calendar, ChefHat, User, Plus, Camera, Clock, Utensils, Settings, History, Users, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +13,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { io } from 'socket.io-client';
 
 export function Layout({ children }) {
-    const { user } = useAuth();
+    const { user, updatePreferences } = useAuth();
     // Start with false on mobile, true on desktop
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -24,6 +24,26 @@ export function Layout({ children }) {
     const hasNoChild = !profiles || profiles.length === 0;
     const [fabMenuOpen, setFabMenuOpen] = useState(false);
     const { showNotification } = useNotification();
+    const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
+
+    const togglePrivacyMode = async () => {
+        if (isUpdatingPrivacy) return;
+        setIsUpdatingPrivacy(true);
+        const nextVal = !user?.privacy_mode;
+        try {
+            const res = await updatePreferences({ privacy_mode: nextVal });
+            if (res.success) {
+                showNotification(
+                    `Privacy mode ${nextVal ? 'enabled (patient names blurred)' : 'disabled'}`, 
+                    'success'
+                );
+            } else {
+                showNotification('Failed to update privacy mode', 'error');
+            }
+        } finally {
+            setIsUpdatingPrivacy(false);
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -272,6 +292,24 @@ export function Layout({ children }) {
                         )}
 
                         <div className="ml-auto flex items-center gap-2">
+                            <button
+                                onClick={togglePrivacyMode}
+                                disabled={isUpdatingPrivacy}
+                                title={user?.privacy_mode ? "Disable Privacy Mode (Show Sensitive Data)" : "Enable Privacy Mode (Hide Sensitive Data)"}
+                                className={cn(
+                                    "p-2 rounded-xl border transition-all duration-300 transform active:scale-95 focus:outline-none flex items-center justify-center relative group",
+                                    user?.privacy_mode 
+                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20 shadow-sm"
+                                        : "bg-gray-50 border-gray-200 dark:bg-white/5 dark:border-white/10 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:scale-105"
+                                )}
+                                aria-label="Toggle Privacy Mode"
+                            >
+                                {user?.privacy_mode ? (
+                                    <EyeOff size={18} className="animate-pulse" />
+                                ) : (
+                                    <Eye size={18} />
+                                )}
+                            </button>
                         </div>
                     </motion.header>
 
