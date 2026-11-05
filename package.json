@@ -19,5 +19,8 @@
   "description": "",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "puppeteer": "^25.3.0"
   }
 }

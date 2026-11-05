@@ -221,18 +221,20 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         <AnimatePresence>
             {isOpen && (
                 <motion.div
+                    data-modal-node="true"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.2 }}
                     className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md"
                 >
                     <motion.div
+                        data-modal-node="true"
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
-                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl flex flex-col"
+                        transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl flex flex-col gpu-modal"
                     >
                 <Card className="w-full h-full sm:h-auto sm:max-h-[90vh] border-0 sm:border-2 border-[var(--color-divider)] rounded-none sm:rounded-[40px] overflow-hidden shadow-2xl flex flex-col bg-[var(--color-bg-card)]">
                     <CardContent className="p-0 flex flex-col h-full overflow-hidden">

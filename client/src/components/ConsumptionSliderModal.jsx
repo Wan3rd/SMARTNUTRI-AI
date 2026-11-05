@@ -99,23 +99,25 @@ export default function ConsumptionSliderModal({ value, onChange, compact = fals
       {createPortal(
         <AnimatePresence>
           {isOpen && (
-            <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center overflow-hidden overscroll-none">
+            <div data-modal-node="true" className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center overflow-hidden overscroll-none">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
                 onClick={handleCancel}
                 className="absolute inset-0 bg-black/70 backdrop-blur-md"
               />
 
               {/* Modal Sheet / Dialog */}
               <motion.div
+                data-modal-node="true"
                 initial={{ y: '100%', opacity: 0.5, scale: window.innerWidth >= 640 ? 0.95 : 1 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: '100%', opacity: 0.5, scale: window.innerWidth >= 640 ? 0.95 : 1 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-                className="relative w-full max-h-[90vh] sm:max-w-md bg-[var(--color-bg-card)] rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-[var(--color-divider)] shadow-2xl p-6 flex flex-col items-center gap-6 z-10 overflow-y-auto scrollbar-hide"
+                className="relative w-full max-h-[90vh] sm:max-w-md bg-[var(--color-bg-card)] rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-[var(--color-divider)] shadow-2xl p-6 flex flex-col items-center gap-6 z-10 overflow-y-auto scrollbar-hide gpu-modal"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Mobile Drag/Indicator bar */}

@@ -581,26 +581,27 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     return createPortal(
         <>
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-none">
+            <div data-modal-node="true" className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-none">
                 {/* Backdrop */}
                 <div 
-                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                    className="absolute inset-0 bg-black/75 backdrop-blur-md"
                     style={{
                         opacity: backdropOpacity,
-                        transition: isDragging ? 'none' : 'opacity 0.4s ease-out'
+                        transition: isDragging ? 'none' : 'opacity 0.25s ease-out'
                     }}
                     onClick={handleDismiss}
                 />
                 
                 {/* Modal Container */}
                 <div
-                    className="w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex flex-col lg:flex-row shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transform z-10"
+                    data-modal-node="true"
+                    className="w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex flex-col lg:flex-row shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transform z-10 gpu-modal"
                     style={{
                         transform: isDragging
                             ? `translateY(${dragY}px)`
                             : (isMounted && !isClosing ? 'translateY(0)' : 'translateY(100%)'),
                         opacity: isClosing ? 0 : 1,
-                        transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out'
+                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out'
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >

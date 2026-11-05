@@ -422,28 +422,28 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     return createPortal(
         <>
             <div
-                className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4"
+                data-modal-node="true"
+                className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md"
                 style={{
-                    backgroundColor: `rgba(0, 0, 0, ${backdropOpacity * 0.6})`,
-                    backdropFilter: `blur(${backdropOpacity * 12}px)`,
-                    WebkitBackdropFilter: `blur(${backdropOpacity * 12}px)`,
-                    transition: isDragging ? 'none' : 'background-color 0.4s ease-out, backdrop-filter 0.4s ease-out, -webkit-backdrop-filter 0.4s ease-out'
+                    opacity: backdropOpacity,
+                    transition: isDragging ? 'none' : 'opacity 0.25s ease-out'
                 }}
                 onClick={handleClose}
             >
                 <div
-                    className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transform"
+                    data-modal-node="true"
+                    className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transform gpu-modal"
                     style={{
                         transform: isDragging
                             ? `translateY(${dragY}px)`
                             : (isMounted && !isClosing ? 'translateY(0)' : 'translateY(100%)'),
                         opacity: isClosing ? 0 : 1,
-                        transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out'
+                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out'
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {(isResubmitting || isDeleting) && (
-                        <div className="fixed inset-0 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-xl z-[60] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 select-none overflow-hidden">
+                        <div className="fixed inset-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 select-none overflow-hidden">
                             {/* Ambient Glowing Orbs */}
                             <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-full blur-[60px] animate-pulse" />
                             <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -492,7 +492,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
-                        className="sticky top-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10 select-none cursor-grab active:cursor-grabbing"
+                        className="sticky top-0 bg-[var(--color-bg-card)]/95 backdrop-blur-md border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10 select-none cursor-grab active:cursor-grabbing"
                     >
                         <div>
                             <h2 className="text-base sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
@@ -1075,7 +1075,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                     </div>
 
                     {/* Footer */}
-                    <div className="sticky bottom-0 bg-[var(--color-bg-card)]/80 backdrop-blur-xl border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
+                    <div className="sticky bottom-0 bg-[var(--color-bg-card)]/95 backdrop-blur-md border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
                         <Button
                             variant="none"
                             className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-[var(--color-danger)]/20 dark:border-[var(--color-danger)]/40 text-[var(--color-danger)] bg-[var(--color-danger)]/10 dark:bg-[var(--color-danger)]/15 hover:bg-[var(--color-danger)]/20 dark:hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"

@@ -403,30 +403,37 @@ textarea {
 
 /* ── PREMIUM TRANSITION POLISH ── */
 
-/* Smooth global transitions for background/text/borders under normal changes */
+/* Smooth global transitions for background/text/borders under normal changes (excluding modals and portaled overlays to prevent animation lag) */
 html,
 body,
 .Card,
 .glass,
-[class*="bg-"],
-[class*="dark:bg-"],
-p,
-span,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-input,
-select,
-textarea,
-button {
+[class*="bg-"]:not([data-modal-node] *):not([data-modal-node]),
+[class*="dark:bg-"]:not([data-modal-node] *):not([data-modal-node]),
+p:not([data-modal-node] *),
+span:not([data-modal-node] *),
+h1:not([data-modal-node] *),
+h2:not([data-modal-node] *),
+h3:not([data-modal-node] *),
+h4:not([data-modal-node] *),
+h5:not([data-modal-node] *),
+h6:not([data-modal-node] *),
+input:not([data-modal-node] *),
+select:not([data-modal-node] *),
+textarea:not([data-modal-node] *),
+button:not([data-modal-node] *) {
   transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
               border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
               color 300ms cubic-bezier(0.4, 0, 0.2, 1),
               fill 300ms cubic-bezier(0.4, 0, 0.2, 1),
               stroke 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Modal hardware acceleration utilities */
+.gpu-modal {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Ensure custom transitions (like height/width/transform transitions on divs) are fully preserved */
