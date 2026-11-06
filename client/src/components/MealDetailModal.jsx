@@ -110,28 +110,55 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const [notif, setNotif] = useState({ show: false, message: '', type: 'error' });
     const [previewImage, setPreviewImage] = useState(null);
     const [isClosing, setIsClosing] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+    // Entrance is driven by a CSS keyframe (starts on first paint, runs on the compositor).
+    // `hasEntered` flips once it finishes so drag gestures can take over the transform.
+    const [hasEntered, setHasEntered] = useState(false);
+    // Heavy body sections mount after the entrance animation so they don't steal its frames.
+    const [contentReady, setContentReady] = useState(false);
+    const closedRef = React.useRef(false);
+
+    const finishClose = React.useCallback(() => {
+        if (closedRef.current) return;
+        closedRef.current = true;
+        onClose();
+    }, [onClose]);
 
     const handleClose = React.useCallback(() => {
         setIsClosing(true);
-        setTimeout(() => {
-            onClose();
-        }, 500);
-    }, [onClose]);
+    }, []);
+
+    // Safety net: if animation events don't fire (e.g. background tab), still finish the transitions.
+    React.useEffect(() => {
+        if (hasEntered) return;
+        const t = setTimeout(() => { setHasEntered(true); setContentReady(true); }, 450);
+        return () => clearTimeout(t);
+    }, [hasEntered]);
 
     React.useEffect(() => {
-        setIsMounted(true);
-    }, []);
+        if (!isClosing) return;
+        const t = setTimeout(finishClose, 400);
+        return () => clearTimeout(t);
+    }, [isClosing, finishClose]);
+
+    const handleSheetAnimationEnd = React.useCallback((e) => {
+        if (e.target !== e.currentTarget) return; // ignore bubbling child animations
+        if (e.animationName === 'sheet-up') {
+            setHasEntered(true);
+            setContentReady(true);
+        } else if (e.animationName === 'sheet-down') {
+            finishClose();
+        }
+    }, [finishClose]);
 
     const [dragY, setDragY] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const dragStartY = React.useRef(0);
 
     const handleTouchStart = React.useCallback((e) => {
-        if (window.innerWidth >= 640) return;
+        if (window.innerWidth >= 640 || !hasEntered || isClosing) return;
         dragStartY.current = e.touches[0].clientY;
         setIsDragging(true);
-    }, []);
+    }, [hasEntered, isClosing]);
 
     const handleTouchMove = React.useCallback((e) => {
         if (!isDragging) return;
@@ -417,29 +444,48 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
     const ComplianceIcon = complianceBadge.icon;
 
     const dragProgress = Math.min(dragY / 300, 1);
-    const backdropOpacity = isMounted && !isClosing ? (1 - dragProgress) : 0;
+    const overlayOpacity = 1 - dragProgress;
+
+    // Overlay: keyframe fade in/out; inline opacity only once entered (follows drag gesture).
+    const overlayClass = isClosing
+        ? 'animate-overlay-out'
+        : (!hasEntered ? 'animate-overlay-in' : '');
+    const overlayStyle = isClosing
+        ? { '--overlay-from': overlayOpacity }
+        : (hasEntered ? { opacity: overlayOpacity, transition: isDragging ? 'none' : 'opacity 0.25s ease-out' } : undefined);
+
+    // Sheet: keyframe slide up/down; inline transform only while dragging / snapping back.
+    const sheetClass = isClosing
+        ? 'animate-sheet-down'
+        : (!hasEntered ? 'animate-sheet-up' : '');
+    const sheetStyle = isClosing
+        ? { '--sheet-drag': `${dragY}px`, contain: 'layout paint' }
+        : (hasEntered
+            ? {
+                transform: dragY > 0 ? `translate3d(0, ${dragY}px, 0)` : undefined,
+                transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                contain: 'layout paint'
+            }
+            : { contain: 'layout paint' });
 
     return createPortal(
         <>
             <div
-                data-modal-node="true"
-                className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md"
-                style={{
-                    opacity: backdropOpacity,
-                    transition: isDragging ? 'none' : 'opacity 0.25s ease-out'
-                }}
+                className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4"
                 onClick={handleClose}
             >
+                {/* Backdrop (separate layer so its blur is never re-composited with the moving sheet) */}
                 <div
-                    data-modal-node="true"
-                    className="bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative transform gpu-modal"
-                    style={{
-                        transform: isDragging
-                            ? `translateY(${dragY}px)`
-                            : (isMounted && !isClosing ? 'translateY(0)' : 'translateY(100%)'),
-                        opacity: isClosing ? 0 : 1,
-                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out'
-                    }}
+                    className={cn("absolute inset-0 bg-black/60 backdrop-blur-sm", overlayClass)}
+                    style={overlayStyle}
+                />
+                <div
+                    className={cn(
+                        "bg-[var(--color-bg-card)] sm:rounded-[2.5rem] shadow-xl sm:shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto flex flex-col relative gpu-modal",
+                        sheetClass
+                    )}
+                    style={sheetStyle}
+                    onAnimationEnd={handleSheetAnimationEnd}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {(isResubmitting || isDeleting) && (
@@ -492,7 +538,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
-                        className="sticky top-0 bg-[var(--color-bg-card)]/95 backdrop-blur-md border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10 select-none cursor-grab active:cursor-grabbing"
+                        className="sticky top-0 bg-[var(--color-bg-card)] border-b border-[var(--color-divider)] p-3.5 sm:p-6 flex justify-between items-center z-10 select-none cursor-grab active:cursor-grabbing"
                     >
                         <div>
                             <h2 className="text-base sm:text-2xl font-black text-[var(--color-secondary)] uppercase tracking-tight">Meal Details</h2>
@@ -591,6 +637,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                     onClick={() => setPreviewImage(log.image_url)}
                                 >
                                     <img
+                                        decoding="async"
                                         src={log.image_url}
                                         alt="Before"
                                         className="w-full h-48 sm:h-64 object-cover transition-transform group-hover:scale-105 duration-700"
@@ -665,6 +712,7 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                         {log.image_after_url ? (
                                             <>
                                                 <img
+                                                    decoding="async"
                                                     src={log.image_after_url}
                                                     alt="After"
                                                     className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
@@ -688,6 +736,8 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                             </div>
                         </div>
 
+                        {contentReady ? (
+                        <>
                         {/* Metadata Bar */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div className="bg-[var(--color-bg-page)] p-3.5 rounded-2xl border border-[var(--color-divider)]">
@@ -1072,10 +1122,20 @@ export default function MealDetailModal({ log, onClose, onDelete, rules = [], al
                                 </CardContent>
                             </Card>
                         )}
+                        </>
+                        ) : (
+                            /* Lightweight placeholder shown during the entrance animation */
+                            <div className="space-y-3" aria-hidden="true">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-16" />)}
+                                </div>
+                                <div className="skeleton h-56" />
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}
-                    <div className="sticky bottom-0 bg-[var(--color-bg-card)]/95 backdrop-blur-md border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
+                    <div className="sticky bottom-0 bg-[var(--color-bg-card)] border-t border-[var(--color-divider)] p-3 sm:p-6 flex flex-row gap-2 sm:gap-3 items-center justify-between w-full z-10">
                         <Button
                             variant="none"
                             className="flex-1 sm:flex-initial h-10 sm:h-11 rounded-xl sm:rounded-2xl border-2 border-[var(--color-danger)]/20 dark:border-[var(--color-danger)]/40 text-[var(--color-danger)] bg-[var(--color-danger)]/10 dark:bg-[var(--color-danger)]/15 hover:bg-[var(--color-danger)]/20 dark:hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] shadow-sm font-black uppercase tracking-widest text-[8px] xs:text-[9px] sm:text-[10px] flex items-center justify-center px-1 sm:px-4"

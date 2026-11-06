@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import MealLogger from '../components/MealLogger';
-import MealDetailModal from '../components/MealDetailModal';
+import MealDetailModalHost from '../components/MealDetailModalHost';
 import { Card, CardContent } from '../components/common/Card';
 import { Calendar, CheckCircle2, AlertCircle, Clock, ExternalLink, Activity, Info, Star, Trash2, MessageSquare, BadgeCheck, User, Building2, Phone, Plus, Minus, Droplets, Baby, Heart, ShieldCheck, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,7 +46,8 @@ export default function ParentDashboard() {
     const [allLogs, setAllLogs] = useState([]);
     const [recentLogs, setRecentLogs] = useState([]);
     const [rules, setRules] = useState([]);
-    const [selectedLog, setSelectedLog] = useState(null);
+    // Modal open state lives inside MealDetailModalHost so opening it doesn't re-render this page
+    const mealModalRef = useRef(null);
     const [filterTab, setFilterTab] = useState('all');
     const [activeTab, setActiveTab] = useState('status'); // 'status' or 'reviews'
     const [assignedNutritionist, setAssignedNutritionist] = useState(null);
@@ -948,7 +949,7 @@ export default function ParentDashboard() {
                                             key={log.id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            onClick={() => setSelectedLog(log)}
+                                            onClick={() => mealModalRef.current?.open(log)}
                                             className="group cursor-pointer bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] overflow-hidden hover:border-[var(--color-primary)] transition-all shadow-sm hover:shadow-xl hover:translate-y-[-2px]"
                                         >
                                             <div className="flex flex-col sm:flex-row">
@@ -1015,19 +1016,15 @@ export default function ParentDashboard() {
                 </div>
             </div>
 
-            {selectedLog && (
-                <MealDetailModal
-                    log={selectedLog}
-                    rules={rules}
-                    allergies={selectedProfile?.allergies || []}
-                    onClose={() => setSelectedLog(null)}
-                    onDelete={(deletedId) => {
-                        setSelectedLog(null);
-                        setAllLogs(prev => prev.filter(l => l.id !== deletedId));
-                        setRecentLogs(prev => prev.filter(l => l.id !== deletedId));
-                    }}
-                />
-            )}
+            <MealDetailModalHost
+                ref={mealModalRef}
+                rules={rules}
+                allergies={selectedProfile?.allergies || []}
+                onDelete={(deletedId) => {
+                    setAllLogs(prev => prev.filter(l => l.id !== deletedId));
+                    setRecentLogs(prev => prev.filter(l => l.id !== deletedId));
+                }}
+            />
             <Notification
                 show={showWelcome}
                 type="success"

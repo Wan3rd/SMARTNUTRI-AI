@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { Activity, ChevronLeft, ChevronRight, Apple, Coffee, Sun, Moon, Flame, Utensils, Info, X, AlertCircle, AlertTriangle } from 'lucide-react';
@@ -12,7 +12,7 @@ import api from '../lib/api';
 import { useProfile } from '../context/ProfileContext';
 import { useLoading } from '../context/LoadingContext';
 import { CalendarSkeleton } from '../components/SkeletonShell';
-import MealDetailModal from '../components/MealDetailModal';
+import MealDetailModalHost from '../components/MealDetailModalHost';
 
 export default function Calendar() {
     const navigate = useNavigate();
@@ -26,7 +26,8 @@ export default function Calendar() {
     const [scheduledMeals, setScheduledMeals] = useState([]);
     const [dayStatuses, setDayStatuses] = useState({});
     const [isInitialSync, setIsInitialSync] = useState(true);
-    const [selectedLog, setSelectedLog] = useState(null);
+    // Modal open state lives inside MealDetailModalHost so opening it doesn't re-render this page
+    const mealModalRef = useRef(null);
     
     // Hideable Guide States
     const [showGuide, setShowGuide] = useState(() => {
@@ -612,7 +613,7 @@ export default function Calendar() {
                                         {dayLogs.map(log => (
                                             <div key={log.id}
                                                 className="flex flex-col xs:flex-row items-start xs:items-center gap-5 p-5 rounded-3xl bg-[var(--color-bg-page)] border-2 border-[var(--color-divider)] group cursor-pointer hover:border-[var(--color-primary)] transition-all hover:shadow-xl hover:translate-y-[-2px]"
-                                                onClick={() => setSelectedLog(log)}
+                                                onClick={() => mealModalRef.current?.open(log)}
                                             >
                                                 <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-[var(--color-divider)] overflow-hidden flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
                                                     <img src={log.image_url} alt="meal" className="w-full h-full object-cover" />
@@ -673,18 +674,14 @@ export default function Calendar() {
                 </Alert>
             </Snackbar>
 
-            {selectedLog && (
-                <MealDetailModal
-                    log={selectedLog}
-                    rules={rules}
-                    allergies={selectedProfile?.allergies || []}
-                    onClose={() => setSelectedLog(null)}
-                    onDelete={(deletedId) => {
-                        setSelectedLog(null);
-                        setLogs(prev => prev.filter(l => l.id !== deletedId));
-                    }}
-                />
-            )}
+            <MealDetailModalHost
+                ref={mealModalRef}
+                rules={rules}
+                allergies={selectedProfile?.allergies || []}
+                onDelete={(deletedId) => {
+                    setLogs(prev => prev.filter(l => l.id !== deletedId));
+                }}
+            />
         </div>
     );
 }

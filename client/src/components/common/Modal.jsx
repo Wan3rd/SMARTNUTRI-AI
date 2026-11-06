@@ -34,12 +34,12 @@ export default function Modal({ isOpen, onClose, title, children, className, max
     };
 
     return (
-        <div data-modal-node="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div
                 className="absolute inset-0"
                 onClick={onClose}
             />
-            <Card data-modal-node="true" className={cn(
+            <Card className={cn(
                 "w-full relative shadow-2xl animate-in zoom-in-95 duration-150 border-[var(--color-divider)] bg-[var(--color-bg-card)] gpu-modal",
                 maxWidthClasses[maxWidth] || maxWidth || maxWidthClasses.md,
                 className

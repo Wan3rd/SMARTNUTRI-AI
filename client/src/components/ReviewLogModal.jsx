@@ -581,7 +581,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     return createPortal(
         <>
-            <div data-modal-node="true" className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-none">
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-none">
                 {/* Backdrop */}
                 <div 
                     className="absolute inset-0 bg-black/75 backdrop-blur-md"
@@ -594,7 +594,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                 
                 {/* Modal Container */}
                 <div
-                    data-modal-node="true"
+                   
                     className="w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex flex-col lg:flex-row shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transform z-10 gpu-modal"
                     style={{
                         transform: isDragging

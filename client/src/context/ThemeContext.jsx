@@ -86,7 +86,11 @@ export function ThemeProvider({
             syncBackend();
         } else {
             // Fallback for browsers that do not support View Transitions
+            // Enable page-wide color transitions only for the duration of the switch
+            const root = window.document.documentElement;
+            root.classList.add("theme-transition");
             updateTheme();
+            window.setTimeout(() => root.classList.remove("theme-transition"), 400);
             
             // Sync to backend asynchronously to prevent UI blocking
             syncBackend();

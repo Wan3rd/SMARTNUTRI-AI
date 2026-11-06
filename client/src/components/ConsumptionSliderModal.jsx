@@ -99,7 +99,7 @@ export default function ConsumptionSliderModal({ value, onChange, compact = fals
       {createPortal(
         <AnimatePresence>
           {isOpen && (
-            <div data-modal-node="true" className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center overflow-hidden overscroll-none">
+            <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center overflow-hidden overscroll-none">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -112,7 +112,7 @@ export default function ConsumptionSliderModal({ value, onChange, compact = fals
 
               {/* Modal Sheet / Dialog */}
               <motion.div
-                data-modal-node="true"
+               
                 initial={{ y: '100%', opacity: 0.5, scale: window.innerWidth >= 640 ? 0.95 : 1 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: '100%', opacity: 0.5, scale: window.innerWidth >= 640 ? 0.95 : 1 }}

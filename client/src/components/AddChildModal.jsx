@@ -221,7 +221,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    data-modal-node="true"
+                   
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -229,7 +229,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded, parentId 
                     className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md"
                 >
                     <motion.div
-                        data-modal-node="true"
+                       
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}

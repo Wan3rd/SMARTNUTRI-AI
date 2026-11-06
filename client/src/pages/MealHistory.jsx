@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { motion } from 'framer-motion';
@@ -8,7 +8,7 @@ import { HistorySkeleton } from '../components/SkeletonShell';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
 import { useLoading } from '../context/LoadingContext';
-import MealDetailModal from '../components/MealDetailModal';
+import MealDetailModalHost from '../components/MealDetailModalHost';
 import Notification from '../components/common/Notification';
 
 export default function MealHistory() {
@@ -17,7 +17,8 @@ export default function MealHistory() {
     const { startLoading, stopLoading } = useLoading();
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
-    const [selectedLog, setSelectedLog] = useState(null);
+    // Modal open state lives inside MealDetailModalHost so opening it doesn't re-render this page
+    const mealModalRef = useRef(null);
     const [rules, setRules] = useState([]);
     const [dailyLogs, setDailyLogs] = useState([]);
     const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
@@ -576,7 +577,7 @@ export default function MealHistory() {
                                         .map(log => (
                                         <div 
                                             key={log.id} 
-                                            onClick={() => setSelectedLog(log)}
+                                            onClick={() => mealModalRef.current?.open(log)}
                                             className="group relative bg-[var(--color-bg-card)] rounded-3xl border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex flex-row cursor-pointer"
                                         >
                                             {/* Meal image - compact fixed width on mobile */}
@@ -636,17 +637,13 @@ export default function MealHistory() {
             </div>
 
             {/* Meal Detail Modal */}
-            {selectedLog && (
-                <MealDetailModal 
-                    log={selectedLog} 
-                    onClose={() => setSelectedLog(null)} 
-                    onDelete={() => {
-                        setSelectedLog(null);
-                        fetchLogs();
-                        showNotif("Meal log deleted successfully");
-                    }}
-                />
-            )}
+            <MealDetailModalHost
+                ref={mealModalRef}
+                onDelete={() => {
+                    fetchLogs();
+                    showNotif("Meal log deleted successfully");
+                }}
+            />
 
             <Notification
                 show={notif.show}

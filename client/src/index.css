@@ -403,25 +403,11 @@ textarea {
 
 /* ── PREMIUM TRANSITION POLISH ── */
 
-/* Smooth global transitions for background/text/borders under normal changes (excluding modals and portaled overlays to prevent animation lag) */
-html,
-body,
-.Card,
-.glass,
-[class*="bg-"]:not([data-modal-node] *):not([data-modal-node]),
-[class*="dark:bg-"]:not([data-modal-node] *):not([data-modal-node]),
-p:not([data-modal-node] *),
-span:not([data-modal-node] *),
-h1:not([data-modal-node] *),
-h2:not([data-modal-node] *),
-h3:not([data-modal-node] *),
-h4:not([data-modal-node] *),
-h5:not([data-modal-node] *),
-h6:not([data-modal-node] *),
-input:not([data-modal-node] *),
-select:not([data-modal-node] *),
-textarea:not([data-modal-node] *),
-button:not([data-modal-node] *) {
+/* Interactive controls keep a soft color fade for hover/focus states */
+input,
+select,
+textarea,
+button {
   transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
               border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
               color 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -429,11 +415,84 @@ button:not([data-modal-node] *) {
               stroke 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Page-wide color transitions are only active while the theme is switching
+   (html.theme-transition is toggled by ThemeContext). Keeping them always-on made
+   every mount (e.g. modals) pay for hundreds of per-element transitions. */
+html.theme-transition,
+html.theme-transition body,
+html.theme-transition .Card,
+html.theme-transition .glass,
+html.theme-transition [class*="bg-"],
+html.theme-transition p,
+html.theme-transition span,
+html.theme-transition h1,
+html.theme-transition h2,
+html.theme-transition h3,
+html.theme-transition h4,
+html.theme-transition h5,
+html.theme-transition h6 {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout shift when body scroll is locked by modals */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Modal hardware acceleration utilities */
 .gpu-modal {
   will-change: transform, opacity;
-  transform: translateZ(0);
   backface-visibility: hidden;
+}
+
+/* ── Bottom-sheet / modal keyframes (compositor-driven, start on first paint) ── */
+@keyframes sheet-up {
+  from { transform: translate3d(0, 100%, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes sheet-down {
+  from { transform: translate3d(0, var(--sheet-drag, 0px), 0); opacity: 1; }
+  to { transform: translate3d(0, 100%, 0); opacity: 0; }
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-out {
+  from { opacity: var(--overlay-from, 1); }
+  to { opacity: 0; }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-sheet-down {
+  animation: sheet-down 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.animate-overlay-in {
+  animation: overlay-in 220ms ease-out both;
+}
+
+.animate-overlay-out {
+  animation: overlay-out 240ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-up,
+  .animate-sheet-down,
+  .animate-overlay-in,
+  .animate-overlay-out {
+    animation-duration: 1ms;
+  }
 }
 
 /* Ensure custom transitions (like height/width/transform transitions on divs) are fully preserved */
