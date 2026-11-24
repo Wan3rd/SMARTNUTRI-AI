@@ -122,9 +122,13 @@ const renderMedicalHistoryObject = (history) => {
 export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [review, setReview] = useState('');
-    const [editedAnalysis, setEditedAnalysis] = useState(null);
-    const [editedWater, setEditedWater] = useState(0);
+    const [review, setReview] = useState(() => log?.nutritionist_review?.comment || '');
+    const [editedAnalysis, setEditedAnalysis] = useState(() =>
+        log?.nutritionist_review?.verified_analysis ||
+        log?.ai_analysis ||
+        { items: [], total_calories_est: 0, macros_est: { protein_g: 0, carbs_g: 0, fat_g: 0 } }
+    );
+    const [editedWater, setEditedWater] = useState(() => log?.water_ml || 0);
     const [isEditing, setIsEditing] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
@@ -134,7 +138,9 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     const [activeImageIndex, setActiveImageIndex] = useState(0);
 
     const [isClosing, setIsClosing] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+    const [hasEntered, setHasEntered] = useState(false);
+    const [contentReady, setContentReady] = useState(false);
+    const closedRef = useRef(false);
     const [dragY, setDragY] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const dragStartY = React.useRef(0);
@@ -240,18 +246,43 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
     const closeLightbox = () => { setPreviewImage(null); handleImgReset(); };
 
-    const handleCloseWithAnimation = React.useCallback(() => {
-        setIsClosing(true);
-        setTimeout(() => {
-            onClose();
-        }, 400);
+    const finishClose = React.useCallback(() => {
+        if (closedRef.current) return;
+        closedRef.current = true;
+        onClose();
     }, [onClose]);
 
+    const handleCloseWithAnimation = React.useCallback(() => {
+        setIsClosing(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen || hasEntered) return;
+        const t = setTimeout(() => { setHasEntered(true); setContentReady(true); }, 450);
+        return () => clearTimeout(t);
+    }, [isOpen, hasEntered]);
+
+    useEffect(() => {
+        if (!isClosing) return;
+        const t = setTimeout(finishClose, 380);
+        return () => clearTimeout(t);
+    }, [isClosing, finishClose]);
+
+    const handleSheetAnimationEnd = React.useCallback((e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.animationName === 'sheet-up') {
+            setHasEntered(true);
+            setContentReady(true);
+        } else if (e.animationName === 'sheet-down') {
+            finishClose();
+        }
+    }, [finishClose]);
+
     const handleTouchStart = React.useCallback((e) => {
-        if (window.innerWidth >= 1024) return;
+        if (window.innerWidth >= 1024 || !hasEntered || isClosing) return;
         dragStartY.current = e.touches[0].clientY;
         setIsDragging(true);
-    }, []);
+    }, [hasEntered, isClosing]);
 
     const handleTouchMove = React.useCallback((e) => {
         if (!isDragging) return;
@@ -337,26 +368,22 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     }, [onClose, previewImage, handleDismiss]);
 
     // Prevent background scrolling when modal is open
-    const loadedLogIdRef = useRef(null);
+    const loadedLogIdRef = useRef(log?.id || null);
 
     useEffect(() => {
         if (isOpen) {
+            closedRef.current = false;
             setIsClosing(false);
-            
+
             // Lock body scroll securely
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none';
-
-            // Allow the closed state to paint first, then trigger slide up animation
-            const timer = setTimeout(() => {
-                setIsMounted(true);
-            }, 10);
-            return () => clearTimeout(timer);
         } else {
-            setIsMounted(false);
+            setHasEntered(false);
+            setContentReady(false);
             setIsClosing(false);
             loadedLogIdRef.current = null;
-            
+
             // Release body scroll
             document.body.style.overflow = '';
             document.body.style.touchAction = '';
@@ -577,32 +604,43 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
     };
 
     const dragProgress = Math.min(dragY / 300, 1);
-    const backdropOpacity = isMounted && !isClosing ? (1 - dragProgress) : 0;
+    const overlayOpacity = 1 - dragProgress;
+
+    const overlayClass = isClosing
+        ? 'animate-overlay-out'
+        : (!hasEntered ? 'animate-overlay-in' : '');
+    const overlayStyle = isClosing
+        ? { '--overlay-from': overlayOpacity }
+        : (hasEntered ? { opacity: overlayOpacity, transition: isDragging ? 'none' : 'opacity 0.25s ease-out' } : undefined);
+
+    const sheetClass = isClosing
+        ? 'animate-sheet-down'
+        : (!hasEntered ? 'animate-sheet-up' : '');
+    const sheetStyle = isClosing
+        ? { '--sheet-drag': `${dragY}px`, contain: 'layout paint' }
+        : (hasEntered
+            ? {
+                transform: dragY > 0 ? `translate3d(0, ${dragY}px, 0)` : undefined,
+                transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                contain: 'layout paint'
+            }
+            : { contain: 'layout paint' });
 
     return createPortal(
         <>
             <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-none">
                 {/* Backdrop */}
                 <div 
-                    className="absolute inset-0 bg-black/75 backdrop-blur-md"
-                    style={{
-                        opacity: backdropOpacity,
-                        transition: isDragging ? 'none' : 'opacity 0.25s ease-out'
-                    }}
+                    className={`absolute inset-0 bg-black/75 backdrop-blur-sm ${overlayClass}`}
+                    style={overlayStyle}
                     onClick={handleDismiss}
                 />
                 
                 {/* Modal Container */}
                 <div
-                   
-                    className="w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex flex-col lg:flex-row shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 transform z-10 gpu-modal"
-                    style={{
-                        transform: isDragging
-                            ? `translateY(${dragY}px)`
-                            : (isMounted && !isClosing ? 'translateY(0)' : 'translateY(100%)'),
-                        opacity: isClosing ? 0 : 1,
-                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out'
-                    }}
+                    className={`w-full sm:max-w-6xl relative h-full sm:h-[90vh] flex flex-col lg:flex-row shadow-xl sm:shadow-2xl sm:rounded-[2.5rem] overflow-hidden border-0 sm:border-2 border-white/10 z-10 gpu-modal ${sheetClass}`}
+                    style={sheetStyle}
+                    onAnimationEnd={handleSheetAnimationEnd}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Mobile Drag Handle */}
@@ -618,35 +656,33 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                     {/* Left Side: Images & Profile (Dark Theme) */}
                     <div className="hidden lg:flex flex-col w-[30%] bg-zinc-950 border-r border-white/5 p-6 overflow-y-auto scrollbar-hide shrink-0">
                         <div className="flex flex-col gap-4 mb-6">
-                            <motion.div
-                                variants={itemVariants}
+                            <div
                                 onClick={() => setPreviewImage(log.image_url)}
                                 className="relative group rounded-2xl overflow-hidden border-2 border-white/10 shadow-lg bg-zinc-900 aspect-video cursor-zoom-in"
                             >
-                                <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase z-10 border border-white/10">Before</span>
-                                <img src={log.image_url} alt="Before" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                                <span className="absolute top-2 left-2 bg-black/75 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase z-10 border border-white/10">Before</span>
+                                <img decoding="async" src={log.image_url} alt="Before" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                                 <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                                     <div className="bg-[var(--color-primary)] text-white p-2 rounded-xl shadow-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
                                         <Eye size={14} /> View
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                             {log.image_after_url && (
-                                <motion.div
-                                    variants={itemVariants}
+                                <div
                                     onClick={() => setPreviewImage(log.image_after_url)}
                                     className="relative group rounded-2xl overflow-hidden border-2 border-white/10 shadow-lg bg-zinc-900 aspect-video cursor-zoom-in"
                                 >
-                                    <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase z-10 border border-white/10">After</span>
-                                    <img src={log.image_after_url} alt="After" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                                    <span className="absolute top-2 left-2 bg-black/75 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase z-10 border border-white/10">After</span>
+                                    <img decoding="async" src={log.image_after_url} alt="After" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                         <Eye className="text-white" size={24} />
                                     </div>
-                                </motion.div>
+                                </div>
                             )}
                         </div>
 
-                        <motion.div variants={itemVariants} className="mt-auto space-y-4 bg-white/5 p-5 rounded-2xl border-2 border-white/10 backdrop-blur-sm">
+                        <div className="mt-auto space-y-4 bg-white/5 p-5 rounded-2xl border-2 border-white/10">
                             <div className="flex justify-between items-center">
                                 <h4 className="text-white font-black text-sm uppercase tracking-tight">Patient Profile</h4>
                                 <span className="text-[10px] bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
@@ -669,20 +705,19 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                 <span className="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 border-white/5">Allergies: {log.profile?.allergies?.join(', ') || 'None'}</span>
                                 <span className="bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 border-white/5 uppercase">Activity: {log.profile?.activity_level?.replace(/_/g, ' ') || 'N/A'}</span>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
 
                     {/* Right Side: Review Dashboard (Light/Dark Theme) */}
                     <div className="flex-1 bg-[var(--color-bg-card)] flex flex-col relative overflow-hidden">
-                        <motion.button
-                            whileHover={{ rotate: 90, scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                        <button
+                            type="button"
                             onClick={handleDismiss}
-                            className="absolute right-4 top-4 lg:right-6 lg:top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all z-50 bg-[var(--color-bg-card)]/80 backdrop-blur-md rounded-full p-2.5 shadow-xl border-2 border-[var(--color-divider)] flex items-center justify-center cursor-pointer"
+                            className="absolute right-4 top-4 lg:right-6 lg:top-6 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-transform hover:rotate-90 hover:scale-110 active:scale-90 z-50 bg-[var(--color-bg-card)] rounded-full p-2.5 shadow-lg border-2 border-[var(--color-divider)] flex items-center justify-center cursor-pointer"
                             aria-label="Close Modal"
                         >
                             <X size={18} />
-                        </motion.button>
+                        </button>
 
                         {/* #6: Sticky Glassmorphic Patient Header */}
                         <AnimatePresence>
@@ -694,7 +729,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                                     className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
                                 >
-                                    <div className="flex items-center gap-2.5 bg-[var(--color-bg-card)]/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-[var(--color-divider)] shadow-xl shadow-black/10 px-4 py-2 rounded-full">
+                                    <div className="flex items-center gap-2.5 bg-[var(--color-bg-card)]/95 dark:bg-zinc-900/95 border border-[var(--color-divider)] shadow-xl shadow-black/10 px-4 py-2 rounded-full">
                                         <div className="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse shrink-0" />
                                         <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-tight">
                                             {log.child_name || 'Patient'}
@@ -718,17 +753,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                             <div className="relative flex lg:hidden flex-col w-full shrink-0 bg-zinc-950/5 border-b border-[var(--color-divider)]">
                                 <div
                                     onScroll={handleImageScroll}
-                                    className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20 backdrop-blur-sm"
+                                    className="flex overflow-x-auto snap-x scrollbar-hide py-4 px-4 gap-4 bg-zinc-950/20"
                                 >
-                                    <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl snap-center transition-all active:scale-95">
-                                        <img onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
-                                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">Before</div>
+                                    <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl snap-center transition-all active:scale-95">
+                                        <img decoding="async" onClick={() => setPreviewImage(log.image_url)} src={log.image_url} alt="Before" className="w-full h-full object-cover cursor-zoom-in" />
+                                        <div className="absolute top-3 left-3 bg-black/75 text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">Before</div>
                                     </div>
 
                                     {log.image_after_url && (
-                                        <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl snap-center transition-all active:scale-95">
-                                            <img onClick={() => setPreviewImage(log.image_after_url)} src={log.image_after_url} alt="After" className="w-full h-full object-cover cursor-zoom-in" />
-                                            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">After / Leftovers</div>
+                                        <div className="relative shrink-0 w-[85%] aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl snap-center transition-all active:scale-95">
+                                            <img decoding="async" onClick={() => setPreviewImage(log.image_after_url)} src={log.image_after_url} alt="After" className="w-full h-full object-cover cursor-zoom-in" />
+                                            <div className="absolute top-3 left-3 bg-black/75 text-white px-2 py-0.5 rounded-lg text-[8px] font-black uppercase z-10 border border-white/10 tracking-widest">After / Leftovers</div>
                                             <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                                         </div>
                                     )}
@@ -931,8 +966,10 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                     </div>
                                 </motion.div>
 
+                                {contentReady ? (
+                                <>
                                 {/* Food Analysis Table */}
-                                <motion.div variants={itemVariants} className="bg-[var(--color-bg-page)] rounded-3xl p-4 sm:p-6 border-2 border-[var(--color-divider)] shadow-inner">
+                                <div className="bg-[var(--color-bg-page)] rounded-3xl p-4 sm:p-6 border-2 border-[var(--color-divider)] shadow-inner">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="font-black text-sm uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
                                             <div className="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
@@ -945,11 +982,8 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
 
                                     <div className="space-y-3 mb-5">
                                         {editedAnalysis?.items?.map((item, idx) => (
-                                            <motion.div
+                                            <div
                                                 key={idx}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.2 + (idx * 0.05) }}
                                                 className={`bg-[var(--color-bg-card)] p-4 rounded-2xl border-2 border-[var(--color-divider)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all border-l-4 shadow-md shadow-black/5 hover:shadow-lg ${isEditing ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-l-[var(--color-primary)]'}`}
                                             >
                                                 <div className="flex flex-col">
@@ -1007,7 +1041,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                                         </div>
                                                     ))}
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         ))}
                                     </div>
 
@@ -1028,22 +1062,22 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             </div>
                                         ))}
                                     </div>
-                                </motion.div>
+                                </div>
 
                                 {log.hidden_ingredients && (
-                                    <motion.div variants={itemVariants} className="bg-amber-500/10 dark:bg-amber-500/20 p-4 rounded-2xl border-2 border-amber-500/20 flex flex-col gap-2 mt-4 shadow-inner">
+                                    <div className="bg-amber-500/10 dark:bg-amber-500/20 p-4 rounded-2xl border-2 border-amber-500/20 flex flex-col gap-2 mt-4 shadow-inner">
                                         <h3 className="text-[10px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400 flex items-center gap-2">
                                             <ChefHat size={14} /> Caregiver Note: Hidden Ingredients
                                         </h3>
                                         <p className="text-sm font-bold text-[var(--color-text-main)] italic leading-relaxed">
                                             "{log.hidden_ingredients}"
                                         </p>
-                                    </motion.div>
+                                    </div>
                                 )}
 
                                 {/* AI Insights */}
                                 {log.violation_details?.xai_feedback && (
-                                    <motion.div variants={itemVariants} className="bg-indigo-50/30 dark:bg-indigo-900/10 p-4 sm:p-6 rounded-3xl border-2 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group shadow-lg shadow-indigo-500/5">
+                                    <div className="bg-indigo-50/30 dark:bg-indigo-900/10 p-4 sm:p-6 rounded-3xl border-2 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group shadow-lg shadow-indigo-500/5">
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
                                         <h3 className="text-xs font-black uppercase text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-2">
                                             <Activity size={14} className="animate-pulse" /> Clinical AI reasoning
@@ -1051,11 +1085,11 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         <p className="text-xs sm:text-base text-[var(--color-text-main)] italic font-bold leading-relaxed relative z-10">
                                             "{log.violation_details.xai_feedback}"
                                         </p>
-                                    </motion.div>
+                                    </div>
                                 )}
 
                                 {/* Professional Feedback */}
-                                <motion.div variants={itemVariants} className="flex flex-col space-y-3">
+                                <div className="flex flex-col space-y-3">
                                     <label className="text-xs sm:text-base font-black uppercase tracking-widest text-[var(--color-text-main)] flex items-center gap-3">
                                         <Edit2 size={16} className="text-[var(--color-primary)]" />
                                         Professional Evaluation
@@ -1066,11 +1100,17 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                         value={review}
                                         onChange={(e) => setReview(e.target.value)}
                                     />
-                                </motion.div>
+                                </div>
+                                </>
+                                ) : (
+                                    <div className="space-y-4" aria-hidden="true">
+                                        <div className="skeleton h-48 rounded-3xl" />
+                                        <div className="skeleton h-36 rounded-3xl" />
+                                    </div>
+                                )}
                                 {/* Actions (Sticky Bar on Mobile) */}
-                                <motion.div
-                                    variants={itemVariants}
-                                    className="sticky bottom-0 lg:static bg-[var(--color-bg-card)]/90 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none -mx-5 px-5 py-4 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] space-y-2.5 lg:space-y-0 z-40"
+                                <div
+                                    className="sticky bottom-0 lg:static bg-[var(--color-bg-card)] lg:bg-transparent -mx-5 px-5 py-4 lg:mx-0 lg:px-0 lg:py-4 border-t lg:border-none border-[var(--color-divider)] space-y-2.5 lg:space-y-0 z-40"
                                 >
                                     {/* Primary: Verify Meal — full width on mobile, equal on desktop */}
                                     <Button
@@ -1123,7 +1163,7 @@ export default function ReviewLogModal({ isOpen, onClose, log, onReviewComplete 
                                             {loading ? 'Processing...' : 'Verify Meal'}
                                         </Button>
                                     </div>
-                                </motion.div>
+                                </div>
                             </div>
                         </div>
                     </div>

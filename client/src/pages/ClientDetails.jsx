@@ -15,7 +15,7 @@ import Notification from '../components/common/Notification';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import ReviewLogModal from '../components/ReviewLogModal';
+import ReviewLogModalHost from '../components/ReviewLogModalHost';
 import CreatePatientModal from '../components/CreatePatientModal';
 import { ClientDetailsSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 import InsightsTab from './ClientDetails/components/InsightsTab';
@@ -853,8 +853,8 @@ export default function ClientDetails() {
     const [growthTimeframe, setGrowthTimeframe] = useState('all');
     const [growthSortKey, setGrowthSortKey] = useState('date');
     const [growthSortOrder, setGrowthSortOrder] = useState('desc');
-    const [isReviewOpen, setIsReviewOpen] = useState(false);
-    const [selectedLogForReview, setSelectedLogForReview] = useState(null);
+    // ReviewLogModal state is owned by ReviewLogModalHost so opening it doesn't re-render this 6,400-line page
+    const reviewModalRef = useRef(null);
     const [allClientPendingLogs, setAllClientPendingLogs] = useState([]);
     const [childVaccinations, setChildVaccinations] = useState([]);
     const [vaccinationTypes, setVaccinationTypes] = useState([]);
@@ -4204,7 +4204,7 @@ export default function ClientDetails() {
                                                                                     {logs.filter(l => new Date(l.logged_at).toLocaleDateString() === selectedHistoryDate).sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at)).map(log => (
                                                                                         <div
                                                                                             key={log.id}
-                                                                                            onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                                            onClick={() => reviewModalRef.current?.open(log)}
                                                                                             className="group relative bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-divider)] hover:border-[var(--color-primary)]/50 transition-all overflow-hidden flex h-24 md:h-40 cursor-pointer shadow-sm hover:shadow-md"
                                                                                         >
                                                                                             <div className="w-24 md:w-48 h-full relative overflow-hidden flex-shrink-0">
@@ -4272,7 +4272,7 @@ export default function ClientDetails() {
                                                                 {logs.filter(l => l.status === 'pending').map(log => (
                                                                     <Card
                                                                         key={log.id}
-                                                                        onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                        onClick={() => reviewModalRef.current?.open(log)}
                                                                         className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-divider)] hover:border-[var(--color-primary)] overflow-hidden group"
                                                                     >
                                                                         <CardContent className="p-0">
@@ -4322,7 +4322,7 @@ export default function ClientDetails() {
                                                                         {logs.filter(l => l.status === 'rejected').map(log => (
                                                                             <Card
                                                                                 key={log.id}
-                                                                                onClick={() => { setSelectedLogForReview(log); setIsReviewOpen(true); }}
+                                                                                onClick={() => reviewModalRef.current?.open(log)}
                                                                                 className="hover:shadow-xl transition-all cursor-pointer border-2 border-[var(--color-danger)]/20 hover:border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 overflow-hidden group"
                                                                             >
                                                                                 <CardContent className="p-0">
@@ -6018,15 +6018,13 @@ export default function ClientDetails() {
                     isDestructive={confirmDialog.isDestructive}
                 />
 
-                <ReviewLogModal
-                    isOpen={isReviewOpen}
-                    onClose={() => setIsReviewOpen(false)}
-                    log={selectedLogForReview}
+                <ReviewLogModalHost
+                    ref={reviewModalRef}
                     onReviewComplete={() => {
                         fetchLogs(selectedProfile.id, true);
                         fetchAdimeNotes(selectedProfile.id);
                         fetchAllClientPending();
-                        setIsReviewOpen(false);
+                        reviewModalRef.current?.close();
                         showNotif("Meal log verified and clinical status updated", "success");
                     }}
                 />

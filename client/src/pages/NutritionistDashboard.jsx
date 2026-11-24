@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 
 import AddClientModal from '../components/AddClientModal';
 import CreatePatientModal from '../components/CreatePatientModal';
-import ReviewLogModal from '../components/ReviewLogModal';
+import ReviewLogModalHost from '../components/ReviewLogModalHost';
 import { useNotification } from '../context/NotificationContext';
 import { DashboardSkeleton, SkeletonLoader } from '../components/SkeletonShell';
 import AnimatedNumber from '../components/common/AnimatedNumber';
@@ -51,8 +51,7 @@ export default function NutritionistDashboard() {
     const [isInitialSync, setIsInitialSync] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProfilingOpen, setIsProfilingOpen] = useState(false);
-    const [isReviewOpen, setIsReviewOpen] = useState(false);
-    const [selectedLog, setSelectedLog] = useState(null);
+    const reviewModalRef = React.useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewStatus, setViewStatus] = useState('active');
 
@@ -581,10 +580,8 @@ export default function NutritionistDashboard() {
                 }}
             />
 
-            <ReviewLogModal
-                isOpen={isReviewOpen}
-                onClose={() => setIsReviewOpen(false)}
-                log={selectedLog}
+            <ReviewLogModalHost
+                ref={reviewModalRef}
                 onReviewComplete={() => {
                     fetchData();
                     showNotif("Review finalized and saved!");

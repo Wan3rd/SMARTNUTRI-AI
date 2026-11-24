@@ -495,6 +495,19 @@ html {
   }
 }
 
+/* ── Low-Spec / Hardware-Acceleration-Off Optimizations ──
+   Full-screen backdrop-filter Gaussian blurs and huge 50px box-shadows stall the CPU
+   rasterizer when hardware acceleration is disabled or on low-end mobile GPUs. */
+html.low-spec [class*="backdrop-blur"],
+html.low-spec .glass {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.low-spec .gpu-modal {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35) !important;
+}
+
 /* Ensure custom transitions (like height/width/transform transitions on divs) are fully preserved */
 [class*="transition-all"],
 [class*="transition-colors"],
